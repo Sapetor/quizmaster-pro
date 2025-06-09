@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizMaster Pro - Interactive Quiz Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                ready: () => {
+                    console.log('MathJax is ready');
+                    MathJax.startup.defaultReady();
+                }
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧠 QuizMaster Pro</h1>
+            <p>Advanced Interactive Quiz Platform</p>
+        </header>
+
+        <div id="main-menu" class="screen active">
+            <div class="menu-options">
+                <button id="host-btn" class="btn primary">Host a Game</button>
+                <button id="join-btn" class="btn secondary">Join Game</button>
+            </div>
+        </div>
+
+        <div id="host-screen" class="screen">
+            <div class="host-container">
+                <h2>Create Your Quiz</h2>
+                
+                <div class="quiz-builder">
+                    <input type="text" id="quiz-title" placeholder="Quiz Title" class="input-field">
+                    
+                    <div id="questions-container">
+                        <div class="question-item" data-question="0">
+                            <h3>Question 1</h3>
+                            
+                            <select class="question-type" onchange="updateQuestionType(this)">
+                                <option value="multiple-choice">Multiple Choice</option>
+                                <option value="multiple-correct">Multiple Correct Answers</option>
+                                <option value="true-false">True/False</option>
+                                <option value="numeric">Numeric Answer</option>
+                            </select>
+                            
+                            <div class="question-content">
+                                <textarea class="question-text" placeholder="Enter your question (supports LaTeX: $x^2 + y^2 = z^2$)"></textarea>
+                                
+                                <div class="image-upload">
+                                    <label>Add Image (optional):</label>
+                                    <input type="file" class="image-input" accept="image/*" onchange="uploadImage(this)">
+                                    <div class="image-preview" style="display: none;">
+                                        <img class="question-image" src="" alt="Question Image" style="max-width: 200px; max-height: 150px;">
+                                        <button type="button" class="remove-image" onclick="removeImage(this)">Remove</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="answer-options multiple-choice-options">
+                                <div class="options">
+                                    <input type="text" class="option" data-option="0" placeholder="Option A">
+                                    <input type="text" class="option" data-option="1" placeholder="Option B">
+                                    <input type="text" class="option" data-option="2" placeholder="Option C">
+                                    <input type="text" class="option" data-option="3" placeholder="Option D">
+                                </div>
+                                <select class="correct-answer">
+                                    <option value="0">A is correct</option>
+                                    <option value="1">B is correct</option>
+                                    <option value="2">C is correct</option>
+                                    <option value="3">D is correct</option>
+                                </select>
+                            </div>
+                            
+                            <div class="answer-options multiple-correct-options" style="display: none;">
+                                <div class="options-checkboxes">
+                                    <label><input type="checkbox" class="correct-option" data-option="0"> <input type="text" class="option" placeholder="Option A"></label>
+                                    <label><input type="checkbox" class="correct-option" data-option="1"> <input type="text" class="option" placeholder="Option B"></label>
+                                    <label><input type="checkbox" class="correct-option" data-option="2"> <input type="text" class="option" placeholder="Option C"></label>
+                                    <label><input type="checkbox" class="correct-option" data-option="3"> <input type="text" class="option" placeholder="Option D"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="answer-options true-false-options" style="display: none;">
+                                <select class="correct-answer">
+                                    <option value="true">True</option>
+                                    <option value="false">False</option>
+                                </select>
+                            </div>
+                            
+                            <div class="answer-options numeric-options" style="display: none;">
+                                <label>Correct Answer:</label>
+                                <input type="number" class="numeric-answer" placeholder="Enter numeric answer" step="any">
+                                <label>Tolerance (+/-):</label>
+                                <input type="number" class="numeric-tolerance" placeholder="0.1" step="any" value="0.1">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="add-question" class="btn secondary">Add Question</button>
+                    <button id="start-hosting" class="btn primary">Start Game</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-lobby" class="screen">
+            <div class="lobby-container">
+                <h2>Game PIN</h2>
+                <div id="game-pin" class="pin-display">------</div>
+                <h3>Players Joined</h3>
+                <div id="players-list" class="players-grid"></div>
+                <button id="start-game" class="btn primary">Start Game</button>
+            </div>
+        </div>
+
+        <div id="host-game-screen" class="screen">
+            <div class="game-container">
+                <div class="question-display">
+                    <div class="question-header">
+                        <span id="question-counter">Question 1 of 5</span>
+                        <div id="timer" class="timer">20</div>
+                    </div>
+                    <div id="question-image-display" class="question-image-container" style="display: none;">
+                        <img id="host-question-image" src="" alt="Question Image">
+                    </div>
+                    <h2 id="current-question">Question will appear here</h2>
+                    <div id="answer-options" class="options-grid">
+                        <div class="option-display" data-option="0">A</div>
+                        <div class="option-display" data-option="1">B</div>
+                        <div class="option-display" data-option="2">C</div>
+                        <div class="option-display" data-option="3">D</div>
+                    </div>
+                </div>
+                <button id="next-question" class="btn primary" style="display: none;">Next Question</button>
+            </div>
+        </div>
+
+        <div id="join-screen" class="screen">
+            <div class="join-container">
+                <h2>Join Game</h2>
+                <input type="text" id="game-pin-input" placeholder="Enter Game PIN" class="input-field">
+                <input type="text" id="player-name" placeholder="Your Name" class="input-field">
+                <button id="join-game" class="btn primary">Join Game</button>
+            </div>
+        </div>
+
+        <div id="player-lobby" class="screen">
+            <div class="player-lobby-container">
+                <h2>Waiting for game to start...</h2>
+                <p id="player-info">You're in!</p>
+                <div class="loading-animation">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="player-game-screen" class="screen">
+            <div class="player-game-container">
+                <div class="question-info">
+                    <span id="player-question-counter">Question 1 of 5</span>
+                </div>
+                
+                <div id="player-question-display" class="player-question-area">
+                    <div id="player-question-image" class="question-image-container" style="display: none;">
+                        <img id="player-question-img" src="" alt="Question Image">
+                    </div>
+                    <h3 id="player-question-text">Question will appear here</h3>
+                </div>
+                
+                <div id="player-multiple-choice" class="player-answer-type">
+                    <div class="player-options">
+                        <button class="player-option" data-option="0">A</button>
+                        <button class="player-option" data-option="1">B</button>
+                        <button class="player-option" data-option="2">C</button>
+                        <button class="player-option" data-option="3">D</button>
+                    </div>
+                </div>
+                
+                <div id="player-multiple-correct" class="player-answer-type" style="display: none;">
+                    <div class="player-checkbox-options">
+                        <label class="checkbox-option" data-option="0">
+                            <input type="checkbox" class="option-checkbox"> A
+                        </label>
+                        <label class="checkbox-option" data-option="1">
+                            <input type="checkbox" class="option-checkbox"> B
+                        </label>
+                        <label class="checkbox-option" data-option="2">
+                            <input type="checkbox" class="option-checkbox"> C
+                        </label>
+                        <label class="checkbox-option" data-option="3">
+                            <input type="checkbox" class="option-checkbox"> D
+                        </label>
+                    </div>
+                    <button id="submit-multiple" class="btn primary">Submit Answer</button>
+                </div>
+                
+                <div id="player-true-false" class="player-answer-type" style="display: none;">
+                    <div class="true-false-options">
+                        <button class="tf-option" data-answer="true">TRUE</button>
+                        <button class="tf-option" data-answer="false">FALSE</button>
+                    </div>
+                </div>
+                
+                <div id="player-numeric" class="player-answer-type" style="display: none;">
+                    <div class="numeric-input-container">
+                        <input type="number" id="numeric-answer-input" placeholder="Enter your answer" step="any">
+                        <button id="submit-numeric" class="btn primary">Submit Answer</button>
+                    </div>
+                </div>
+                
+                <div id="answer-feedback" class="feedback hidden">
+                    <div id="feedback-message"></div>
+                    <div id="score-display"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="leaderboard-screen" class="screen">
+            <div class="leaderboard-container">
+                <h2>🏆 Leaderboard</h2>
+                <div id="leaderboard-list" class="leaderboard"></div>
+                <div id="final-results" class="final-results hidden">
+                    <h3>🎉 Game Complete!</h3>
+                    <button id="new-game" class="btn primary">New Game</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
