@@ -28,6 +28,10 @@
         <header>
             <h1>🧠 QuizMaster Pro</h1>
             <p>Advanced Interactive Quiz Platform</p>
+            <div class="header-controls">
+                <button id="fullscreen-toggle" class="theme-toggle" title="Toggle fullscreen (F11)">⛶</button>
+                <button id="theme-toggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
+            </div>
         </header>
 
         <div id="main-menu" class="screen active">
@@ -44,16 +48,30 @@
                 <div class="quiz-builder">
                     <input type="text" id="quiz-title" placeholder="Quiz Title" class="input-field">
                     
+                    <div class="quiz-settings">
+                        <label>
+                            <input type="checkbox" id="randomize-questions"> Randomize question order
+                        </label>
+                    </div>
+                    
                     <div id="questions-container">
                         <div class="question-item" data-question="0">
                             <h3>Question 1</h3>
                             
-                            <select class="question-type" onchange="updateQuestionType(this)">
-                                <option value="multiple-choice">Multiple Choice</option>
-                                <option value="multiple-correct">Multiple Correct Answers</option>
-                                <option value="true-false">True/False</option>
-                                <option value="numeric">Numeric Answer</option>
-                            </select>
+                            <div class="question-meta">
+                                <select class="question-type" onchange="updateQuestionType(this)">
+                                    <option value="multiple-choice">Multiple Choice</option>
+                                    <option value="multiple-correct">Multiple Correct Answers</option>
+                                    <option value="true-false">True/False</option>
+                                    <option value="numeric">Numeric Answer</option>
+                                </select>
+                                
+                                <select class="question-difficulty">
+                                    <option value="easy">Easy (100 pts)</option>
+                                    <option value="medium" selected>Medium (200 pts)</option>
+                                    <option value="hard">Hard (300 pts)</option>
+                                </select>
+                            </div>
                             
                             <div class="question-content">
                                 <textarea class="question-text" placeholder="Enter your question (supports LaTeX: $x^2 + y^2 = z^2$)"></textarea>
@@ -112,8 +130,12 @@
                         <button id="add-question" class="btn secondary">Add Question</button>
                         <button id="save-quiz" class="btn secondary">Save Quiz</button>
                         <button id="load-quiz" class="btn secondary">Load Quiz</button>
+                        <button id="import-quiz" class="btn secondary">Import CSV/JSON</button>
+                        <button id="preview-quiz" class="btn secondary">Preview Quiz</button>
                         <button id="start-hosting" class="btn primary">Start Game</button>
                     </div>
+                    
+                    <input type="file" id="import-file-input" accept=".csv,.json" style="display: none;">
                 </div>
             </div>
         </div>
@@ -250,6 +272,17 @@
                 <div id="quiz-list" class="quiz-list"></div>
                 <div class="modal-actions">
                     <button id="cancel-load" class="btn secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quiz Preview Modal -->
+        <div id="quiz-preview-modal" class="modal" style="display: none;">
+            <div class="modal-content large">
+                <h3>Quiz Preview</h3>
+                <div id="preview-content" class="preview-content"></div>
+                <div class="modal-actions">
+                    <button id="cancel-preview" class="btn secondary">Close</button>
                 </div>
             </div>
         </div>

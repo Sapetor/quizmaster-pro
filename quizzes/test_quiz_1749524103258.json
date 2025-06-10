@@ -1,16 +1,60 @@
 {
-  "title": "Test Quiz",
+  "title": "Sample Quiz - Basic Knowledge",
   "questions": [
     {
       "question": "What is 2+2?",
       "type": "multiple-choice",
+      "difficulty": "easy",
       "options": [
         "1",
         "2",
         "3",
         "4"
       ],
-      "correctAnswer": 3
+      "correctAnswer": 3,
+      "timeLimit": 20
+    },
+    {
+      "question": "What is the capital of France?",
+      "type": "multiple-choice",
+      "difficulty": "easy",
+      "options": [
+        "London",
+        "Berlin",
+        "Paris",
+        "Madrid"
+      ],
+      "correctAnswer": 2,
+      "timeLimit": 20
+    },
+    {
+      "question": "Which of the following are programming languages? (Select all that apply)",
+      "type": "multiple-correct",
+      "difficulty": "medium",
+      "options": [
+        "JavaScript",
+        "HTML",
+        "Python",
+        "CSS"
+      ],
+      "correctAnswers": [0, 2],
+      "timeLimit": 25
+    },
+    {
+      "question": "The Earth is flat.",
+      "type": "true-false",
+      "difficulty": "easy",
+      "options": ["True", "False"],
+      "correctAnswer": "false",
+      "timeLimit": 15
+    },
+    {
+      "question": "What is the square root of 144?",
+      "type": "numeric",
+      "difficulty": "medium",
+      "correctAnswer": 12,
+      "tolerance": 0.1,
+      "timeLimit": 20
     }
   ],
   "created": "2025-06-10T02:55:03.258Z",

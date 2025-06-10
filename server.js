@@ -282,7 +282,14 @@ class Game {
     }
 
     const timeBonus = Math.max(0, 1000 - (Date.now() - this.questionStartTime));
-    const points = isCorrect ? Math.floor(1000 + timeBonus) : 0;
+    const difficultyMultiplier = {
+      'easy': 1,
+      'medium': 2,
+      'hard': 3
+    }[question.difficulty] || 2;
+    
+    const basePoints = 100 * difficultyMultiplier;
+    const points = isCorrect ? Math.floor(basePoints + (timeBonus * difficultyMultiplier / 2)) : 0;
 
     player.answers[this.currentQuestion] = {
       answer,

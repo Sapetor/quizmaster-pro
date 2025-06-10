@@ -14,6 +14,8 @@ class KahootGame {
         
         this.initializeEventListeners();
         this.initializeSocketListeners();
+        this.loadTheme();
+        this.loadAutoSave();
     }
 
     initializeEventListeners() {
@@ -26,12 +28,31 @@ class KahootGame {
         document.getElementById('save-quiz').addEventListener('click', () => this.saveQuiz());
         document.getElementById('load-quiz').addEventListener('click', () => this.showLoadQuizModal());
         document.getElementById('cancel-load').addEventListener('click', () => this.hideLoadQuizModal());
+        document.getElementById('import-quiz').addEventListener('click', () => this.importQuiz());
+        document.getElementById('import-file-input').addEventListener('change', (e) => this.handleFileImport(e));
+        document.getElementById('preview-quiz').addEventListener('click', () => this.showQuizPreview());
+        document.getElementById('cancel-preview').addEventListener('click', () => this.hideQuizPreview());
         document.getElementById('start-hosting').addEventListener('click', () => this.startHosting());
         document.getElementById('start-game').addEventListener('click', () => this.startGame());
         document.getElementById('next-question').addEventListener('click', () => this.nextQuestion());
         
         document.getElementById('join-game').addEventListener('click', () => this.joinGame());
         document.getElementById('new-game').addEventListener('click', () => this.newGame());
+        
+        // Auto-save on input changes
+        document.getElementById('quiz-title').addEventListener('input', () => {
+            clearTimeout(this.autoSaveTimeout);
+            this.autoSaveTimeout = setTimeout(() => this.autoSaveQuiz(), 1000);
+        });
+        
+        // Theme toggle
+        document.getElementById('theme-toggle').addEventListener('click', () => this.toggleTheme());
+        
+        // Fullscreen toggle
+        document.getElementById('fullscreen-toggle').addEventListener('click', () => this.toggleFullscreen());
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
 
         document.getElementById('player-multiple-choice').addEventListener('click', (e) => {
             if (e.target.classList.contains('player-option')) {
@@ -163,15 +184,26 @@ class KahootGame {
         questionDiv.className = 'question-item';
         questionDiv.setAttribute('data-question', questionCount);
         
+        // Auto-save when questions are modified
+        setTimeout(() => this.autoSaveQuiz(), 100);
+        
         questionDiv.innerHTML = `
             <h3>Question ${questionCount + 1}</h3>
             
-            <select class="question-type" onchange="updateQuestionType(this)">
-                <option value="multiple-choice">Multiple Choice</option>
-                <option value="multiple-correct">Multiple Correct Answers</option>
-                <option value="true-false">True/False</option>
-                <option value="numeric">Numeric Answer</option>
-            </select>
+            <div class="question-meta">
+                <select class="question-type" onchange="updateQuestionType(this)">
+                    <option value="multiple-choice">Multiple Choice</option>
+                    <option value="multiple-correct">Multiple Correct Answers</option>
+                    <option value="true-false">True/False</option>
+                    <option value="numeric">Numeric Answer</option>
+                </select>
+                
+                <select class="question-difficulty">
+                    <option value="easy">Easy (100 pts)</option>
+                    <option value="medium" selected>Medium (200 pts)</option>
+                    <option value="hard">Hard (300 pts)</option>
+                </select>
+            </div>
             
             <div class="question-content">
                 <textarea class="question-text" placeholder="Enter your question (supports LaTeX: $x^2 + y^2 = z^2$)"></textarea>
@@ -259,9 +291,16 @@ class KahootGame {
             }
         }
 
+        // Check if questions should be randomized
+        const shouldRandomize = document.getElementById('randomize-questions').checked;
+        if (shouldRandomize) {
+            questions = this.shuffleArray([...questions]);
+        }
+
         const quiz = {
             title: title,
-            questions: questions
+            questions: questions,
+            randomized: shouldRandomize
         };
 
         this.socket.emit('host-join', { quiz });
@@ -274,6 +313,7 @@ class KahootGame {
         questionItems.forEach((item, index) => {
             const questionText = item.querySelector('.question-text').value.trim();
             const questionType = item.querySelector('.question-type').value;
+            const questionDifficulty = item.querySelector('.question-difficulty').value;
             const imageElement = item.querySelector('.question-image');
             const imageUrl = imageElement ? (imageElement.dataset.url || '') : '';
             
@@ -282,6 +322,7 @@ class KahootGame {
             let question = {
                 question: questionText,
                 type: questionType,
+                difficulty: questionDifficulty,
                 timeLimit: 20,
                 image: imageUrl
             };
@@ -501,10 +542,21 @@ class KahootGame {
         
         if (timerElement) {
             timerElement.textContent = timeLeft;
+            timerElement.className = 'timer'; // Reset classes
             
             this.timer = setInterval(() => {
                 timeLeft--;
-                if (timerElement) timerElement.textContent = timeLeft;
+                if (timerElement) {
+                    timerElement.textContent = timeLeft;
+                    
+                    // Add visual pressure indicators
+                    timerElement.className = 'timer';
+                    if (timeLeft <= 5) {
+                        timerElement.classList.add('critical');
+                    } else if (timeLeft <= 10) {
+                        timerElement.classList.add('warning');
+                    }
+                }
                 
                 if (timeLeft <= 0) {
                     clearInterval(this.timer);
@@ -726,6 +778,293 @@ class KahootGame {
         this.currentQuestion = 0;
         
         location.reload();
+    }
+    
+    autoSaveQuiz() {
+        try {
+            const title = document.getElementById('quiz-title').value.trim();
+            const questions = this.collectQuestions();
+            
+            if (title || questions.length > 0) {
+                const autosave = {
+                    title,
+                    questions,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem('quizmaster_autosave', JSON.stringify(autosave));
+            }
+        } catch (error) {
+            console.error('Auto-save failed:', error);
+        }
+    }
+    
+    loadAutoSave() {
+        try {
+            const autosave = localStorage.getItem('quizmaster_autosave');
+            if (autosave) {
+                const data = JSON.parse(autosave);
+                // Only load if it's recent (within 24 hours)
+                if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
+                    if (confirm('Found auto-saved quiz draft. Would you like to restore it?')) {
+                        document.getElementById('quiz-title').value = data.title || '';
+                        
+                        // Clear existing questions
+                        document.getElementById('questions-container').innerHTML = '';
+                        
+                        // Load questions
+                        if (data.questions && data.questions.length > 0) {
+                            data.questions.forEach((question, index) => {
+                                this.addQuestion();
+                                this.populateQuestion(index, question);
+                            });
+                        } else {
+                            this.addQuestion(); // Add at least one question
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load auto-save:', error);
+        }
+    }
+    
+    clearAutoSave() {
+        localStorage.removeItem('quizmaster_autosave');
+    }
+    
+    showQuizPreview() {
+        const title = document.getElementById('quiz-title').value.trim();
+        const questions = this.collectQuestions();
+        
+        if (questions.length === 0) {
+            alert('Please add at least one question to preview');
+            return;
+        }
+        
+        const previewContent = document.getElementById('preview-content');
+        let html = `<h4>${title || 'Untitled Quiz'}</h4>`;
+        html += `<p><strong>Total Questions:</strong> ${questions.length}</p><hr>`;
+        
+        questions.forEach((q, index) => {
+            html += `<div class="preview-question">`;
+            html += `<h5>Question ${index + 1}</h5>`;
+            html += `<p><strong>Type:</strong> ${q.type.replace('-', ' ')}</p>`;
+            html += `<p><strong>Question:</strong> ${q.question}</p>`;
+            
+            if (q.type === 'multiple-choice') {
+                html += `<p><strong>Options:</strong></p><ul>`;
+                q.options.forEach((opt, i) => {
+                    const isCorrect = q.correctAnswer === i;
+                    html += `<li${isCorrect ? ' style="color: green; font-weight: bold;"' : ''}>${String.fromCharCode(65 + i)}: ${opt}${isCorrect ? ' ✓' : ''}</li>`;
+                });
+                html += `</ul>`;
+            } else if (q.type === 'true-false') {
+                html += `<p><strong>Correct Answer:</strong> <span style="color: green; font-weight: bold;">${q.correctAnswer}</span></p>`;
+            } else if (q.type === 'numeric') {
+                html += `<p><strong>Correct Answer:</strong> <span style="color: green; font-weight: bold;">${q.correctAnswer} (±${q.tolerance})</span></p>`;
+            }
+            
+            if (q.image) {
+                html += `<p><strong>Image:</strong> Yes</p>`;
+            }
+            
+            html += `</div><hr>`;
+        });
+        
+        previewContent.innerHTML = html;
+        document.getElementById('quiz-preview-modal').style.display = 'block';
+    }
+    
+    hideQuizPreview() {
+        document.getElementById('quiz-preview-modal').style.display = 'none';
+    }
+    
+    shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+    
+    toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        
+        // Update button icon
+        const toggleBtn = document.getElementById('theme-toggle');
+        toggleBtn.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        
+        // Save preference
+        localStorage.setItem('theme', newTheme);
+    }
+    
+    loadTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        
+        const toggleBtn = document.getElementById('theme-toggle');
+        if (toggleBtn) {
+            toggleBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        }
+    }
+    
+    handleKeyboardShortcuts(e) {
+        // Only handle shortcuts on host screen
+        if (this.currentScreen !== 'host-screen') return;
+        
+        // Ctrl/Cmd + key combinations
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key.toLowerCase()) {
+                case 'q':
+                    e.preventDefault();
+                    this.addQuestion();
+                    break;
+                case 's':
+                    e.preventDefault();
+                    this.saveQuiz();
+                    break;
+                case 'o':
+                    e.preventDefault();
+                    this.showLoadQuizModal();
+                    break;
+                case 'p':
+                    e.preventDefault();
+                    this.showQuizPreview();
+                    break;
+                case 'enter':
+                    e.preventDefault();
+                    this.startHosting();
+                    break;
+            }
+        }
+        
+        // F11 for fullscreen
+        if (e.key === 'F11') {
+            e.preventDefault();
+            this.toggleFullscreen();
+        }
+    }
+    
+    toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.log(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    }
+    
+    importQuiz() {
+        document.getElementById('import-file-input').click();
+    }
+    
+    handleFileImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                let quizData;
+                
+                if (file.name.endsWith('.json')) {
+                    quizData = JSON.parse(e.target.result);
+                } else if (file.name.endsWith('.csv')) {
+                    quizData = this.parseCSV(e.target.result);
+                } else {
+                    alert('Please select a CSV or JSON file');
+                    return;
+                }
+                
+                if (quizData && quizData.questions && Array.isArray(quizData.questions)) {
+                    this.loadImportedQuiz(quizData);
+                } else {
+                    alert('Invalid file format. Please check the file structure.');
+                }
+            } catch (error) {
+                console.error('Import error:', error);
+                alert('Error importing file. Please check the file format.');
+            }
+        };
+        
+        reader.readAsText(file);
+        event.target.value = ''; // Reset input
+    }
+    
+    parseCSV(csvText) {
+        const lines = csvText.split('\n').filter(line => line.trim());
+        if (lines.length < 2) throw new Error('CSV must have header and at least one data row');
+        
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const questions = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+            const question = {
+                type: 'multiple-choice',
+                difficulty: 'medium',
+                timeLimit: 20
+            };
+            
+            headers.forEach((header, index) => {
+                const value = values[index] || '';
+                switch (header) {
+                    case 'question':
+                        question.question = value;
+                        break;
+                    case 'type':
+                        question.type = value || 'multiple-choice';
+                        break;
+                    case 'difficulty':
+                        question.difficulty = value || 'medium';
+                        break;
+                    case 'option_a':
+                    case 'option_b':
+                    case 'option_c':
+                    case 'option_d':
+                        if (!question.options) question.options = [];
+                        question.options.push(value);
+                        break;
+                    case 'correct_answer':
+                        if (question.type === 'multiple-choice') {
+                            question.correctAnswer = parseInt(value) || 0;
+                        } else {
+                            question.correctAnswer = value;
+                        }
+                        break;
+                }
+            });
+            
+            if (question.question) {
+                questions.push(question);
+            }
+        }
+        
+        return {
+            title: 'Imported Quiz',
+            questions: questions
+        };
+    }
+    
+    loadImportedQuiz(quizData) {
+        if (confirm(`Import "${quizData.title || 'Imported Quiz'}" with ${quizData.questions.length} questions? This will replace your current quiz.`)) {
+            // Clear existing questions
+            document.getElementById('questions-container').innerHTML = '';
+            document.getElementById('quiz-title').value = quizData.title || 'Imported Quiz';
+            
+            // Add each question
+            quizData.questions.forEach((question, index) => {
+                this.addQuestion();
+                this.populateQuestion(index, question);
+            });
+            
+            alert(`Successfully imported ${quizData.questions.length} questions!`);
+        }
     }
     
     async saveQuiz() {
