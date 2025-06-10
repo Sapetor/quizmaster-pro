@@ -1,0 +1,18 @@
+{
+  "title": "Test Quiz",
+  "questions": [
+    {
+      "question": "What is 2+2?",
+      "type": "multiple-choice",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correctAnswer": 3
+    }
+  ],
+  "created": "2025-06-10T02:55:03.258Z",
+  "id": "1b09a904-fd6b-4048-b1f1-a490f2251a9d"
+}
