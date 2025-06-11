@@ -356,12 +356,11 @@ function advanceToNextQuestion(game, io) {
     });
     
     // Move to next question and continue
-    if (!game.isAdvancing && game.gameState !== 'finished') {
-      game.currentQuestion++;
-      game.advanceTimer = setTimeout(() => {
+    game.advanceTimer = setTimeout(() => {
+      if (game.nextQuestion()) {
         startQuestion(game, io);
-      }, 3000);
-    }
+      }
+    }, 3000);
   }, 3000);
 }
 
