@@ -16,6 +16,8 @@ class KahootGame {
         this.initializeSocketListeners();
         this.loadTheme();
         this.loadAutoSave();
+        this.checkURLParameters();
+        this.initializeSounds();
     }
 
     initializeEventListeners() {
@@ -62,7 +64,7 @@ class KahootGame {
 
         document.getElementById('player-true-false').addEventListener('click', (e) => {
             if (e.target.classList.contains('tf-option')) {
-                this.submitAnswer(e.target.dataset.answer);
+                this.submitTrueFalseAnswer(e.target.dataset.answer);
             }
         });
 
@@ -93,6 +95,7 @@ class KahootGame {
             this.isHost = true;
             document.getElementById('game-pin').textContent = data.pin;
             this.showScreen('game-lobby');
+            this.loadQRCode(data.pin);
         });
 
         this.socket.on('player-joined', (data) => {
@@ -117,6 +120,9 @@ class KahootGame {
             if (data && typeof data === 'object') {
                 this.displayQuestion(data);
                 this.startTimer(data.timeLimit || 20);
+                
+                // Play question start sound
+                this.playSound(800, 0.3);
             }
         });
 
@@ -408,6 +414,85 @@ class KahootGame {
         this.socket.emit('start-game');
     }
 
+    async loadQRCode(pin) {
+        try {
+            const response = await fetch(`/api/qr/${pin}`);
+            const data = await response.json();
+            
+            if (data.qrCode) {
+                const qrImage = document.getElementById('qr-code-image');
+                const qrLoading = document.querySelector('.qr-loading');
+                const gameUrl = document.getElementById('game-url');
+                
+                qrImage.src = data.qrCode;
+                qrImage.style.display = 'block';
+                qrLoading.style.display = 'none';
+                gameUrl.textContent = data.gameUrl;
+            }
+        } catch (error) {
+            console.error('Failed to load QR code:', error);
+            const qrLoading = document.querySelector('.qr-loading');
+            qrLoading.textContent = 'Failed to generate QR code';
+        }
+    }
+
+    checkURLParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pin = urlParams.get('pin');
+        
+        if (pin) {
+            document.getElementById('game-pin-input').value = pin;
+            this.showScreen('join-screen');
+            
+            // Show feedback that the PIN was detected from QR code
+            const pinInput = document.getElementById('game-pin-input');
+            const originalPlaceholder = pinInput.placeholder;
+            pinInput.placeholder = `PIN detected: ${pin}`;
+            setTimeout(() => {
+                pinInput.placeholder = originalPlaceholder;
+            }, 3000);
+            
+            // Clear URL to avoid confusion
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+
+    initializeSounds() {
+        // Create AudioContext for sound effects
+        this.audioContext = null;
+        this.soundsEnabled = true;
+        
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.log('Web Audio API not supported');
+            this.soundsEnabled = false;
+        }
+    }
+
+    playSound(frequency, duration, type = 'sine') {
+        if (!this.soundsEnabled || !this.audioContext) return;
+        
+        try {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+            
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + duration);
+        } catch (e) {
+            console.log('Sound playback failed:', e);
+        }
+    }
+
     displayQuestion(data) {
         if (this.isHost) {
             const questionCounter = document.getElementById('question-counter');
@@ -435,21 +520,32 @@ class KahootGame {
                 } else {
                     optionsContainer.style.display = 'grid';
                     const options = document.querySelectorAll('.option-display');
+                    
+                    // Reset all option styles from previous questions
+                    options.forEach(option => {
+                        option.style.border = '';
+                        option.style.backgroundColor = '';
+                    });
                 
                     if (data.type === 'true-false') {
-                        options[0].textContent = 'TRUE';
-                        options[1].textContent = 'FALSE';
+                        options[0].textContent = 'True';
+                        options[1].textContent = 'False';
                         options[2].style.display = 'none';
                         options[3].style.display = 'none';
                     } else {
                         options.forEach((option, index) => {
                             if (data.options && data.options[index]) {
-                                option.textContent = `${String.fromCharCode(65 + index)}: ${data.options[index]}`;
+                                option.innerHTML = `${String.fromCharCode(65 + index)}: ${data.options[index]}`;
                                 option.style.display = 'block';
                             } else {
                                 option.style.display = 'none';
                             }
                         });
+                        
+                        // Render LaTeX in answer options
+                        if (window.MathJax && window.MathJax.typesetPromise) {
+                            window.MathJax.typesetPromise();
+                        }
                     }
                 }
             }
@@ -485,7 +581,7 @@ class KahootGame {
                     const mcOptions = document.querySelectorAll('#player-multiple-choice .player-option');
                     mcOptions.forEach((option, index) => {
                         if (data.options && data.options[index]) {
-                            option.textContent = `${String.fromCharCode(65 + index)}: ${data.options[index]}`;
+                            option.innerHTML = `${String.fromCharCode(65 + index)}: ${data.options[index]}`;
                             option.style.display = 'block';
                         } else {
                             option.style.display = 'none';
@@ -493,6 +589,11 @@ class KahootGame {
                         option.disabled = false;
                         option.classList.remove('selected');
                     });
+                    
+                    // Render LaTeX in answer options
+                    if (window.MathJax && window.MathJax.typesetPromise) {
+                        window.MathJax.typesetPromise();
+                    }
                     break;
                     
                 case 'multiple-correct':
@@ -510,6 +611,11 @@ class KahootGame {
                             label.style.display = 'none';
                         }
                     });
+                    
+                    // Render LaTeX in answer options
+                    if (window.MathJax && window.MathJax.typesetPromise) {
+                        window.MathJax.typesetPromise();
+                    }
                     
                     document.getElementById('submit-multiple').disabled = false;
                     break;
@@ -576,7 +682,31 @@ class KahootGame {
         if (options[answer]) {
             options[answer].classList.add('selected');
         }
+        
+        // Play submission sound
+        this.playSound(600, 0.2);
+        
         this.socket.emit('submit-answer', { answer });
+    }
+
+    submitTrueFalseAnswer(answer) {
+        const tfOptions = document.querySelectorAll('.tf-option');
+        tfOptions.forEach(option => {
+            option.disabled = true;
+            option.classList.remove('selected');
+        });
+        
+        // Find and highlight the selected option
+        const selectedOption = document.querySelector(`.tf-option[data-answer="${answer}"]`);
+        if (selectedOption) {
+            selectedOption.classList.add('selected');
+        }
+        
+        // Play submission sound
+        this.playSound(600, 0.2);
+        
+        this.socket.emit('submit-answer', { answer });
+        this.showAnswerSubmitted(answer);
     }
 
     showAnswerSubmitted(answer) {
@@ -590,7 +720,9 @@ class KahootGame {
         
         let displayText = '';
         if (typeof answer === 'number') {
-            displayText = `Answer submitted: ${answer}`;
+            // Convert numeric answer to letter (0->A, 1->B, etc.)
+            const letter = String.fromCharCode(65 + answer);
+            displayText = `Answer submitted: ${letter}`;
         } else if (Array.isArray(answer)) {
             const letters = answer.map(a => String.fromCharCode(65 + a)).join(', ');
             displayText = `Answers submitted: ${letters}`;
@@ -663,8 +795,24 @@ class KahootGame {
 
     showFinalResults(leaderboard) {
         this.updateLeaderboardDisplay(leaderboard);
-        document.getElementById('final-results').classList.remove('hidden');
+        
+        // Add special game complete animation
+        const finalResults = document.getElementById('final-results');
+        finalResults.classList.remove('hidden');
+        finalResults.classList.add('game-complete-animation');
+        
+        // Show confetti celebration
+        this.showGameCompleteConfetti();
+        
+        // Play victory sound
+        this.playVictorySound();
+        
         this.showScreen('leaderboard-screen');
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            finalResults.classList.remove('game-complete-animation');
+        }, 2000);
     }
 
     updateLeaderboardDisplay(leaderboard) {
@@ -728,9 +876,16 @@ class KahootGame {
             feedback.style.backgroundColor = '#2ecc71';
             message.textContent = '🎉 Correct!';
             this.showConfetti();
+            // Play success sound (ascending notes)
+            setTimeout(() => this.playSound(523, 0.15), 0);   // C
+            setTimeout(() => this.playSound(659, 0.15), 150); // E
+            setTimeout(() => this.playSound(784, 0.3), 300);  // G
         } else {
             feedback.style.backgroundColor = '#e74c3c';
             message.textContent = '❌ Incorrect';
+            // Play error sound (descending notes)
+            this.playSound(400, 0.2, 'sawtooth');
+            setTimeout(() => this.playSound(300, 0.3, 'sawtooth'), 200);
         }
         
         score.textContent = `+${data.points} points (Total: ${data.totalScore})`;
@@ -1212,6 +1367,61 @@ class KahootGame {
                 img.dataset.url = questionData.image;
                 preview.style.display = 'block';
             }
+        }
+    }
+
+    showGameCompleteConfetti() {
+        if (window.confetti) {
+            // Create multiple confetti bursts
+            const duration = 3000;
+            const end = Date.now() + duration;
+
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+
+            (function frame() {
+                confetti({
+                    particleCount: 50,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: colors
+                });
+                confetti({
+                    particleCount: 50,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: colors
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+    }
+
+    playVictorySound() {
+        if (!this.soundsEnabled || !this.audioContext) return;
+        
+        try {
+            // Play a victory melody
+            const notes = [
+                { freq: 523, time: 0 },     // C
+                { freq: 659, time: 0.15 },  // E
+                { freq: 784, time: 0.3 },   // G
+                { freq: 1047, time: 0.45 }, // C (higher)
+                { freq: 784, time: 0.6 },   // G
+                { freq: 1047, time: 0.75 }  // C (higher)
+            ];
+            
+            notes.forEach(note => {
+                setTimeout(() => {
+                    this.playSound(note.freq, 0.2);
+                }, note.time * 1000);
+            });
+        } catch (e) {
+            console.log('Victory sound playback failed:', e);
         }
     }
 }

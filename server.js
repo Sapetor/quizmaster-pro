@@ -6,6 +6,8 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
 const multer = require('multer');
+const QRCode = require('qrcode');
+const os = require('os');
 
 const app = express();
 const server = http.createServer(app);
@@ -159,6 +161,43 @@ app.post('/api/save-results', (req, res) => {
   }
 });
 
+// Generate QR code endpoint
+app.get('/api/qr/:pin', async (req, res) => {
+  try {
+    const { pin } = req.params;
+    const game = games.get(pin);
+    
+    if (!game) {
+      return res.status(404).json({ error: 'Game not found' });
+    }
+    
+    const networkInterfaces = os.networkInterfaces();
+    const localIP = Object.values(networkInterfaces)
+      .flat()
+      .find(iface => iface.family === 'IPv4' && !iface.internal)?.address || 'localhost';
+    const port = process.env.PORT || 3000;
+    const gameUrl = `http://${localIP}:${port}?pin=${pin}`;
+    
+    const qrCodeDataUrl = await QRCode.toDataURL(gameUrl, {
+      width: 300,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      }
+    });
+    
+    res.json({ 
+      qrCode: qrCodeDataUrl,
+      gameUrl: gameUrl,
+      pin: pin
+    });
+  } catch (error) {
+    console.error('QR code generation error:', error);
+    res.status(500).json({ error: 'Failed to generate QR code' });
+  }
+});
+
 const games = new Map();
 const players = new Map();
 
@@ -309,6 +348,23 @@ class Game {
   }
 }
 
+function advanceToNextQuestion(game, io) {
+  game.advanceTimer = setTimeout(() => {
+    game.updateLeaderboard();
+    io.to(`game-${game.pin}`).emit('question-end', {
+      leaderboard: game.leaderboard.slice(0, 5)
+    });
+    
+    // Move to next question and continue
+    if (!game.isAdvancing && game.gameState !== 'finished') {
+      game.currentQuestion++;
+      game.advanceTimer = setTimeout(() => {
+        startQuestion(game, io);
+      }, 3000);
+    }
+  }, 3000);
+}
+
 function startQuestion(game, io) {
   if (game.currentQuestion >= game.quiz.questions.length) {
     // Game finished
@@ -377,20 +433,7 @@ function startQuestion(game, io) {
       }
     });
 
-    game.advanceTimer = setTimeout(() => {
-      game.updateLeaderboard();
-      io.to(`game-${game.pin}`).emit('question-end', {
-        leaderboard: game.leaderboard.slice(0, 5)
-      });
-      
-      // Move to next question and continue
-      if (!game.isAdvancing && game.gameState !== 'finished') {
-        game.currentQuestion++;
-        game.advanceTimer = setTimeout(() => {
-          startQuestion(game, io);
-        }, 3000);
-      }
-    }, 3000);
+    advanceToNextQuestion(game, io);
     
   }, timeLimit * 1000);
 }
@@ -406,6 +449,20 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id, 'from:', socket.handshake.address);
 
   socket.on('host-join', (data) => {
+    // Check if request is from local machine or local network (but allow all for now due to NAT/proxy issues)
+    const clientIP = socket.handshake.address;
+    const isLocalHost = clientIP === '127.0.0.1' || clientIP === '::1' || clientIP === '::ffff:127.0.0.1';
+    const isLocalNetwork = isLocalHost || clientIP.startsWith('192.168.') || clientIP.startsWith('10.') || clientIP.startsWith('172.') || clientIP.startsWith('::ffff:192.168.');
+    
+    // Log for debugging but don't restrict for now
+    console.log(`Host join attempt from IP: ${clientIP}, isLocalNetwork: ${isLocalNetwork}`);
+    
+    // Uncomment this line to enable hosting restriction:
+    // if (!isLocalNetwork) {
+    //   socket.emit('error', { message: 'Game hosting is restricted to local network only' });
+    //   return;
+    // }
+    
     if (!data || !data.quiz || !Array.isArray(data.quiz.questions)) {
       socket.emit('error', { message: 'Invalid quiz data' });
       return;
@@ -427,7 +484,7 @@ io.on('connection', (socket) => {
       gameId: game.id
     });
     
-    console.log(`Game created with PIN: ${game.pin}`);
+    console.log(`Game created with PIN: ${game.pin} from IP: ${clientIP}`);
   });
 
   socket.on('player-join', (data) => {
@@ -502,6 +559,64 @@ io.on('connection', (socket) => {
 
     const result = game.submitAnswer(socket.id, answer, type);
     socket.emit('answer-submitted', { answer: answer });
+    
+    // Check if all players have submitted answers
+    const totalPlayers = game.players.size;
+    const answeredPlayers = Array.from(game.players.values())
+      .filter(player => player.answers[game.currentQuestion]).length;
+    
+    if (answeredPlayers >= totalPlayers && totalPlayers > 0) {
+      // All players have answered, end question early
+      if (game.questionTimer) {
+        clearTimeout(game.questionTimer);
+        game.questionTimer = null;
+        
+        // Trigger question end immediately
+        setTimeout(() => {
+          game.endQuestion();
+          const question = game.quiz.questions[game.currentQuestion];
+          const correctAnswer = question.correctAnswer;
+          let correctOption = '';
+          
+          switch (question.type || 'multiple-choice') {
+            case 'multiple-choice':
+              correctOption = question.options && question.options[correctAnswer] ? question.options[correctAnswer] : '';
+              break;
+            case 'multiple-correct':
+              const correctAnswers = question.correctAnswers || [];
+              correctOption = correctAnswers.map(idx => question.options[idx]).join(', ');
+              break;
+            case 'true-false':
+              correctOption = correctAnswer;
+              break;
+            case 'numeric':
+              correctOption = correctAnswer.toString();
+              break;
+          }
+          
+          io.to(`game-${game.pin}`).emit('question-timeout', {
+            correctAnswer: correctAnswer,
+            correctOption: correctOption,
+            questionType: question.type || 'multiple-choice',
+            earlyEnd: true
+          });
+
+          // Send individual results to each player
+          game.players.forEach((player, playerId) => {
+            const playerAnswer = player.answers[game.currentQuestion];
+            if (playerAnswer) {
+              io.to(playerId).emit('player-result', {
+                isCorrect: playerAnswer.isCorrect,
+                points: playerAnswer.points,
+                totalScore: player.score
+              });
+            }
+          });
+
+          advanceToNextQuestion(game, io);
+        }, 1000); // 1 second delay to show "All players answered!"
+      }
+    }
   });
 
   socket.on('next-question', () => {
@@ -559,7 +674,11 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  const networkInterfaces = os.networkInterfaces();
+  const localIP = Object.values(networkInterfaces)
+    .flat()
+    .find(iface => iface.family === 'IPv4' && !iface.internal)?.address || 'localhost';
+  console.log(`Network access: http://${localIP}:${PORT}`);
   console.log(`Local access: http://localhost:${PORT}`);
-  console.log(`Network access: http://[YOUR_LOCAL_IP]:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

@@ -144,6 +144,16 @@
             <div class="lobby-container">
                 <h2>Game PIN</h2>
                 <div id="game-pin" class="pin-display">------</div>
+                
+                <div class="qr-section">
+                    <h3>Share Game</h3>
+                    <div id="qr-code-container" class="qr-container">
+                        <div class="qr-loading">Generating QR Code...</div>
+                        <img id="qr-code-image" style="display: none;" alt="QR Code to join game">
+                    </div>
+                    <p id="game-url" class="game-url"></p>
+                </div>
+                
                 <h3>Players Joined</h3>
                 <div id="players-list" class="players-grid"></div>
                 <button id="start-game" class="btn primary">Start Game</button>
