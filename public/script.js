@@ -118,6 +118,14 @@ class KahootGame {
 
         this.socket.on('question-start', (data) => {
             if (data && typeof data === 'object') {
+                // Switch host back to game screen from leaderboard
+                if (this.isHost) {
+                    this.showScreen('host-game-screen');
+                    // Hide next question button since we're auto-advancing
+                    const nextBtn = document.getElementById('next-question');
+                    if (nextBtn) nextBtn.style.display = 'none';
+                }
+                
                 this.displayQuestion(data);
                 this.startTimer(data.timeLimit || 20);
                 
