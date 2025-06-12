@@ -2,8 +2,12 @@ class KahootGame {
     constructor() {
         this.socket = io(window.location.origin, {
             transports: ['websocket', 'polling'],
-            timeout: 20000,
-            forceNew: true
+            timeout: 60000,
+            forceNew: true,
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            maxReconnectionDelay: 5000
         });
         this.currentScreen = 'main-menu';
         this.isHost = false;
@@ -111,7 +115,6 @@ class KahootGame {
         });
 
         this.socket.on('game-starting', () => {
-            console.log('Received game-starting event, isHost:', this.isHost);
             if (this.isHost) {
                 this.showScreen('host-game-screen');
             } else {
@@ -120,7 +123,6 @@ class KahootGame {
         });
 
         this.socket.on('question-start', (data) => {
-            console.log('Received question-start event:', data ? data.questionNumber : 'no data', 'isHost:', this.isHost);
             if (data && typeof data === 'object') {
                 // Switch host back to game screen from leaderboard
                 if (this.isHost) {
@@ -375,8 +377,8 @@ class KahootGame {
                     
                 case 'true-false':
                     const tfCorrect = item.querySelector('.true-false-options .correct-answer').value;
-                    question.options = ['True', 'False'];
-                    question.correctAnswer = tfCorrect;
+                    question.options = ['True', 'False']; // Display names
+                    question.correctAnswer = tfCorrect; // Will be "true" or "false" (lowercase)
                     questions.push(question);
                     break;
                     
@@ -760,9 +762,19 @@ class KahootGame {
             const questionType = data.questionType || 'multiple-choice';
             const options = document.querySelectorAll('.option-display');
             
-            if (questionType === 'multiple-choice' || questionType === 'true-false') {
+            if (questionType === 'multiple-choice') {
                 options.forEach((option, index) => {
                     if (index === data.correctAnswer) {
+                        option.style.border = '5px solid #2ecc71';
+                        option.style.backgroundColor = '#2ecc71';
+                    }
+                });
+            } else if (questionType === 'true-false') {
+                // For true-false, correctAnswer is a string ("true" or "false")
+                // Convert to index: "true" = 0, "false" = 1
+                const correctIndex = data.correctAnswer.toString().toLowerCase() === 'true' ? 0 : 1;
+                options.forEach((option, index) => {
+                    if (index === correctIndex) {
                         option.style.border = '5px solid #2ecc71';
                         option.style.backgroundColor = '#2ecc71';
                     }

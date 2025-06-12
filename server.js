@@ -27,7 +27,11 @@ const io = socketIo(server, {
       }
     },
     methods: ["GET", "POST"]
-  }
+  },
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  upgradeTimeout: 30000,
+  allowUpgrades: true
 });
 
 app.use(cors());
@@ -416,12 +420,6 @@ function startQuestion(game, io) {
     timeLimit: timeLimit
   };
   
-  console.log(`Emitting question-start to room game-${game.pin}:`, {
-    questionNumber: questionData.questionNumber,
-    type: questionData.type,
-    playersInGame: game.players.size
-  });
-  
   io.to(`game-${game.pin}`).emit('question-start', questionData);
 
   game.questionTimer = setTimeout(() => {
@@ -538,12 +536,9 @@ io.on('connection', (socket) => {
       return;
     }
     
-    console.log(`Player attempting to join PIN: ${pin}, Name: ${name}`);
-    console.log(`Available games:`, Array.from(games.keys()));
     const game = games.get(pin);
     
     if (!game) {
-      console.log(`Game not found for PIN: ${pin}`);
       socket.emit('error', { message: 'Game not found' });
       return;
     }
@@ -557,29 +552,21 @@ io.on('connection', (socket) => {
     players.set(socket.id, { gamePin: pin, name });
     
     socket.join(`game-${pin}`);
-    console.log(`Player ${name} (${socket.id}) joined room game-${pin}`);
     socket.emit('player-joined', { gamePin: pin, playerName: name });
     
     io.to(`game-${pin}`).emit('player-list-update', {
       players: Array.from(game.players.values()).map(p => ({ id: p.id, name: p.name }))
     });
     
-    console.log(`Player ${name} joined game ${pin}, total players: ${game.players.size}`);
+    console.log(`Player ${name} joined game ${pin}`);
   });
 
   socket.on('start-game', () => {
     const game = Array.from(games.values()).find(g => g.hostId === socket.id);
-    if (!game) {
-      console.log('No game found for host:', socket.id);
-      return;
-    }
+    if (!game) return;
 
-    console.log(`Starting game ${game.pin} with ${game.players.size} players`);
     game.gameState = 'starting';
     game.startTime = new Date().toISOString();
-    
-    // Emit to the room and log
-    console.log(`Emitting game-starting to room: game-${game.pin}`);
     io.to(`game-${game.pin}`).emit('game-starting');
     
     // Start the auto-advancing game flow
