@@ -41,6 +41,7 @@ class KahootGame {
         
         document.getElementById('join-game').addEventListener('click', () => this.joinGame());
         document.getElementById('new-game').addEventListener('click', () => this.newGame());
+        document.getElementById('play-again').addEventListener('click', () => this.newGame());
         
         // Auto-save on input changes
         document.getElementById('quiz-title').addEventListener('input', () => {
@@ -595,6 +596,9 @@ class KahootGame {
                         }
                         option.disabled = false;
                         option.classList.remove('selected');
+                        // Reset any custom styling from previous questions
+                        option.style.border = '';
+                        option.style.backgroundColor = '';
                     });
                     
                     // Render LaTeX in answer options
@@ -628,6 +632,9 @@ class KahootGame {
                     document.querySelectorAll('.tf-option').forEach(option => {
                         option.disabled = false;
                         option.classList.remove('selected');
+                        // Reset any custom styling from previous questions
+                        option.style.border = '';
+                        option.style.backgroundColor = '';
                     });
                     break;
                     
@@ -762,18 +769,28 @@ class KahootGame {
                 }
             }
         } else {
-            // Only highlight correct answer options, don't override player feedback
+            // Only highlight correct answer options temporarily, don't override player feedback
             const questionType = data.questionType || 'multiple-choice';
             if (questionType === 'multiple-choice') {
                 const options = document.querySelectorAll('.player-option');
                 if (options[data.correctAnswer]) {
                     options[data.correctAnswer].style.border = '5px solid #2ecc71';
+                    // Remove highlighting after 3 seconds to prevent persistence
+                    setTimeout(() => {
+                        if (options[data.correctAnswer]) {
+                            options[data.correctAnswer].style.border = '';
+                        }
+                    }, 3000);
                 }
             } else if (questionType === 'true-false') {
                 const tfOptions = document.querySelectorAll('.tf-option');
                 tfOptions.forEach(option => {
                     if (option.dataset.answer === data.correctAnswer.toString().toLowerCase()) {
                         option.style.border = '5px solid #2ecc71';
+                        // Remove highlighting after 3 seconds to prevent persistence
+                        setTimeout(() => {
+                            option.style.border = '';
+                        }, 3000);
                     }
                 });
             }
@@ -799,23 +816,102 @@ class KahootGame {
     showFinalResults(leaderboard) {
         this.updateLeaderboardDisplay(leaderboard);
         
-        // Add special game complete animation
-        const finalResults = document.getElementById('final-results');
-        finalResults.classList.remove('hidden');
-        finalResults.classList.add('game-complete-animation');
+        if (this.isHost) {
+            // Host gets full celebration with confetti and sounds
+            const finalResults = document.getElementById('final-results');
+            finalResults.classList.remove('hidden');
+            finalResults.classList.add('game-complete-animation');
+            
+            // Show confetti celebration
+            this.showGameCompleteConfetti();
+            
+            // Play victory sound
+            this.playVictorySound();
+            
+            this.showScreen('leaderboard-screen');
+            
+            // Remove animation class after animation completes
+            setTimeout(() => {
+                finalResults.classList.remove('game-complete-animation');
+            }, 2000);
+        } else {
+            // Players get a dedicated final screen
+            this.showPlayerFinalScreen(leaderboard);
+        }
+    }
+
+    showPlayerFinalScreen(leaderboard) {
+        // Find player's position in the final leaderboard
+        let playerPosition = -1;
+        let playerScore = 0;
         
-        // Show confetti celebration
-        this.showGameCompleteConfetti();
+        // Get player's socket ID to find their position
+        const playerId = this.socket.id;
+        leaderboard.forEach((player, index) => {
+            if (player.id === playerId) {
+                playerPosition = index + 1;
+                playerScore = player.score;
+            }
+        });
         
-        // Play victory sound
-        this.playVictorySound();
+        // Update player's final rank display
+        const positionElement = document.getElementById('final-position');
+        const scoreElement = document.getElementById('final-score');
         
-        this.showScreen('leaderboard-screen');
+        if (positionElement) {
+            positionElement.textContent = `#${playerPosition || 'N/A'}`;
+            
+            // Add special styling for top 3
+            positionElement.className = 'final-position';
+            if (playerPosition === 1) positionElement.classList.add('first-place');
+            else if (playerPosition === 2) positionElement.classList.add('second-place');
+            else if (playerPosition === 3) positionElement.classList.add('third-place');
+        }
         
-        // Remove animation class after animation completes
-        setTimeout(() => {
-            finalResults.classList.remove('game-complete-animation');
-        }, 2000);
+        if (scoreElement) {
+            scoreElement.textContent = `${playerScore} points`;
+        }
+        
+        // Show top 3 players
+        this.updateFinalLeaderboard(leaderboard.slice(0, 3));
+        
+        // Play appropriate sound based on ranking
+        if (playerPosition === 1) {
+            this.playVictorySound();
+        } else if (playerPosition <= 3) {
+            this.playSound(659, 0.5); // Pleasant tone for top 3
+        } else {
+            this.playSound(523, 0.3); // Neutral tone for others
+        }
+        
+        this.showScreen('player-final-screen');
+    }
+
+    updateFinalLeaderboard(topPlayers) {
+        const leaderboardContainer = document.getElementById('final-leaderboard');
+        if (!leaderboardContainer) return;
+        
+        leaderboardContainer.innerHTML = '';
+        
+        topPlayers.forEach((player, index) => {
+            const item = document.createElement('div');
+            item.className = 'final-leaderboard-item';
+            
+            const position = index + 1;
+            const medal = ['🥇', '🥈', '🥉'][index] || '🏅';
+            
+            item.innerHTML = `
+                <span class="medal">${medal}</span>
+                <span class="player-name">${player.name}</span>
+                <span class="player-score">${player.score} pts</span>
+            `;
+            
+            if (position === 1) item.classList.add('first');
+            else if (position === 2) item.classList.add('second');
+            else if (position === 3) item.classList.add('third');
+            
+            leaderboardContainer.appendChild(item);
+        });
     }
 
     updateLeaderboardDisplay(leaderboard) {
@@ -1342,6 +1438,21 @@ class KahootGame {
                 }
                 if (questionData.correctAnswer !== undefined) {
                     questionItem.querySelector('.correct-answer').value = questionData.correctAnswer;
+                }
+                break;
+                
+            case 'multiple-correct':
+                if (questionData.options) {
+                    questionData.options.forEach((option, optIndex) => {
+                        const optionInput = questionItem.querySelector(`.multiple-correct-options .option[data-option="${optIndex}"]`);
+                        if (optionInput) optionInput.value = option;
+                    });
+                }
+                if (questionData.correctAnswers && Array.isArray(questionData.correctAnswers)) {
+                    questionData.correctAnswers.forEach(correctIndex => {
+                        const checkbox = questionItem.querySelector(`.multiple-correct-options .correct-option[data-option="${correctIndex}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
                 }
                 break;
                 
