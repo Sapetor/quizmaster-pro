@@ -285,7 +285,7 @@ class KahootGame {
             return;
         }
 
-        const questions = this.collectQuestions();
+        let questions = this.collectQuestions();
         if (questions.length === 0) {
             alert('Please add at least one question');
             return;
@@ -1510,9 +1510,6 @@ class KahootGame {
                         const dropdown = questionItem.querySelector('.true-false-options .correct-answer');
                         if (dropdown) {
                             dropdown.value = normalizedAnswer;
-                            console.log(`Set true-false answer to: ${normalizedAnswer}, dropdown value is now: ${dropdown.value}`);
-                        } else {
-                            console.error('True-false dropdown not found');
                         }
                     }, 10);
                 }
