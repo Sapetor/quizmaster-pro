@@ -111,6 +111,7 @@ class KahootGame {
         });
 
         this.socket.on('game-starting', () => {
+            console.log('Received game-starting event, isHost:', this.isHost);
             if (this.isHost) {
                 this.showScreen('host-game-screen');
             } else {
@@ -119,6 +120,7 @@ class KahootGame {
         });
 
         this.socket.on('question-start', (data) => {
+            console.log('Received question-start event:', data ? data.questionNumber : 'no data', 'isHost:', this.isHost);
             if (data && typeof data === 'object') {
                 // Switch host back to game screen from leaderboard
                 if (this.isHost) {

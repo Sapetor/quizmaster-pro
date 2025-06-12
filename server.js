@@ -406,7 +406,7 @@ function startQuestion(game, io) {
   game.gameState = 'question';
   game.questionStartTime = Date.now();
   
-  io.to(`game-${game.pin}`).emit('question-start', {
+  const questionData = {
     questionNumber: game.currentQuestion + 1,
     totalQuestions: game.quiz.questions.length,
     question: question.question,
@@ -414,7 +414,15 @@ function startQuestion(game, io) {
     type: question.type || 'multiple-choice',
     image: question.image || '',
     timeLimit: timeLimit
+  };
+  
+  console.log(`Emitting question-start to room game-${game.pin}:`, {
+    questionNumber: questionData.questionNumber,
+    type: questionData.type,
+    playersInGame: game.players.size
   });
+  
+  io.to(`game-${game.pin}`).emit('question-start', questionData);
 
   game.questionTimer = setTimeout(() => {
     game.endQuestion();
@@ -462,8 +470,11 @@ function startQuestion(game, io) {
 
 function autoAdvanceGame(game, io) {
   setTimeout(() => {
-    game.currentQuestion = 0; // Start with first question
-    startQuestion(game, io);
+    if (game.nextQuestion()) {
+      startQuestion(game, io);
+    } else {
+      console.error('Failed to start first question - no questions available');
+    }
   }, 3000);
 }
 
@@ -546,21 +557,29 @@ io.on('connection', (socket) => {
     players.set(socket.id, { gamePin: pin, name });
     
     socket.join(`game-${pin}`);
+    console.log(`Player ${name} (${socket.id}) joined room game-${pin}`);
     socket.emit('player-joined', { gamePin: pin, playerName: name });
     
     io.to(`game-${pin}`).emit('player-list-update', {
       players: Array.from(game.players.values()).map(p => ({ id: p.id, name: p.name }))
     });
     
-    console.log(`Player ${name} joined game ${pin}`);
+    console.log(`Player ${name} joined game ${pin}, total players: ${game.players.size}`);
   });
 
   socket.on('start-game', () => {
     const game = Array.from(games.values()).find(g => g.hostId === socket.id);
-    if (!game) return;
+    if (!game) {
+      console.log('No game found for host:', socket.id);
+      return;
+    }
 
+    console.log(`Starting game ${game.pin} with ${game.players.size} players`);
     game.gameState = 'starting';
     game.startTime = new Date().toISOString();
+    
+    // Emit to the room and log
+    console.log(`Emitting game-starting to room: game-${game.pin}`);
     io.to(`game-${game.pin}`).emit('game-starting');
     
     // Start the auto-advancing game flow
