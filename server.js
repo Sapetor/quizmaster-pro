@@ -373,6 +373,15 @@ function advanceToNextQuestion(game, io) {
     game.advanceTimer = setTimeout(() => {
       if (game.nextQuestion()) {
         startQuestion(game, io);
+      } else {
+        // No more questions - end the game
+        game.gameState = 'finished';
+        game.endTime = new Date().toISOString();
+        game.updateLeaderboard();
+        game.saveResults();
+        io.to(`game-${game.pin}`).emit('game-end', {
+          finalLeaderboard: game.leaderboard
+        });
       }
     }, 3000);
   }, 3000);

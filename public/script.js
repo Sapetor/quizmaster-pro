@@ -825,8 +825,8 @@ class KahootGame {
             // Show confetti celebration
             this.showGameCompleteConfetti();
             
-            // Play victory sound
-            this.playVictorySound();
+            // Play special game ending fanfare
+            this.playGameEndingFanfare();
             
             this.showScreen('leaderboard-screen');
             
@@ -835,7 +835,8 @@ class KahootGame {
                 finalResults.classList.remove('game-complete-animation');
             }, 2000);
         } else {
-            // Players get a dedicated final screen
+            // Players get a dedicated final screen with special ending sound
+            this.playGameEndingFanfare();
             this.showPlayerFinalScreen(leaderboard);
         }
     }
@@ -875,14 +876,8 @@ class KahootGame {
         // Show top 3 players
         this.updateFinalLeaderboard(leaderboard.slice(0, 3));
         
-        // Play appropriate sound based on ranking
-        if (playerPosition === 1) {
-            this.playVictorySound();
-        } else if (playerPosition <= 3) {
-            this.playSound(659, 0.5); // Pleasant tone for top 3
-        } else {
-            this.playSound(523, 0.3); // Neutral tone for others
-        }
+        // The fanfare is already played in showFinalResults, so we don't need individual sounds here
+        // This creates a unified game ending experience for all players
         
         this.showScreen('player-final-screen');
     }
@@ -1443,9 +1438,12 @@ class KahootGame {
                 
             case 'multiple-correct':
                 if (questionData.options) {
+                    const labels = questionItem.querySelectorAll(`.multiple-correct-options label`);
                     questionData.options.forEach((option, optIndex) => {
-                        const optionInput = questionItem.querySelector(`.multiple-correct-options .option[data-option="${optIndex}"]`);
-                        if (optionInput) optionInput.value = option;
+                        if (labels[optIndex]) {
+                            const optionInput = labels[optIndex].querySelector('.option');
+                            if (optionInput) optionInput.value = option;
+                        }
                     });
                 }
                 if (questionData.correctAnswers && Array.isArray(questionData.correctAnswers)) {
@@ -1458,7 +1456,9 @@ class KahootGame {
                 
             case 'true-false':
                 if (questionData.correctAnswer !== undefined) {
-                    questionItem.querySelector('.correct-answer').value = questionData.correctAnswer;
+                    // Normalize the value to lowercase to handle case sensitivity
+                    const normalizedAnswer = questionData.correctAnswer.toString().toLowerCase();
+                    questionItem.querySelector('.correct-answer').value = normalizedAnswer;
                 }
                 break;
                 
@@ -1536,6 +1536,49 @@ class KahootGame {
             });
         } catch (e) {
             console.log('Victory sound playback failed:', e);
+        }
+    }
+
+    playGameEndingFanfare() {
+        if (!this.soundsEnabled || !this.audioContext) return;
+        
+        try {
+            // Play an elaborate game ending fanfare (triumph-like melody)
+            const fanfareNotes = [
+                // Opening triumphant notes
+                { freq: 523, time: 0, duration: 0.3 },     // C
+                { freq: 659, time: 0.1, duration: 0.3 },   // E
+                { freq: 784, time: 0.2, duration: 0.3 },   // G
+                { freq: 1047, time: 0.3, duration: 0.4 },  // C (higher)
+                
+                // Rising sequence
+                { freq: 659, time: 0.8, duration: 0.2 },   // E
+                { freq: 784, time: 1.0, duration: 0.2 },   // G
+                { freq: 1047, time: 1.2, duration: 0.2 },  // C
+                { freq: 1319, time: 1.4, duration: 0.4 },  // E (higher)
+                
+                // Grand finale
+                { freq: 1047, time: 2.0, duration: 0.3 },  // C
+                { freq: 1319, time: 2.2, duration: 0.3 },  // E
+                { freq: 1568, time: 2.4, duration: 0.6 },  // G (highest)
+                { freq: 2093, time: 2.8, duration: 0.8 }   // C (very high)
+            ];
+            
+            fanfareNotes.forEach(note => {
+                setTimeout(() => {
+                    this.playSound(note.freq, note.duration, 'triangle');
+                }, note.time * 1000);
+            });
+            
+            // Add some harmonic accompaniment
+            setTimeout(() => {
+                this.playSound(523, 1.5, 'sawtooth'); // Bass C
+                setTimeout(() => this.playSound(659, 1.0, 'sawtooth'), 500); // Bass E
+                setTimeout(() => this.playSound(784, 1.2, 'sawtooth'), 1000); // Bass G
+            }, 1500);
+            
+        } catch (e) {
+            console.log('Game ending fanfare playback failed:', e);
         }
     }
 
