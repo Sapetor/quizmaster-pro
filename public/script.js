@@ -18,6 +18,7 @@ class KahootGame {
         this.loadAutoSave();
         this.checkURLParameters();
         this.initializeSounds();
+        this.mathJaxRenderTimeout = null;
     }
 
     initializeEventListeners() {
@@ -551,9 +552,7 @@ class KahootGame {
                         });
                         
                         // Render LaTeX in answer options
-                        if (window.MathJax && window.MathJax.typesetPromise) {
-                            window.MathJax.typesetPromise();
-                        }
+                        this.renderMathJax();
                     }
                 }
             }
@@ -599,9 +598,7 @@ class KahootGame {
                     });
                     
                     // Render LaTeX in answer options
-                    if (window.MathJax && window.MathJax.typesetPromise) {
-                        window.MathJax.typesetPromise();
-                    }
+                    this.renderMathJax();
                     break;
                     
                 case 'multiple-correct':
@@ -621,9 +618,7 @@ class KahootGame {
                     });
                     
                     // Render LaTeX in answer options
-                    if (window.MathJax && window.MathJax.typesetPromise) {
-                        window.MathJax.typesetPromise();
-                    }
+                    this.renderMathJax();
                     
                     document.getElementById('submit-multiple').disabled = false;
                     break;
@@ -1431,6 +1426,21 @@ class KahootGame {
         } catch (e) {
             console.log('Victory sound playback failed:', e);
         }
+    }
+
+    // Debounced MathJax rendering to improve performance
+    renderMathJax() {
+        if (this.mathJaxRenderTimeout) {
+            clearTimeout(this.mathJaxRenderTimeout);
+        }
+        
+        this.mathJaxRenderTimeout = setTimeout(() => {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise().catch(err => {
+                    console.warn('MathJax rendering failed:', err);
+                });
+            }
+        }, 100); // Small delay to batch multiple updates
     }
 }
 

@@ -13,7 +13,19 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "*",
+    origin: function (origin, callback) {
+      // Allow localhost and local network origins
+      if (!origin || 
+          origin.includes('localhost') || 
+          origin.includes('127.0.0.1') || 
+          origin.includes('192.168.') || 
+          origin.includes('10.') || 
+          origin.includes('172.')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS policy'));
+      }
+    },
     methods: ["GET", "POST"]
   }
 });
@@ -71,7 +83,9 @@ app.post('/api/save-quiz', (req, res) => {
       return res.status(400).json({ error: 'Invalid quiz data' });
     }
     
-    const filename = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${Date.now()}.json`;
+    // Sanitize filename more thoroughly to prevent path traversal
+    const safeTitle = title.replace(/[^a-z0-9\-_]/gi, '_').toLowerCase().substring(0, 50);
+    const filename = `${safeTitle}_${Date.now()}.json`;
     const quizData = {
       title,
       questions,
@@ -564,8 +578,8 @@ io.on('connection', (socket) => {
     const answeredPlayers = Array.from(game.players.values())
       .filter(player => player.answers[game.currentQuestion]).length;
     
-    if (answeredPlayers >= totalPlayers && totalPlayers > 0) {
-      // All players have answered, end question early
+    if (answeredPlayers >= totalPlayers && totalPlayers > 0 && game.gameState === 'question') {
+      // All players have answered, end question early (prevent race condition with state check)
       if (game.questionTimer) {
         clearTimeout(game.questionTimer);
         game.questionTimer = null;
