@@ -308,15 +308,22 @@ class KahootGame {
         }
 
         // Check if questions should be randomized
-        const shouldRandomize = document.getElementById('randomize-questions').checked;
-        if (shouldRandomize) {
+        const shouldRandomizeQuestions = document.getElementById('randomize-questions').checked;
+        if (shouldRandomizeQuestions) {
             questions = this.shuffleArray([...questions]);
+        }
+
+        // Check if answers should be randomized
+        const shouldRandomizeAnswers = document.getElementById('randomize-answers').checked;
+        if (shouldRandomizeAnswers) {
+            questions = this.randomizeAnswers([...questions]);
         }
 
         const quiz = {
             title: title,
             questions: questions,
-            randomized: shouldRandomize
+            randomized: shouldRandomizeQuestions,
+            answersRandomized: shouldRandomizeAnswers
         };
 
         this.socket.emit('host-join', { quiz });
@@ -1137,6 +1144,46 @@ class KahootGame {
         return shuffled;
     }
     
+    randomizeAnswers(questions) {
+        return questions.map(question => {
+            // Only randomize multiple-choice and multiple-correct questions
+            if (question.type === 'multiple-choice' || question.type === 'multiple-correct') {
+                if (!question.options || question.options.length < 2) {
+                    return question; // Skip if not enough options
+                }
+                
+                // Create array of indices and shuffle them
+                const indices = question.options.map((_, index) => index);
+                const shuffledIndices = this.shuffleArray(indices);
+                
+                // Create new options array based on shuffled indices
+                const newOptions = shuffledIndices.map(oldIndex => question.options[oldIndex]);
+                
+                // Update correct answer mapping
+                const newQuestion = { ...question, options: newOptions };
+                
+                if (question.type === 'multiple-choice') {
+                    // Find where the original correct answer ended up
+                    const oldCorrectIndex = question.correctAnswer;
+                    const newCorrectIndex = shuffledIndices.indexOf(oldCorrectIndex);
+                    newQuestion.correctAnswer = newCorrectIndex;
+                } else if (question.type === 'multiple-correct') {
+                    // Map all correct answer indices to their new positions
+                    const oldCorrectAnswers = question.correctAnswers || [];
+                    const newCorrectAnswers = oldCorrectAnswers.map(oldIndex => 
+                        shuffledIndices.indexOf(oldIndex)
+                    ).sort();
+                    newQuestion.correctAnswers = newCorrectAnswers;
+                }
+                
+                return newQuestion;
+            }
+            
+            // Return unchanged for true-false and numeric questions
+            return question;
+        });
+    }
+    
     toggleTheme() {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -1458,7 +1505,16 @@ class KahootGame {
                 if (questionData.correctAnswer !== undefined) {
                     // Normalize the value to lowercase to handle case sensitivity
                     const normalizedAnswer = questionData.correctAnswer.toString().toLowerCase();
-                    questionItem.querySelector('.correct-answer').value = normalizedAnswer;
+                    // Use setTimeout to ensure the dropdown is visible after updateQuestionType
+                    setTimeout(() => {
+                        const dropdown = questionItem.querySelector('.true-false-options .correct-answer');
+                        if (dropdown) {
+                            dropdown.value = normalizedAnswer;
+                            console.log(`Set true-false answer to: ${normalizedAnswer}, dropdown value is now: ${dropdown.value}`);
+                        } else {
+                            console.error('True-false dropdown not found');
+                        }
+                    }, 10);
                 }
                 break;
                 
@@ -1486,32 +1542,47 @@ class KahootGame {
 
     showGameCompleteConfetti() {
         if (window.confetti) {
-            // Create multiple confetti bursts
-            const duration = 3000;
-            const end = Date.now() + duration;
-
+            // Optimized confetti with timed bursts instead of continuous animation
             const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
-
-            (function frame() {
+            
+            // Initial big burst
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: colors
+            });
+            
+            // Side bursts with reduced frequency and particles
+            const burstTimes = [300, 600, 900, 1200, 1500];
+            burstTimes.forEach(time => {
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 30,
+                        angle: 60,
+                        spread: 45,
+                        origin: { x: 0, y: 0.7 },
+                        colors: colors
+                    });
+                    confetti({
+                        particleCount: 30,
+                        angle: 120,
+                        spread: 45,
+                        origin: { x: 1, y: 0.7 },
+                        colors: colors
+                    });
+                }, time);
+            });
+            
+            // Final central burst
+            setTimeout(() => {
                 confetti({
-                    particleCount: 50,
-                    angle: 60,
-                    spread: 55,
-                    origin: { x: 0 },
+                    particleCount: 60,
+                    spread: 60,
+                    origin: { y: 0.5 },
                     colors: colors
                 });
-                confetti({
-                    particleCount: 50,
-                    angle: 120,
-                    spread: 55,
-                    origin: { x: 1 },
-                    colors: colors
-                });
-
-                if (Date.now() < end) {
-                    requestAnimationFrame(frame);
-                }
-            }());
+            }, 2000);
         }
     }
 
