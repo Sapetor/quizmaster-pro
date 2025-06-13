@@ -85,7 +85,7 @@ class KahootGame {
 
     initializeSocketListeners() {
         this.socket.on('connect', () => {
-            console.log('Connected to server:', this.socket.id);
+            console.log('Connected to server:', this.socket.id, 'transport:', this.socket.io.engine.transport.name);
         });
 
         this.socket.on('disconnect', () => {
@@ -94,6 +94,7 @@ class KahootGame {
 
         this.socket.on('connect_error', (error) => {
             console.error('Connection error:', error);
+            alert('Connection failed: ' + error.message);
         });
 
         this.socket.on('game-created', (data) => {
@@ -401,6 +402,8 @@ class KahootGame {
         const pin = document.getElementById('game-pin-input').value.trim();
         const name = document.getElementById('player-name').value.trim();
         
+        console.log('Attempting to join game:', { pin, name, connected: this.socket.connected });
+        
         if (!pin || !name) {
             alert('Please enter both game PIN and your name');
             return;
@@ -413,6 +416,11 @@ class KahootGame {
         
         if (name.length > 20) {
             alert('Name must be 20 characters or less');
+            return;
+        }
+
+        if (!this.socket.connected) {
+            alert('Not connected to server. Please refresh the page.');
             return;
         }
 
