@@ -228,6 +228,24 @@ body {
     background: linear-gradient(45deg, #38a169, #2f855a);
 }
 
+/* Start Game Top Button */
+.start-game-top {
+    margin: 20px 0;
+    text-align: center;
+    padding: 15px;
+    background: var(--card-bg);
+    border-radius: 15px;
+    border: 1px solid var(--border-color);
+}
+
+.btn.large {
+    font-size: 1.3rem;
+    padding: 18px 40px;
+    min-width: 250px;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
 /* Enhanced Question Item Styles */
 .question-item {
     background: var(--card-bg);

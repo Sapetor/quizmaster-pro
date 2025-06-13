@@ -81,6 +81,7 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 - Improved leaderboard styling with podium positions
 - Responsive design optimized for mobile devices
 - Loading states and user feedback throughout interface
+- **Prominent Start Game Button**: Large, easily accessible "🚀 Start Game" button positioned at top of quiz builder for better UX
 
 ## Recent Improvements & Bug Fixes
 
@@ -125,9 +126,11 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 
 ### Game Completion Experience (Enhanced)
 - **Animations**: Golden glow effect with `gameCompleteGlow` keyframe animation
-- **Confetti**: Multi-directional confetti burst using canvas-confetti library
-- **Audio**: Victory melody with timed note sequences
+- **Confetti**: Multi-directional confetti burst using canvas-confetti library for ALL clients
+- **Audio**: Victory melody with timed note sequences for both host and players
 - **Visual Polish**: Enhanced final results styling with gradient backgrounds
+- **Time-Based Scoring**: Points awarded based on answer speed with difficulty multipliers
+- **Player Final Screen**: Dedicated ending screen with personal rank, score, and top players display
 
 ## Critical Bug Fixes Applied
 
