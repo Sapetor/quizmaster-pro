@@ -15,14 +15,17 @@ const io = socketIo(server, {
   cors: {
     origin: function (origin, callback) {
       // Allow localhost and local network origins
+      console.log('CORS check for origin:', origin);
       if (!origin || 
           origin.includes('localhost') || 
           origin.includes('127.0.0.1') || 
           origin.includes('192.168.') || 
           origin.includes('10.') || 
           origin.includes('172.')) {
+        console.log('CORS allowed for origin:', origin);
         callback(null, true);
       } else {
+        console.log('CORS rejected for origin:', origin);
         callback(new Error('Not allowed by CORS policy'));
       }
     },
@@ -477,7 +480,7 @@ function autoAdvanceGame(game, io) {
 }
 
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id, 'from:', socket.handshake.address);
+  console.log('User connected:', socket.id, 'from:', socket.handshake.address, 'origin:', socket.handshake.headers.origin);
 
   socket.on('host-join', (data) => {
     // Check if request is from local machine or local network (but allow all for now due to NAT/proxy issues)
@@ -506,6 +509,15 @@ io.on('connection', (socket) => {
       return;
     }
     
+    // Clean up any existing games for this host
+    const existingGame = Array.from(games.values()).find(g => g.hostId === socket.id);
+    if (existingGame) {
+      console.log(`Cleaning up existing game ${existingGame.pin} for host ${socket.id}`);
+      existingGame.endQuestion();
+      io.to(`game-${existingGame.pin}`).emit('game-ended', { reason: 'Host started new game' });
+      games.delete(existingGame.pin);
+    }
+    
     const game = new Game(socket.id, quiz);
     games.set(game.pin, game);
     
@@ -519,7 +531,14 @@ io.on('connection', (socket) => {
   });
 
   socket.on('player-join', (data) => {
+    console.log('Player join attempt:', { 
+      socketId: socket.id, 
+      ip: socket.handshake.address, 
+      data: data ? { pin: data.pin, name: data.name } : 'null' 
+    });
+    
     if (!data || typeof data !== 'object') {
+      console.log('Player join failed: Invalid request data');
       socket.emit('error', { message: 'Invalid request data' });
       return;
     }
@@ -527,18 +546,22 @@ io.on('connection', (socket) => {
     const { pin, name } = data;
     
     if (!pin || !name || typeof pin !== 'string' || typeof name !== 'string') {
+      console.log('Player join failed: PIN and name validation failed');
       socket.emit('error', { message: 'PIN and name are required' });
       return;
     }
     
     if (name.length > 20 || name.trim().length === 0) {
+      console.log('Player join failed: Name length validation failed');
       socket.emit('error', { message: 'Name must be 1-20 characters' });
       return;
     }
     
+    console.log(`Looking for game with PIN: ${pin}. Available games:`, Array.from(games.keys()));
     const game = games.get(pin);
     
     if (!game) {
+      console.log(`Player join failed: Game not found for PIN ${pin}`);
       socket.emit('error', { message: 'Game not found' });
       return;
     }
