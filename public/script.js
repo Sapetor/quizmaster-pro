@@ -151,7 +151,9 @@ class KahootGame {
         });
 
         this.socket.on('game-end', (data) => {
+            console.log('Received game-end event:', data);
             if (data && data.finalLeaderboard) {
+                console.log('Showing final results for', this.isHost ? 'host' : 'player');
                 this.showFinalResults(data.finalLeaderboard);
             }
         });
@@ -179,6 +181,8 @@ class KahootGame {
     }
 
     showScreen(screenId) {
+        console.log('showScreen called with:', screenId);
+        
         // Clean up any active timers
         if (this.timer) {
             clearInterval(this.timer);
@@ -193,6 +197,9 @@ class KahootGame {
         if (targetScreen) {
             targetScreen.classList.add('active');
             this.currentScreen = screenId;
+            console.log('Successfully switched to screen:', screenId);
+        } else {
+            console.error('Screen not found:', screenId);
         }
     }
 
@@ -868,6 +875,9 @@ class KahootGame {
     }
 
     showPlayerFinalScreen(leaderboard) {
+        console.log('showPlayerFinalScreen called with leaderboard:', leaderboard);
+        console.log('Player socket ID:', this.socket.id);
+        
         // Find player's position in the final leaderboard
         let playerPosition = -1;
         let playerScore = 0;
@@ -880,6 +890,8 @@ class KahootGame {
                 playerScore = player.score;
             }
         });
+        
+        console.log('Player position:', playerPosition, 'Score:', playerScore);
         
         // Update player's final rank display
         const positionElement = document.getElementById('final-position');
@@ -902,9 +914,10 @@ class KahootGame {
         // Show top 3 players
         this.updateFinalLeaderboard(leaderboard.slice(0, 3));
         
-        // The fanfare is already played in showFinalResults, so we don't need individual sounds here
-        // This creates a unified game ending experience for all players
+        // Add confetti celebration for all players
+        this.showGameCompleteConfetti();
         
+        console.log('Attempting to show player-final-screen');
         this.showScreen('player-final-screen');
     }
 
