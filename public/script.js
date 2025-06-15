@@ -177,6 +177,10 @@ class KahootGame {
             alert(data.reason);
             this.newGame();
         });
+
+        this.socket.on('answer-statistics', (data) => {
+            this.updateAnswerStatistics(data);
+        });
     }
 
     showScreen(screenId) {
@@ -522,6 +526,9 @@ class KahootGame {
 
     displayQuestion(data) {
         if (this.isHost) {
+            // Reset answer statistics for new question
+            this.resetAnswerStatistics();
+            
             const questionCounter = document.getElementById('question-counter');
             const currentQuestion = document.getElementById('current-question');
             
@@ -1683,6 +1690,115 @@ class KahootGame {
                 });
             }
         }, 100); // Small delay to batch multiple updates
+    }
+
+    updateAnswerStatistics(data) {
+        if (!this.isHost || !data) return;
+
+        const statisticsContainer = document.getElementById('answer-statistics');
+        if (!statisticsContainer) return;
+
+        // Show statistics container
+        statisticsContainer.style.display = 'block';
+
+        // Update response counts
+        const responsesCount = document.getElementById('responses-count');
+        const totalPlayers = document.getElementById('total-players');
+        
+        if (responsesCount) responsesCount.textContent = data.answeredPlayers || 0;
+        if (totalPlayers) totalPlayers.textContent = data.totalPlayers || 0;
+
+        // Handle different question types
+        if (data.questionType === 'multiple-choice' || data.questionType === 'multiple-correct') {
+            this.showMultipleChoiceStatistics(4);
+            // Update individual answer statistics using answerCounts object
+            for (let i = 0; i < 4; i++) {
+                const count = data.answerCounts[i] || 0;
+                this.updateStatItem(i, count, data.answeredPlayers || 0);
+            }
+        } else if (data.questionType === 'true-false') {
+            this.showTrueFalseStatistics();
+            const trueCount = data.answerCounts['true'] || 0;
+            const falseCount = data.answerCounts['false'] || 0;
+            this.updateStatItem(0, trueCount, data.answeredPlayers || 0);
+            this.updateStatItem(1, falseCount, data.answeredPlayers || 0);
+        } else if (data.questionType === 'numeric') {
+            this.hideAnswerStatistics();
+        }
+    }
+
+    updateStatItem(optionIndex, count, totalResponses) {
+        const statItem = document.querySelector(`.stat-item[data-option="${optionIndex}"]`);
+        if (!statItem) return;
+
+        const statFill = statItem.querySelector('.stat-fill');
+        const statCount = statItem.querySelector('.stat-count');
+
+        if (statCount) statCount.textContent = count || 0;
+
+        if (statFill && totalResponses > 0) {
+            const percentage = Math.round(((count || 0) / totalResponses) * 100);
+            statFill.style.width = `${percentage}%`;
+        } else if (statFill) {
+            statFill.style.width = '0%';
+        }
+    }
+
+    showTrueFalseStatistics() {
+        const statItems = document.querySelectorAll('.stat-item');
+        statItems.forEach((item, index) => {
+            if (index < 2) {
+                item.style.display = 'flex';
+                const label = item.querySelector('.option-label');
+                if (label) {
+                    label.textContent = index === 0 ? 'True' : 'False';
+                }
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    showMultipleChoiceStatistics(optionCount = 4) {
+        const statItems = document.querySelectorAll('.stat-item');
+        statItems.forEach((item, index) => {
+            if (index < optionCount) {
+                item.style.display = 'flex';
+                const label = item.querySelector('.option-label');
+                if (label) {
+                    label.textContent = String.fromCharCode(65 + index); // A, B, C, D
+                }
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    hideAnswerStatistics() {
+        const statisticsContainer = document.getElementById('answer-statistics');
+        if (statisticsContainer) {
+            statisticsContainer.style.display = 'none';
+        }
+    }
+
+    resetAnswerStatistics() {
+        const statItems = document.querySelectorAll('.stat-item');
+        statItems.forEach(item => {
+            const statFill = item.querySelector('.stat-fill');
+            const statCount = item.querySelector('.stat-count');
+            
+            if (statFill) {
+                statFill.style.width = '0%';
+            }
+            if (statCount) {
+                statCount.textContent = '0';
+            }
+        });
+
+        const responsesCount = document.getElementById('responses-count');
+        if (responsesCount) responsesCount.textContent = '0';
+
+        this.hideAnswerStatistics();
     }
 }
 

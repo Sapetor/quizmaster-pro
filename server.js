@@ -370,6 +370,61 @@ class Game {
       .sort((a, b) => b.score - a.score)
       .slice(0, 10);
   }
+
+  getAnswerStatistics() {
+    const question = this.quiz.questions[this.currentQuestion];
+    const stats = {
+      totalPlayers: this.players.size,
+      answeredPlayers: 0,
+      answerCounts: {},
+      questionType: question.type || 'multiple-choice'
+    };
+
+    // Initialize answer counts based on question type
+    if (question.type === 'multiple-choice' || question.type === 'multiple-correct') {
+      question.options.forEach((_, index) => {
+        stats.answerCounts[index] = 0;
+      });
+    } else if (question.type === 'true-false') {
+      stats.answerCounts['true'] = 0;
+      stats.answerCounts['false'] = 0;
+    } else if (question.type === 'numeric') {
+      stats.answerCounts = {}; // For numeric, we'll show distribution
+    }
+
+    // Count actual answers
+    Array.from(this.players.values()).forEach(player => {
+      const playerAnswer = player.answers[this.currentQuestion];
+      if (playerAnswer) {
+        stats.answeredPlayers++;
+        const answer = playerAnswer.answer;
+        
+        if (question.type === 'multiple-choice') {
+          if (stats.answerCounts[answer] !== undefined) {
+            stats.answerCounts[answer]++;
+          }
+        } else if (question.type === 'multiple-correct') {
+          if (Array.isArray(answer)) {
+            answer.forEach(a => {
+              if (stats.answerCounts[a] !== undefined) {
+                stats.answerCounts[a]++;
+              }
+            });
+          }
+        } else if (question.type === 'true-false') {
+          const normalizedAnswer = answer.toString().toLowerCase();
+          if (stats.answerCounts[normalizedAnswer] !== undefined) {
+            stats.answerCounts[normalizedAnswer]++;
+          }
+        } else if (question.type === 'numeric') {
+          // For numeric answers, group by ranges or exact values
+          stats.answerCounts[answer.toString()] = (stats.answerCounts[answer.toString()] || 0) + 1;
+        }
+      }
+    });
+
+    return stats;
+  }
 }
 
 function advanceToNextQuestion(game, io) {
@@ -600,6 +655,10 @@ io.on('connection', (socket) => {
 
     const result = game.submitAnswer(socket.id, answer, type);
     socket.emit('answer-submitted', { answer: answer });
+    
+    // Send real-time answer statistics to host
+    const answerStats = game.getAnswerStatistics();
+    io.to(game.hostId).emit('answer-statistics', answerStats);
     
     // Check if all players have submitted answers
     const totalPlayers = game.players.size;

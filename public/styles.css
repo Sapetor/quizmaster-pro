@@ -1327,3 +1327,120 @@ header p {
         font-size: 1rem;
     }
 }
+
+/* Real-time Answer Statistics */
+.answer-stats {
+    background: rgba(0,0,0,0.1);
+    border-radius: 15px;
+    padding: 20px;
+    margin-top: 30px;
+    backdrop-filter: blur(10px);
+}
+
+.answer-stats h3 {
+    text-align: center;
+    color: white;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
+.stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+}
+
+.option-label {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: white;
+    min-width: 30px;
+    text-align: center;
+    padding: 8px;
+    border-radius: 50%;
+}
+
+.stat-item[data-option="0"] .option-label { background-color: #e74c3c; }
+.stat-item[data-option="1"] .option-label { background-color: #3498db; }
+.stat-item[data-option="2"] .option-label { background-color: #f39c12; }
+.stat-item[data-option="3"] .option-label { background-color: #2ecc71; }
+
+.stat-bar {
+    flex: 1;
+    height: 20px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.stat-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00d4ff, #0099cc);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+    box-shadow: 0 2px 10px rgba(0,212,255,0.3);
+}
+
+.stat-item[data-option="0"] .stat-fill { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+.stat-item[data-option="1"] .stat-fill { background: linear-gradient(90deg, #3498db, #2980b9); }
+.stat-item[data-option="2"] .stat-fill { background: linear-gradient(90deg, #f39c12, #e67e22); }
+.stat-item[data-option="3"] .stat-fill { background: linear-gradient(90deg, #2ecc71, #27ae60); }
+
+.stat-count {
+    font-weight: bold;
+    color: white;
+    font-size: 1.1rem;
+    min-width: 30px;
+    text-align: center;
+}
+
+.response-summary {
+    text-align: center;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: bold;
+    padding: 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+    .answer-stats {
+        padding: 15px;
+        margin-top: 20px;
+    }
+    
+    .stats-grid {
+        gap: 10px;
+    }
+    
+    .stat-item {
+        gap: 10px;
+        padding: 8px;
+    }
+    
+    .option-label {
+        font-size: 1rem;
+        min-width: 25px;
+        padding: 6px;
+    }
+    
+    .stat-bar {
+        height: 15px;
+    }
+    
+    .answer-stats h3 {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+    }
+}
