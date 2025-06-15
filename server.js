@@ -262,7 +262,6 @@ class Game {
     if (this.isAdvancing) return false;
     this.isAdvancing = true;
     this.currentQuestion++;
-    this.questionStartTime = Date.now();
     this.gameState = 'question';
     this.questionTimer = null;
     this.advanceTimer = null;
@@ -338,7 +337,10 @@ class Game {
         break;
     }
 
-    const timeBonus = Math.max(0, 1000 - (Date.now() - this.questionStartTime));
+    const timeTaken = Date.now() - this.questionStartTime;
+    // Extended time bonus window to 10 seconds (10000ms) for more noticeable scoring differences
+    const maxBonusTime = 10000;
+    const timeBonus = Math.max(0, maxBonusTime - timeTaken);
     const difficultyMultiplier = {
       'easy': 1,
       'medium': 2,
@@ -346,7 +348,11 @@ class Game {
     }[question.difficulty] || 2;
     
     const basePoints = 100 * difficultyMultiplier;
-    const points = isCorrect ? Math.floor(basePoints + (timeBonus * difficultyMultiplier / 2)) : 0;
+    // Scale time bonus more significantly 
+    const scaledTimeBonus = Math.floor(timeBonus * difficultyMultiplier / 10);
+    const points = isCorrect ? basePoints + scaledTimeBonus : 0;
+    
+    console.log(`Scoring Debug - Player: ${this.players.get(playerId)?.name || playerId}, Time: ${timeTaken}ms, TimeBonus: ${timeBonus}, ScaledBonus: ${scaledTimeBonus}, BasePoints: ${basePoints}, FinalPoints: ${points}`);
 
     player.answers[this.currentQuestion] = {
       answer,
