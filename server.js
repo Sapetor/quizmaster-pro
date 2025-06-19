@@ -510,6 +510,10 @@ function startQuestion(game, io) {
       questionType: question.type || 'multiple-choice'
     });
 
+    // Send answer statistics to host after question ends
+    const answerStats = game.getAnswerStatistics();
+    io.to(game.hostId).emit('answer-statistics', answerStats);
+
     // Send individual results to each player
     game.players.forEach((player, playerId) => {
       const playerAnswer = player.answers[game.currentQuestion];
@@ -656,10 +660,6 @@ io.on('connection', (socket) => {
     const result = game.submitAnswer(socket.id, answer, type);
     socket.emit('answer-submitted', { answer: answer });
     
-    // Send real-time answer statistics to host
-    const answerStats = game.getAnswerStatistics();
-    io.to(game.hostId).emit('answer-statistics', answerStats);
-    
     // Check if all players have submitted answers
     const totalPlayers = game.players.size;
     const answeredPlayers = Array.from(game.players.values())
@@ -700,6 +700,10 @@ io.on('connection', (socket) => {
             questionType: question.type || 'multiple-choice',
             earlyEnd: true
           });
+
+          // Send answer statistics to host after question ends
+          const answerStats = game.getAnswerStatistics();
+          io.to(game.hostId).emit('answer-statistics', answerStats);
 
           // Send individual results to each player
           game.players.forEach((player, playerId) => {

@@ -526,8 +526,8 @@ class KahootGame {
 
     displayQuestion(data) {
         if (this.isHost) {
-            // Reset answer statistics for new question
-            this.resetAnswerStatistics();
+            // Hide answer statistics during question
+            this.hideAnswerStatistics();
             
             const questionCounter = document.getElementById('question-counter');
             const currentQuestion = document.getElementById('current-question');
@@ -1697,6 +1697,9 @@ class KahootGame {
 
         const statisticsContainer = document.getElementById('answer-statistics');
         if (!statisticsContainer) return;
+
+        // Reset statistics first to ensure clean display
+        this.resetAnswerStatistics();
 
         // Show statistics container
         statisticsContainer.style.display = 'block';
