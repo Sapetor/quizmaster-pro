@@ -31,7 +31,7 @@ body {
     background: var(--bg-primary);
     min-height: 100vh;
     color: var(--text-primary);
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
 }
 
 /* Modal Styles */
@@ -105,7 +105,7 @@ body {
     padding: 15px;
     margin-bottom: 10px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
 }
 
 .quiz-item:hover {
@@ -185,7 +185,7 @@ body {
     color: var(--text-primary) !important;
     font-weight: 500;
     border: 2px solid var(--border-color);
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
 }
 
 .question-difficulty:hover {
@@ -203,7 +203,8 @@ body {
 .btn {
     position: relative;
     overflow: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
+    touch-action: manipulation; /* Improve touch responsiveness */
 }
 
 .btn:hover {
@@ -251,7 +252,7 @@ body {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
     padding: 20px;
     margin: 20px 0;
     border-radius: 15px;
@@ -276,7 +277,7 @@ body {
 .timer {
     background: linear-gradient(45deg, #48bb78, #38a169);
     box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
     font-size: 2rem;
     padding: 15px 25px;
     border-radius: 50px;
@@ -311,7 +312,7 @@ body {
 /* Enhanced Player Options */
 .player-option {
     background: linear-gradient(135deg, #667eea, #764ba2);
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
     border: 2px solid transparent;
     padding: 20px;
     margin: 10px 0;
@@ -624,7 +625,7 @@ body {
 .leaderboard-item {
     background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
     backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
 }
 
 .leaderboard-item:hover {
@@ -675,7 +676,7 @@ header {
     border-radius: 50px;
     cursor: pointer;
     font-size: 1.2rem;
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
 }
 
 .theme-toggle:hover {
@@ -721,7 +722,7 @@ header p {
     border: none;
     border-radius: 25px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
     font-weight: bold;
     min-width: 200px;
 }
@@ -930,7 +931,7 @@ header p {
     font-size: 1.2rem;
     font-weight: bold;
     border: 3px solid transparent;
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
 }
 
 .option-display:nth-child(1) { background-color: #e74c3c; }
@@ -953,8 +954,9 @@ header p {
     border: none;
     border-radius: 15px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
     color: white;
+    touch-action: manipulation; /* Improve touch responsiveness */
 }
 
 .player-option:nth-child(1) { background-color: #e74c3c; }
@@ -1210,7 +1212,7 @@ header p {
     cursor: pointer;
     font-size: 1.2rem;
     font-weight: bold;
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
 }
 
 .checkbox-option:hover {
@@ -1237,8 +1239,9 @@ header p {
     border: none;
     border-radius: 15px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.1s ease;
     color: white;
+    touch-action: manipulation; /* Improve touch responsiveness */
 }
 
 .tf-option:nth-child(1) { background-color: #2ecc71; }

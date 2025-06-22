@@ -980,6 +980,14 @@ class KahootGame {
     }
 
     submitMultipleCorrectAnswer() {
+        const submitBtn = document.getElementById('submit-multiple');
+        
+        // Immediately disable button and provide visual feedback
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+        }
+        
         const checkboxes = document.querySelectorAll('#player-multiple-correct .option-checkbox:checked');
         const answers = Array.from(checkboxes).map(cb => {
             const closest = cb.closest('.checkbox-option');
@@ -987,20 +995,28 @@ class KahootGame {
         }).filter(option => option !== null);
         
         this.socket.emit('submit-answer', { answer: answers, type: 'multiple-correct' });
-        
-        const submitBtn = document.getElementById('submit-multiple');
-        if (submitBtn) submitBtn.disabled = true;
     }
 
     submitNumericAnswer() {
-        const answer = parseFloat(document.getElementById('numeric-answer-input').value);
+        const submitBtn = document.getElementById('submit-numeric');
+        const input = document.getElementById('numeric-answer-input');
+        
+        const answer = parseFloat(input.value);
         if (isNaN(answer)) {
             alert('Please enter a valid number');
             return;
         }
+        
+        // Immediately disable controls and provide visual feedback
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+        }
+        if (input) {
+            input.disabled = true;
+        }
+        
         this.socket.emit('submit-answer', { answer: answer, type: 'numeric' });
-        document.getElementById('submit-numeric').disabled = true;
-        document.getElementById('numeric-answer-input').disabled = true;
     }
 
     showPlayerResult(data) {
@@ -1695,11 +1711,14 @@ class KahootGame {
         
         this.mathJaxRenderTimeout = setTimeout(() => {
             if (window.MathJax && window.MathJax.typesetPromise) {
-                window.MathJax.typesetPromise().catch(err => {
-                    console.warn('MathJax rendering failed:', err);
+                // Use requestAnimationFrame to avoid blocking UI interactions
+                requestAnimationFrame(() => {
+                    window.MathJax.typesetPromise().catch(err => {
+                        console.warn('MathJax rendering failed:', err);
+                    });
                 });
             }
-        }, 100); // Small delay to batch multiple updates
+        }, 50); // Reduced delay for faster rendering
     }
 
     updateAnswerStatistics(data) {
