@@ -189,10 +189,33 @@ app.get('/api/qr/:pin', async (req, res) => {
       return res.status(404).json({ error: 'Game not found' });
     }
     
-    const networkInterfaces = os.networkInterfaces();
-    const localIP = Object.values(networkInterfaces)
-      .flat()
-      .find(iface => iface.family === 'IPv4' && !iface.internal)?.address || 'localhost';
+    // Use the same IP detection logic as server startup
+    let localIP = 'localhost';
+    const NETWORK_IP = process.env.NETWORK_IP;
+    
+    if (NETWORK_IP) {
+      localIP = NETWORK_IP;
+    } else {
+      const networkInterfaces = os.networkInterfaces();
+      const interfaces = Object.values(networkInterfaces).flat();
+      
+      // Prefer 192.168.x.x (typical home network) over 172.x.x.x (WSL internal)
+      localIP = interfaces.find(iface => 
+        iface.family === 'IPv4' && 
+        !iface.internal && 
+        iface.address.startsWith('192.168.')
+      )?.address ||
+      interfaces.find(iface => 
+        iface.family === 'IPv4' && 
+        !iface.internal && 
+        iface.address.startsWith('10.')
+      )?.address ||
+      interfaces.find(iface => 
+        iface.family === 'IPv4' && 
+        !iface.internal
+      )?.address || 'localhost';
+    }
+    
     const port = process.env.PORT || 3000;
     const gameUrl = `http://${localIP}:${port}?pin=${pin}`;
     
@@ -440,28 +463,34 @@ function advanceToNextQuestion(game, io) {
         startQuestion(game, io);
       } else {
         // No more questions - end the game
-        game.gameState = 'finished';
-        game.endTime = new Date().toISOString();
-        game.updateLeaderboard();
-        game.saveResults();
-        io.to(`game-${game.pin}`).emit('game-end', {
-          finalLeaderboard: game.leaderboard
-        });
+        endGame(game, io);
       }
     }, 3000);
   }, 3000);
 }
 
-function startQuestion(game, io) {
-  if (game.currentQuestion >= game.quiz.questions.length) {
-    // Game finished
-    game.gameState = 'finished';
-    game.endTime = new Date().toISOString();
-    game.updateLeaderboard();
-    game.saveResults();
+function endGame(game, io) {
+  // Prevent multiple game endings
+  if (game.gameState === 'finished') return;
+  
+  console.log(`Ending game ${game.pin}`);
+  game.gameState = 'finished';
+  game.endTime = new Date().toISOString();
+  game.updateLeaderboard();
+  game.saveResults();
+  
+  // Add slight delay to ensure all previous events are processed
+  setTimeout(() => {
     io.to(`game-${game.pin}`).emit('game-end', {
       finalLeaderboard: game.leaderboard
     });
+  }, 500);
+}
+
+function startQuestion(game, io) {
+  if (game.currentQuestion >= game.quiz.questions.length) {
+    // Game finished
+    endGame(game, io);
     return;
   }
 
@@ -777,12 +806,49 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
+const NETWORK_IP = process.env.NETWORK_IP; // Allow manual IP override
+
 server.listen(PORT, '0.0.0.0', () => {
-  const networkInterfaces = os.networkInterfaces();
-  const localIP = Object.values(networkInterfaces)
-    .flat()
-    .find(iface => iface.family === 'IPv4' && !iface.internal)?.address || 'localhost';
+  let localIP = 'localhost';
+  
+  if (NETWORK_IP) {
+    // Use manually specified IP
+    localIP = NETWORK_IP;
+    console.log(`Using manual IP: ${localIP}`);
+  } else {
+    // Try to detect network IP, preferring 192.168.x.x for local networks
+    const networkInterfaces = os.networkInterfaces();
+    const interfaces = Object.values(networkInterfaces).flat();
+    
+    // Prefer 192.168.x.x (typical home network) over 172.x.x.x (WSL internal)
+    localIP = interfaces.find(iface => 
+      iface.family === 'IPv4' && 
+      !iface.internal && 
+      iface.address.startsWith('192.168.')
+    )?.address ||
+    interfaces.find(iface => 
+      iface.family === 'IPv4' && 
+      !iface.internal && 
+      iface.address.startsWith('10.')
+    )?.address ||
+    interfaces.find(iface => 
+      iface.family === 'IPv4' && 
+      !iface.internal
+    )?.address || 'localhost';
+  }
+  
   console.log(`Network access: http://${localIP}:${PORT}`);
   console.log(`Local access: http://localhost:${PORT}`);
   console.log(`Server running on port ${PORT}`);
+  
+  // WSL specific instructions
+  if (localIP.startsWith('172.')) {
+    console.log('');
+    console.log('🔧 WSL DETECTED: If you can\'t connect from your phone:');
+    console.log('1. Find your Windows IP: run "ipconfig" in Windows Command Prompt');
+    console.log('2. Look for "Wireless LAN adapter Wi-Fi" or "Ethernet adapter"');
+    console.log('3. Use that IP address instead of the one shown above');
+    console.log('4. Or restart with: NETWORK_IP=your.windows.ip npm start');
+    console.log('');
+  }
 });

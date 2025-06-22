@@ -152,18 +152,8 @@ class KahootGame {
         });
 
         this.socket.on('game-end', (data) => {
-            console.log('Game ending received', data);
-            // Clear any pending timers to prevent conflicts
-            if (this.timer) {
-                clearInterval(this.timer);
-                this.timer = null;
-            }
-            
             if (data && data.finalLeaderboard) {
-                // Add small delay to ensure all previous UI updates are complete
-                setTimeout(() => {
-                    this.showFinalResults(data.finalLeaderboard);
-                }, 200);
+                this.showFinalResults(data.finalLeaderboard);
             }
         });
 
@@ -536,8 +526,8 @@ class KahootGame {
 
     displayQuestion(data) {
         if (this.isHost) {
-            // Hide answer statistics during question
-            this.hideAnswerStatistics();
+            // Reset answer statistics for new question
+            this.resetAnswerStatistics();
             
             const questionCounter = document.getElementById('question-counter');
             const currentQuestion = document.getElementById('current-question');
@@ -1708,9 +1698,6 @@ class KahootGame {
         const statisticsContainer = document.getElementById('answer-statistics');
         if (!statisticsContainer) return;
 
-        // Reset statistics first to ensure clean display
-        this.resetAnswerStatistics();
-
         // Show statistics container
         statisticsContainer.style.display = 'block';
 
@@ -1866,6 +1853,136 @@ async function uploadImage(input) {
         console.error('Error uploading image:', error);
         alert('Failed to upload image');
     }
+}
+
+    // Real-time Answer Statistics Functions
+    updateAnswerStatistics(data) {
+    // Only show statistics to hosts
+    if (this.currentScreen !== 'host-game-screen') return;
+    
+    const statsContainer = document.getElementById('answer-statistics');
+    const responsesCount = document.getElementById('responses-count');
+    const totalPlayers = document.getElementById('total-players');
+    
+    if (!statsContainer || !responsesCount || !totalPlayers) return;
+    
+    // Show statistics container
+    statsContainer.style.display = 'block';
+    
+    // Update response summary
+    responsesCount.textContent = data.answeredPlayers || 0;
+    totalPlayers.textContent = data.totalPlayers || 0;
+    
+    // Handle different question types
+    switch (data.questionType) {
+        case 'multiple-choice':
+            this.showMultipleChoiceStatistics(4);
+            this.updateMultipleChoiceStats(data.answerCounts, data.answeredPlayers);
+            break;
+        case 'multiple-correct':
+            this.showMultipleChoiceStatistics(4);
+            this.updateMultipleChoiceStats(data.answerCounts, data.answeredPlayers);
+            break;
+        case 'true-false':
+            this.showTrueFalseStatistics();
+            this.updateTrueFalseStats(data.answerCounts, data.answeredPlayers);
+            break;
+        case 'numeric':
+            this.hideAnswerStatistics();
+            break;
+    }
+}
+
+    updateMultipleChoiceStats(answerCounts, totalResponses) {
+    for (let i = 0; i < 4; i++) {
+        const count = answerCounts[i] || 0;
+        this.updateStatItem(i, count, totalResponses);
+    }
+}
+
+    updateTrueFalseStats(answerCounts, totalResponses) {
+    const trueCount = answerCounts['true'] || 0;
+    const falseCount = answerCounts['false'] || 0;
+    
+    this.updateStatItem(0, trueCount, totalResponses);
+    this.updateStatItem(1, falseCount, totalResponses);
+}
+
+updateStatItem(optionIndex, count, totalResponses) {
+    const statItem = document.querySelector(`.stat-item[data-option="${optionIndex}"]`);
+    if (!statItem) return;
+    
+    const statCount = statItem.querySelector('.stat-count');
+    const statFill = statItem.querySelector('.stat-fill');
+    
+    if (statCount) {
+        statCount.textContent = count;
+    }
+    
+    if (statFill && totalResponses > 0) {
+        const percentage = (count / totalResponses) * 100;
+        statFill.style.width = `${percentage}%`;
+    } else if (statFill) {
+        statFill.style.width = '0%';
+    }
+}
+
+showTrueFalseStatistics() {
+    const statItems = document.querySelectorAll('.stat-item');
+    statItems.forEach((item, index) => {
+        if (index < 2) {
+            item.style.display = 'flex';
+            const label = item.querySelector('.option-label');
+            if (label) {
+                label.textContent = index === 0 ? 'T' : 'F';
+            }
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+showMultipleChoiceStatistics(optionCount = 4) {
+    const statItems = document.querySelectorAll('.stat-item');
+    const letters = ['A', 'B', 'C', 'D'];
+    
+    statItems.forEach((item, index) => {
+        if (index < optionCount) {
+            item.style.display = 'flex';
+            const label = item.querySelector('.option-label');
+            if (label && letters[index]) {
+                label.textContent = letters[index];
+            }
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+hideAnswerStatistics() {
+    const statsContainer = document.getElementById('answer-statistics');
+    if (statsContainer) {
+        statsContainer.style.display = 'none';
+    }
+}
+
+resetAnswerStatistics() {
+    const statItems = document.querySelectorAll('.stat-item');
+    statItems.forEach(item => {
+        const statCount = item.querySelector('.stat-count');
+        const statFill = item.querySelector('.stat-fill');
+        
+        if (statCount) statCount.textContent = '0';
+        if (statFill) statFill.style.width = '0%';
+    });
+    
+    const responsesCount = document.getElementById('responses-count');
+    const totalPlayers = document.getElementById('total-players');
+    
+    if (responsesCount) responsesCount.textContent = '0';
+    if (totalPlayers) totalPlayers.textContent = '0';
+    
+    this.hideAnswerStatistics();
 }
 
 function removeImage(button) {

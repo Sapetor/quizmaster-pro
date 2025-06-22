@@ -1295,6 +1295,10 @@ header p {
 @media (max-width: 768px) {
     .container {
         padding: 10px;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
     }
     
     header h1 {
@@ -1308,10 +1312,28 @@ header p {
     
     .options-grid, .player-options {
         grid-template-columns: 1fr;
+        gap: 15px;
+        margin: 20px auto;
+        max-width: 320px;
+    }
+    
+    .player-option {
+        padding: 20px;
+        font-size: 1.2rem;
+        min-height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
     
     .true-false-options {
         grid-template-columns: 1fr;
+        gap: 15px;
+        margin: 20px auto;
+        max-width: 320px;
     }
     
     .menu-options {
@@ -1325,6 +1347,27 @@ header p {
     
     .options-checkboxes label {
         font-size: 1rem;
+    }
+    
+    /* Ensure all content is scrollable on mobile */
+    .screen {
+        flex: 1;
+        overflow-y: auto;
+        padding-bottom: 20px;
+    }
+    
+    /* Fix LaTeX content in mobile buttons */
+    .player-option .MathJax {
+        max-width: 100%;
+        overflow-x: auto;
+        font-size: 0.9em;
+    }
+    
+    /* Ensure question images don't break layout */
+    .question-image-container img {
+        max-width: 100%;
+        height: auto;
+        max-height: 200px;
     }
 }
 

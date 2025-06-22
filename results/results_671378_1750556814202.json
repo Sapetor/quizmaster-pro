@@ -1,0 +1,44 @@
+{
+  "quizTitle": "Advanced Quiz - LaTeX & Images Demo",
+  "gamePin": "671378",
+  "results": [
+    {
+      "name": "Ss",
+      "score": 4543,
+      "answers": [
+        {
+          "answer": 1,
+          "isCorrect": true,
+          "points": 1377,
+          "timeMs": 4116
+        },
+        {
+          "answer": [
+            1,
+            3
+          ],
+          "isCorrect": true,
+          "points": 1030,
+          "timeMs": 5849
+        },
+        null,
+        null,
+        null,
+        {
+          "answer": 1,
+          "isCorrect": true,
+          "points": 200,
+          "timeMs": 11060
+        },
+        {
+          "answer": "true",
+          "isCorrect": true,
+          "points": 1936,
+          "timeMs": 1317
+        }
+      ]
+    }
+  ],
+  "startTime": "2025-06-22T01:44:42.831Z",
+  "endTime": "2025-06-22T01:46:54.201Z"
+}
