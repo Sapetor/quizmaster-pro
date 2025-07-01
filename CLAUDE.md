@@ -82,6 +82,7 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 - Responsive design optimized for mobile devices
 - Loading states and user feedback throughout interface
 - **Prominent Start Game Button**: Large, easily accessible "🚀 Start Game" button positioned at top of quiz builder for better UX
+- **Real-Time Split-Screen Preview**: Live preview system allowing simultaneous editing and preview of questions
 
 ## Recent Improvements & Bug Fixes
 
@@ -159,6 +160,20 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 **Cause**: MathJax elements capturing pointer events
 **Solution**: Added CSS `pointer-events: none` for all MathJax elements
 
+### Real-Time Preview System (NEW FEATURE)
+- **Split-Screen Design**: Editor (50%) and live preview (50%) with optimal width utilization
+- **Real-Time Updates**: Debounced preview updates (300ms) as user types questions and answers
+- **Simultaneous Editing**: No overlay blocking - edit and preview simultaneously
+- **Navigation**: Previous/Next buttons to browse through questions while editing
+- **Device Simulation**: Desktop/Mobile viewport toggle in preview
+- **Game-Accurate Styling**: Preview matches actual player experience with proper button styling
+- **LaTeX Support**: Live MathJax rendering in preview
+- **Responsive Design**: Stacks vertically on screens < 1200px width
+- **Toggle Control**: "📱 Toggle Live Preview" button with danger styling when active
+- **Event Management**: Proper listener cleanup to prevent memory leaks
+- **CSS Grid Layout**: Proper two-column layout with quiz-editor-section and quiz-preview-section as siblings
+- **Styling Integration**: All preview elements styled with both modal and split-screen selectors
+
 ## Git & Deployment
 
 ### Repository Configuration
@@ -179,6 +194,11 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 2. **Mobile Layout Issues**: Focus on flexbox layouts and viewport height management
 3. **Timer Conflicts**: Ensure proper cleanup of `questionTimer` and `advanceTimer`
 4. **LaTeX Rendering**: Always call `MathJax.typesetPromise()` after content updates
+5. **Preview Not Updating**: Check if `initializeSplitPreview()` is called and real-time listeners are properly set up
+6. **Split-Screen Layout Issues**: Ensure `.host-container.split-screen` CSS grid is properly applied
+7. **Preview Button States**: Verify danger/secondary class toggling in `togglePreviewMode()` function
+8. **Preview Appearing in Wrong Column**: Ensure quiz-preview-section is a sibling of quiz-editor-section, not nested inside it
+9. **Preview Styling Missing**: Verify CSS selectors include both `.preview-content` and `.preview-content-split` versions
 
 ### Code Quality Guidelines
 - **State Management**: Use Game class methods consistently for game state changes
@@ -195,3 +215,8 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 - [ ] Sound effects play appropriately
 - [ ] Game completion animation and confetti work
 - [ ] Timer stops when all players answer
+- [ ] Real-time preview updates as questions are typed
+- [ ] Split-screen preview toggle works correctly
+- [ ] Preview navigation (Previous/Next) functions properly
+- [ ] Device simulation (Desktop/Mobile) works in preview
+- [ ] LaTeX renders correctly in live preview

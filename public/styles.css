@@ -162,6 +162,525 @@ body {
     gap: 10px;
     color: var(--text-primary);
     cursor: pointer;
+    margin-bottom: 10px;
+}
+
+/* Time settings styling */
+.time-settings {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.time-settings label {
+    margin-bottom: 10px;
+}
+
+.time-input {
+    background: var(--modal-bg);
+    color: var(--modal-text);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 8px 12px;
+    width: 80px;
+    margin-left: 10px;
+}
+
+.time-limit-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-limit-container label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.question-time-limit {
+    background: var(--modal-bg);
+    color: var(--modal-text);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 6px 8px;
+    width: 60px;
+    font-size: 0.9rem;
+}
+
+#global-time-container {
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 5px;
+}
+
+#global-time-container label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Preview Mode Styling */
+.preview-settings {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+/* Split Screen Layout */
+.host-container.split-screen {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: none;
+    width: 100%;
+    height: calc(100vh - 120px);
+    overflow: hidden;
+}
+
+.quiz-editor-section {
+    overflow-y: auto;
+    padding-right: 15px;
+}
+
+.quiz-preview-section {
+    background: rgba(255,255,255,0.05);
+    border-radius: 15px;
+    border: 1px solid var(--border-color);
+    padding: 20px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.preview-header h3 {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.preview-viewport-split {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #f5f5f5;
+    border-radius: 10px;
+    position: relative;
+}
+
+.preview-content-split {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    padding: 30px;
+    overflow-y: auto;
+    color: white;
+    position: relative;
+}
+
+.mobile-viewport .preview-content-split {
+    max-width: 375px;
+    border-radius: 25px;
+    border: 3px solid #333;
+    margin: 0 auto;
+}
+
+/* Responsive adjustments for split screen */
+@media (max-width: 1200px) {
+    .host-container.split-screen {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+    
+    .quiz-preview-section {
+        order: -1;
+        max-height: 400px;
+    }
+}
+
+/* Preview Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+}
+
+.preview-modal {
+    background: var(--modal-bg);
+    border-radius: 20px;
+    width: 95%;
+    max-width: 1200px;
+    height: 90%;
+    max-height: 800px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Preview Modal Header */
+.preview-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    border-bottom: 2px solid var(--border-color);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.preview-title-section {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.preview-title-section h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.preview-device-toggle {
+    display: flex;
+    gap: 10px;
+}
+
+.device-btn {
+    background: rgba(255,255,255,0.2);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.device-btn:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+}
+
+.device-btn.active {
+    background: rgba(255,255,255,0.9);
+    color: #667eea;
+    border-color: rgba(255,255,255,0.9);
+    font-weight: bold;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    background: rgba(255,255,255,0.2);
+    transform: scale(1.1);
+}
+
+/* Preview Navigation Bar */
+.preview-navigation-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    padding: 15px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.nav-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.nav-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+#preview-question-counter {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    padding: 10px 20px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 15px;
+    border: 1px solid var(--border-color);
+}
+
+/* Preview Viewport */
+.preview-viewport {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #f5f5f5;
+    position: relative;
+}
+
+.desktop-viewport {
+    padding: 40px;
+}
+
+.mobile-viewport {
+    padding: 20px;
+}
+
+/* Preview Content */
+.preview-content {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    padding: 40px;
+    overflow-y: auto;
+    color: white;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.mobile-viewport .preview-content {
+    max-width: 375px;
+    border-radius: 25px;
+    border: 3px solid #333;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    margin: 0 auto;
+}
+
+.preview-content .player-question-area,
+.preview-content-split .player-question-area {
+    background: rgba(255,255,255,0.1);
+    border-radius: 15px;
+    padding: 30px;
+    margin-bottom: 30px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+#preview-question-counter-display,
+#preview-question-counter-display-split {
+    text-align: center;
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+#preview-question-text,
+#preview-question-text-split {
+    font-size: 1.5rem;
+    line-height: 1.5;
+    margin: 20px 0;
+    text-align: center;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#preview-question-image,
+#preview-question-image-split {
+    text-align: center;
+    margin: 25px 0;
+}
+
+#preview-question-img,
+#preview-question-img-split {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+
+/* Preview Answer Types */
+.preview-answer-type {
+    margin-top: 30px;
+}
+
+.preview-option, .preview-checkbox, .preview-tf {
+    pointer-events: none;
+    opacity: 0.95;
+}
+
+.preview-content .player-options,
+.preview-content-split .player-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.mobile-viewport .preview-content .player-options,
+.mobile-viewport .preview-content-split .player-options {
+    max-width: 300px;
+    gap: 12px;
+}
+
+.preview-content .true-false-options,
+.preview-content-split .true-false-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.mobile-viewport .preview-content .true-false-options,
+.mobile-viewport .preview-content-split .true-false-options {
+    grid-template-columns: 1fr;
+    max-width: 300px;
+    gap: 15px;
+}
+
+.preview-content .numeric-input-container,
+.preview-content-split .numeric-input-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.preview-content #preview-numeric-input,
+.preview-content-split #preview-numeric-input-split {
+    width: 100%;
+    padding: 18px;
+    font-size: 1.3rem;
+    border: none;
+    border-radius: 15px;
+    background: rgba(255,255,255,0.9);
+    color: #333;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.preview-content .player-checkbox-options,
+.preview-content-split .player-checkbox-options {
+    display: grid;
+    gap: 15px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .preview-modal {
+        width: 98%;
+        height: 95%;
+        border-radius: 15px;
+    }
+    
+    .preview-modal-header {
+        padding: 15px 20px;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .preview-title-section {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .preview-title-section h2 {
+        font-size: 1.5rem;
+    }
+    
+    .preview-navigation-bar {
+        padding: 10px;
+        gap: 15px;
+    }
+    
+    .nav-btn {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+    }
+    
+    #preview-question-counter {
+        font-size: 1rem;
+        padding: 8px 15px;
+    }
+    
+    .desktop-viewport, .mobile-viewport {
+        padding: 15px;
+    }
+    
+    .preview-content {
+        padding: 20px;
+    }
+    
+    #preview-question-text {
+        font-size: 1.2rem;
+    }
 }
 
 .question-meta {
@@ -169,6 +688,7 @@ body {
     gap: 15px;
     margin-bottom: 15px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .question-meta select {
@@ -227,6 +747,15 @@ body {
 
 .btn.secondary:hover {
     background: linear-gradient(45deg, #38a169, #2f855a);
+}
+
+.btn.danger {
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+.btn.danger:hover {
+    background: linear-gradient(45deg, #c0392b, #a93226);
 }
 
 /* Start Game Top Button */
@@ -326,7 +855,10 @@ body {
     justify-content: center;
     text-align: center;
     word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    line-height: 1.4;
 }
 
 .player-option:hover {
@@ -342,18 +874,235 @@ body {
     transform: scale(1.02);
 }
 
-/* Ensure MathJax elements don't interfere with button clicks */
+/* Ensure MathJax elements don't interfere with button clicks while preserving rendering */
 .player-option .MathJax,
 .player-option .mjx-container,
-.player-option .mjx-math,
-.player-option .mjx-mtext,
-.player-option .mjx-tex,
 .tf-option .MathJax,
 .tf-option .mjx-container,
-.tf-option .mjx-math,
-.tf-option .mjx-mtext,
-.tf-option .mjx-tex {
+.checkbox-option .MathJax,
+.checkbox-option .mjx-container,
+.option-display .MathJax,
+.option-display .mjx-container {
     pointer-events: none;
+    user-select: none;
+    display: inline !important;
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure proper MathJax rendering context */
+.MathJax_Display {
+    display: block !important;
+    text-align: center;
+    margin: 1em 0;
+}
+
+.mjx-container[jax="CHTML"] {
+    line-height: 1.2;
+    text-indent: 0;
+    text-align: left;
+    text-transform: none;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 100%;
+    font-size-adjust: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    word-spacing: normal;
+    white-space: nowrap;
+    float: none;
+    direction: ltr;
+    max-width: 100%;
+    max-height: none;
+    min-width: 0;
+    min-height: 0;
+    border: 0;
+    padding: 2px;
+    margin: 0 2px;
+    display: inline-block !important;
+    vertical-align: middle;
+}
+
+/* Specific LaTeX styling for different contexts */
+#current-question .mjx-container,
+#player-question-text .mjx-container {
+    font-size: 1.1em;
+    margin: 0 4px;
+}
+
+.player-option .mjx-container,
+.tf-option .mjx-container,
+.checkbox-option .mjx-container,
+.option-display .mjx-container {
+    font-size: 0.9em;
+    margin: 0 2px;
+    max-width: calc(100% - 10px);
+    overflow-x: auto;
+}
+
+/* Fix for complex LaTeX expressions */
+.mjx-math {
+    display: inline-block !important;
+    vertical-align: middle;
+}
+
+.mjx-mrow {
+    display: inline-block;
+}
+
+/* Ensure fraction rendering works properly */
+.mjx-mfrac {
+    display: inline-block;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.mjx-numerator,
+.mjx-denominator {
+    display: block;
+    text-align: center;
+}
+
+/* Square root styling */
+.mjx-msqrt {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Subscript and superscript styling */
+.mjx-script {
+    vertical-align: baseline;
+}
+
+/* Integral expressions styling */
+.mjx-c::before {
+    display: inline-block;
+}
+
+.mjx-mo[data-c="222B"] {
+    /* Integral symbol */
+    font-size: 1.2em;
+    vertical-align: middle;
+}
+
+/* Improve integral limits positioning */
+.mjx-msubsup {
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+}
+
+.mjx-msubsup > .mjx-script {
+    position: relative;
+    display: inline-block;
+}
+
+/* Better spacing for complex expressions */
+.mjx-mrow > .mjx-mo {
+    margin: 0 0.1em;
+}
+
+/* Ensure proper rendering of e^{expression} */
+.mjx-msup .mjx-script {
+    font-size: 0.8em;
+    vertical-align: super;
+}
+
+.mjx-msub .mjx-script {
+    font-size: 0.8em;
+    vertical-align: sub;
+}
+
+/* Fix infinity symbol rendering */
+.mjx-mo[data-c="221E"] {
+    font-size: 1em;
+    vertical-align: baseline;
+}
+
+/* Limit expressions styling */
+.mjx-munder {
+    display: inline-block;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.mjx-munder > .mjx-over {
+    display: block;
+    font-size: 0.8em;
+    text-align: center;
+    margin-bottom: 2px;
+}
+
+/* Trigonometric functions - let MathJax handle these naturally */
+
+/* Large parentheses and brackets */
+.mjx-mo[data-c="28"], .mjx-mo[data-c="29"] {
+    /* Left and right parentheses */
+    font-size: 1.2em;
+    vertical-align: middle;
+}
+
+.mjx-mo[data-c="5B"], .mjx-mo[data-c="5D"] {
+    /* Left and right square brackets */
+    font-size: 1.1em;
+    vertical-align: middle;
+}
+
+/* Derivative notation - simplified */
+
+/* Improve spacing for function composition */
+.mjx-mo[data-c="22C5"] {
+    /* Dot operator (cdot) */
+    margin: 0 0.2em;
+    font-size: 0.8em;
+    vertical-align: middle;
+}
+
+/* Power/exponent positioning */
+.mjx-msup {
+    display: inline-block;
+    vertical-align: baseline;
+}
+
+.mjx-msup > .mjx-script {
+    font-size: 0.75em;
+    vertical-align: super;
+    margin-left: 1px;
+}
+
+/* Let MathJax handle nested expressions naturally */
+
+/* Ensure proper rendering of left/right delimiters */
+.mjx-mleft, .mjx-mright {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Arrow symbols for limits */
+.mjx-mo[data-c="2192"] {
+    /* Right arrow */
+    margin: 0 0.3em;
+    font-size: 1em;
+}
+
+/* Let MathJax handle function names naturally */
+
+/* Gentle flash prevention - less aggressive */
+.MathJax_Processing {
+    opacity: 0.3;
+    transition: opacity 0.2s ease;
+}
+
+/* Hide content while MathJax is processing */
+.processing-math {
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s, opacity 0.1s ease-in;
+}
+
+.processing-math.math-ready {
+    visibility: visible;
+    opacity: 1;
 }
 
 /* Game Complete Animation */
@@ -559,6 +1308,10 @@ body {
         min-height: 70px;
         border-radius: 15px;
         flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
     }
     
     .numeric-input-container {
@@ -947,26 +1700,18 @@ header p {
     margin: 40px auto;
 }
 
-.player-option {
-    padding: 30px;
-    font-size: 1.5rem;
-    font-weight: bold;
-    border: none;
-    border-radius: 15px;
-    cursor: pointer;
-    transition: all 0.1s ease;
-    color: white;
-    touch-action: manipulation; /* Improve touch responsiveness */
+/* Legacy player option colors - merged with enhanced styles above */
+.player-option:nth-child(1) { 
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important; 
 }
-
-.player-option:nth-child(1) { background-color: #e74c3c; }
-.player-option:nth-child(2) { background-color: #3498db; }
-.player-option:nth-child(3) { background-color: #f39c12; }
-.player-option:nth-child(4) { background-color: #2ecc71; }
-
-.player-option:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+.player-option:nth-child(2) { 
+    background: linear-gradient(135deg, #3498db, #2980b9) !important; 
+}
+.player-option:nth-child(3) { 
+    background: linear-gradient(135deg, #f39c12, #e67e22) !important; 
+}
+.player-option:nth-child(4) { 
+    background: linear-gradient(135deg, #2ecc71, #27ae60) !important; 
 }
 
 .player-option:disabled {

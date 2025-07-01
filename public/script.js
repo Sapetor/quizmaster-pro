@@ -82,6 +82,14 @@ class KahootGame {
         document.getElementById('submit-numeric').addEventListener('click', () => {
             this.submitNumericAnswer();
         });
+
+        // Add Enter key support for numeric input
+        document.getElementById('numeric-answer-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.submitNumericAnswer();
+            }
+        });
     }
 
     initializeSocketListeners() {
@@ -194,10 +202,16 @@ class KahootGame {
     }
 
     showScreen(screenId) {
-        // Clean up any active timers
+        // Clean up any active timers to prevent memory leaks
         if (this.timer) {
             clearInterval(this.timer);
             this.timer = null;
+        }
+        
+        // Clear MathJax rendering timeout if switching screens
+        if (this.mathJaxRenderTimeout) {
+            clearTimeout(this.mathJaxRenderTimeout);
+            this.mathJaxRenderTimeout = null;
         }
         
         document.querySelectorAll('.screen').forEach(screen => {
@@ -238,6 +252,13 @@ class KahootGame {
                     <option value="medium" selected>Medium (200 pts)</option>
                     <option value="hard">Hard (300 pts)</option>
                 </select>
+                
+                <div class="time-limit-container">
+                    <label>
+                        Time (sec):
+                        <input type="number" class="question-time-limit" min="5" max="300" value="20" onchange="updateTimeLimit(this)">
+                    </label>
+                </div>
             </div>
             
             <div class="question-content">
@@ -361,11 +382,17 @@ class KahootGame {
             
             if (!questionText) return;
             
+            // Get time limit for this question
+            const timeLimitElement = item.querySelector('.question-time-limit');
+            const useGlobalTime = document.getElementById('use-global-time').checked;
+            const globalTimeLimit = parseInt(document.getElementById('global-time-limit').value) || 20;
+            const individualTimeLimit = parseInt(timeLimitElement.value) || 20;
+            
             let question = {
                 question: questionText,
                 type: questionType,
                 difficulty: questionDifficulty,
-                timeLimit: 20,
+                timeLimit: useGlobalTime ? globalTimeLimit : individualTimeLimit,
                 image: imageUrl
             };
             
@@ -565,11 +592,8 @@ class KahootGame {
                     optionsContainer.style.display = 'grid';
                     const options = document.querySelectorAll('.option-display');
                     
-                    // Reset all option styles from previous questions
-                    options.forEach(option => {
-                        option.style.border = '';
-                        option.style.backgroundColor = '';
-                    });
+                    // Reset all option styles from previous questions efficiently
+                    this.resetButtonStyles(options);
                 
                     if (data.type === 'true-false') {
                         options[0].textContent = 'True';
@@ -610,8 +634,12 @@ class KahootGame {
                 document.getElementById('player-question-image').style.display = 'none';
             }
             
-            // Render LaTeX for players with retry mechanism
-            this.renderMathJax(document.getElementById('player-question-text'));
+            // Render LaTeX for players with retry mechanism and delay for DOM update
+            setTimeout(() => {
+                this.renderMathJax(document.getElementById('player-question-text'));
+                // Also ensure global rendering for any options that get updated
+                setTimeout(() => this.renderMathJax(), 100);
+            }, 50);
             
             document.querySelectorAll('.player-answer-type').forEach(type => type.style.display = 'none');
             document.getElementById('answer-feedback').classList.add('hidden');
@@ -629,14 +657,12 @@ class KahootGame {
                             option.style.display = 'none';
                         }
                         option.disabled = false;
-                        option.classList.remove('selected');
-                        // Reset any custom styling from previous questions
-                        option.style.border = '';
-                        option.style.backgroundColor = '';
+                        // Reset any custom styling from previous questions efficiently
+                        this.resetButtonStyles([option]);
                     });
                     
-                    // Render LaTeX in answer options
-                    this.renderMathJax();
+                    // Render LaTeX in answer options with delay
+                    setTimeout(() => this.renderMathJax(), 100);
                     break;
                     
                 case 'multiple-correct':
@@ -655,21 +681,18 @@ class KahootGame {
                         }
                     });
                     
-                    // Render LaTeX in answer options
-                    this.renderMathJax();
+                    // Render LaTeX in checkbox options with delay
+                    setTimeout(() => this.renderMathJax(), 100);
                     
                     document.getElementById('submit-multiple').disabled = false;
                     break;
                     
                 case 'true-false':
                     document.getElementById('player-true-false').style.display = 'block';
-                    document.querySelectorAll('.tf-option').forEach(option => {
-                        option.disabled = false;
-                        option.classList.remove('selected');
-                        // Reset any custom styling from previous questions
-                        option.style.border = '';
-                        option.style.backgroundColor = '';
-                    });
+                    const tfOptions = document.querySelectorAll('.tf-option');
+                    tfOptions.forEach(option => option.disabled = false);
+                    // Reset any custom styling from previous questions efficiently
+                    this.resetButtonStyles(tfOptions);
                     break;
                     
                 case 'numeric':
@@ -764,16 +787,22 @@ class KahootGame {
         
         let displayText = '';
         if (typeof answer === 'number') {
-            // Convert numeric answer to letter (0->A, 1->B, etc.)
-            const letter = String.fromCharCode(65 + answer);
-            displayText = `Answer submitted: ${letter}`;
+            // Check if this is a numeric input (decimal) or multiple choice index (integer)
+            if (Number.isInteger(answer) && answer >= 0 && answer <= 3) {
+                // Multiple choice answer - convert to letter
+                const letter = String.fromCharCode(65 + answer);
+                displayText = `Answer submitted: ${letter}`;
+            } else {
+                // Numeric input answer - show the actual number
+                displayText = `Answer submitted: ${answer}`;
+            }
         } else if (Array.isArray(answer)) {
             const letters = answer.map(a => String.fromCharCode(65 + a)).join(', ');
             displayText = `Answers submitted: ${letters}`;
         } else if (typeof answer === 'string') {
             displayText = `Answer submitted: ${answer.toUpperCase()}`;
         } else {
-            displayText = `Answer submitted: ${String.fromCharCode(65 + answer)}`;
+            displayText = `Answer submitted: ${answer}`;
         }
         
         message.textContent = displayText;
@@ -1017,6 +1046,10 @@ class KahootGame {
         }
         
         this.socket.emit('submit-answer', { answer: answer, type: 'numeric' });
+        
+        // Show immediate feedback and play sound like other answer types
+        this.showAnswerSubmitted(answer);
+        this.playSound('answerSubmit');
     }
 
     showPlayerResult(data) {
@@ -1059,15 +1092,46 @@ class KahootGame {
     renderMathJax(element) {
         if (!element) return;
         
+        // Add processing class to prevent flash
+        element.classList.add('processing-math');
+        
         const tryRender = (attempt = 0) => {
             if (window.MathJax && window.MathJax.typesetPromise) {
-                MathJax.typesetPromise([element]).catch(err => {
+                // Clear any existing MathJax content in the element first
+                const mathJaxElements = element.querySelectorAll('.MathJax, .mjx-container');
+                mathJaxElements.forEach(el => el.remove());
+                
+                // Use a more robust rendering approach
+                MathJax.typesetPromise([element]).then(() => {
+                    // Ensure proper display after rendering
+                    const containers = element.querySelectorAll('.mjx-container');
+                    containers.forEach(container => {
+                        container.style.display = 'inline-block';
+                        container.style.verticalAlign = 'middle';
+                        container.classList.add('MathJax_Processed');
+                    });
+                    
+                    // Remove processing class and show content
+                    element.classList.remove('processing-math');
+                    element.classList.add('math-ready');
+                }).catch(err => {
                     console.warn('MathJax rendering failed:', err);
+                    // Remove processing class even on error
+                    element.classList.remove('processing-math');
+                    element.classList.add('math-ready');
+                    
+                    // Fallback: try global typeset if element-specific fails
+                    MathJax.typesetPromise().catch(globalErr => {
+                        console.warn('Global MathJax rendering also failed:', globalErr);
+                    });
                 });
             } else if (attempt < 10) {
                 setTimeout(() => tryRender(attempt + 1), 100);
             } else {
                 console.warn('MathJax not available after 1 second');
+                // Remove processing class if MathJax never loads
+                element.classList.remove('processing-math');
+                element.classList.add('math-ready');
             }
         };
         
@@ -1079,6 +1143,18 @@ class KahootGame {
         if (this.timer) {
             clearInterval(this.timer);
             this.timer = null;
+        }
+        
+        // Clean up MathJax rendering timeout
+        if (this.mathJaxRenderTimeout) {
+            clearTimeout(this.mathJaxRenderTimeout);
+            this.mathJaxRenderTimeout = null;
+        }
+        
+        // Clean up auto-save timeout
+        if (this.autoSaveTimeout) {
+            clearTimeout(this.autoSaveTimeout);
+            this.autoSaveTimeout = null;
         }
         
         // Reset game state
@@ -1711,14 +1787,65 @@ class KahootGame {
         
         this.mathJaxRenderTimeout = setTimeout(() => {
             if (window.MathJax && window.MathJax.typesetPromise) {
+                // Add processing class to elements with math content
+                const elementsWithMath = document.querySelectorAll('[data-has-math], .question-text, #current-question, #player-question-text, .player-option, .option-display');
+                elementsWithMath.forEach(el => {
+                    if (el.textContent.includes('$') || el.innerHTML.includes('$')) {
+                        el.classList.add('processing-math');
+                    }
+                });
+                
                 // Use requestAnimationFrame to avoid blocking UI interactions
                 requestAnimationFrame(() => {
-                    window.MathJax.typesetPromise().catch(err => {
+                    // Clear existing MathJax processed content before re-rendering
+                    document.querySelectorAll('.MathJax_Processing').forEach(el => {
+                        el.classList.remove('MathJax_Processing');
+                    });
+                    
+                    window.MathJax.typesetPromise().then(() => {
+                        // Post-processing to ensure proper display
+                        document.querySelectorAll('.mjx-container').forEach(container => {
+                            container.style.display = 'inline-block';
+                            container.style.verticalAlign = 'middle';
+                            container.classList.add('MathJax_Processed');
+                            
+                            // Ensure LaTeX content is properly sized
+                            if (container.closest('.player-option, .tf-option, .checkbox-option')) {
+                                container.style.fontSize = '0.9em';
+                                container.style.maxWidth = '100%';
+                            }
+                        });
+                        
+                        // Remove processing classes and show content
+                        elementsWithMath.forEach(el => {
+                            el.classList.remove('processing-math');
+                            el.classList.add('math-ready');
+                        });
+                    }).catch(err => {
                         console.warn('MathJax rendering failed:', err);
+                        // Remove processing classes even on error
+                        elementsWithMath.forEach(el => {
+                            el.classList.remove('processing-math');
+                            el.classList.add('math-ready');
+                        });
                     });
                 });
             }
-        }, 50); // Reduced delay for faster rendering
+        }, 30); // Even faster for global rendering
+    }
+
+    // Efficient button style reset helper
+    resetButtonStyles(elements) {
+        if (!elements) return;
+        
+        // Use a batch DOM update for better performance
+        const stylesToReset = ['border', 'backgroundColor'];
+        const classesToRemove = ['selected', 'correct', 'incorrect'];
+        
+        Array.from(elements).forEach(element => {
+            stylesToReset.forEach(style => element.style[style] = '');
+            element.classList.remove(...classesToRemove);
+        });
     }
 
     updateAnswerStatistics(data) {
@@ -1727,36 +1854,39 @@ class KahootGame {
         const statisticsContainer = document.getElementById('answer-statistics');
         if (!statisticsContainer) return;
 
-        // Reset statistics first to ensure clean display
-        this.resetAnswerStatistics();
+        // Use requestAnimationFrame to prevent race conditions with DOM updates
+        requestAnimationFrame(() => {
+            // Reset statistics first to ensure clean display
+            this.resetAnswerStatistics();
 
-        // Show statistics container
-        statisticsContainer.style.display = 'block';
+            // Show statistics container
+            statisticsContainer.style.display = 'block';
 
-        // Update response counts
-        const responsesCount = document.getElementById('responses-count');
-        const totalPlayers = document.getElementById('total-players');
-        
-        if (responsesCount) responsesCount.textContent = data.answeredPlayers || 0;
-        if (totalPlayers) totalPlayers.textContent = data.totalPlayers || 0;
+            // Update response counts
+            const responsesCount = document.getElementById('responses-count');
+            const totalPlayers = document.getElementById('total-players');
+            
+            if (responsesCount) responsesCount.textContent = data.answeredPlayers || 0;
+            if (totalPlayers) totalPlayers.textContent = data.totalPlayers || 0;
 
-        // Handle different question types
-        if (data.questionType === 'multiple-choice' || data.questionType === 'multiple-correct') {
-            this.showMultipleChoiceStatistics(4);
-            // Update individual answer statistics using answerCounts object
-            for (let i = 0; i < 4; i++) {
-                const count = data.answerCounts[i] || 0;
-                this.updateStatItem(i, count, data.answeredPlayers || 0);
+            // Handle different question types
+            if (data.questionType === 'multiple-choice' || data.questionType === 'multiple-correct') {
+                this.showMultipleChoiceStatistics(4);
+                // Update individual answer statistics using answerCounts object
+                for (let i = 0; i < 4; i++) {
+                    const count = data.answerCounts[i] || 0;
+                    this.updateStatItem(i, count, data.answeredPlayers || 0);
+                }
+            } else if (data.questionType === 'true-false') {
+                this.showTrueFalseStatistics();
+                const trueCount = data.answerCounts['true'] || 0;
+                const falseCount = data.answerCounts['false'] || 0;
+                this.updateStatItem(0, trueCount, data.answeredPlayers || 0);
+                this.updateStatItem(1, falseCount, data.answeredPlayers || 0);
+            } else if (data.questionType === 'numeric') {
+                this.hideAnswerStatistics();
             }
-        } else if (data.questionType === 'true-false') {
-            this.showTrueFalseStatistics();
-            const trueCount = data.answerCounts['true'] || 0;
-            const falseCount = data.answerCounts['false'] || 0;
-            this.updateStatItem(0, trueCount, data.answeredPlayers || 0);
-            this.updateStatItem(1, falseCount, data.answeredPlayers || 0);
-        } else if (data.questionType === 'numeric') {
-            this.hideAnswerStatistics();
-        }
+        });
     }
 
     updateStatItem(optionIndex, count, totalResponses) {
@@ -1832,7 +1962,566 @@ class KahootGame {
 
         this.hideAnswerStatistics();
     }
+
+    // Preview Mode Functions
+    initializePreview() {
+        this.currentPreviewQuestion = 0;
+        this.setupPreviewEventListeners();
+        this.updatePreview();
+    }
+
+    initializeSplitPreview() {
+        this.currentPreviewQuestion = 0;
+        this.setupSplitPreviewEventListeners();
+        this.updateSplitPreview();
+    }
+
+    setupPreviewEventListeners() {
+        // Only set up listeners once
+        if (this.previewListenersSet) return;
+        this.previewListenersSet = true;
+
+        // Navigation buttons
+        const prevBtn = document.getElementById('preview-prev');
+        const nextBtn = document.getElementById('preview-next');
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                if (this.currentPreviewQuestion > 0) {
+                    this.currentPreviewQuestion--;
+                    this.updatePreview();
+                }
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                const questionItems = document.querySelectorAll('.question-item');
+                if (this.currentPreviewQuestion < questionItems.length - 1) {
+                    this.currentPreviewQuestion++;
+                    this.updatePreview();
+                }
+            });
+        }
+
+        // Real-time updates
+        this.setupRealTimePreviewUpdates();
+    }
+
+    setupRealTimePreviewUpdates() {
+        // Listen for changes in question text, options, etc.
+        const updatePreviewDebounced = this.debounce(() => this.updatePreview(), 300);
+
+        // Question text changes
+        document.addEventListener('input', (e) => {
+            if (e.target.matches('.question-text, .option, .numeric-answer, .numeric-tolerance')) {
+                updatePreviewDebounced();
+            }
+        });
+
+        // Question type changes
+        document.addEventListener('change', (e) => {
+            if (e.target.matches('.question-type, .question-difficulty')) {
+                updatePreviewDebounced();
+            }
+        });
+
+        // Image uploads
+        document.addEventListener('change', (e) => {
+            if (e.target.matches('.image-input')) {
+                updatePreviewDebounced();
+            }
+        });
+    }
+
+    updatePreview() {
+        const questionItems = document.querySelectorAll('.question-item');
+        const totalQuestions = questionItems.length;
+        
+        if (totalQuestions === 0) {
+            this.showEmptyPreview();
+            return;
+        }
+
+        // Update navigation
+        this.updatePreviewNavigation(totalQuestions);
+        
+        // Get current question data
+        const currentQuestion = questionItems[this.currentPreviewQuestion];
+        if (!currentQuestion) return;
+
+        const questionData = this.extractQuestionDataForPreview(currentQuestion);
+        this.renderQuestionPreview(questionData);
+    }
+
+    updatePreviewNavigation(totalQuestions) {
+        document.getElementById('preview-question-counter').textContent = 
+            `Question ${this.currentPreviewQuestion + 1} of ${totalQuestions}`;
+        
+        document.getElementById('preview-prev').disabled = this.currentPreviewQuestion === 0;
+        document.getElementById('preview-next').disabled = this.currentPreviewQuestion === totalQuestions - 1;
+    }
+
+    extractQuestionDataForPreview(questionItem) {
+        const questionText = questionItem.querySelector('.question-text').value.trim() || 'Enter your question above to see preview';
+        const questionType = questionItem.querySelector('.question-type').value;
+        const imageElement = questionItem.querySelector('.question-image');
+        const imageUrl = imageElement ? imageElement.dataset.url || '' : '';
+
+        let options = [];
+        switch (questionType) {
+            case 'multiple-choice':
+                options = Array.from(questionItem.querySelectorAll('.multiple-choice-options .option'))
+                    .map(opt => opt.value.trim() || 'Option text');
+                break;
+            case 'multiple-correct':
+                options = Array.from(questionItem.querySelectorAll('.multiple-correct-options .option'))
+                    .map(opt => opt.value.trim() || 'Option text');
+                break;
+        }
+
+        return {
+            questionNumber: this.currentPreviewQuestion + 1,
+            totalQuestions: document.querySelectorAll('.question-item').length,
+            question: questionText,
+            type: questionType,
+            options: options,
+            image: imageUrl
+        };
+    }
+
+    renderQuestionPreview(data) {
+        // Update question counter and text
+        document.getElementById('preview-question-counter-display').textContent = 
+            `Question ${data.questionNumber} of ${data.totalQuestions}`;
+        document.getElementById('preview-question-text').innerHTML = data.question;
+
+        // Handle image
+        const imageDisplay = document.getElementById('preview-question-image');
+        const img = document.getElementById('preview-question-img');
+        if (data.image) {
+            img.src = data.image;
+            imageDisplay.style.display = 'block';
+        } else {
+            imageDisplay.style.display = 'none';
+        }
+
+        // Hide all answer types
+        document.querySelectorAll('.preview-answer-type').forEach(type => type.style.display = 'none');
+
+        // Show appropriate answer type
+        switch (data.type) {
+            case 'multiple-choice':
+                this.renderMultipleChoicePreview(data.options);
+                break;
+            case 'multiple-correct':
+                this.renderMultipleCorrectPreview(data.options);
+                break;
+            case 'true-false':
+                this.renderTrueFalsePreview();
+                break;
+            case 'numeric':
+                this.renderNumericPreview();
+                break;
+        }
+
+        // Render LaTeX in preview
+        setTimeout(() => {
+            this.renderMathJax(document.getElementById('preview-question-text'));
+            this.renderMathJax(document.getElementById('preview-answer-area'));
+        }, 100);
+    }
+
+    renderMultipleChoicePreview(options) {
+        document.getElementById('preview-multiple-choice').style.display = 'block';
+        const previewOptions = document.querySelectorAll('#preview-multiple-choice .preview-option');
+        
+        previewOptions.forEach((option, index) => {
+            if (options && options[index]) {
+                option.innerHTML = `${String.fromCharCode(65 + index)}: ${options[index]}`;
+                option.style.display = 'flex';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    }
+
+    renderMultipleCorrectPreview(options) {
+        document.getElementById('preview-multiple-correct').style.display = 'block';
+        const previewCheckboxes = document.querySelectorAll('#preview-multiple-correct .preview-checkbox');
+        
+        previewCheckboxes.forEach((checkbox, index) => {
+            if (options && options[index]) {
+                checkbox.innerHTML = `<input type="checkbox" disabled> ${String.fromCharCode(65 + index)}: ${options[index]}`;
+                checkbox.style.display = 'flex';
+            } else {
+                checkbox.style.display = 'none';
+            }
+        });
+    }
+
+    renderTrueFalsePreview() {
+        document.getElementById('preview-true-false').style.display = 'block';
+    }
+
+    renderNumericPreview() {
+        document.getElementById('preview-numeric').style.display = 'block';
+    }
+
+    showEmptyPreview() {
+        document.getElementById('preview-question-text').textContent = 'Add a question to see preview';
+        document.getElementById('preview-question-counter-display').textContent = 'No questions';
+        document.querySelectorAll('.preview-answer-type').forEach(type => type.style.display = 'none');
+    }
+
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Split Screen Preview Methods
+    setupSplitPreviewEventListeners() {
+        // Only set up listeners once
+        if (this.splitPreviewListenersSet) return;
+        this.splitPreviewListenersSet = true;
+
+        // Navigation buttons for split screen
+        const prevBtn = document.getElementById('preview-prev-split');
+        const nextBtn = document.getElementById('preview-next-split');
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                if (this.currentPreviewQuestion > 0) {
+                    this.currentPreviewQuestion--;
+                    this.updateSplitPreview();
+                }
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                const questionItems = document.querySelectorAll('.question-item');
+                if (this.currentPreviewQuestion < questionItems.length - 1) {
+                    this.currentPreviewQuestion++;
+                    this.updateSplitPreview();
+                }
+            });
+        }
+
+        // Real-time updates for split screen
+        this.setupRealTimeSplitPreviewUpdates();
+    }
+
+    setupRealTimeSplitPreviewUpdates() {
+        // Listen for changes in question text, options, etc.
+        const updatePreviewDebounced = this.debounce(() => this.updateSplitPreview(), 300);
+
+        // Question text changes
+        document.addEventListener('input', (e) => {
+            if (e.target.matches('.question-text, .option, .numeric-answer, .numeric-tolerance')) {
+                updatePreviewDebounced();
+            }
+        });
+
+        // Question type changes
+        document.addEventListener('change', (e) => {
+            if (e.target.matches('.question-type, .question-difficulty')) {
+                updatePreviewDebounced();
+            }
+        });
+
+        // Image uploads
+        document.addEventListener('change', (e) => {
+            if (e.target.matches('.image-input')) {
+                updatePreviewDebounced();
+            }
+        });
+    }
+
+    updateSplitPreview() {
+        const questionItems = document.querySelectorAll('.question-item');
+        const totalQuestions = questionItems.length;
+        
+        if (totalQuestions === 0) {
+            this.showEmptySplitPreview();
+            return;
+        }
+
+        // Update navigation
+        this.updateSplitPreviewNavigation(totalQuestions);
+        
+        // Get current question data
+        const currentQuestion = questionItems[this.currentPreviewQuestion];
+        if (!currentQuestion) return;
+
+        const questionData = this.extractQuestionDataForPreview(currentQuestion);
+        this.renderSplitQuestionPreview(questionData);
+    }
+
+    updateSplitPreviewNavigation(totalQuestions) {
+        document.getElementById('preview-question-counter-split').textContent = 
+            `Question ${this.currentPreviewQuestion + 1} of ${totalQuestions}`;
+        
+        document.getElementById('preview-prev-split').disabled = this.currentPreviewQuestion === 0;
+        document.getElementById('preview-next-split').disabled = this.currentPreviewQuestion === totalQuestions - 1;
+    }
+
+    renderSplitQuestionPreview(data) {
+        // Update question counter and text
+        document.getElementById('preview-question-counter-display-split').textContent = 
+            `Question ${data.questionNumber} of ${data.totalQuestions}`;
+        document.getElementById('preview-question-text-split').innerHTML = data.question;
+
+        // Handle image
+        const imageDisplay = document.getElementById('preview-question-image-split');
+        const img = document.getElementById('preview-question-img-split');
+        if (data.image) {
+            img.src = data.image;
+            imageDisplay.style.display = 'block';
+        } else {
+            imageDisplay.style.display = 'none';
+        }
+
+        // Hide all answer types
+        document.querySelectorAll('#preview-answer-area-split .preview-answer-type').forEach(type => type.style.display = 'none');
+
+        // Show appropriate answer type
+        switch (data.type) {
+            case 'multiple-choice':
+                this.renderSplitMultipleChoicePreview(data.options);
+                break;
+            case 'multiple-correct':
+                this.renderSplitMultipleCorrectPreview(data.options);
+                break;
+            case 'true-false':
+                this.renderSplitTrueFalsePreview();
+                break;
+            case 'numeric':
+                this.renderSplitNumericPreview();
+                break;
+        }
+
+        // Render LaTeX in split preview
+        setTimeout(() => {
+            this.renderMathJax(document.getElementById('preview-question-text-split'));
+            this.renderMathJax(document.getElementById('preview-answer-area-split'));
+        }, 100);
+    }
+
+    renderSplitMultipleChoicePreview(options) {
+        document.getElementById('preview-multiple-choice-split').style.display = 'block';
+        const previewOptions = document.querySelectorAll('#preview-multiple-choice-split .preview-option');
+        
+        previewOptions.forEach((option, index) => {
+            if (options && options[index]) {
+                option.innerHTML = `${String.fromCharCode(65 + index)}: ${options[index]}`;
+                option.style.display = 'flex';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    }
+
+    renderSplitMultipleCorrectPreview(options) {
+        document.getElementById('preview-multiple-correct-split').style.display = 'block';
+        const previewCheckboxes = document.querySelectorAll('#preview-multiple-correct-split .preview-checkbox');
+        
+        previewCheckboxes.forEach((checkbox, index) => {
+            if (options && options[index]) {
+                checkbox.innerHTML = `<input type="checkbox" disabled> ${String.fromCharCode(65 + index)}: ${options[index]}`;
+                checkbox.style.display = 'flex';
+            } else {
+                checkbox.style.display = 'none';
+            }
+        });
+    }
+
+    renderSplitTrueFalsePreview() {
+        document.getElementById('preview-true-false-split').style.display = 'block';
+    }
+
+    renderSplitNumericPreview() {
+        document.getElementById('preview-numeric-split').style.display = 'block';
+    }
+
+    showEmptySplitPreview() {
+        document.getElementById('preview-question-text-split').textContent = 'Add a question to see preview';
+        document.getElementById('preview-question-counter-display-split').textContent = 'No questions';
+        document.querySelectorAll('#preview-answer-area-split .preview-answer-type').forEach(type => type.style.display = 'none');
+    }
 }
+
+// Global helper functions for preview mode
+let isPreviewMode = false;
+
+function togglePreviewMode() {
+    const hostContainer = document.getElementById('host-container');
+    const previewSection = document.getElementById('quiz-preview-section');
+    const toggleButton = document.getElementById('toggle-preview');
+    
+    if (!isPreviewMode) {
+        // Enable split-screen mode
+        hostContainer.classList.add('split-screen');
+        previewSection.style.display = 'flex';
+        toggleButton.textContent = '❌ Close Preview';
+        toggleButton.classList.remove('secondary');
+        toggleButton.classList.add('danger');
+        
+        // Initialize preview
+        if (window.game) {
+            window.game.initializeSplitPreview();
+        }
+        
+        isPreviewMode = true;
+    } else {
+        // Disable split-screen mode
+        hostContainer.classList.remove('split-screen');
+        previewSection.style.display = 'none';
+        toggleButton.textContent = '📱 Toggle Live Preview';
+        toggleButton.classList.remove('danger');
+        toggleButton.classList.add('secondary');
+        
+        isPreviewMode = false;
+    }
+}
+
+function openPreviewModal() {
+    const overlay = document.getElementById('preview-modal-overlay');
+    overlay.style.display = 'flex';
+    
+    // Initialize preview with current question
+    if (window.game) {
+        window.game.initializePreview();
+    }
+    
+    // Add escape key listener
+    document.addEventListener('keydown', handlePreviewEscape);
+    
+    // Add backdrop click listener
+    overlay.addEventListener('click', handleBackdropClick);
+}
+
+function closePreviewModal() {
+    const overlay = document.getElementById('preview-modal-overlay');
+    overlay.style.display = 'none';
+    
+    // Remove escape key listener
+    document.removeEventListener('keydown', handlePreviewEscape);
+    
+    // Remove backdrop click listener
+    overlay.removeEventListener('click', handleBackdropClick);
+}
+
+function handlePreviewEscape(e) {
+    if (e.key === 'Escape') {
+        closePreviewModal();
+    }
+}
+
+function handleBackdropClick(e) {
+    // Only close if clicking on the overlay itself, not the modal content
+    if (e.target === e.currentTarget) {
+        closePreviewModal();
+    }
+}
+
+function setPreviewDevice(deviceType) {
+    // Handle both modal and split screen previews
+    const viewport = document.getElementById('preview-viewport') || document.getElementById('preview-viewport-split');
+    
+    // Modal version
+    const desktopBtn = document.getElementById('desktop-view');
+    const mobileBtn = document.getElementById('mobile-view');
+    
+    // Split screen version
+    const desktopBtnSplit = document.getElementById('desktop-view-split');
+    const mobileBtnSplit = document.getElementById('mobile-view-split');
+    
+    // Update button states for both versions
+    if (desktopBtn && mobileBtn) {
+        desktopBtn.classList.toggle('active', deviceType === 'desktop');
+        mobileBtn.classList.toggle('active', deviceType === 'mobile');
+    }
+    
+    if (desktopBtnSplit && mobileBtnSplit) {
+        desktopBtnSplit.classList.toggle('active', deviceType === 'desktop');
+        mobileBtnSplit.classList.toggle('active', deviceType === 'mobile');
+    }
+    
+    // Update viewport class
+    if (viewport) {
+        if (deviceType === 'mobile') {
+            viewport.className = viewport.classList.contains('preview-viewport-split') 
+                ? 'preview-viewport-split mobile-viewport' 
+                : 'preview-viewport mobile-viewport';
+        } else {
+            viewport.className = viewport.classList.contains('preview-viewport-split') 
+                ? 'preview-viewport-split desktop-viewport' 
+                : 'preview-viewport desktop-viewport';
+        }
+    }
+}
+
+// Global helper functions for time configuration
+function toggleGlobalTime() {
+    const useGlobalTime = document.getElementById('use-global-time').checked;
+    const globalTimeContainer = document.getElementById('global-time-container');
+    const questionTimeLimits = document.querySelectorAll('.question-time-limit');
+    
+    if (useGlobalTime) {
+        globalTimeContainer.style.display = 'block';
+        // Disable individual time inputs
+        questionTimeLimits.forEach(input => {
+            input.disabled = true;
+            input.style.opacity = '0.6';
+        });
+    } else {
+        globalTimeContainer.style.display = 'none';
+        // Enable individual time inputs
+        questionTimeLimits.forEach(input => {
+            input.disabled = false;
+            input.style.opacity = '1';
+        });
+    }
+}
+
+function updateTimeLimit(input) {
+    const value = parseInt(input.value);
+    if (value < 5) {
+        input.value = 5;
+    } else if (value > 300) {
+        input.value = 300;
+    }
+}
+
+function applyGlobalTimeToAll() {
+    const globalTimeLimit = document.getElementById('global-time-limit').value;
+    const questionTimeLimits = document.querySelectorAll('.question-time-limit');
+    
+    questionTimeLimits.forEach(input => {
+        input.value = globalTimeLimit;
+    });
+}
+
+// Add event listener for global time limit changes
+document.addEventListener('DOMContentLoaded', function() {
+    const globalTimeLimit = document.getElementById('global-time-limit');
+    if (globalTimeLimit) {
+        globalTimeLimit.addEventListener('change', function() {
+            updateTimeLimit(this);
+            if (document.getElementById('use-global-time').checked) {
+                applyGlobalTimeToAll();
+            }
+        });
+    }
+});
 
 // Global helper functions for question creation
 function updateQuestionType(select) {

@@ -12,13 +12,28 @@
         window.MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                packages: {'[+]': ['ams', 'newcommand', 'configmacros']},
+                processEscapes: true,
+                processEnvironments: true,
+                tags: 'none'
+            },
+            chtml: {
+                scale: 1,
+                minScale: 0.5,
+                matchFontHeight: false,
+                displayAlign: 'center',
+                displayIndent: '0em'
             },
             startup: {
                 ready: () => {
                     console.log('MathJax is ready');
                     MathJax.startup.defaultReady();
                 }
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+                includeHtmlTags: {br: '\n', wbr: '', '#comment': ''}
             }
         };
     </script>
@@ -26,7 +41,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>🧠 QuizMaster Pro</h1>
+            <h1>QuizMaster Pro</h1>
             <p>Advanced Interactive Quiz Platform</p>
             <div class="header-controls">
                 <button id="fullscreen-toggle" class="theme-toggle" title="Toggle fullscreen (F11)">⛶</button>
@@ -42,10 +57,11 @@
         </div>
 
         <div id="host-screen" class="screen">
-            <div class="host-container">
-                <h2>Create Your Quiz</h2>
-                
-                <div class="quiz-builder">
+            <div class="host-container" id="host-container">
+                <div class="quiz-editor-section">
+                    <h2>Create Your Quiz</h2>
+                    
+                    <div class="quiz-builder">
                     <input type="text" id="quiz-title" placeholder="Quiz Title" class="input-field">
                     
                     <div class="quiz-settings">
@@ -55,6 +71,21 @@
                         <label>
                             <input type="checkbox" id="randomize-answers"> Randomize answer positions
                         </label>
+                        <div class="time-settings">
+                            <label>
+                                <input type="checkbox" id="use-global-time" onchange="toggleGlobalTime()"> Use same time for all questions
+                            </label>
+                            <div id="global-time-container" style="display: none;">
+                                <label>
+                                    Global time limit (seconds):
+                                    <input type="number" id="global-time-limit" min="5" max="300" value="20" class="time-input">
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="preview-settings">
+                            <button id="toggle-preview" class="btn secondary" onclick="togglePreviewMode()">📱 Toggle Live Preview</button>
+                        </div>
                     </div>
                     
                     <div class="start-game-top">
@@ -78,6 +109,13 @@
                                     <option value="medium" selected>Medium (200 pts)</option>
                                     <option value="hard">Hard (300 pts)</option>
                                 </select>
+                                
+                                <div class="time-limit-container">
+                                    <label>
+                                        Time (sec):
+                                        <input type="number" class="question-time-limit" min="5" max="300" value="20" onchange="updateTimeLimit(this)">
+                                    </label>
+                                </div>
                             </div>
                             
                             <div class="question-content">
@@ -143,6 +181,162 @@
                     </div>
                     
                     <input type="file" id="import-file-input" accept=".csv,.json" style="display: none;">
+                    </div>
+                </div>
+                
+                <!-- Live Preview Section -->
+                <div class="quiz-preview-section" id="quiz-preview-section" style="display: none;">
+                    <div class="preview-header">
+                        <h3>📱 Live Preview</h3>
+                        <div class="preview-device-toggle">
+                            <button id="desktop-view-split" class="device-btn active" onclick="setPreviewDevice('desktop')">💻 Desktop</button>
+                            <button id="mobile-view-split" class="device-btn" onclick="setPreviewDevice('mobile')">📱 Mobile</button>
+                        </div>
+                    </div>
+                    
+                    <div class="preview-navigation-bar">
+                        <button id="preview-prev-split" class="nav-btn">◀ Previous</button>
+                        <span id="preview-question-counter-split">Question 1 of 1</span>
+                        <button id="preview-next-split" class="nav-btn">Next ▶</button>
+                    </div>
+                    
+                    <div id="preview-viewport-split" class="preview-viewport-split desktop-viewport">
+                        <div id="preview-content-split" class="preview-content-split">
+                            <div class="player-question-area">
+                                <div id="preview-question-counter-display-split">Question 1 of 1</div>
+                                <div id="preview-question-text-split">Select a question to preview</div>
+                                <div id="preview-question-image-split" style="display: none;">
+                                    <img id="preview-question-img-split" src="" alt="Question Image">
+                                </div>
+                            </div>
+                            
+                            <div id="preview-answer-area-split">
+                                <!-- Multiple Choice Preview -->
+                                <div id="preview-multiple-choice-split" class="preview-answer-type" style="display: none;">
+                                    <div class="player-options">
+                                        <div class="player-option preview-option" data-option="0">A: Option 1</div>
+                                        <div class="player-option preview-option" data-option="1">B: Option 2</div>
+                                        <div class="player-option preview-option" data-option="2">C: Option 3</div>
+                                        <div class="player-option preview-option" data-option="3">D: Option 4</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Multiple Correct Preview -->
+                                <div id="preview-multiple-correct-split" class="preview-answer-type" style="display: none;">
+                                    <div class="player-checkbox-options">
+                                        <div class="checkbox-option preview-checkbox" data-option="0">
+                                            <input type="checkbox" disabled> A: Option 1
+                                        </div>
+                                        <div class="checkbox-option preview-checkbox" data-option="1">
+                                            <input type="checkbox" disabled> B: Option 2
+                                        </div>
+                                        <div class="checkbox-option preview-checkbox" data-option="2">
+                                            <input type="checkbox" disabled> C: Option 3
+                                        </div>
+                                        <div class="checkbox-option preview-checkbox" data-option="3">
+                                            <input type="checkbox" disabled> D: Option 4</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- True/False Preview -->
+                                <div id="preview-true-false-split" class="preview-answer-type" style="display: none;">
+                                    <div class="true-false-options">
+                                        <div class="tf-option preview-tf" data-option="true">True</div>
+                                        <div class="tf-option preview-tf" data-option="false">False</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Numeric Preview -->
+                                <div id="preview-numeric-split" class="preview-answer-type" style="display: none;">
+                                    <div class="numeric-input-container">
+                                        <input type="number" id="preview-numeric-input-split" placeholder="Enter your answer" disabled>
+                                        <button class="btn primary" disabled>Submit</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Modal Overlay -->
+        <div id="preview-modal-overlay" class="modal-overlay" style="display: none;">
+            <div id="preview-modal" class="preview-modal">
+                <div class="preview-modal-header">
+                    <div class="preview-title-section">
+                        <h2>📱 Question Preview</h2>
+                        <div class="preview-device-toggle">
+                            <button id="desktop-view" class="device-btn active" onclick="setPreviewDevice('desktop')">💻 Desktop</button>
+                            <button id="mobile-view" class="device-btn" onclick="setPreviewDevice('mobile')">📱 Mobile</button>
+                        </div>
+                    </div>
+                    <button id="close-preview" class="close-btn" onclick="closePreviewModal()">×</button>
+                </div>
+                
+                <div class="preview-navigation-bar">
+                    <button id="preview-prev" class="nav-btn">◀ Previous</button>
+                    <span id="preview-question-counter">Question 1 of 1</span>
+                    <button id="preview-next" class="nav-btn">Next ▶</button>
+                </div>
+                
+                <div id="preview-viewport" class="preview-viewport desktop-viewport">
+                    <div id="preview-content" class="preview-content">
+                        <div class="player-question-area">
+                            <div id="preview-question-counter-display">Question 1 of 1</div>
+                            <div id="preview-question-text">Select a question to preview</div>
+                            <div id="preview-question-image" style="display: none;">
+                                <img id="preview-question-img" src="" alt="Question Image">
+                            </div>
+                        </div>
+                        
+                        <div id="preview-answer-area">
+                            <!-- Multiple Choice Preview -->
+                            <div id="preview-multiple-choice" class="preview-answer-type" style="display: none;">
+                                <div class="player-options">
+                                    <div class="player-option preview-option" data-option="0">A: Option 1</div>
+                                    <div class="player-option preview-option" data-option="1">B: Option 2</div>
+                                    <div class="player-option preview-option" data-option="2">C: Option 3</div>
+                                    <div class="player-option preview-option" data-option="3">D: Option 4</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Multiple Correct Preview -->
+                            <div id="preview-multiple-correct" class="preview-answer-type" style="display: none;">
+                                <div class="player-checkbox-options">
+                                    <div class="checkbox-option preview-checkbox" data-option="0">
+                                        <input type="checkbox" disabled> A: Option 1
+                                    </div>
+                                    <div class="checkbox-option preview-checkbox" data-option="1">
+                                        <input type="checkbox" disabled> B: Option 2
+                                    </div>
+                                    <div class="checkbox-option preview-checkbox" data-option="2">
+                                        <input type="checkbox" disabled> C: Option 3
+                                    </div>
+                                    <div class="checkbox-option preview-checkbox" data-option="3">
+                                        <input type="checkbox" disabled> D: Option 4
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- True/False Preview -->
+                            <div id="preview-true-false" class="preview-answer-type" style="display: none;">
+                                <div class="true-false-options">
+                                    <div class="tf-option preview-tf" data-option="true">True</div>
+                                    <div class="tf-option preview-tf" data-option="false">False</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Numeric Preview -->
+                            <div id="preview-numeric" class="preview-answer-type" style="display: none;">
+                                <div class="numeric-input-container">
+                                    <input type="number" id="preview-numeric-input" placeholder="Enter your answer" disabled>
+                                    <button class="btn primary" disabled>Submit</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
