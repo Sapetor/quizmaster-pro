@@ -90,6 +90,15 @@ class KahootGame {
                 this.submitNumericAnswer();
             }
         });
+        
+        // Toolbar event listeners
+        this.setupToolbarListeners();
+        
+        // Back to top button
+        this.setupBackToTopButton();
+        
+        // Preview settings
+        this.setupPreviewSettings();
     }
 
     initializeSocketListeners() {
@@ -570,7 +579,10 @@ class KahootGame {
             const currentQuestion = document.getElementById('current-question');
             
             if (questionCounter) questionCounter.textContent = `Question ${data.questionNumber} of ${data.totalQuestions}`;
-            if (currentQuestion) currentQuestion.innerHTML = data.question;
+            if (currentQuestion) {
+                currentQuestion.innerHTML = this.formatCodeBlocks(data.question);
+                this.renderMathJax(currentQuestion);
+            }
             
             if (data.image) {
                 const imageDisplay = document.getElementById('question-image-display');
@@ -603,8 +615,10 @@ class KahootGame {
                     } else {
                         options.forEach((option, index) => {
                             if (data.options && data.options[index]) {
-                                option.innerHTML = `${String.fromCharCode(65 + index)}: ${data.options[index]}`;
+                                const formattedOption = this.formatCodeBlocks(data.options[index]);
+                                option.innerHTML = `${String.fromCharCode(65 + index)}: ${formattedOption}`;
                                 option.style.display = 'block';
+                                this.renderMathJax(option);
                             } else {
                                 option.style.display = 'none';
                             }
@@ -623,7 +637,9 @@ class KahootGame {
             document.getElementById('player-question-counter').textContent = `Question ${data.questionNumber} of ${data.totalQuestions}`;
             
             // Display question text and image for players
-            document.getElementById('player-question-text').innerHTML = data.question;
+            const playerQuestionText = document.getElementById('player-question-text');
+            playerQuestionText.innerHTML = this.formatCodeBlocks(data.question);
+            this.renderMathJax(playerQuestionText);
             
             if (data.image) {
                 const imageDisplay = document.getElementById('player-question-image');
@@ -651,8 +667,10 @@ class KahootGame {
                     const mcOptions = document.querySelectorAll('#player-multiple-choice .player-option');
                     mcOptions.forEach((option, index) => {
                         if (data.options && data.options[index]) {
-                            option.innerHTML = `${String.fromCharCode(65 + index)}: ${data.options[index]}`;
+                            const formattedOption = this.formatCodeBlocks(data.options[index]);
+                            option.innerHTML = `${String.fromCharCode(65 + index)}: ${formattedOption}`;
                             option.style.display = 'block';
+                            this.renderMathJax(option);
                         } else {
                             option.style.display = 'none';
                         }
@@ -673,8 +691,10 @@ class KahootGame {
                     checkboxes.forEach(cb => cb.checked = false);
                     checkboxLabels.forEach((label, index) => {
                         if (data.options && data.options[index]) {
-                            label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${String.fromCharCode(65 + index)}: ${data.options[index]}`;
+                            const formattedOption = this.formatCodeBlocks(data.options[index]);
+                            label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${String.fromCharCode(65 + index)}: ${formattedOption}`;
                             label.setAttribute('data-option', index);
+                            this.renderMathJax(label);
                             label.style.display = 'flex';
                         } else {
                             label.style.display = 'none';
@@ -1138,6 +1158,363 @@ class KahootGame {
         tryRender();
     }
 
+    // Code formatting helper
+    formatCodeBlocks(text) {
+        if (!text) return text;
+        
+        // Convert code blocks (```language ... ```)
+        text = text.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, language, code) => {
+            const lang = language || 'text';
+            const trimmedCode = code.trim();
+            return `<pre><code class="language-${lang}">${this.escapeHtml(trimmedCode)}</code></pre>`;
+        });
+        
+        // Convert inline code (`code`)
+        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        return text;
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Process both code formatting and MathJax
+    processContentFormatting(element) {
+        if (!element) return;
+        
+        // First, format code blocks
+        element.innerHTML = this.formatCodeBlocks(element.innerHTML);
+        
+        // Then render MathJax
+        this.renderMathJax(element);
+    }
+    
+    setupToolbarListeners() {
+        // Toolbar button listeners
+        document.getElementById('toolbar-add-question')?.addEventListener('click', () => this.addQuestion());
+        document.getElementById('toolbar-save')?.addEventListener('click', () => this.saveQuiz());
+        document.getElementById('toolbar-load')?.addEventListener('click', () => this.showLoadQuizModal());
+        document.getElementById('toolbar-ai-gen')?.addEventListener('click', () => openAIGeneratorModal());
+        document.getElementById('toolbar-preview')?.addEventListener('click', () => togglePreviewMode());
+        document.getElementById('toolbar-import')?.addEventListener('click', () => this.importQuiz());
+        document.getElementById('toolbar-top')?.addEventListener('click', () => this.scrollToTop());
+        document.getElementById('toolbar-bottom')?.addEventListener('click', () => this.scrollToBottom());
+        document.getElementById('toolbar-collapse')?.addEventListener('click', () => toggleToolbarCollapse());
+        
+        // Initialize toolbar state from localStorage
+        this.initializeToolbarState();
+    }
+    
+    setupBackToTopButton() {
+        const backToTopBtn = document.getElementById('back-to-top');
+        const editorSection = document.getElementById('quiz-editor-section');
+        
+        if (!backToTopBtn || !editorSection) return;
+        
+        // Show/hide back to top button based on scroll position
+        editorSection.addEventListener('scroll', () => {
+            if (editorSection.scrollTop > 300) {
+                backToTopBtn.style.display = 'block';
+            } else {
+                backToTopBtn.style.display = 'none';
+            }
+        });
+        
+        // Back to top button click
+        backToTopBtn.addEventListener('click', () => this.scrollToTop());
+    }
+    
+    initializeToolbarState() {
+        const toolbarVisible = localStorage.getItem('toolbarVisible');
+        const toolbarCollapsed = localStorage.getItem('toolbarCollapsed');
+        const hostScreen = document.getElementById('host-screen');
+        const toolbar = document.getElementById('left-toolbar');
+        
+        // Show toolbar by default on desktop, hide on mobile
+        const isDesktop = window.innerWidth > 1024;
+        
+        if (toolbarVisible === 'false' || !isDesktop) {
+            toolbar.style.display = 'none';
+        } else {
+            toolbar.style.display = 'block';
+            hostScreen.classList.add('with-toolbar');
+            
+            if (toolbarCollapsed === 'true') {
+                toolbar.classList.add('collapsed');
+                hostScreen.classList.add('collapsed');
+            }
+        }
+    }
+    
+    scrollToTop() {
+        const editorSection = document.getElementById('quiz-editor-section');
+        if (editorSection) {
+            editorSection.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+    
+    scrollToBottom() {
+        const editorSection = document.getElementById('quiz-editor-section');
+        if (editorSection) {
+            editorSection.scrollTo({ top: editorSection.scrollHeight, behavior: 'smooth' });
+        }
+    }
+    
+    setupPreviewSettings() {
+        const modal = document.getElementById('preview-settings-modal');
+        
+        // Close settings modal listener
+        document.getElementById('close-preview-settings')?.addEventListener('click', () => {
+            this.closePreviewSettings();
+        });
+        
+        // Reset settings listener
+        document.getElementById('reset-preview-settings')?.addEventListener('click', () => {
+            this.resetPreviewSettings();
+        });
+        
+        // Backdrop click to close
+        modal?.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closePreviewSettings();
+            }
+        });
+        
+        // Real-time slider listeners
+        this.setupSliderListeners();
+        
+        // Load saved settings on startup
+        this.loadPreviewSettings();
+    }
+    
+    setupSliderListeners() {
+        const sliders = {
+            'split-ratio-slider': (value) => this.updateSplitRatio(parseFloat(value)),
+            'font-size-slider': (value) => this.updateFontSize(parseFloat(value)),
+            'spacing-slider': (value) => this.updateSpacing(parseFloat(value)),
+            'button-size-slider': (value) => this.updateButtonSize(parseFloat(value)),
+            'density-slider': (value) => this.updateDensity(parseFloat(value))
+        };
+        
+        Object.entries(sliders).forEach(([sliderId, callback]) => {
+            const slider = document.getElementById(sliderId);
+            if (slider) {
+                // Real-time updates on input
+                slider.addEventListener('input', (e) => {
+                    callback(e.target.value);
+                    this.saveCurrentSettings();
+                });
+                
+                // Also update on change for accessibility
+                slider.addEventListener('change', (e) => {
+                    callback(e.target.value);
+                    this.saveCurrentSettings();
+                });
+            }
+        });
+    }
+    
+    updateSplitRatio(value) {
+        const left = value;
+        const right = 100 - value;
+        
+        document.documentElement.style.setProperty('--split-left', `${left}%`);
+        document.documentElement.style.setProperty('--split-right', `${right}%`);
+        
+        const valueDisplay = document.getElementById('split-ratio-value');
+        if (valueDisplay) {
+            valueDisplay.textContent = `${left}% / ${right}%`;
+        }
+    }
+    
+    updateFontSize(multiplier) {
+        const root = document.documentElement;
+        
+        root.style.setProperty('--preview-font-base', `${multiplier}em`);
+        root.style.setProperty('--preview-font-question', `${multiplier * 1.1}em`);
+        root.style.setProperty('--preview-font-option', `${multiplier * 0.95}rem`);
+        root.style.setProperty('--preview-font-small', `${multiplier * 0.7}rem`);
+        
+        const valueDisplay = document.getElementById('font-size-value');
+        if (valueDisplay) {
+            valueDisplay.textContent = `${multiplier.toFixed(1)}x`;
+        }
+    }
+    
+    updateSpacing(multiplier) {
+        const baseSpacing = 8; // Base spacing in pixels
+        const spacing = Math.round(baseSpacing * multiplier);
+        const spacingSmall = Math.round(spacing * 0.5);
+        const spacingLarge = Math.round(spacing * 1.5);
+        
+        const root = document.documentElement;
+        root.style.setProperty('--preview-spacing', `${spacing}px`);
+        root.style.setProperty('--preview-spacing-small', `${spacingSmall}px`);
+        root.style.setProperty('--preview-spacing-large', `${spacingLarge}px`);
+        
+        const valueDisplay = document.getElementById('spacing-value');
+        if (valueDisplay) {
+            const labels = { 0.5: 'Minimal', 1.0: 'Normal', 1.5: 'Comfortable', 2.0: 'Spacious' };
+            const closest = Object.keys(labels).reduce((prev, curr) => 
+                Math.abs(curr - multiplier) < Math.abs(prev - multiplier) ? curr : prev
+            );
+            valueDisplay.textContent = labels[closest] || `${multiplier.toFixed(1)}x`;
+        }
+    }
+    
+    updateButtonSize(multiplier) {
+        const basePadding = 8;
+        const baseHeight = 40;
+        
+        const padding = Math.round(basePadding * multiplier);
+        const height = Math.round(baseHeight * multiplier);
+        
+        const root = document.documentElement;
+        root.style.setProperty('--preview-button-padding', `${padding}px ${padding + 4}px`);
+        root.style.setProperty('--preview-button-height', `${height}px`);
+        
+        const valueDisplay = document.getElementById('button-size-value');
+        if (valueDisplay) {
+            const labels = { 0.7: 'Small', 1.0: 'Normal', 1.3: 'Large', 1.5: 'Extra Large' };
+            const closest = Object.keys(labels).reduce((prev, curr) => 
+                Math.abs(curr - multiplier) < Math.abs(prev - multiplier) ? curr : prev
+            );
+            valueDisplay.textContent = labels[closest] || `${multiplier.toFixed(1)}x`;
+        }
+    }
+    
+    updateDensity(multiplier) {
+        // Density dramatically affects ALL spacing and layout
+        const root = document.documentElement;
+        
+        // Base spacing values scaled by density
+        const baseSpacing = 8;
+        const spacing = Math.round(baseSpacing * multiplier);
+        const spacingSmall = Math.round(spacing * 0.5);
+        const spacingLarge = Math.round(spacing * 1.5);
+        
+        // Update ALL spacing variables
+        root.style.setProperty('--preview-spacing', `${spacing}px`);
+        root.style.setProperty('--preview-spacing-small', `${spacingSmall}px`);
+        root.style.setProperty('--preview-spacing-large', `${spacingLarge}px`);
+        
+        // Content and layout padding
+        const contentPadding = Math.round(8 * multiplier);
+        const questionPadding = Math.round(8 * multiplier);
+        const headerPadding = Math.round(3 * multiplier);
+        const navPadding = Math.round(3 * multiplier);
+        
+        root.style.setProperty('--preview-content-padding', `${contentPadding}px`);
+        root.style.setProperty('--preview-question-padding', `${questionPadding}px`);
+        root.style.setProperty('--preview-header-padding', `${headerPadding}px 4px`);
+        root.style.setProperty('--preview-nav-padding', `${navPadding}px 4px`);
+        
+        // Button and option spacing (dramatic impact)
+        const buttonSpacing = Math.round(6 * multiplier);
+        const optionMargin = Math.round(4 * multiplier);
+        const borderRadius = Math.round(5 * multiplier);
+        
+        root.style.setProperty('--preview-button-spacing', `${buttonSpacing}px 0`);
+        root.style.setProperty('--preview-option-margin', `${optionMargin}px 0`);
+        root.style.setProperty('--preview-border-radius', `${borderRadius}px`);
+        
+        // Line height and text spacing
+        const lineHeight = 1.2 + (multiplier * 0.3); // 1.2 to 1.62
+        root.style.setProperty('--preview-line-height', lineHeight.toString());
+        
+        // Gap between sections
+        const sectionGap = Math.round(12 * multiplier);
+        root.style.setProperty('--preview-section-gap', `${sectionGap}px`);
+        
+        const valueDisplay = document.getElementById('density-value');
+        if (valueDisplay) {
+            const labels = { 0.6: 'Ultra Dense', 0.8: 'Dense', 1.0: 'Normal', 1.2: 'Comfortable', 1.4: 'Spacious' };
+            const closest = Object.keys(labels).reduce((prev, curr) => 
+                Math.abs(curr - multiplier) < Math.abs(prev - multiplier) ? curr : prev
+            );
+            valueDisplay.textContent = labels[closest] || `${multiplier.toFixed(1)}x`;
+        }
+    }
+    
+    saveCurrentSettings() {
+        const settings = {
+            splitRatio: document.getElementById('split-ratio-slider')?.value || 50,
+            fontSize: document.getElementById('font-size-slider')?.value || 1.0,
+            spacing: document.getElementById('spacing-slider')?.value || 1.0,
+            buttonSize: document.getElementById('button-size-slider')?.value || 1.0,
+            density: document.getElementById('density-slider')?.value || 1.0
+        };
+        
+        localStorage.setItem('previewSettings', JSON.stringify(settings));
+    }
+    
+    loadPreviewSettings() {
+        const settings = JSON.parse(localStorage.getItem('previewSettings') || '{}');
+        
+        // Apply saved settings or defaults
+        const splitRatio = parseFloat(settings.splitRatio) || 50;
+        const fontSize = parseFloat(settings.fontSize) || 1.0;
+        const spacing = parseFloat(settings.spacing) || 1.0;
+        const buttonSize = parseFloat(settings.buttonSize) || 1.0;
+        const density = parseFloat(settings.density) || 1.0;
+        
+        // Update sliders
+        const splitSlider = document.getElementById('split-ratio-slider');
+        const fontSlider = document.getElementById('font-size-slider');
+        const spacingSlider = document.getElementById('spacing-slider');
+        const buttonSlider = document.getElementById('button-size-slider');
+        const densitySlider = document.getElementById('density-slider');
+        
+        if (splitSlider) splitSlider.value = splitRatio;
+        if (fontSlider) fontSlider.value = fontSize;
+        if (spacingSlider) spacingSlider.value = spacing;
+        if (buttonSlider) buttonSlider.value = buttonSize;
+        if (densitySlider) densitySlider.value = density;
+        
+        // Apply settings
+        this.updateSplitRatio(splitRatio);
+        this.updateFontSize(fontSize);
+        this.updateSpacing(spacing);
+        this.updateButtonSize(buttonSize);
+        this.updateDensity(density);
+    }
+    
+    // Removed applyPreviewSettings - now using real-time updates
+    
+    // Removed updateCSSVariables - now using individual update methods
+    
+    resetPreviewSettings() {
+        // Reset sliders to defaults
+        const splitSlider = document.getElementById('split-ratio-slider');
+        const fontSlider = document.getElementById('font-size-slider');
+        const spacingSlider = document.getElementById('spacing-slider');
+        const buttonSlider = document.getElementById('button-size-slider');
+        const densitySlider = document.getElementById('density-slider');
+        
+        if (splitSlider) splitSlider.value = 50;
+        if (fontSlider) fontSlider.value = 1.0;
+        if (spacingSlider) spacingSlider.value = 1.0;
+        if (buttonSlider) buttonSlider.value = 1.0;
+        if (densitySlider) densitySlider.value = 1.0;
+        
+        // Apply defaults
+        this.updateSplitRatio(50);
+        this.updateFontSize(1.0);
+        this.updateSpacing(1.0);
+        this.updateButtonSize(1.0);
+        this.updateDensity(1.0);
+        
+        // Clear localStorage
+        localStorage.removeItem('previewSettings');
+    }
+    
+    closePreviewSettings() {
+        document.getElementById('preview-settings-modal').style.display = 'none';
+    }
+
     newGame() {
         // Clean up any timers before reloading
         if (this.timer) {
@@ -1364,6 +1741,32 @@ class KahootGame {
                     e.preventDefault();
                     this.startHosting();
                     break;
+                case 'b':
+                    e.preventDefault();
+                    toggleToolbar();
+                    break;
+                case ',':
+                    e.preventDefault();
+                    openPreviewSettings();
+                    break;
+            }
+        }
+        
+        // Other shortcuts
+        if (e.key === 'Home' && e.ctrlKey) {
+            e.preventDefault();
+            this.scrollToTop();
+        }
+        if (e.key === 'End' && e.ctrlKey) {
+            e.preventDefault();
+            this.scrollToBottom();
+        }
+        
+        // Close modals with Escape
+        if (e.key === 'Escape') {
+            const previewModal = document.getElementById('preview-settings-modal');
+            if (previewModal && previewModal.style.display !== 'none') {
+                this.closePreviewSettings();
             }
         }
         
@@ -2094,7 +2497,7 @@ class KahootGame {
         // Update question counter and text
         document.getElementById('preview-question-counter-display').textContent = 
             `Question ${data.questionNumber} of ${data.totalQuestions}`;
-        document.getElementById('preview-question-text').innerHTML = data.question;
+        document.getElementById('preview-question-text').innerHTML = this.formatCodeBlocks(data.question);
 
         // Handle image
         const imageDisplay = document.getElementById('preview-question-image');
@@ -2138,7 +2541,8 @@ class KahootGame {
         
         previewOptions.forEach((option, index) => {
             if (options && options[index]) {
-                option.innerHTML = `${String.fromCharCode(65 + index)}: ${options[index]}`;
+                const formattedOption = this.formatCodeBlocks(options[index]);
+                option.innerHTML = `${String.fromCharCode(65 + index)}: ${formattedOption}`;
                 option.style.display = 'flex';
             } else {
                 option.style.display = 'none';
@@ -2152,7 +2556,8 @@ class KahootGame {
         
         previewCheckboxes.forEach((checkbox, index) => {
             if (options && options[index]) {
-                checkbox.innerHTML = `<input type="checkbox" disabled> ${String.fromCharCode(65 + index)}: ${options[index]}`;
+                const formattedOption = this.formatCodeBlocks(options[index]);
+                checkbox.innerHTML = `<input type="checkbox" disabled> ${String.fromCharCode(65 + index)}: ${formattedOption}`;
                 checkbox.style.display = 'flex';
             } else {
                 checkbox.style.display = 'none';
@@ -2277,7 +2682,7 @@ class KahootGame {
         // Update question counter and text
         document.getElementById('preview-question-counter-display-split').textContent = 
             `Question ${data.questionNumber} of ${data.totalQuestions}`;
-        document.getElementById('preview-question-text-split').innerHTML = data.question;
+        document.getElementById('preview-question-text-split').innerHTML = this.formatCodeBlocks(data.question);
 
         // Handle image
         const imageDisplay = document.getElementById('preview-question-image-split');
@@ -2321,7 +2726,8 @@ class KahootGame {
         
         previewOptions.forEach((option, index) => {
             if (options && options[index]) {
-                option.innerHTML = `${String.fromCharCode(65 + index)}: ${options[index]}`;
+                const formattedOption = this.formatCodeBlocks(options[index]);
+                option.innerHTML = `${String.fromCharCode(65 + index)}: ${formattedOption}`;
                 option.style.display = 'flex';
             } else {
                 option.style.display = 'none';
@@ -2335,7 +2741,8 @@ class KahootGame {
         
         previewCheckboxes.forEach((checkbox, index) => {
             if (options && options[index]) {
-                checkbox.innerHTML = `<input type="checkbox" disabled> ${String.fromCharCode(65 + index)}: ${options[index]}`;
+                const formattedOption = this.formatCodeBlocks(options[index]);
+                checkbox.innerHTML = `<input type="checkbox" disabled> ${String.fromCharCode(65 + index)}: ${formattedOption}`;
                 checkbox.style.display = 'flex';
             } else {
                 checkbox.style.display = 'none';
@@ -2355,6 +2762,72 @@ class KahootGame {
         document.getElementById('preview-question-text-split').textContent = 'Add a question to see preview';
         document.getElementById('preview-question-counter-display-split').textContent = 'No questions';
         document.querySelectorAll('#preview-answer-area-split .preview-answer-type').forEach(type => type.style.display = 'none');
+    }
+}
+
+// Global function to scroll to current question in editor
+function scrollToCurrentQuestion() {
+    if (window.game && typeof window.game.currentPreviewQuestion !== 'undefined') {
+        const questionItems = document.querySelectorAll('.question-item');
+        const targetQuestion = questionItems[window.game.currentPreviewQuestion];
+        if (targetQuestion) {
+            targetQuestion.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center',
+                inline: 'nearest'
+            });
+            
+            // Add a brief highlight effect
+            targetQuestion.style.background = 'rgba(255, 215, 0, 0.2)';
+            targetQuestion.style.transform = 'scale(1.02)';
+            
+            setTimeout(() => {
+                targetQuestion.style.background = '';
+                targetQuestion.style.transform = '';
+            }, 1500);
+        }
+    }
+}
+
+// Global function to show/hide toolbar
+function toggleToolbar() {
+    const toolbar = document.getElementById('left-toolbar');
+    const hostScreen = document.getElementById('host-screen');
+    
+    if (toolbar.style.display === 'none' || !toolbar.style.display) {
+        // Show toolbar
+        toolbar.style.display = 'block';
+        hostScreen.classList.add('with-toolbar');
+        localStorage.setItem('toolbarVisible', 'true');
+    } else {
+        // Hide toolbar
+        toolbar.style.display = 'none';
+        hostScreen.classList.remove('with-toolbar', 'collapsed');
+        localStorage.setItem('toolbarVisible', 'false');
+    }
+}
+
+// Global function to collapse/expand toolbar
+function toggleToolbarCollapse() {
+    const toolbar = document.getElementById('left-toolbar');
+    const hostScreen = document.getElementById('host-screen');
+    
+    if (toolbar.classList.contains('collapsed')) {
+        toolbar.classList.remove('collapsed');
+        hostScreen.classList.remove('collapsed');
+        localStorage.setItem('toolbarCollapsed', 'false');
+    } else {
+        toolbar.classList.add('collapsed');
+        hostScreen.classList.add('collapsed');
+        localStorage.setItem('toolbarCollapsed', 'true');
+    }
+}
+
+// Global function to open preview settings
+function openPreviewSettings() {
+    const modal = document.getElementById('preview-settings-modal');
+    if (modal) {
+        modal.style.display = 'flex';
     }
 }
 
@@ -2590,6 +3063,540 @@ function removeImage(button) {
     input.value = '';
 }
 
+// AI Question Generation System
+class AIQuestionGenerator {
+    constructor() {
+        this.providers = {
+            ollama: {
+                name: "Ollama (Local)",
+                apiKey: false,
+                endpoint: "http://localhost:11434/api/generate",
+                models: ["llama3.2:3b", "phi3:mini", "mistral:7b"]
+            },
+            huggingface: {
+                name: "Hugging Face",
+                apiKey: true,
+                endpoint: "https://api-inference.huggingface.co/models/google/flan-t5-large",
+                models: ["google/flan-t5-large"]
+            },
+            openai: {
+                name: "OpenAI",
+                apiKey: true,
+                endpoint: "https://api.openai.com/v1/chat/completions",
+                models: ["gpt-3.5-turbo", "gpt-4"]
+            },
+            claude: {
+                name: "Anthropic Claude", 
+                apiKey: true,
+                endpoint: "https://api.anthropic.com/v1/messages",
+                models: ["claude-3-haiku", "claude-3-sonnet"]
+            }
+        };
+        
+        this.initializeEventListeners();
+    }
+
+    initializeEventListeners() {
+        // Provider selection change
+        document.getElementById('ai-provider').addEventListener('change', (e) => {
+            this.handleProviderChange(e.target.value);
+        });
+
+        // File upload handling
+        document.getElementById('content-file').addEventListener('change', (e) => {
+            this.handleFileUpload(e.target.files[0]);
+        });
+
+        // Content type detection on input
+        document.getElementById('source-content').addEventListener('input', (e) => {
+            this.updateContentTypeIndicator(e.target.value);
+        });
+
+        // Generation button
+        document.getElementById('generate-questions').addEventListener('click', () => {
+            this.generateQuestions();
+        });
+
+        // Cancel button
+        document.getElementById('cancel-ai-generator').addEventListener('click', () => {
+            this.closeModal();
+        });
+    }
+
+    handleProviderChange(provider) {
+        const apiKeySection = document.getElementById('api-key-section');
+        const needsApiKey = this.providers[provider].apiKey;
+        
+        if (needsApiKey) {
+            apiKeySection.style.display = 'block';
+            // Load saved API key if exists
+            const savedKey = localStorage.getItem(`ai_api_key_${provider}`);
+            if (savedKey) {
+                document.getElementById('ai-api-key').value = savedKey;
+            }
+        } else {
+            apiKeySection.style.display = 'none';
+        }
+    }
+
+    async handleFileUpload(file) {
+        if (!file) return;
+
+        const sourceContent = document.getElementById('source-content');
+        
+        try {
+            if (file.type === 'text/plain' || file.name.endsWith('.md')) {
+                const text = await file.text();
+                sourceContent.value = text;
+                this.updateContentTypeIndicator(text);
+            } else if (file.type === 'application/pdf') {
+                // For now, just show a message that PDF parsing will be added
+                alert('PDF parsing will be added in a future update. Please copy and paste the text content for now.');
+            } else if (file.name.endsWith('.docx')) {
+                alert('DOCX parsing will be added in a future update. Please copy and paste the text content for now.');
+            } else {
+                alert('Unsupported file format. Please use TXT or MD files, or paste the content directly.');
+            }
+        } catch (error) {
+            console.error('Error reading file:', error);
+            alert('Error reading file. Please try again or paste the content directly.');
+        }
+    }
+
+    updateContentTypeIndicator(content) {
+        const indicator = document.getElementById('content-type-indicator');
+        const typeValue = document.getElementById('content-type-value');
+        const typeDescription = document.getElementById('content-type-description');
+
+        if (!content.trim()) {
+            indicator.style.display = 'none';
+            return;
+        }
+
+        const contentType = this.detectContentType(content);
+        const descriptions = {
+            'mathematics': 'Questions will include LaTeX math notation (e.g., $x^2$, $\\int f(x)dx$)',
+            'programming': 'Questions will include properly formatted code snippets',
+            'physics': 'Questions will include physics formulas and proper units',
+            'chemistry': 'Questions will include chemical equations and notation',
+            'general': 'Questions will use standard formatting'
+        };
+
+        typeValue.textContent = contentType;
+        typeDescription.textContent = descriptions[contentType];
+        indicator.style.display = 'flex';
+
+        // Add visual emphasis for special content types
+        if (contentType === 'mathematics') {
+            typeValue.style.background = 'rgba(156, 39, 176, 0.2)';
+            typeValue.style.color = '#9c27b0';
+        } else if (contentType === 'programming') {
+            typeValue.style.background = 'rgba(76, 175, 80, 0.2)';
+            typeValue.style.color = '#4caf50';
+        } else {
+            typeValue.style.background = 'rgba(102, 126, 234, 0.2)';
+            typeValue.style.color = '#667eea';
+        }
+    }
+
+    buildPrompt(content, options) {
+        const questionTypes = [];
+        if (document.getElementById('type-multiple-choice').checked) questionTypes.push('multiple-choice');
+        if (document.getElementById('type-true-false').checked) questionTypes.push('true-false');
+        if (document.getElementById('type-multiple-correct').checked) questionTypes.push('multiple-correct');
+        if (document.getElementById('type-numeric').checked) questionTypes.push('numeric');
+
+        // Detect content type for specialized formatting
+        const contentType = this.detectContentType(content);
+        const formatInstructions = this.getFormatInstructions(contentType);
+
+        return `Generate ${options.count} high-quality quiz questions from the following content. Focus on key concepts and important details.
+
+Content:
+${content}
+
+Requirements:
+- Number of questions: ${options.count}
+- Question types: ${questionTypes.join(', ')}
+- Difficulty level: ${options.difficulty}
+- Content type detected: ${contentType}
+
+${formatInstructions}
+
+Please format your response as a valid JSON array with this exact structure:
+[
+  {
+    "question": "What is the derivative of $f(x) = x^2 + 3x$?",
+    "type": "multiple-choice",
+    "options": ["$f'(x) = 2x + 3$", "$f'(x) = x + 3$", "$f'(x) = 2x$", "$f'(x) = x^2$"],
+    "correctAnswer": 0,
+    "difficulty": "medium",
+    "timeLimit": 25
+  }
+]
+
+CRITICAL FORMATTING RULES:
+- For multiple-choice: correctAnswer should be the index (0, 1, 2, 3)
+- For true-false: use "true" or "false" as string for correctAnswer
+- For multiple-correct: correctAnswer should be an array of indices like [0, 2]
+- For numeric: correctAnswer should be a number, add tolerance field with acceptable margin
+- For mathematical expressions: ALWAYS use LaTeX notation with $ delimiters (e.g., $x^2$, $\\int_0^1 f(x)dx$)
+- For code: Use proper syntax highlighting hints with backticks and language (e.g., \`\`\`python)
+- For mathematical questions: Use symbols like ∈, ∩, ∪, ≤, ≥, ∞, π, α, β, etc. when appropriate
+- Make questions pedagogically sound and test understanding, not just memorization
+- Ensure wrong options are plausible but clearly incorrect to knowledgeable students
+- Include step-by-step reasoning in complex problems when helpful
+- Only return the JSON array, no additional text or explanation`;
+    }
+
+    detectContentType(content) {
+        const mathKeywords = ['equation', 'derivative', 'integral', 'function', 'theorem', 'proof', 'matrix', 'vector', 'calculus', 'algebra', 'geometry', 'trigonometry', 'polynomial', 'logarithm', 'exponential'];
+        const codeKeywords = ['def ', 'function', 'class ', 'import ', 'return', 'if __name__', 'print(', 'console.log', 'public class', 'void main', '#include'];
+        const physicsKeywords = ['force', 'energy', 'momentum', 'velocity', 'acceleration', 'electric', 'magnetic', 'quantum', 'wave', 'frequency'];
+        const chemistryKeywords = ['molecule', 'atom', 'bond', 'reaction', 'element', 'compound', 'electron', 'proton', 'neutron'];
+
+        const lowerContent = content.toLowerCase();
+        
+        let mathScore = mathKeywords.filter(kw => lowerContent.includes(kw)).length;
+        let codeScore = codeKeywords.filter(kw => content.includes(kw)).length; // Case sensitive for code
+        let physicsScore = physicsKeywords.filter(kw => lowerContent.includes(kw)).length;
+        let chemistryScore = chemistryKeywords.filter(kw => lowerContent.includes(kw)).length;
+
+        // Check for LaTeX/mathematical notation
+        if (content.includes('\\') || content.includes('$$') || /\$[^$]+\$/.test(content)) {
+            mathScore += 3;
+        }
+
+        // Check for code patterns
+        if (/def\s+\w+\(/.test(content) || /function\s+\w+\(/.test(content) || /class\s+\w+/.test(content)) {
+            codeScore += 3;
+        }
+
+        const maxScore = Math.max(mathScore, codeScore, physicsScore, chemistryScore);
+        
+        if (maxScore === 0) return 'general';
+        if (mathScore === maxScore) return 'mathematics';
+        if (codeScore === maxScore) return 'programming';
+        if (physicsScore === maxScore) return 'physics';
+        if (chemistryScore === maxScore) return 'chemistry';
+        
+        return 'general';
+    }
+
+    getFormatInstructions(contentType) {
+        switch (contentType) {
+            case 'mathematics':
+                return `MATHEMATICAL CONTENT DETECTED:
+- Use LaTeX notation for ALL mathematical expressions: $x^2$, $\\frac{a}{b}$, $\\int_0^\\infty e^{-x^2}dx$
+- Include proper mathematical symbols: ∈, ∩, ∪, ≤, ≥, ∞, π, α, β, γ, θ, λ, μ, σ, Σ, ∏
+- For calculus: use $\\frac{d}{dx}$, $\\int$, $\\lim_{x \\to \\infty}$
+- For algebra: use $\\sqrt{x}$, $x^n$, $\\log_a(x)$, $e^x$
+- For geometry: use proper notation for angles, lines, points
+- Create questions that test conceptual understanding, not just computation
+- Include common mathematical mistakes as wrong options`;
+
+            case 'programming':
+                return `PROGRAMMING CONTENT DETECTED:
+- Format code snippets with proper syntax highlighting: \`\`\`python, \`\`\`javascript, \`\`\`java, etc.
+- Use inline code formatting for keywords: \`def\`, \`class\`, \`return\`, \`if\`
+- Include proper indentation in code blocks
+- Test understanding of concepts like algorithms, data structures, syntax
+- Create questions about code output, debugging, best practices
+- Include realistic code examples that could appear in actual programs
+- Wrong options should be plausible mistakes beginners might make`;
+
+            case 'physics':
+                return `PHYSICS CONTENT DETECTED:
+- Use LaTeX for formulas: $F = ma$, $E = mc^2$, $v = \\frac{d}{dt}x(t)$
+- Include proper units in questions and answers
+- Use physics notation: vectors ($\\vec{F}$), scalars, subscripts
+- Test conceptual understanding of physical principles
+- Include numerical problems with realistic values`;
+
+            case 'chemistry':
+                return `CHEMISTRY CONTENT DETECTED:
+- Use proper chemical notation: H₂O, CO₂, CH₄
+- Include chemical equations with proper balancing
+- Use LaTeX for complex formulas when needed
+- Test understanding of chemical principles, not just memorization
+- Include realistic chemical scenarios`;
+
+            default:
+                return `GENERAL CONTENT:
+- Use clear, precise language
+- Include LaTeX notation if any mathematical concepts appear: $x$, $y = mx + b$
+- Format any code snippets properly with backticks
+- Create questions that test understanding and application
+- Make wrong options educational (common misconceptions)`;
+        }
+    }
+
+    async generateQuestions() {
+        const provider = document.getElementById('ai-provider').value;
+        const content = document.getElementById('source-content').value.trim();
+        const questionCount = parseInt(document.getElementById('question-count').value);
+        const difficulty = document.getElementById('difficulty-level').value;
+
+        // Validation
+        if (!content) {
+            alert('Please provide source material to generate questions from.');
+            return;
+        }
+
+        if (this.providers[provider].apiKey) {
+            const apiKey = document.getElementById('ai-api-key').value.trim();
+            if (!apiKey) {
+                alert('Please enter your API key for the selected provider.');
+                return;
+            }
+            // Save API key to localStorage
+            localStorage.setItem(`ai_api_key_${provider}`, apiKey);
+        }
+
+        // Show loading status
+        const statusDiv = document.getElementById('generation-status');
+        const generateBtn = document.getElementById('generate-questions');
+        statusDiv.style.display = 'flex';
+        generateBtn.disabled = true;
+
+        try {
+            const prompt = this.buildPrompt(content, {
+                count: questionCount,
+                difficulty: difficulty
+            });
+
+            let questions;
+            switch (provider) {
+                case 'ollama':
+                    questions = await this.generateWithOllama(prompt);
+                    break;
+                case 'huggingface':
+                    questions = await this.generateWithHuggingFace(prompt);
+                    break;
+                case 'openai':
+                    questions = await this.generateWithOpenAI(prompt);
+                    break;
+                case 'claude':
+                    questions = await this.generateWithClaude(prompt);
+                    break;
+                default:
+                    throw new Error('Unsupported provider');
+            }
+
+            if (questions && questions.length > 0) {
+                this.addGeneratedQuestions(questions);
+                this.closeModal();
+                alert(`Successfully generated ${questions.length} questions!`);
+            } else {
+                throw new Error('No questions were generated');
+            }
+
+        } catch (error) {
+            console.error('Error generating questions:', error);
+            alert(`Error generating questions: ${error.message}`);
+        } finally {
+            statusDiv.style.display = 'none';
+            generateBtn.disabled = false;
+        }
+    }
+
+    async generateWithOllama(prompt) {
+        try {
+            const response = await fetch('http://localhost:11434/api/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'llama3.2:3b',
+                    prompt: prompt,
+                    stream: false,
+                    format: 'json'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Ollama API error: ${response.status}. Make sure Ollama is running locally.`);
+            }
+
+            const data = await response.json();
+            return this.parseAIResponse(data.response);
+        } catch (error) {
+            if (error.message.includes('fetch')) {
+                throw new Error('Cannot connect to Ollama. Make sure Ollama is installed and running locally.');
+            }
+            throw error;
+        }
+    }
+
+    async generateWithOpenAI(prompt) {
+        const apiKey = document.getElementById('ai-api-key').value;
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'gpt-3.5-turbo',
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }],
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`OpenAI API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return this.parseAIResponse(data.choices[0].message.content);
+    }
+
+    async generateWithHuggingFace(prompt) {
+        // Placeholder for Hugging Face implementation
+        throw new Error('Hugging Face integration coming soon');
+    }
+
+    async generateWithClaude(prompt) {
+        // Placeholder for Claude implementation
+        throw new Error('Claude integration coming soon');
+    }
+
+    parseAIResponse(responseText) {
+        try {
+            // Try to extract JSON from the response
+            const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+                const questions = JSON.parse(jsonMatch[0]);
+                return this.validateQuestions(questions);
+            } else {
+                throw new Error('No valid JSON found in response');
+            }
+        } catch (error) {
+            console.error('Error parsing AI response:', responseText);
+            throw new Error('Failed to parse AI response. Please try again.');
+        }
+    }
+
+    validateQuestions(questions) {
+        const validQuestions = [];
+        for (const q of questions) {
+            if (q.question && q.type && q.correctAnswer !== undefined) {
+                // Set default values for missing fields
+                q.difficulty = q.difficulty || 'medium';
+                q.timeLimit = q.timeLimit || 20;
+                
+                // Validate question type
+                if (['multiple-choice', 'true-false', 'multiple-correct', 'numeric'].includes(q.type)) {
+                    validQuestions.push(q);
+                }
+            }
+        }
+        return validQuestions;
+    }
+
+    addGeneratedQuestions(questions) {
+        if (!window.game) return;
+
+        questions.forEach(q => {
+            window.game.addQuestion();
+            const questionItems = document.querySelectorAll('.question-item');
+            const newQuestionItem = questionItems[questionItems.length - 1];
+            
+            // Set question text
+            const questionTextarea = newQuestionItem.querySelector('.question-text');
+            questionTextarea.value = q.question;
+            
+            // Set question type
+            const typeSelect = newQuestionItem.querySelector('.question-type');
+            typeSelect.value = q.type;
+            updateQuestionType(typeSelect);
+            
+            // Set difficulty
+            const difficultySelect = newQuestionItem.querySelector('.question-difficulty');
+            if (q.difficulty === 'easy') difficultySelect.value = 'easy';
+            else if (q.difficulty === 'hard') difficultySelect.value = 'hard';
+            else difficultySelect.value = 'medium';
+            
+            // Set time limit
+            const timeInput = newQuestionItem.querySelector('.question-time-limit');
+            timeInput.value = q.timeLimit || 20;
+            
+            // Set question-specific data
+            this.setQuestionData(newQuestionItem, q);
+        });
+
+        // Update preview if it's open
+        if (window.game && window.game.updateSplitPreview) {
+            window.game.updateSplitPreview();
+        }
+    }
+
+    setQuestionData(questionItem, questionData) {
+        switch (questionData.type) {
+            case 'multiple-choice':
+                const mcOptions = questionItem.querySelectorAll('.multiple-choice-options .option');
+                questionData.options.forEach((option, index) => {
+                    if (mcOptions[index]) {
+                        mcOptions[index].value = option;
+                    }
+                });
+                const mcCorrect = questionItem.querySelector('.multiple-choice-options .correct-answer');
+                mcCorrect.value = questionData.correctAnswer;
+                break;
+                
+            case 'true-false':
+                const tfCorrect = questionItem.querySelector('.true-false-options .correct-answer');
+                tfCorrect.value = questionData.correctAnswer;
+                break;
+                
+            case 'multiple-correct':
+                const multiOptions = questionItem.querySelectorAll('.multiple-correct-options .option');
+                const multiCheckboxes = questionItem.querySelectorAll('.multiple-correct-options .correct-option');
+                questionData.options.forEach((option, index) => {
+                    if (multiOptions[index]) {
+                        multiOptions[index].value = option;
+                    }
+                });
+                questionData.correctAnswer.forEach(index => {
+                    if (multiCheckboxes[index]) {
+                        multiCheckboxes[index].checked = true;
+                    }
+                });
+                break;
+                
+            case 'numeric':
+                const numAnswer = questionItem.querySelector('.numeric-answer');
+                const numTolerance = questionItem.querySelector('.numeric-tolerance');
+                numAnswer.value = questionData.correctAnswer;
+                numTolerance.value = questionData.tolerance || 0.1;
+                break;
+        }
+    }
+
+    closeModal() {
+        document.getElementById('ai-generator-modal').style.display = 'none';
+        // Reset form
+        document.getElementById('source-content').value = '';
+        document.getElementById('content-file').value = '';
+        document.getElementById('generation-status').style.display = 'none';
+        document.getElementById('content-type-indicator').style.display = 'none';
+    }
+}
+
+// Global AI Generator functions
+function openAIGeneratorModal() {
+    document.getElementById('ai-generator-modal').style.display = 'flex';
+    // Initialize provider change handler
+    if (window.aiGenerator) {
+        window.aiGenerator.handleProviderChange(document.getElementById('ai-provider').value);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     window.game = new KahootGame();
+    window.aiGenerator = new AIQuestionGenerator();
 });

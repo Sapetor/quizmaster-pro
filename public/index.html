@@ -42,7 +42,6 @@
     <div class="container">
         <header>
             <h1>QuizMaster Pro</h1>
-            <p>Advanced Interactive Quiz Platform</p>
             <div class="header-controls">
                 <button id="fullscreen-toggle" class="theme-toggle" title="Toggle fullscreen (F11)">⛶</button>
                 <button id="theme-toggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
@@ -57,8 +56,62 @@
         </div>
 
         <div id="host-screen" class="screen">
+            <!-- Left Toolbar -->
+            <div class="left-toolbar" id="left-toolbar" style="display: none;">
+                <div class="toolbar-section">
+                    <h5>Quick Actions</h5>
+                    <button class="toolbar-btn" id="toolbar-add-question" title="Add Question">
+                        <span class="toolbar-icon">➕</span>
+                        <span class="toolbar-label">Add Q</span>
+                    </button>
+                    <button class="toolbar-btn" id="toolbar-save" title="Save Quiz">
+                        <span class="toolbar-icon">💾</span>
+                        <span class="toolbar-label">Save</span>
+                    </button>
+                    <button class="toolbar-btn" id="toolbar-load" title="Load Quiz">
+                        <span class="toolbar-icon">📂</span>
+                        <span class="toolbar-label">Load</span>
+                    </button>
+                </div>
+                
+                <div class="toolbar-section">
+                    <h5>Tools</h5>
+                    <button class="toolbar-btn" id="toolbar-ai-gen" title="AI Generator">
+                        <span class="toolbar-icon">🤖</span>
+                        <span class="toolbar-label">AI Gen</span>
+                    </button>
+                    <button class="toolbar-btn" id="toolbar-preview" title="Toggle Preview">
+                        <span class="toolbar-icon">📱</span>
+                        <span class="toolbar-label">Preview</span>
+                    </button>
+                    <button class="toolbar-btn" id="toolbar-import" title="Import File">
+                        <span class="toolbar-icon">📥</span>
+                        <span class="toolbar-label">Import</span>
+                    </button>
+                </div>
+                
+                <div class="toolbar-section">
+                    <h5>Navigate</h5>
+                    <button class="toolbar-btn" id="toolbar-top" title="Back to Top">
+                        <span class="toolbar-icon">⬆️</span>
+                        <span class="toolbar-label">Top</span>
+                    </button>
+                    <button class="toolbar-btn" id="toolbar-bottom" title="Go to Bottom">
+                        <span class="toolbar-icon">⬇️</span>
+                        <span class="toolbar-label">Bottom</span>
+                    </button>
+                </div>
+                
+                <div class="toolbar-section toolbar-toggle">
+                    <button class="toolbar-btn" id="toolbar-collapse" title="Collapse Toolbar">
+                        <span class="toolbar-icon">◀️</span>
+                        <span class="toolbar-label">Hide</span>
+                    </button>
+                </div>
+            </div>
+            
             <div class="host-container" id="host-container">
-                <div class="quiz-editor-section">
+                <div class="quiz-editor-section" id="quiz-editor-section">
                     <h2>Create Your Quiz</h2>
                     
                     <div class="quiz-builder">
@@ -85,6 +138,9 @@
                         
                         <div class="preview-settings">
                             <button id="toggle-preview" class="btn secondary" onclick="togglePreviewMode()">📱 Toggle Live Preview</button>
+                            <button id="ai-generator-btn" class="btn secondary" onclick="openAIGeneratorModal()">🤖 AI Question Generator</button>
+                            <button id="toggle-toolbar" class="btn secondary desktop-only" onclick="toggleToolbar()">🛠️ Toggle Toolbar</button>
+                            <button id="preview-settings-btn" class="btn secondary desktop-only" onclick="openPreviewSettings()">⚙️ Preview Settings</button>
                         </div>
                     </div>
                     
@@ -181,23 +237,29 @@
                     </div>
                     
                     <input type="file" id="import-file-input" accept=".csv,.json" style="display: none;">
+                    
+                    <!-- Back to Top Button -->
+                    <button id="back-to-top" class="back-to-top-btn" style="display: none;" title="Back to Top">
+                        ⬆️
+                    </button>
                     </div>
                 </div>
                 
                 <!-- Live Preview Section -->
                 <div class="quiz-preview-section" id="quiz-preview-section" style="display: none;">
                     <div class="preview-header">
-                        <h3>📱 Live Preview</h3>
+                        <h4>Live Preview</h4>
                         <div class="preview-device-toggle">
-                            <button id="desktop-view-split" class="device-btn active" onclick="setPreviewDevice('desktop')">💻 Desktop</button>
-                            <button id="mobile-view-split" class="device-btn" onclick="setPreviewDevice('mobile')">📱 Mobile</button>
+                            <button id="desktop-view-split" class="device-btn active" onclick="setPreviewDevice('desktop')">Desktop</button>
+                            <button id="mobile-view-split" class="device-btn" onclick="setPreviewDevice('mobile')">Mobile</button>
                         </div>
                     </div>
                     
                     <div class="preview-navigation-bar">
-                        <button id="preview-prev-split" class="nav-btn">◀ Previous</button>
-                        <span id="preview-question-counter-split">Question 1 of 1</span>
-                        <button id="preview-next-split" class="nav-btn">Next ▶</button>
+                        <button id="preview-prev-split" class="nav-btn">◀</button>
+                        <span id="preview-question-counter-split">Q1/1</span>
+                        <button id="preview-next-split" class="nav-btn">▶</button>
+                        <button id="scroll-to-question" class="nav-btn edit-btn" onclick="scrollToCurrentQuestion()">✏️ Edit Question</button>
                     </div>
                     
                     <div id="preview-viewport-split" class="preview-viewport-split desktop-viewport">
@@ -548,6 +610,153 @@
                 <div id="preview-content" class="preview-content"></div>
                 <div class="modal-actions">
                     <button id="cancel-preview" class="btn secondary">Close</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Preview Settings Modal -->
+        <div id="preview-settings-modal" class="modal" style="display: none;">
+            <div class="modal-content large">
+                <h3>⚙️ Live Preview Layout Settings</h3>
+                <p style="margin-bottom: 20px; opacity: 0.8;">Drag sliders to adjust layout in real-time</p>
+                
+                <div class="live-settings-container">
+                    <div class="settings-group">
+                        <label>Split Screen Ratio: <span id="split-ratio-value">50% / 50%</span></label>
+                        <div class="slider-container">
+                            <span class="slider-label">Editor</span>
+                            <input type="range" id="split-ratio-slider" min="30" max="80" value="50" class="custom-slider">
+                            <span class="slider-label">Preview</span>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <label>Font Size: <span id="font-size-value">1.0x</span></label>
+                        <div class="slider-container">
+                            <span class="slider-label">Small</span>
+                            <input type="range" id="font-size-slider" min="0.7" max="1.8" step="0.1" value="1.0" class="custom-slider">
+                            <span class="slider-label">Large</span>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <label>Spacing: <span id="spacing-value">Normal</span></label>
+                        <div class="slider-container">
+                            <span class="slider-label">Tight</span>
+                            <input type="range" id="spacing-slider" min="0.5" max="2.0" step="0.1" value="1.0" class="custom-slider">
+                            <span class="slider-label">Loose</span>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <label>Button Size: <span id="button-size-value">Normal</span></label>
+                        <div class="slider-container">
+                            <span class="slider-label">Compact</span>
+                            <input type="range" id="button-size-slider" min="0.7" max="1.5" step="0.1" value="1.0" class="custom-slider">
+                            <span class="slider-label">Large</span>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <label>Content Density: <span id="density-value">Normal</span></label>
+                        <div class="slider-container">
+                            <span class="slider-label">Dense</span>
+                            <input type="range" id="density-slider" min="0.6" max="1.4" step="0.1" value="1.0" class="custom-slider">
+                            <span class="slider-label">Spacious</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button id="reset-preview-settings" class="btn secondary">Reset to Default</button>
+                    <button id="close-preview-settings" class="btn primary">Close</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- AI Question Generator Modal -->
+        <div id="ai-generator-modal" class="modal" style="display: none;">
+            <div class="modal-content large">
+                <h3>🤖 AI Question Generator</h3>
+                
+                <div class="ai-config-section">
+                    <div class="provider-selection">
+                        <label for="ai-provider">Choose AI Provider:</label>
+                        <select id="ai-provider" class="input-field">
+                            <option value="ollama">Ollama (Free, Local)</option>
+                            <option value="huggingface">Hugging Face (Free tier)</option>
+                            <option value="openai">OpenAI (Paid)</option>
+                            <option value="claude">Anthropic Claude (Paid)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="api-key-section" id="api-key-section" style="display: none;">
+                        <label for="ai-api-key">API Key:</label>
+                        <input type="password" id="ai-api-key" class="input-field" placeholder="Enter your API key">
+                        <small>Your API key is stored locally and never sent to our servers</small>
+                    </div>
+                </div>
+                
+                <div class="content-input-section">
+                    <label for="source-content">Source Material:</label>
+                    <textarea id="source-content" class="input-field" rows="8" placeholder="Paste your text content here, or upload a file below..."></textarea>
+                    
+                    <div class="content-type-indicator" id="content-type-indicator" style="display: none;">
+                        <span class="content-type-label">Content type detected:</span>
+                        <span class="content-type-value" id="content-type-value">general</span>
+                        <span class="content-type-description" id="content-type-description">Questions will use standard formatting</span>
+                    </div>
+                    
+                    <div class="file-upload-section">
+                        <label for="content-file">Or upload a file:</label>
+                        <input type="file" id="content-file" accept=".txt,.pdf,.docx,.md" class="input-field">
+                        <small>Supported formats: TXT, PDF, DOCX, Markdown</small>
+                    </div>
+                </div>
+                
+                <div class="generation-options">
+                    <div class="option-group">
+                        <label for="question-count">Number of Questions:</label>
+                        <input type="number" id="question-count" value="5" min="1" max="20" class="input-field number-input">
+                    </div>
+                    
+                    <div class="option-group">
+                        <label for="difficulty-level">Difficulty Level:</label>
+                        <select id="difficulty-level" class="input-field">
+                            <option value="mixed">Mixed</option>
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>Question Types:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="type-multiple-choice" checked> Multiple Choice
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="type-true-false"> True/False
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="type-multiple-correct"> Multiple Correct Answers
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="type-numeric"> Numeric Answer
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="generation-status" id="generation-status" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <span>Generating questions...</span>
+                </div>
+                
+                <div class="modal-actions">
+                    <button id="cancel-ai-generator" class="btn secondary">Cancel</button>
+                    <button id="generate-questions" class="btn primary">Generate Questions</button>
                 </div>
             </div>
         </div>
