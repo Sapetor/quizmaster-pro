@@ -1579,7 +1579,7 @@ class KahootGame {
         });
         
         previewContent.innerHTML = html;
-        document.getElementById('quiz-preview-modal').style.display = 'block';
+        document.getElementById('quiz-preview-modal').style.display = 'flex';
     }
     
     hideQuizPreview() {
@@ -1900,7 +1900,7 @@ class KahootGame {
                 `).join('');
             }
             
-            document.getElementById('load-quiz-modal').style.display = 'block';
+            document.getElementById('load-quiz-modal').style.display = 'flex';
         } catch (error) {
             console.error('Load quizzes error:', error);
             alert('Failed to load quiz list');

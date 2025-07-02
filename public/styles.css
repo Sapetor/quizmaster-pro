@@ -1250,7 +1250,7 @@ pre code {
     background: var(--modal-bg);
     border-right: 1px solid var(--border-color);
     box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-    z-index: 1001;
+    z-index: 999;
     overflow-y: auto;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
