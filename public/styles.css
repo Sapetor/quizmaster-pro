@@ -913,29 +913,17 @@ body {
     gap: 12px;
 }
 
-.preview-content .true-false-options {
+/* Only show True/False options when parent container is explicitly visible */
+#preview-true-false:not([style*="display: none"]) .true-false-options,
+#preview-true-false-split:not([style*="display: none"]) .true-false-options {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--preview-spacing);
     margin: 0;
 }
 
-#preview-true-false-split[style*="display: block"] .true-false-options,
-#preview-true-false-split[style*="display: flex"] .true-false-options {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--preview-spacing);
-    margin: 0;
-}
-
-.mobile-viewport .preview-content .true-false-options {
-    grid-template-columns: 1fr;
-    max-width: 300px;
-    gap: 15px;
-}
-
-.mobile-viewport #preview-true-false-split[style*="display: block"] .true-false-options,
-.mobile-viewport #preview-true-false-split[style*="display: flex"] .true-false-options {
+.mobile-viewport #preview-true-false:not([style*="display: none"]) .true-false-options,
+.mobile-viewport #preview-true-false-split:not([style*="display: none"]) .true-false-options {
     grid-template-columns: 1fr;
     max-width: 300px;
     gap: 15px;
@@ -2079,7 +2067,8 @@ pre code {
         flex-shrink: 0;
     }
     
-    .true-false-options {
+    #player-true-false .true-false-options,
+    .question-item .true-false-options:not(.preview-tf) {
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -2751,7 +2740,9 @@ header h1 {
     transform: scale(1.5);
 }
 
-.true-false-options {
+/* True/False options for game screens (not preview) */
+#player-true-false .true-false-options,
+.question-item .true-false-options:not(.preview-tf) {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
@@ -2858,7 +2849,8 @@ header h1 {
         overflow-wrap: break-word;
     }
     
-    .true-false-options {
+    #player-true-false .true-false-options,
+    .question-item .true-false-options:not(.preview-tf) {
         grid-template-columns: 1fr;
         gap: 15px;
         margin: 20px auto;
