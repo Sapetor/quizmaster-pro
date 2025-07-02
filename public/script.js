@@ -3421,6 +3421,7 @@ CRITICAL FORMATTING RULES:
             }
 
             const data = await response.json();
+            console.log('Raw Ollama response:', data);
             return this.parseAIResponse(data.response);
         } catch (error) {
             if (error.message.includes('fetch')) {
@@ -3468,14 +3469,31 @@ CRITICAL FORMATTING RULES:
 
     parseAIResponse(responseText) {
         try {
-            // Try to extract JSON from the response
-            const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-            if (jsonMatch) {
-                const questions = JSON.parse(jsonMatch[0]);
-                return this.validateQuestions(questions);
-            } else {
-                throw new Error('No valid JSON found in response');
+            console.log('AI Response to parse:', responseText);
+            
+            // First try to parse the entire response as JSON
+            let questions;
+            try {
+                const parsed = JSON.parse(responseText);
+                questions = Array.isArray(parsed) ? parsed : [parsed];
+            } catch {
+                // If that fails, try to extract JSON array from the response
+                const arrayMatch = responseText.match(/\[[\s\S]*\]/);
+                if (arrayMatch) {
+                    questions = JSON.parse(arrayMatch[0]);
+                } else {
+                    // Try to extract a single JSON object
+                    const objectMatch = responseText.match(/\{[\s\S]*\}/);
+                    if (objectMatch) {
+                        const singleQuestion = JSON.parse(objectMatch[0]);
+                        questions = [singleQuestion];
+                    } else {
+                        throw new Error('No valid JSON found in response');
+                    }
+                }
             }
+            
+            return this.validateQuestions(questions);
         } catch (error) {
             console.error('Error parsing AI response:', responseText);
             throw new Error('Failed to parse AI response. Please try again.');
