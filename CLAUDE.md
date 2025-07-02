@@ -133,6 +133,16 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 - **Time-Based Scoring**: Points awarded based on answer speed with difficulty multipliers
 - **Player Final Screen**: Dedicated ending screen with personal rank, score, and top players display
 
+### Recent Critical Fixes (Latest Session)
+- **True/False Preview Bug**: Comprehensive CSS fixes ensuring True/False buttons only appear for True/False questions in preview
+- **Modal Display Issues**: Fixed modals to use `display: flex` instead of `display: block` for proper centering
+- **AI Generation Parsing**: Enhanced `parseAIResponse()` to handle both JSON arrays and single objects from Ollama
+- **Layout Centering**: Fixed main editing page to center properly and only move left when preview is active
+- **UI Button Cleanup**: Removed duplicate Start Game buttons and organized interface properly
+- **Settings Sidebar**: Moved from modal to left sidebar with proper positioning and animation
+- **Toolbar Restrictions**: Scroll buttons now only work when live preview is active
+- **Code Formatting**: Enhanced display of code blocks in questions with proper styling integration
+
 ## Critical Bug Fixes Applied
 
 ### Host Screen Stuck Issue (RESOLVED)
@@ -160,8 +170,8 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 **Cause**: MathJax elements capturing pointer events
 **Solution**: Added CSS `pointer-events: none` for all MathJax elements
 
-### Real-Time Preview System (NEW FEATURE)
-- **Split-Screen Design**: Editor (50%) and live preview (50%) with optimal width utilization
+### Real-Time Preview System (ENHANCED)
+- **Split-Screen Design**: Editor (customizable ratio) and live preview with optimal width utilization
 - **Real-Time Updates**: Debounced preview updates (300ms) as user types questions and answers
 - **Simultaneous Editing**: No overlay blocking - edit and preview simultaneously
 - **Navigation**: Previous/Next buttons to browse through questions while editing
@@ -173,6 +183,26 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 - **Event Management**: Proper listener cleanup to prevent memory leaks
 - **CSS Grid Layout**: Proper two-column layout with quiz-editor-section and quiz-preview-section as siblings
 - **Styling Integration**: All preview elements styled with both modal and split-screen selectors
+- **Customizable Layout**: Real-time slider controls for split ratio, font size, spacing, and button size
+- **Left Toolbar**: Quick access desktop toolbar with add question, save, load, AI generator, preview toggle, and import
+- **Preview Settings Sidebar**: Left-positioned settings panel with Start Game button and layout controls
+- **Edit Navigation**: "✏️ Edit Question" button to scroll to current question in editor
+- **Keyboard Shortcuts**: Support for toolbar actions and navigation when preview is active
+- **True/False Bug Fixed**: Comprehensive fix ensuring True/False buttons only appear for True/False questions
+
+### AI Question Generation System (NEW FEATURE)
+- **Multiple Providers**: Support for Ollama (local, free), OpenAI, HuggingFace, and Claude APIs
+- **Local AI Support**: Ollama integration for offline question generation with llama3.2:3b model
+- **Content Type Detection**: Automatic detection of mathematics, programming, physics, chemistry content
+- **Smart Prompting**: Content-aware prompt engineering with specialized formatting instructions
+- **Question Type Flexibility**: Support for multiple choice, true/false, multiple correct, and numeric questions
+- **Difficulty Levels**: Beginner, intermediate, advanced, and expert difficulty settings
+- **Batch Generation**: Generate 1-10 questions at once with progress indicators
+- **JSON Parsing**: Robust parsing handling both arrays and single objects from AI responses
+- **Validation System**: Comprehensive validation of generated questions with error handling
+- **Modal Interface**: User-friendly modal with provider selection, content input, and settings
+- **API Key Management**: Secure localStorage for API keys with provider-specific handling
+- **Error Recovery**: Detailed error messages and debugging for troubleshooting AI responses
 
 ## Git & Deployment
 
@@ -199,6 +229,11 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 7. **Preview Button States**: Verify danger/secondary class toggling in `togglePreviewMode()` function
 8. **Preview Appearing in Wrong Column**: Ensure quiz-preview-section is a sibling of quiz-editor-section, not nested inside it
 9. **Preview Styling Missing**: Verify CSS selectors include both `.preview-content` and `.preview-content-split` versions
+10. **True/False Preview Bug**: If True/False buttons appear for non-True/False questions, check CSS specificity - use explicit hiding in render functions
+11. **Modal Display Issues**: Modals should use `display: flex` not `display: block` for proper centering
+12. **AI Generation "No questions generated"**: Usually parsing issue - check Ollama response format and `parseAIResponse()` function
+13. **Toolbar Layout Issues**: Ensure proper centering when toolbar is visible using specific CSS selectors for `.with-toolbar` state
+14. **Settings Sidebar Not Opening**: Check z-index conflicts and proper `display: block` with transform animation
 
 ### Code Quality Guidelines
 - **State Management**: Use Game class methods consistently for game state changes
@@ -220,3 +255,12 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 - [ ] Preview navigation (Previous/Next) functions properly
 - [ ] Device simulation (Desktop/Mobile) works in preview
 - [ ] LaTeX renders correctly in live preview
+- [ ] True/False buttons only appear for True/False questions in preview
+- [ ] AI question generation works with Ollama (llama3.2:3b model)
+- [ ] Preview settings sidebar opens from left side
+- [ ] Left toolbar functions work only when preview is active
+- [ ] Layout centers properly when preview is closed
+- [ ] Modals display with proper centering (flex not block)
+- [ ] Start Game button accessible in preview settings
+- [ ] Split ratio slider changes layout in real-time
+- [ ] Code formatting displays properly in questions
