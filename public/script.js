@@ -2670,7 +2670,12 @@ class KahootGame {
     }
 
     renderSplitMultipleChoicePreview(options) {
+        // Ensure only Multiple Choice is visible
+        document.getElementById('preview-multiple-correct-split').style.display = 'none';
+        document.getElementById('preview-true-false-split').style.display = 'none';
+        document.getElementById('preview-numeric-split').style.display = 'none';
         document.getElementById('preview-multiple-choice-split').style.display = 'block';
+        
         const previewOptions = document.querySelectorAll('#preview-multiple-choice-split .preview-option');
         
         previewOptions.forEach((option, index) => {
@@ -2685,7 +2690,12 @@ class KahootGame {
     }
 
     renderSplitMultipleCorrectPreview(options) {
+        // Ensure only Multiple Correct is visible
+        document.getElementById('preview-multiple-choice-split').style.display = 'none';
+        document.getElementById('preview-true-false-split').style.display = 'none';
+        document.getElementById('preview-numeric-split').style.display = 'none';
         document.getElementById('preview-multiple-correct-split').style.display = 'block';
+        
         const previewCheckboxes = document.querySelectorAll('#preview-multiple-correct-split .preview-checkbox');
         
         previewCheckboxes.forEach((checkbox, index) => {
@@ -2700,10 +2710,18 @@ class KahootGame {
     }
 
     renderSplitTrueFalsePreview() {
+        // Ensure only True/False is visible
+        document.getElementById('preview-multiple-choice-split').style.display = 'none';
+        document.getElementById('preview-multiple-correct-split').style.display = 'none';
+        document.getElementById('preview-numeric-split').style.display = 'none';
         document.getElementById('preview-true-false-split').style.display = 'block';
     }
 
     renderSplitNumericPreview() {
+        // Ensure only Numeric is visible
+        document.getElementById('preview-multiple-choice-split').style.display = 'none';
+        document.getElementById('preview-multiple-correct-split').style.display = 'none';
+        document.getElementById('preview-true-false-split').style.display = 'none';
         document.getElementById('preview-numeric-split').style.display = 'block';
     }
 
