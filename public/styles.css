@@ -913,8 +913,13 @@ body {
     gap: 12px;
 }
 
+/* Completely hide True/False options in preview when parent is hidden */
+#preview-true-false-split[style*="display: none"] .true-false-options,
+#preview-true-false-split[style*="display: none"] .tf-option {
+    display: none !important;
+}
+
 /* Only show True/False options when parent container is explicitly visible */
-#preview-true-false:not([style*="display: none"]) .true-false-options,
 #preview-true-false-split:not([style*="display: none"]) .true-false-options {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -922,7 +927,6 @@ body {
     margin: 0;
 }
 
-.mobile-viewport #preview-true-false:not([style*="display: none"]) .true-false-options,
 .mobile-viewport #preview-true-false-split:not([style*="display: none"]) .true-false-options {
     grid-template-columns: 1fr;
     max-width: 300px;
@@ -2076,7 +2080,8 @@ pre code {
         min-height: 0;
     }
     
-    .tf-option {
+    #player-true-false .tf-option,
+    .question-item .tf-option:not(.preview-tf) {
         padding: 25px 15px;
         font-size: 1.2rem;
         min-height: 70px;
@@ -2749,7 +2754,8 @@ header h1 {
     margin: 20px 0;
 }
 
-.tf-option {
+#player-true-false .tf-option,
+.question-item .tf-option:not(.preview-tf) {
     padding: 30px;
     font-size: 1.5rem;
     font-weight: bold;
@@ -2761,21 +2767,48 @@ header h1 {
     touch-action: manipulation; /* Improve touch responsiveness */
 }
 
-.tf-option:nth-child(1) { background-color: #2ecc71; }
-.tf-option:nth-child(2) { background-color: #e74c3c; }
+/* Preview True/False styling - only when visible */
+#preview-true-false-split:not([style*="display: none"]) .tf-option {
+    padding: var(--preview-button-padding);
+    font-size: var(--preview-font-option);
+    font-weight: bold;
+    border: none;
+    border-radius: var(--preview-border-radius);
+    cursor: pointer;
+    transition: all 0.1s ease;
+    color: white;
+}
 
-.tf-option:hover {
+#player-true-false .tf-option:nth-child(1),
+.question-item .tf-option:not(.preview-tf):nth-child(1),
+#preview-true-false-split:not([style*="display: none"]) .tf-option:nth-child(1) { 
+    background-color: #2ecc71; 
+}
+
+#player-true-false .tf-option:nth-child(2),
+.question-item .tf-option:not(.preview-tf):nth-child(2),
+#preview-true-false-split:not([style*="display: none"]) .tf-option:nth-child(2) { 
+    background-color: #e74c3c; 
+}
+
+#player-true-false .tf-option:hover,
+.question-item .tf-option:not(.preview-tf):hover,
+#preview-true-false-split:not([style*="display: none"]) .tf-option:hover {
     transform: scale(1.05);
     box-shadow: 0 5px 20px rgba(0,0,0,0.3);
 }
 
-.tf-option:disabled {
+#player-true-false .tf-option:disabled,
+.question-item .tf-option:not(.preview-tf):disabled,
+#preview-true-false-split:not([style*="display: none"]) .tf-option:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
 }
 
-.tf-option.selected {
+#player-true-false .tf-option.selected,
+.question-item .tf-option:not(.preview-tf).selected,
+#preview-true-false-split:not([style*="display: none"]) .tf-option.selected {
     transform: scale(0.95);
     box-shadow: inset 0 5px 15px rgba(0,0,0,0.3);
 }
