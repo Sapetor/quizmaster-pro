@@ -102,6 +102,14 @@
                     </button>
                 </div>
                 
+                <div class="toolbar-section">
+                    <h5>Settings</h5>
+                    <button class="toolbar-btn" id="toolbar-preview-settings" title="Preview Settings">
+                        <span class="toolbar-icon">⚙️</span>
+                        <span class="toolbar-label">Preview</span>
+                    </button>
+                </div>
+                
                 <div class="toolbar-section toolbar-toggle">
                     <button class="toolbar-btn" id="toolbar-collapse" title="Collapse Toolbar">
                         <span class="toolbar-icon">◀️</span>
@@ -137,10 +145,12 @@
                         </div>
                         
                         <div class="preview-settings">
-                            <button id="toggle-preview" class="btn secondary" onclick="togglePreviewMode()">📱 Toggle Live Preview</button>
-                            <button id="ai-generator-btn" class="btn secondary" onclick="openAIGeneratorModal()">🤖 AI Question Generator</button>
-                            <button id="toggle-toolbar" class="btn secondary desktop-only" onclick="toggleToolbar()">🛠️ Toggle Toolbar</button>
-                            <button id="preview-settings-btn" class="btn secondary desktop-only" onclick="openPreviewSettings()">⚙️ Preview Settings</button>
+                            <button id="start-hosting-main" class="btn primary large">🚀 Start Game</button>
+                            <div class="utility-buttons">
+                                <button id="toggle-preview" class="btn secondary small" onclick="togglePreviewMode()">📱 Live Preview</button>
+                                <button id="ai-generator-btn" class="btn secondary small" onclick="openAIGeneratorModal()">🤖 AI Generator</button>
+                                <button id="toggle-toolbar" class="btn secondary small desktop-only" onclick="toggleToolbar()">🛠️ Toolbar</button>
+                            </div>
                         </div>
                     </div>
                     
@@ -614,63 +624,50 @@
             </div>
         </div>
         
-        <!-- Preview Settings Modal -->
-        <div id="preview-settings-modal" class="modal" style="display: none;">
-            <div class="modal-content large">
-                <h3>⚙️ Live Preview Layout Settings</h3>
-                <p style="margin-bottom: 20px; opacity: 0.8;">Drag sliders to adjust layout in real-time</p>
+        <!-- Preview Settings Sidebar -->
+        <div id="preview-settings-sidebar" class="settings-sidebar" style="display: none;">
+            <div class="settings-header">
+                <h4>⚙️ Preview Settings</h4>
+                <button id="close-preview-settings" class="close-btn">×</button>
+            </div>
+            
+            <div class="settings-content">
+                <!-- Start Game Button at Top -->
+                <div class="settings-group">
+                    <button id="start-hosting-top" class="btn primary start-game-top">🚀 Start Game</button>
+                </div>
                 
-                <div class="live-settings-container">
-                    <div class="settings-group">
-                        <label>Split Screen Ratio: <span id="split-ratio-value">50% / 50%</span></label>
-                        <div class="slider-container">
-                            <span class="slider-label">Editor</span>
-                            <input type="range" id="split-ratio-slider" min="30" max="80" value="50" class="custom-slider">
-                            <span class="slider-label">Preview</span>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-group">
-                        <label>Font Size: <span id="font-size-value">1.0x</span></label>
-                        <div class="slider-container">
-                            <span class="slider-label">Small</span>
-                            <input type="range" id="font-size-slider" min="0.7" max="1.8" step="0.1" value="1.0" class="custom-slider">
-                            <span class="slider-label">Large</span>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-group">
-                        <label>Spacing: <span id="spacing-value">Normal</span></label>
-                        <div class="slider-container">
-                            <span class="slider-label">Tight</span>
-                            <input type="range" id="spacing-slider" min="0.5" max="2.0" step="0.1" value="1.0" class="custom-slider">
-                            <span class="slider-label">Loose</span>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-group">
-                        <label>Button Size: <span id="button-size-value">Normal</span></label>
-                        <div class="slider-container">
-                            <span class="slider-label">Compact</span>
-                            <input type="range" id="button-size-slider" min="0.7" max="1.5" step="0.1" value="1.0" class="custom-slider">
-                            <span class="slider-label">Large</span>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-group">
-                        <label>Content Density: <span id="density-value">Normal</span></label>
-                        <div class="slider-container">
-                            <span class="slider-label">Dense</span>
-                            <input type="range" id="density-slider" min="0.6" max="1.4" step="0.1" value="1.0" class="custom-slider">
-                            <span class="slider-label">Spacious</span>
-                        </div>
+                <div class="settings-group">
+                    <label>Split Ratio: <span id="split-ratio-value">50% / 50%</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="split-ratio-slider" min="30" max="80" value="50" class="custom-slider">
                     </div>
                 </div>
                 
-                <div class="modal-actions">
-                    <button id="reset-preview-settings" class="btn secondary">Reset to Default</button>
-                    <button id="close-preview-settings" class="btn primary">Close</button>
+                <div class="settings-group">
+                    <label>Font Size: <span id="font-size-value">1.0x</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="font-size-slider" min="0.7" max="1.8" step="0.1" value="1.0" class="custom-slider">
+                    </div>
                 </div>
+                
+                <div class="settings-group">
+                    <label>Spacing: <span id="spacing-value">Normal</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="spacing-slider" min="0.5" max="2.0" step="0.1" value="1.0" class="custom-slider">
+                    </div>
+                </div>
+                
+                <div class="settings-group">
+                    <label>Button Size: <span id="button-size-value">Normal</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="button-size-slider" min="0.7" max="1.5" step="0.1" value="1.0" class="custom-slider">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-actions">
+                <button id="reset-preview-settings" class="btn secondary small">Reset</button>
             </div>
         </div>
         

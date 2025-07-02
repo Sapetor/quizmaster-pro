@@ -41,6 +41,7 @@ class KahootGame {
         document.getElementById('cancel-preview').addEventListener('click', () => this.hideQuizPreview());
         document.getElementById('start-hosting').addEventListener('click', () => this.startHosting());
         document.getElementById('start-hosting-top').addEventListener('click', () => this.startHosting());
+        document.getElementById('start-hosting-main')?.addEventListener('click', () => this.startHosting());
         document.getElementById('start-game').addEventListener('click', () => this.startGame());
         document.getElementById('next-question').addEventListener('click', () => this.nextQuestion());
         
@@ -1203,6 +1204,7 @@ class KahootGame {
         document.getElementById('toolbar-top')?.addEventListener('click', () => this.scrollToTop());
         document.getElementById('toolbar-bottom')?.addEventListener('click', () => this.scrollToBottom());
         document.getElementById('toolbar-collapse')?.addEventListener('click', () => toggleToolbarCollapse());
+        document.getElementById('toolbar-preview-settings')?.addEventListener('click', () => openPreviewSettings());
         
         // Initialize toolbar state from localStorage
         this.initializeToolbarState();
@@ -1250,6 +1252,12 @@ class KahootGame {
     }
     
     scrollToTop() {
+        // Only work when live preview is active
+        if (!isPreviewMode) {
+            alert('Scroll shortcuts only work when Live Preview is active');
+            return;
+        }
+        
         const editorSection = document.getElementById('quiz-editor-section');
         if (editorSection) {
             editorSection.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1257,6 +1265,12 @@ class KahootGame {
     }
     
     scrollToBottom() {
+        // Only work when live preview is active
+        if (!isPreviewMode) {
+            alert('Scroll shortcuts only work when Live Preview is active');
+            return;
+        }
+        
         const editorSection = document.getElementById('quiz-editor-section');
         if (editorSection) {
             editorSection.scrollTo({ top: editorSection.scrollHeight, behavior: 'smooth' });
@@ -1264,9 +1278,7 @@ class KahootGame {
     }
     
     setupPreviewSettings() {
-        const modal = document.getElementById('preview-settings-modal');
-        
-        // Close settings modal listener
+        // Close settings sidebar listener
         document.getElementById('close-preview-settings')?.addEventListener('click', () => {
             this.closePreviewSettings();
         });
@@ -1274,13 +1286,6 @@ class KahootGame {
         // Reset settings listener
         document.getElementById('reset-preview-settings')?.addEventListener('click', () => {
             this.resetPreviewSettings();
-        });
-        
-        // Backdrop click to close
-        modal?.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                this.closePreviewSettings();
-            }
         });
         
         // Real-time slider listeners
@@ -1295,8 +1300,7 @@ class KahootGame {
             'split-ratio-slider': (value) => this.updateSplitRatio(parseFloat(value)),
             'font-size-slider': (value) => this.updateFontSize(parseFloat(value)),
             'spacing-slider': (value) => this.updateSpacing(parseFloat(value)),
-            'button-size-slider': (value) => this.updateButtonSize(parseFloat(value)),
-            'density-slider': (value) => this.updateDensity(parseFloat(value))
+            'button-size-slider': (value) => this.updateButtonSize(parseFloat(value))
         };
         
         Object.entries(sliders).forEach(([sliderId, callback]) => {
@@ -1386,66 +1390,14 @@ class KahootGame {
         }
     }
     
-    updateDensity(multiplier) {
-        // Density dramatically affects ALL spacing and layout
-        const root = document.documentElement;
-        
-        // Base spacing values scaled by density
-        const baseSpacing = 8;
-        const spacing = Math.round(baseSpacing * multiplier);
-        const spacingSmall = Math.round(spacing * 0.5);
-        const spacingLarge = Math.round(spacing * 1.5);
-        
-        // Update ALL spacing variables
-        root.style.setProperty('--preview-spacing', `${spacing}px`);
-        root.style.setProperty('--preview-spacing-small', `${spacingSmall}px`);
-        root.style.setProperty('--preview-spacing-large', `${spacingLarge}px`);
-        
-        // Content and layout padding
-        const contentPadding = Math.round(8 * multiplier);
-        const questionPadding = Math.round(8 * multiplier);
-        const headerPadding = Math.round(3 * multiplier);
-        const navPadding = Math.round(3 * multiplier);
-        
-        root.style.setProperty('--preview-content-padding', `${contentPadding}px`);
-        root.style.setProperty('--preview-question-padding', `${questionPadding}px`);
-        root.style.setProperty('--preview-header-padding', `${headerPadding}px 4px`);
-        root.style.setProperty('--preview-nav-padding', `${navPadding}px 4px`);
-        
-        // Button and option spacing (dramatic impact)
-        const buttonSpacing = Math.round(6 * multiplier);
-        const optionMargin = Math.round(4 * multiplier);
-        const borderRadius = Math.round(5 * multiplier);
-        
-        root.style.setProperty('--preview-button-spacing', `${buttonSpacing}px 0`);
-        root.style.setProperty('--preview-option-margin', `${optionMargin}px 0`);
-        root.style.setProperty('--preview-border-radius', `${borderRadius}px`);
-        
-        // Line height and text spacing
-        const lineHeight = 1.2 + (multiplier * 0.3); // 1.2 to 1.62
-        root.style.setProperty('--preview-line-height', lineHeight.toString());
-        
-        // Gap between sections
-        const sectionGap = Math.round(12 * multiplier);
-        root.style.setProperty('--preview-section-gap', `${sectionGap}px`);
-        
-        const valueDisplay = document.getElementById('density-value');
-        if (valueDisplay) {
-            const labels = { 0.6: 'Ultra Dense', 0.8: 'Dense', 1.0: 'Normal', 1.2: 'Comfortable', 1.4: 'Spacious' };
-            const closest = Object.keys(labels).reduce((prev, curr) => 
-                Math.abs(curr - multiplier) < Math.abs(prev - multiplier) ? curr : prev
-            );
-            valueDisplay.textContent = labels[closest] || `${multiplier.toFixed(1)}x`;
-        }
-    }
+    // Removed updateDensity function - density slider removed
     
     saveCurrentSettings() {
         const settings = {
             splitRatio: document.getElementById('split-ratio-slider')?.value || 50,
             fontSize: document.getElementById('font-size-slider')?.value || 1.0,
             spacing: document.getElementById('spacing-slider')?.value || 1.0,
-            buttonSize: document.getElementById('button-size-slider')?.value || 1.0,
-            density: document.getElementById('density-slider')?.value || 1.0
+            buttonSize: document.getElementById('button-size-slider')?.value || 1.0
         };
         
         localStorage.setItem('previewSettings', JSON.stringify(settings));
@@ -1459,27 +1411,23 @@ class KahootGame {
         const fontSize = parseFloat(settings.fontSize) || 1.0;
         const spacing = parseFloat(settings.spacing) || 1.0;
         const buttonSize = parseFloat(settings.buttonSize) || 1.0;
-        const density = parseFloat(settings.density) || 1.0;
         
         // Update sliders
         const splitSlider = document.getElementById('split-ratio-slider');
         const fontSlider = document.getElementById('font-size-slider');
         const spacingSlider = document.getElementById('spacing-slider');
         const buttonSlider = document.getElementById('button-size-slider');
-        const densitySlider = document.getElementById('density-slider');
         
         if (splitSlider) splitSlider.value = splitRatio;
         if (fontSlider) fontSlider.value = fontSize;
         if (spacingSlider) spacingSlider.value = spacing;
         if (buttonSlider) buttonSlider.value = buttonSize;
-        if (densitySlider) densitySlider.value = density;
         
         // Apply settings
         this.updateSplitRatio(splitRatio);
         this.updateFontSize(fontSize);
         this.updateSpacing(spacing);
         this.updateButtonSize(buttonSize);
-        this.updateDensity(density);
     }
     
     // Removed applyPreviewSettings - now using real-time updates
@@ -1492,27 +1440,24 @@ class KahootGame {
         const fontSlider = document.getElementById('font-size-slider');
         const spacingSlider = document.getElementById('spacing-slider');
         const buttonSlider = document.getElementById('button-size-slider');
-        const densitySlider = document.getElementById('density-slider');
         
         if (splitSlider) splitSlider.value = 50;
         if (fontSlider) fontSlider.value = 1.0;
         if (spacingSlider) spacingSlider.value = 1.0;
         if (buttonSlider) buttonSlider.value = 1.0;
-        if (densitySlider) densitySlider.value = 1.0;
         
         // Apply defaults
         this.updateSplitRatio(50);
         this.updateFontSize(1.0);
         this.updateSpacing(1.0);
         this.updateButtonSize(1.0);
-        this.updateDensity(1.0);
         
         // Clear localStorage
         localStorage.removeItem('previewSettings');
     }
     
     closePreviewSettings() {
-        document.getElementById('preview-settings-modal').style.display = 'none';
+        document.getElementById('preview-settings-sidebar').style.display = 'none';
     }
 
     newGame() {
@@ -1764,9 +1709,13 @@ class KahootGame {
         
         // Close modals with Escape
         if (e.key === 'Escape') {
-            const previewModal = document.getElementById('preview-settings-modal');
-            if (previewModal && previewModal.style.display !== 'none') {
+            const previewSidebar = document.getElementById('preview-settings-sidebar');
+            const aiModal = document.getElementById('ai-generator-modal');
+            
+            if (previewSidebar && previewSidebar.style.display !== 'none') {
                 this.closePreviewSettings();
+            } else if (aiModal && aiModal.style.display !== 'none') {
+                closeAIGeneratorModal();
             }
         }
         
@@ -2825,9 +2774,43 @@ function toggleToolbarCollapse() {
 
 // Global function to open preview settings
 function openPreviewSettings() {
-    const modal = document.getElementById('preview-settings-modal');
+    const sidebar = document.getElementById('preview-settings-sidebar');
+    if (sidebar) {
+        sidebar.style.display = 'block';
+    }
+}
+
+// Global function to close AI generator modal
+function closeAIGeneratorModal() {
+    const modal = document.getElementById('ai-generator-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Global function to open AI generator modal
+function openAIGeneratorModal() {
+    const modal = document.getElementById('ai-generator-modal');
     if (modal) {
         modal.style.display = 'flex';
+        
+        // Add escape key and backdrop click listeners
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                closeAIGeneratorModal();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        
+        const handleBackdrop = (e) => {
+            if (e.target === modal) {
+                closeAIGeneratorModal();
+                modal.removeEventListener('click', handleBackdrop);
+            }
+        };
+        
+        document.addEventListener('keydown', handleEscape);
+        modal.addEventListener('click', handleBackdrop);
     }
 }
 

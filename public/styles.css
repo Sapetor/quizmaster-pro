@@ -251,11 +251,32 @@ body {
 /* Preview Mode Styling */
 .preview-settings {
     margin-top: 15px;
-    padding: 15px;
+    padding: 20px;
     background: rgba(255,255,255,0.05);
     border-radius: 8px;
     border: 1px solid var(--border-color);
     text-align: center;
+}
+
+.utility-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.btn.small {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    min-width: auto;
+}
+
+#start-hosting-main {
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+    padding: 15px 25px;
 }
 
 /* Left Toolbar */
@@ -319,7 +340,7 @@ body {
     color: var(--text-primary);
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 0.65rem;
+    font-size: 0.55rem;
     text-align: center;
 }
 
@@ -330,12 +351,12 @@ body {
 }
 
 .toolbar-icon {
-    font-size: 1.2rem;
+    font-size: 1rem;
     margin-bottom: 2px;
 }
 
 .toolbar-label {
-    font-size: 0.6rem;
+    font-size: 0.5rem;
     font-weight: 500;
     line-height: 1;
 }
@@ -401,6 +422,14 @@ body {
 .quiz-editor-section {
     overflow-y: auto;
     padding-right: 15px;
+    transition: all 0.3s ease;
+}
+
+/* When not in split-screen, center the editor */
+.host-container:not(.split-screen) .quiz-editor-section {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px;
 }
 
 .quiz-preview-section {
@@ -878,7 +907,7 @@ body {
 }
 
 .preview-content .true-false-options,
-.preview-content-split .true-false-options {
+.preview-content-split #preview-true-false-split:not([style*="display: none"]) .true-false-options {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--preview-spacing);
@@ -886,7 +915,7 @@ body {
 }
 
 .mobile-viewport .preview-content .true-false-options,
-.mobile-viewport .preview-content-split .true-false-options {
+.mobile-viewport .preview-content-split #preview-true-false-split:not([style*="display: none"]) .true-false-options {
     grid-template-columns: 1fr;
     max-width: 300px;
     gap: 15px;
@@ -1189,6 +1218,14 @@ pre code {
     border-radius: 10px;
     padding: 20px;
     margin-bottom: 20px;
+}
+
+.start-game-top {
+    width: 100%;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    padding: 10px;
+    border: none;
 }
 
 .settings-group {
