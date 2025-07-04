@@ -682,6 +682,14 @@
                         </select>
                     </div>
                     
+                    <div class="model-selection" id="model-selection" style="display: none;">
+                        <label for="ollama-model">Choose Model:</label>
+                        <select id="ollama-model" class="input-field">
+                            <option value="">Loading models...</option>
+                        </select>
+                        <small>Select which Ollama model to use for generation</small>
+                    </div>
+                    
                     <div class="api-key-section" id="api-key-section" style="display: none;">
                         <label for="ai-api-key">API Key:</label>
                         <input type="password" id="ai-api-key" class="input-field" placeholder="Enter your API key">
@@ -709,7 +717,7 @@
                 <div class="generation-options">
                     <div class="option-group">
                         <label for="question-count">Number of Questions:</label>
-                        <input type="number" id="question-count" value="5" min="1" max="20" class="input-field number-input">
+                        <input type="number" id="question-count" value="1" min="1" max="20" class="input-field number-input">
                     </div>
                     
                     <div class="option-group">

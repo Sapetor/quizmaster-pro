@@ -3072,7 +3072,7 @@ class AIQuestionGenerator {
                 name: "Ollama (Local)",
                 apiKey: false,
                 endpoint: "http://localhost:11434/api/generate",
-                models: ["llama3.2:3b", "phi3:mini", "mistral:7b"]
+                models: ["qwen2.5:7b", "qwen2.5:3b", "llama3.1:8b", "phi3:mini"]
             },
             huggingface: {
                 name: "Hugging Face",
@@ -3103,6 +3103,13 @@ class AIQuestionGenerator {
             this.handleProviderChange(e.target.value);
         });
 
+        // Model selection change
+        document.getElementById('ollama-model').addEventListener('change', (e) => {
+            if (e.target.value) {
+                localStorage.setItem('ollama_selected_model', e.target.value);
+            }
+        });
+
         // File upload handling
         document.getElementById('content-file').addEventListener('change', (e) => {
             this.handleFileUpload(e.target.files[0]);
@@ -3126,6 +3133,7 @@ class AIQuestionGenerator {
 
     handleProviderChange(provider) {
         const apiKeySection = document.getElementById('api-key-section');
+        const modelSelection = document.getElementById('model-selection');
         const needsApiKey = this.providers[provider].apiKey;
         
         if (needsApiKey) {
@@ -3138,6 +3146,65 @@ class AIQuestionGenerator {
         } else {
             apiKeySection.style.display = 'none';
         }
+        
+        // Show model selection for Ollama
+        if (provider === 'ollama') {
+            modelSelection.style.display = 'block';
+            this.loadOllamaModels();
+        } else {
+            modelSelection.style.display = 'none';
+        }
+    }
+
+    async loadOllamaModels() {
+        const modelSelect = document.getElementById('ollama-model');
+        modelSelect.innerHTML = '<option value="">Loading models...</option>';
+        
+        try {
+            const response = await fetch('/api/ollama/models');
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch models');
+            }
+            
+            const data = await response.json();
+            modelSelect.innerHTML = '';
+            
+            if (data.models && data.models.length > 0) {
+                data.models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.name;
+                    option.textContent = `${model.name} (${this.formatModelSize(model.size)})`;
+                    modelSelect.appendChild(option);
+                });
+                
+                // Load saved model selection
+                const savedModel = localStorage.getItem('ollama_selected_model');
+                if (savedModel && data.models.some(m => m.name === savedModel)) {
+                    modelSelect.value = savedModel;
+                }
+            } else {
+                modelSelect.innerHTML = '<option value="">No models available</option>';
+            }
+        } catch (error) {
+            console.error('Error loading Ollama models:', error);
+            modelSelect.innerHTML = '<option value="">Error loading models</option>';
+        }
+    }
+
+    formatModelSize(bytes) {
+        if (!bytes) return 'Unknown size';
+        
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        let i = 0;
+        let size = bytes;
+        
+        while (size >= 1024 && i < sizes.length - 1) {
+            size /= 1024;
+            i++;
+        }
+        
+        return `${size.toFixed(1)} ${sizes[i]}`;
     }
 
     async handleFileUpload(file) {
@@ -3211,9 +3278,9 @@ class AIQuestionGenerator {
         const contentType = this.detectContentType(content);
         const formatInstructions = this.getFormatInstructions(contentType);
 
-        return `Generate ${options.count} high-quality quiz questions from the following content. Focus on key concepts and important details.
+        return `You must create ${options.count} quiz questions about the EXACT content provided below. Use the specific functions, equations, or examples given.
 
-Content:
+CONTENT TO USE:
 ${content}
 
 Requirements:
@@ -3224,30 +3291,31 @@ Requirements:
 
 ${formatInstructions}
 
-Please format your response as a valid JSON array with this exact structure:
-[
-  {
-    "question": "What is the derivative of $f(x) = x^2 + 3x$?",
-    "type": "multiple-choice",
-    "options": ["$f'(x) = 2x + 3$", "$f'(x) = x + 3$", "$f'(x) = 2x$", "$f'(x) = x^2$"],
-    "correctAnswer": 0,
-    "difficulty": "medium",
-    "timeLimit": 25
-  }
-]
+MANDATORY RULES:
+1. Questions must be about the SPECIFIC functions/equations/examples in the content
+2. If content mentions "sin(t) + cos(t)", ask about sin(t) + cos(t), NOT exp(-2t) or other functions
+3. If content mentions "2x + 3y = 7", ask about that exact equation, not generic ones
+4. Use the EXACT mathematical expressions provided in the content
+5. Do not substitute different functions or change the specific examples given
+6. Focus on the precise material provided, not general concepts
 
-CRITICAL FORMATTING RULES:
-- For multiple-choice: correctAnswer should be the index (0, 1, 2, 3)
-- For true-false: use "true" or "false" as string for correctAnswer
-- For multiple-correct: correctAnswer should be an array of indices like [0, 2]
-- For numeric: correctAnswer should be a number, add tolerance field with acceptable margin
-- For mathematical expressions: ALWAYS use LaTeX notation with $ delimiters (e.g., $x^2$, $\\int_0^1 f(x)dx$)
-- For code: Use proper syntax highlighting hints with backticks and language (e.g., \`\`\`python)
-- For mathematical questions: Use symbols like ∈, ∩, ∪, ≤, ≥, ∞, π, α, β, etc. when appropriate
-- Make questions pedagogically sound and test understanding, not just memorization
-- Ensure wrong options are plausible but clearly incorrect to knowledgeable students
-- Include step-by-step reasoning in complex problems when helpful
-- Only return the JSON array, no additional text or explanation`;
+Return ONLY a JSON array in this EXACT format:
+
+[{
+  "question": "What is the Fourier transform of f(t)?",
+  "type": "multiple-choice", 
+  "options": ["First math expression", "Second math expression", "Third math expression", "Fourth math expression"],
+  "correctAnswer": 2,
+  "difficulty": "medium",
+  "timeLimit": 30
+}]
+
+STRICT RULES:
+1. "question" = ONLY the question text, NO A) B) C) D) choices
+2. "options" = Array of 4 answer choices WITHOUT A) B) C) D) labels
+3. "correctAnswer" = Number 0, 1, 2, or 3 (NOT "A" or "C)")
+4. Use single backslashes in LaTeX: $\\frac{1}{2}$ not $\\\\frac{1}{2}$
+5. NO explanatory text outside the JSON array`;
     }
 
     detectContentType(content) {
@@ -3293,6 +3361,16 @@ CRITICAL FORMATTING RULES:
 - For calculus: use $\\frac{d}{dx}$, $\\int$, $\\lim_{x \\to \\infty}$
 - For algebra: use $\\sqrt{x}$, $x^n$, $\\log_a(x)$, $e^x$
 - For geometry: use proper notation for angles, lines, points
+- For matrices: use $\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$ (always close with \\end{pmatrix})
+- For eigenvalues: use $\\lambda_1, \\lambda_2$ or $\\lambda$ consistently
+- For constants: use $i$ not $\\text{i}$, use $\\pi$ not $\\text{π}$, use $e$ not $\\text{e}$
+- For functions: use $\\sqrt{-1}$ not $\\text{sqrt{-1}}$, use $\\sin(x)$ not $\\text{sin}(x)$
+- For trig functions: use $\\sin(x)$, $\\cos(x)$, $\\tan(x)$ with parentheses, NOT $\\sin{x}$ or $\\tan{\\theta}$
+- AVOID \\text{} for mathematical symbols - only use for actual text descriptions
+- CRITICAL: Always complete LaTeX expressions - every \\begin{} must have matching \\end{}
+- CRITICAL: Use double backslashes \\\\ for matrix row separators
+- CRITICAL: Test your LaTeX mentally - it must be syntactically correct
+- CRITICAL: Keep expressions simple and readable - avoid overly complex nested LaTeX
 - Create questions that test conceptual understanding, not just computation
 - Include common mathematical mistakes as wrong options`;
 
@@ -3403,16 +3481,34 @@ CRITICAL FORMATTING RULES:
 
     async generateWithOllama(prompt) {
         try {
+            const selectedModel = document.getElementById('ollama-model').value;
+            
+            if (!selectedModel) {
+                throw new Error('Please select an Ollama model first');
+            }
+            
+            // Add randomization and context clearing to prevent repetition
+            const timestamp = Date.now();
+            const randomSeed = Math.floor(Math.random() * 10000);
+            const enhancedPrompt = `[Session: ${timestamp}-${randomSeed}] ${prompt}
+
+IMPORTANT: Generate completely new and unique questions. Do not repeat any previous responses.`;
+            
             const response = await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: 'llama3.2:3b',
-                    prompt: prompt,
+                    model: selectedModel,
+                    prompt: enhancedPrompt,
                     stream: false,
-                    format: 'json'
+                    format: 'json',
+                    options: {
+                        temperature: 0.8,
+                        top_p: 0.9,
+                        seed: randomSeed
+                    }
                 })
             });
 
@@ -3463,8 +3559,50 @@ CRITICAL FORMATTING RULES:
     }
 
     async generateWithClaude(prompt) {
-        // Placeholder for Claude implementation
-        throw new Error('Claude integration coming soon');
+        const apiKey = document.getElementById('ai-api-key').value;
+        
+        if (!apiKey) {
+            throw new Error('Please enter your Claude API key');
+        }
+        
+        try {
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify({
+                    model: 'claude-3-haiku-20240307',
+                    max_tokens: 1024,
+                    messages: [
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`Claude API error: ${response.status} - ${error}`);
+            }
+
+            const data = await response.json();
+            console.log('Raw Claude response:', data);
+            
+            // Save API key for future use
+            localStorage.setItem('ai_api_key_claude', apiKey);
+            
+            return this.parseAIResponse(data.content[0].text);
+        } catch (error) {
+            if (error.message.includes('fetch')) {
+                throw new Error('Cannot connect to Claude API. Please check your internet connection.');
+            }
+            throw error;
+        }
     }
 
     parseAIResponse(responseText) {
@@ -3504,6 +3642,12 @@ CRITICAL FORMATTING RULES:
         const validQuestions = [];
         for (const q of questions) {
             if (q.question && q.type && q.correctAnswer !== undefined) {
+                // Basic LaTeX validation - skip questions with LaTeX errors
+                if (this.hasLatexErrors(q.question)) {
+                    console.warn('Skipping question with LaTeX errors:', q.question);
+                    continue;
+                }
+                
                 // Set default values for missing fields
                 q.difficulty = q.difficulty || 'medium';
                 q.timeLimit = q.timeLimit || 20;
@@ -3515,6 +3659,57 @@ CRITICAL FORMATTING RULES:
             }
         }
         return validQuestions;
+    }
+
+    hasLatexErrors(text) {
+        // Check for unmatched LaTeX environments
+        const beginMatches = (text.match(/\\begin\{[^}]+\}/g) || []).length;
+        const endMatches = (text.match(/\\end\{[^}]+\}/g) || []).length;
+        
+        // Check for unmatched dollar signs
+        const dollarMatches = (text.match(/\$/g) || []).length;
+        
+        // Check for incomplete LaTeX commands (but allow common math functions)
+        const commonMathFunctions = /\\(sin|cos|tan|sec|csc|cot|log|ln|exp|sqrt|int|sum|prod|lim|frac|partial|nabla|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|pi|sigma|omega|infty|cdot|times|div|pm|mp|neq|leq|geq|approx|equiv|subset|supset|in|notin|cup|cap|emptyset|mathbb|mathcal|mathbf|text)\b/;
+        const hasIncompleteCommands = /\\[a-zA-Z]+(?![a-zA-Z]|\{|\()/.test(text) && !commonMathFunctions.test(text);
+        
+        // Check for problematic LaTeX patterns
+        const hasProblematicText = /\\text\{[iπe]\}/.test(text); // \text{i}, \text{π}, \text{e}
+        const hasInvalidFunctions = /\\text\{sqrt|sin|cos|tan|log\}/.test(text); // \text{sqrt}, etc.
+        const hasInvalidTrigSyntax = false; // Allow all trig function syntax
+        
+        // Check for bracket mismatches
+        const hasUnmatchedParens = this.hasUnmatchedDelimiters(text, '(', ')');
+        const hasUnmatchedBrackets = this.hasUnmatchedDelimiters(text, '[', ']');
+        const hasUnmatchedBraces = this.hasUnmatchedDelimiters(text, '{', '}');
+        
+        // Check for double subscripts/superscripts without braces
+        const hasDoubleScripts = /\^[^{]\^|\^[^{]*\^|_[^{]_|_[^{]*_/.test(text);
+        
+        // Check for incomplete fractions
+        const hasIncompleteFractions = /\\frac\{[^}]*\}(?!\{)/.test(text);
+        
+        return beginMatches !== endMatches || 
+               dollarMatches % 2 !== 0 || 
+               hasIncompleteCommands || 
+               hasProblematicText || 
+               hasInvalidFunctions || 
+               hasInvalidTrigSyntax ||
+               hasUnmatchedParens ||
+               hasUnmatchedBrackets ||
+               hasUnmatchedBraces ||
+               hasDoubleScripts ||
+               hasIncompleteFractions;
+    }
+
+    hasUnmatchedDelimiters(text, open, close) {
+        let count = 0;
+        for (let i = 0; i < text.length; i++) {
+            if (text[i] === open) count++;
+            if (text[i] === close) count--;
+            if (count < 0) return true; // More closing than opening
+        }
+        return count !== 0; // Unmatched delimiters
     }
 
     addGeneratedQuestions(questions) {

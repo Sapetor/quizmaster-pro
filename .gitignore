@@ -8,3 +8,8 @@ yarn-error.log*
 .claude/
 public/uploads/*
 !public/uploads/.gitkeep
+quizzes/*
+!quizzes/quiz_example_1.json
+!quizzes/quiz_example_2.json
+!quizzes/quiz_example_3.json
+results/

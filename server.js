@@ -239,6 +239,32 @@ app.get('/api/qr/:pin', async (req, res) => {
   }
 });
 
+// Fetch available Ollama models endpoint
+app.get('/api/ollama/models', async (req, res) => {
+  try {
+    const { default: fetch } = await import('node-fetch');
+    const response = await fetch('http://localhost:11434/api/tags');
+    
+    if (!response.ok) {
+      return res.status(500).json({ error: 'Failed to fetch Ollama models' });
+    }
+    
+    const data = await response.json();
+    const models = data.models || [];
+    
+    res.json({
+      models: models.map(model => ({
+        name: model.name,
+        size: model.size,
+        modified_at: model.modified_at
+      }))
+    });
+  } catch (error) {
+    console.error('Ollama models fetch error:', error);
+    res.status(500).json({ error: 'Failed to connect to Ollama' });
+  }
+});
+
 const games = new Map();
 const players = new Map();
 
@@ -451,6 +477,12 @@ class Game {
 }
 
 function advanceToNextQuestion(game, io) {
+  // Clear any existing advance timer to prevent duplication
+  if (game.advanceTimer) {
+    clearTimeout(game.advanceTimer);
+    game.advanceTimer = null;
+  }
+  
   game.advanceTimer = setTimeout(() => {
     game.updateLeaderboard();
     io.to(`game-${game.pin}`).emit('question-end', {
@@ -576,12 +608,12 @@ io.on('connection', (socket) => {
   socket.on('host-join', (data) => {
     // Check if request is from local machine or local network (but allow all for now due to NAT/proxy issues)
     const clientIP = socket.handshake.address;
-    const isLocalHost = clientIP === '127.0.0.1' || clientIP === '::1' || clientIP === '::ffff:127.0.0.1';
-    const isLocalNetwork = isLocalHost || clientIP.startsWith('192.168.') || clientIP.startsWith('10.') || clientIP.startsWith('172.') || clientIP.startsWith('::ffff:192.168.');
     
     // Allow all local network connections
     
     // Uncomment this line to enable hosting restriction:
+    // const isLocalHost = clientIP === '127.0.0.1' || clientIP === '::1' || clientIP === '::ffff:127.0.0.1';
+    // const isLocalNetwork = isLocalHost || clientIP.startsWith('192.168.') || clientIP.startsWith('10.') || clientIP.startsWith('172.') || clientIP.startsWith('::ffff:192.168.');
     // if (!isLocalNetwork) {
     //   socket.emit('error', { message: 'Game hosting is restricted to local network only' });
     //   return;
@@ -686,7 +718,7 @@ io.on('connection', (socket) => {
     const game = games.get(playerData.gamePin);
     if (!game || game.gameState !== 'question') return;
 
-    const result = game.submitAnswer(socket.id, answer, type);
+    game.submitAnswer(socket.id, answer, type);
     socket.emit('answer-submitted', { answer: answer });
     
     // Check if all players have submitted answers
@@ -695,13 +727,21 @@ io.on('connection', (socket) => {
       .filter(player => player.answers[game.currentQuestion]).length;
     
     if (answeredPlayers >= totalPlayers && totalPlayers > 0 && game.gameState === 'question') {
-      // All players have answered, end question early (prevent race condition with state check)
+      // All players have answered, end question early
       if (game.questionTimer) {
         clearTimeout(game.questionTimer);
         game.questionTimer = null;
         
+        // Clear any pending advance timer to prevent double advancement
+        if (game.advanceTimer) {
+          clearTimeout(game.advanceTimer);
+          game.advanceTimer = null;
+        }
+        
         // Trigger question end immediately
         setTimeout(() => {
+          if (game.gameState !== 'question') return; // Prevent double execution
+          
           game.endQuestion();
           const question = game.quiz.questions[game.currentQuestion];
           const correctAnswer = question.correctAnswer;
