@@ -11,6 +11,10 @@ const translations = {
         load_quiz: "Load Quiz",
         import_quiz: "Import Quiz",
         preview_quiz: "Preview Quiz",
+        create_quiz: "Create Your Quiz",
+        live_preview: "Live Preview",
+        ai_generator: "AI Generator",
+        toolbar: "Toolbar",
         randomize_questions: "Randomize question order",
         randomize_answers: "Randomize answer positions",
         use_same_time: "Use same time for all questions",
@@ -3249,7 +3253,7 @@ class KahootGame {
 
     async refreshActiveGames() {
         const gamesContainer = document.getElementById('games-list');
-        gamesContainer.innerHTML = '<div class="loading-games">Loading games...</div>';
+        gamesContainer.innerHTML = `<div class="loading-games">${getTranslation('loading_games')}</div>`;
 
         try {
             const response = await fetch('/api/active-games');
@@ -4048,7 +4052,7 @@ function togglePreviewMode() {
         // Enable split-screen mode
         hostContainer.classList.add('split-screen');
         previewSection.style.display = 'flex';
-        toggleButton.textContent = '❌ Close Preview';
+        toggleButton.textContent = getTranslation('close_preview');
         toggleButton.classList.remove('secondary');
         toggleButton.classList.add('danger');
         
@@ -4062,7 +4066,7 @@ function togglePreviewMode() {
         // Disable split-screen mode
         hostContainer.classList.remove('split-screen');
         previewSection.style.display = 'none';
-        toggleButton.textContent = '📱 Toggle Live Preview';
+        toggleButton.textContent = getTranslation('toggle_live_preview');
         toggleButton.classList.remove('danger');
         toggleButton.classList.add('secondary');
         
