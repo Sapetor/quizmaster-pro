@@ -809,8 +809,16 @@ function showConfirm(translationKey, ...args) {
 }
 
 function translatePage() {
+    // Skip elements that contain dynamic game content
+    const skipElements = ['current-question', 'player-question-text', 'host-question-text', 'preview-question-text', 'preview-question-text-split'];
+    
     const elements = document.querySelectorAll('[data-translate]');
     elements.forEach(element => {
+        // Skip translation for dynamic content elements
+        if (skipElements.includes(element.id) || element.dataset.hasContent === 'true') {
+            return;
+        }
+        
         const key = element.getAttribute('data-translate');
         if (translations[currentLanguage] && translations[currentLanguage][key]) {
             element.textContent = translations[currentLanguage][key];
@@ -944,6 +952,7 @@ class KahootGame {
         this.checkURLParameters();
         this.initializeSounds();
         this.mathJaxRenderTimeout = null;
+        this.initializeQuestionElements();
         this.initializeLanguage();
     }
 
@@ -1589,6 +1598,24 @@ class KahootGame {
         }
     }
 
+    initializeQuestionElements() {
+        // Initialize dynamic question elements with proper default text
+        // These elements should not be translated by the translation system
+        const questionElements = [
+            { id: 'current-question', defaultText: 'Question will appear here' },
+            { id: 'player-question-text', defaultText: 'Question will appear here' },
+            { id: 'preview-question-text', defaultText: 'Select a question to preview' },
+            { id: 'preview-question-text-split', defaultText: 'Select a question to preview' }
+        ];
+
+        questionElements.forEach(({ id, defaultText }) => {
+            const element = document.getElementById(id);
+            if (element && !element.dataset.hasContent) {
+                element.textContent = defaultText;
+            }
+        });
+    }
+
     playSound(frequency, duration, type = 'sine') {
         if (!this.soundsEnabled || !this.audioContext) return;
         
@@ -1623,6 +1650,7 @@ class KahootGame {
             if (questionCounter) setTranslatedText(questionCounter, 'question_x_of_y', data.questionNumber, data.totalQuestions);
             if (currentQuestion) {
                 currentQuestion.innerHTML = this.formatCodeBlocks(data.question);
+                currentQuestion.dataset.hasContent = 'true'; // Mark as having dynamic content
                 this.renderMathJax(currentQuestion);
             }
             
@@ -1688,6 +1716,7 @@ class KahootGame {
             // Display question text and image for players
             const playerQuestionText = document.getElementById('player-question-text');
             playerQuestionText.innerHTML = this.formatCodeBlocks(data.question);
+            playerQuestionText.dataset.hasContent = 'true'; // Mark as having dynamic content
             this.renderMathJax(playerQuestionText);
             
             if (data.image) {
@@ -3613,7 +3642,9 @@ class KahootGame {
         // Update question counter and text
         document.getElementById('preview-question-counter-display').textContent = 
             getTranslation('question_x_of_y', data.questionNumber, data.totalQuestions);
-        document.getElementById('preview-question-text').innerHTML = this.formatCodeBlocks(data.question);
+        const previewElement = document.getElementById('preview-question-text');
+        previewElement.innerHTML = this.formatCodeBlocks(data.question);
+        previewElement.dataset.hasContent = 'true'; // Mark as having dynamic content
 
         // Handle image
         const imageDisplay = document.getElementById('preview-question-image');
@@ -3690,7 +3721,9 @@ class KahootGame {
     }
 
     showEmptyPreview() {
-        document.getElementById('preview-question-text').textContent = getTranslation('add_question_preview');
+        const previewElement = document.getElementById('preview-question-text');
+        previewElement.textContent = getTranslation('add_question_preview');
+        previewElement.dataset.hasContent = 'true'; // Mark as having dynamic content
         document.getElementById('preview-question-counter-display').textContent = 'No questions';
         document.querySelectorAll('.preview-answer-type').forEach(type => type.style.display = 'none');
     }
@@ -3798,7 +3831,9 @@ class KahootGame {
         // Update question counter and text
         document.getElementById('preview-question-counter-display-split').textContent = 
             getTranslation('question_x_of_y', data.questionNumber, data.totalQuestions);
-        document.getElementById('preview-question-text-split').innerHTML = this.formatCodeBlocks(data.question);
+        const previewElementSplit = document.getElementById('preview-question-text-split');
+        previewElementSplit.innerHTML = this.formatCodeBlocks(data.question);
+        previewElementSplit.dataset.hasContent = 'true'; // Mark as having dynamic content
 
         // Handle image
         const imageDisplay = document.getElementById('preview-question-image-split');
@@ -3893,7 +3928,9 @@ class KahootGame {
     }
 
     showEmptySplitPreview() {
-        document.getElementById('preview-question-text-split').textContent = getTranslation('add_question_preview');
+        const previewElementSplit = document.getElementById('preview-question-text-split');
+        previewElementSplit.textContent = getTranslation('add_question_preview');
+        previewElementSplit.dataset.hasContent = 'true'; // Mark as having dynamic content
         document.getElementById('preview-question-counter-display-split').textContent = 'No questions';
         document.querySelectorAll('#preview-answer-area-split .preview-answer-type').forEach(type => type.style.display = 'none');
     }
