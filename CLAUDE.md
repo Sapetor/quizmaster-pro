@@ -33,9 +33,11 @@ QuizMaster Pro is a real-time multiplayer quiz platform with a Node.js backend a
 - **Screen Management**: JavaScript class-based approach with enhanced animations
 - **Real-time Communication**: Socket.IO client for bidirectional communication
 - **LaTeX Support**: MathJax integration for mathematical equations
-- **Modern UI**: Enhanced styling with gradients, animations, and responsive design
-- **Quiz Management**: Modal-based interface for saving and loading quizzes
+- **Modern UI**: Glass morphism design with backdrop blur effects, gradient backgrounds, and smooth animations
+- **Typography**: Inter font family for improved readability and modern aesthetics
+- **Quiz Management**: Modal-based interface for saving and loading quizzes with enhanced UX
 - **Input Validation**: Comprehensive client-side validation with user-friendly error messages
+- **Responsive Design**: Optimized for desktop and mobile with adaptive layouts
 
 ### Key Game Flow
 1. Host creates quiz with questions (multiple types supported) or loads saved quiz
@@ -190,19 +192,68 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 - **Keyboard Shortcuts**: Support for toolbar actions and navigation when preview is active
 - **True/False Bug Fixed**: Comprehensive fix ensuring True/False buttons only appear for True/False questions
 
-### AI Question Generation System (NEW FEATURE)
+### AI Question Generation System
 - **Multiple Providers**: Support for Ollama (local, free), OpenAI, HuggingFace, and Claude APIs
-- **Local AI Support**: Ollama integration for offline question generation with llama3.2:3b model
+- **Ollama Model Selection**: Dynamic dropdown showing available local models with size information
+- **Claude API Integration**: Full Claude 3 Haiku support with server-side proxy to bypass CORS
+- **Local AI Support**: Ollama integration for offline question generation with model persistence
 - **Content Type Detection**: Automatic detection of mathematics, programming, physics, chemistry content
 - **Smart Prompting**: Content-aware prompt engineering with specialized formatting instructions
 - **Question Type Flexibility**: Support for multiple choice, true/false, multiple correct, and numeric questions
 - **Difficulty Levels**: Beginner, intermediate, advanced, and expert difficulty settings
-- **Batch Generation**: Generate 1-10 questions at once with progress indicators
+- **Batch Generation**: Generate 1-10 questions at once with progress indicators (default: 1)
 - **JSON Parsing**: Robust parsing handling both arrays and single objects from AI responses
-- **Validation System**: Comprehensive validation of generated questions with error handling
-- **Modal Interface**: User-friendly modal with provider selection, content input, and settings
+- **Validation System**: Comprehensive validation of generated questions with enhanced LaTeX support
+- **Modal Interface**: User-friendly modal with provider selection, model selection, content input, and settings
 - **API Key Management**: Secure localStorage for API keys with provider-specific handling
+- **Server-Side Proxy**: `/api/claude/generate` endpoint for secure Claude API access
 - **Error Recovery**: Detailed error messages and debugging for troubleshooting AI responses
+
+### Modern UI Design System
+- **Glass Morphism Effects**: Backdrop blur and translucent surfaces throughout the interface
+- **Enhanced Color Palette**: Extended CSS custom properties with accent colors and semantic colors
+- **Typography**: Inter font family with optimized font weights (300-700) for improved readability
+- **Button System**: Modern button designs with hover animations, shimmer effects, and glass morphism
+- **Input Fields**: Enhanced form controls with focus states, smooth transitions, and backdrop blur
+- **Modal Enhancements**: Improved modal dialogs with slide-in animations and glass morphism
+- **Card Components**: Elevated card designs with hover effects and gradient accent borders
+- **Loading States**: Modern spinner animations and loading indicators
+- **Focus Management**: Improved accessibility with enhanced focus outlines
+- **Responsive Design**: Optimized layouts for desktop and mobile devices
+- **Animation Performance**: Hardware-accelerated animations with cubic-bezier easing
+- **Color Variables**: Comprehensive CSS custom property system for consistent theming
+
+### UI/UX Recent Fixes (Latest Update)
+- **Quiz Title Contrast**: Improved input field styling with better background opacity (98%) and dark text color for enhanced readability
+- **Prominent Start Button**: Added animated start game button at the top of quiz builder with pulse glow effect and gradient background
+- **Color Accessibility**: Enhanced yellow text color contrast (#f6ad00 instead of #ffd700) for better readability in bright themes
+- **Answer Statistics**: Improved styling for live statistics answer letters with proper sizing, Inter font, and shadow effects
+- **Host Answer Highlighting**: Fixed answer highlighting on host screen with proper visual feedback including background color, border, and font weight
+- **Numeric Question Support**: Added correct answer display for numeric/input questions on host screen with animated banner
+- **Device Toggle Functionality**: Verified Desktop/Mobile preview buttons are functional with proper viewport switching
+- **Answer Display Enhancement**: Improved visual feedback with subtle background colors instead of solid fills for better readability
+- **Start Button Refinement**: Resized and relocated start button to header area with smaller, less prominent styling for better UX
+- **Desktop/Mobile Button Removal**: Removed non-functional Desktop/Mobile buttons from live preview sections to eliminate confusion
+- **Option Styling Consistency**: Moved "use same time for all questions" setting to match other general options styling
+- **Green Highlighting Bug Fix**: Fixed incorrect green highlighting of first alternative in multiple choice questions by properly resetting color and fontWeight styles
+- **Numeric Answer Display Fix**: Fixed numeric question correct answer display (including constant e) by properly sending tolerance parameter in question-timeout events
+- **Manual Advancement Button Enhancement**: Enhanced manual advancement button with translation support and improved click handling with debugging
+- **Internationalization System**: Added comprehensive language selector with English and Spanish support using flag buttons in header
+- **Spanish Translation**: Complete translation of all interface elements to Spanish including editor, preview, game screens, and controls
+- **Translation Infrastructure**: Implemented robust translation system with localStorage persistence and placeholder text support
+- **Language Selector UI**: Flag-based language selector positioned in header with visual feedback for active language
+- **Comprehensive Dynamic Translation**: All dynamically generated content now uses translation functions including question counters, game messages, option letters
+- **Screen Translation Integration**: Every screen change automatically triggers translation updates ensuring consistent language throughout
+- **AI Generator Language Awareness**: AI question generation automatically uses selected interface language for generating questions
+- **Preview Translation Support**: Live preview updates question counters and content in selected language
+- **Game Flow Translation**: All waiting screens, game screens, and result screens properly translate including player and host views
+- **Option Letter Localization**: A/B/C/D option letters can be localized (currently same in both languages but infrastructure ready)
+- **Real-time Language Switching**: Users can switch languages during any part of the application and see immediate updates
+- **Preview Language Consistency**: Fixed preview being stuck in Spanish - now properly updates when language is changed
+- **Manual Advancement Button Fixes**: Enhanced button positioning, styling, and click handling with multiple event handlers for reliability
+- **Comprehensive Placeholder Translation**: All input fields including numeric inputs now translate placeholders
+- **Dynamic Content Translation**: Question counters, preview text, and game messages all use translation functions instead of hardcoded text
+- **Translation Debugging**: Added extensive debugging and fallback mechanisms for language switching issues
 
 ## Git & Deployment
 
@@ -264,3 +315,12 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 - [ ] Start Game button accessible in preview settings
 - [ ] Split ratio slider changes layout in real-time
 - [ ] Code formatting displays properly in questions
+- [ ] Language selector switches between English and Spanish correctly
+- [ ] All interface elements translate when language is changed
+- [ ] Host waiting screen shows translated content
+- [ ] Preview shows "Question X of Y" in selected language
+- [ ] Client waiting screen translates properly
+- [ ] During game, all text updates to selected language
+- [ ] AI generator produces questions in selected language
+- [ ] Manual advancement button shows translated text
+- [ ] Game messages (correct/incorrect) appear in selected language

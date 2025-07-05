@@ -179,6 +179,38 @@ app.post('/api/save-results', (req, res) => {
   }
 });
 
+// Get list of active games endpoint
+app.get('/api/active-games', (req, res) => {
+  try {
+    const allGames = Array.from(games.values()).map(game => ({
+      pin: game.pin,
+      title: game.quiz.title || 'Untitled Quiz',
+      playerCount: game.players.size,
+      questionCount: game.quiz.questions.length,
+      gameState: game.gameState,
+      created: new Date().toISOString()
+    }));
+    
+    const activeGames = allGames.filter(game => game.gameState === 'lobby');
+    
+    console.log(`Active games request: Found ${allGames.length} total games, ${activeGames.length} in lobby state`);
+    allGames.forEach(game => {
+      console.log(`  Game ${game.pin}: ${game.title} (${game.gameState}) - ${game.playerCount} players`);
+    });
+    
+    res.json({ 
+      games: activeGames,
+      debug: {
+        totalGames: allGames.length,
+        allGames: allGames
+      }
+    });
+  } catch (error) {
+    console.error('Active games fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch active games' });
+  }
+});
+
 // Generate QR code endpoint
 app.get('/api/qr/:pin', async (req, res) => {
   try {
@@ -265,6 +297,62 @@ app.get('/api/ollama/models', async (req, res) => {
   }
 });
 
+// Claude API proxy endpoint
+app.post('/api/claude/generate', async (req, res) => {
+  try {
+    const { prompt, apiKey } = req.body;
+    
+    if (!prompt || !apiKey) {
+      return res.status(400).json({ error: 'Prompt and API key are required' });
+    }
+    
+    const { default: fetch } = await import('node-fetch');
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 1024,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Claude API error:', response.status, errorText);
+      
+      let errorMessage = `Claude API error: ${response.status}`;
+      if (response.status === 401) {
+        errorMessage = 'Invalid API key. Please check your Claude API key and try again.';
+      } else if (response.status === 429) {
+        errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+      } else if (response.status === 400) {
+        errorMessage = 'Invalid request. Please check your input and try again.';
+      }
+      
+      return res.status(response.status).json({ 
+        error: errorMessage,
+        details: errorText
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Claude proxy error:', error);
+    res.status(500).json({ error: 'Failed to connect to Claude API' });
+  }
+});
+
 const games = new Map();
 const players = new Map();
 
@@ -292,6 +380,7 @@ class Game {
     this.isAdvancing = false;
     this.startTime = null;
     this.endTime = null;
+    this.manualAdvancement = quiz.manualAdvancement || false;
   }
 
   addPlayer(playerId, playerName) {
@@ -489,15 +578,24 @@ function advanceToNextQuestion(game, io) {
       leaderboard: game.leaderboard.slice(0, 5)
     });
     
-    // Move to next question and continue
-    game.advanceTimer = setTimeout(() => {
-      if (game.nextQuestion()) {
-        startQuestion(game, io);
-      } else {
-        // No more questions - end the game
-        endGame(game, io);
-      }
-    }, 3000);
+    // Check if manual advancement is enabled
+    console.log(`Checking advancement for game ${game.pin}: Manual = ${game.manualAdvancement}`);
+    if (game.manualAdvancement) {
+      // Show next question button for host and wait for manual trigger
+      console.log(`Showing next button for manual advancement in game ${game.pin} to host ${game.hostId}`);
+      io.to(game.hostId).emit('show-next-button');
+    } else {
+      // Auto-advance to next question
+      console.log(`Auto-advancing game ${game.pin} in 3 seconds`);
+      game.advanceTimer = setTimeout(() => {
+        if (game.nextQuestion()) {
+          startQuestion(game, io);
+        } else {
+          // No more questions - end the game
+          endGame(game, io);
+        }
+      }, 3000);
+    }
   }, 3000);
 }
 
@@ -568,7 +666,8 @@ function startQuestion(game, io) {
     io.to(`game-${game.pin}`).emit('question-timeout', {
       correctAnswer: correctAnswer,
       correctOption: correctOption,
-      questionType: question.type || 'multiple-choice'
+      questionType: question.type || 'multiple-choice',
+      tolerance: question.tolerance || null
     });
 
     // Send answer statistics to host after question ends
@@ -641,6 +740,8 @@ io.on('connection', (socket) => {
     
     const game = new Game(socket.id, quiz);
     games.set(game.pin, game);
+    
+    console.log(`Game created with PIN: ${game.pin}, Manual Advancement: ${game.manualAdvancement}`);
     
     socket.join(`game-${game.pin}`);
     socket.emit('game-created', {
@@ -767,6 +868,7 @@ io.on('connection', (socket) => {
             correctAnswer: correctAnswer,
             correctOption: correctOption,
             questionType: question.type || 'multiple-choice',
+            tolerance: question.tolerance || null,
             earlyEnd: true
           });
 
@@ -802,9 +904,15 @@ io.on('connection', (socket) => {
       game.advanceTimer = null;
     }
     
+    // Hide the next question button
+    io.to(game.hostId).emit('hide-next-button');
+    
     // Move to next question manually
     if (game.nextQuestion()) {
       startQuestion(game, io);
+    } else {
+      // No more questions - end the game
+      endGame(game, io);
     }
   });
 

@@ -1,3 +1,723 @@
+// Translation system
+const translations = {
+    en: {
+        app_title: "QuizMaster Pro",
+        host_game: "Host a Game",
+        join_game: "Join Game",
+        start_game: "Start Game",
+        quiz_title: "Quiz Title",
+        add_question: "Add Question",
+        save_quiz: "Save Quiz",
+        load_quiz: "Load Quiz",
+        import_quiz: "Import Quiz",
+        preview_quiz: "Preview Quiz",
+        randomize_questions: "Randomize question order",
+        randomize_answers: "Randomize answer positions",
+        use_same_time: "Use same time for all questions",
+        manual_advancement: "Manual question advancement (host control)",
+        manual_advancement_desc: "When enabled, you control when to advance to the next question",
+        browse_games: "Browse Available Games",
+        refresh: "Refresh",
+        back_to_join: "Back to Join",
+        game_pin: "Game PIN",
+        share_game: "Share Game",
+        players_joined: "Players Joined",
+        waiting_for_game: "Waiting for game to start...",
+        you_are_in: "You're in!",
+        enter_game_pin: "Enter Game PIN",
+        your_name: "Your Name",
+        or: "OR",
+        available_games: "Available Games",
+        no_games_found: "No active games found",
+        ask_someone_host: "Ask someone to host a game or create your own!",
+        failed_load_games: "Failed to load games",
+        check_connection: "Please check your connection and try again.",
+        players: "players",
+        questions: "questions",
+        next_question: "Next Question",
+        submit_answer: "Submit Answer",
+        true: "TRUE",
+        false: "FALSE",
+        enter_answer: "Enter your answer",
+        question: "Question",
+        of: "of",
+        welcome: "Welcome",
+        waiting_for_players: "Waiting for players...",
+        game_starting: "Game is starting!",
+        correct_answer_msg: "Correct!",
+        incorrect_answer_msg: "Incorrect!",
+        submitting: "Submitting...",
+        waiting_for_results: "Waiting for results...",
+        points: "points",
+        position: "Position",
+        final_score: "Final Score",
+        leaderboard: "Leaderboard",
+        game_finished: "Game Finished",
+        play_again: "Play Again",
+        new_game: "New Game",
+        question_x_of_y: "Question {0} of {1}",
+        option_letter_a: "A",
+        option_letter_b: "B",
+        option_letter_c: "C",
+        option_letter_d: "D",
+        time_up_msg: "Time's up!",
+        all_players_answered: "All players answered!",
+        waiting_host_advance: "Waiting for host to advance...",
+        share_with_qr_code: "Share with QR Code",
+        scan_to_join: "Scan to join",
+        copy_game_url: "Copy Game URL",
+        generating_questions: "Generating questions...",
+        questions_generated: "Questions generated successfully",
+        error_generating: "Error generating questions",
+        select_question_preview: "Select a question to preview",
+        generating_qr: "Generating QR Code...",
+        no_questions: "No questions",
+        enter_question_preview: "Enter your question above to see preview",
+        add_question_preview: "Add a question to see preview",
+        please_enter_quiz_title: "Please enter a quiz title",
+        please_add_one_question: "Please add at least one question",
+        question_missing_text: "Question {0} is missing question text",
+        question_needs_two_options: "Question {0} needs at least 2 valid options",
+        please_enter_pin_and_name: "Please enter both game PIN and your name",
+        pin_must_be_six_digits: "Game PIN must be exactly 6 digits",
+        name_max_twenty_chars: "Name must be 20 characters or less",
+        not_connected_refresh: "Not connected to server. Please refresh the page.",
+        please_enter_valid_number: "Please enter a valid number",
+        please_select_csv_json: "Please select a CSV or JSON file",
+        invalid_file_format: "Invalid file format. Please check the file structure.",
+        error_importing_file: "Error importing file. Please check the file format.",
+        quiz_saved_successfully: "Quiz saved successfully as {0}",
+        failed_save_quiz: "Failed to save quiz",
+        failed_load_quiz_list: "Failed to load quiz list",
+        quiz_loaded_successfully: "Quiz \"{0}\" loaded successfully!",
+        failed_load_quiz: "Failed to load quiz",
+        failed_upload_image: "Failed to upload image",
+        pdf_parsing_future_update: "PDF parsing will be added in a future update...",
+        docx_parsing_future_update: "DOCX parsing will be added in a future update...",
+        unsupported_file_format: "Unsupported file format. Please use TXT or MD files...",
+        error_reading_file: "Error reading file. Please try again...",
+        please_provide_source_material: "Please provide source material to generate questions from.",
+        please_enter_api_key: "Please enter your API key for the selected provider.",
+        error_generating_questions_detail: "Error generating questions: {0}",
+        failed_generate_qr_code: "Failed to generate QR code",
+        loading_games: "Loading games...",
+        loading_models: "Loading models...",
+        error_loading_models: "Error loading models",
+        correct_answer_banner: "✅ Correct Answer: {0}",
+        option_text_placeholder: "Option text",
+        restore_autosave_confirm: "Found auto-saved quiz draft. Would you like to restore it?",
+        import_quiz_confirm: "Import \"{0}\" with {1} questions? This will replace your current quiz.",
+        successfully_imported_questions: "Successfully imported {0} questions!",
+        successfully_generated_questions: "Successfully generated {0} questions!",
+        previous: "Previous",
+        next: "Next",
+        no_file_uploaded: "No file uploaded",
+        upload_failed: "Upload failed",
+        invalid_quiz_data: "Invalid quiz data",
+        untitled_quiz: "Untitled Quiz",
+        enter_question_with_latex: "Enter your question (supports LaTeX: $x^2 + y^2 = z^2$)",
+        general_content: "general",
+        mathematics_content: "mathematics",
+        programming_content: "programming",
+        physics_content: "physics",
+        chemistry_content: "chemistry",
+        standard_formatting: "Questions will use standard formatting",
+        math_formatting: "Questions will include LaTeX formatting for equations",
+        code_formatting: "Questions will include syntax highlighting for code",
+        physics_formatting: "Questions will include scientific notation and units",
+        chemistry_formatting: "Questions will include chemical formulas and equations",
+        choose_ai_provider: "Choose AI Provider:",
+        source_material: "Source Material:",
+        number_of_questions: "Number of Questions:",
+        difficulty_level: "Difficulty Level:",
+        question_types: "Question Types:",
+        mixed: "Mixed",
+        api_key: "API Key:",
+        api_key_stored_locally: "Your API key is stored locally and never sent to our servers",
+        choose_model: "Choose Model:",
+        select_ollama_model: "Select which Ollama model to use for generation",
+        paste_content_here: "Paste your text content here, or upload a file below...",
+        content_type_detected: "Content type detected:",
+        or_upload_file: "Or upload a file:",
+        supported_formats: "Supported formats: TXT, PDF, DOCX, Markdown",
+        cancel: "Cancel",
+        generate_questions_btn: "Generate Questions",
+        ollama_free_local: "Ollama (Free, Local)",
+        huggingface_free: "Hugging Face (Free tier)",
+        openai_paid: "OpenAI (Paid)",
+        claude_paid: "Anthropic Claude (Paid)",
+        multiple_choice_type: "Multiple Choice",
+        true_false_type: "True/False",
+        multiple_correct_type: "Multiple Correct Answers",
+        numeric_answer_type: "Numeric Answer"
+    },
+    es: {
+        app_title: "QuizMaster Pro",
+        host_game: "Crear Juego",
+        join_game: "Unirse al Juego",
+        start_game: "Iniciar Juego",
+        quiz_title: "Título del Quiz",
+        add_question: "Agregar Pregunta",
+        save_quiz: "Guardar Quiz",
+        load_quiz: "Cargar Quiz",
+        import_quiz: "Importar Quiz",
+        preview_quiz: "Vista Previa",
+        randomize_questions: "Aleatorizar orden de preguntas",
+        randomize_answers: "Aleatorizar posiciones de respuestas",
+        use_same_time: "Usar el mismo tiempo para todas las preguntas",
+        manual_advancement: "Avance manual de preguntas (control del anfitrión)",
+        manual_advancement_desc: "Cuando está habilitado, tú controlas cuándo avanzar a la siguiente pregunta",
+        browse_games: "Explorar Juegos Disponibles",
+        refresh: "Actualizar",
+        back_to_join: "Volver a Unirse",
+        game_pin: "PIN del Juego",
+        share_game: "Compartir Juego",
+        players_joined: "Jugadores Unidos",
+        waiting_for_game: "Esperando que comience el juego...",
+        you_are_in: "¡Estás dentro!",
+        enter_game_pin: "Ingresa el PIN del Juego",
+        your_name: "Tu Nombre",
+        or: "O",
+        available_games: "Juegos Disponibles",
+        no_games_found: "No se encontraron juegos activos",
+        ask_someone_host: "¡Pide a alguien que cree un juego o crea el tuyo!",
+        failed_load_games: "Error al cargar juegos",
+        check_connection: "Verifica tu conexión e intenta de nuevo.",
+        players: "jugadores",
+        questions: "preguntas",
+        next_question: "Siguiente Pregunta",
+        submit_answer: "Enviar Respuesta",
+        true: "VERDADERO",
+        false: "FALSO",
+        enter_answer: "Ingresa tu respuesta",
+        question: "Pregunta",
+        of: "de",
+        create_quiz: "Crear tu Quiz",
+        live_preview: "Vista Previa en Vivo",
+        preview_settings: "Configuración de Vista Previa",
+        share_with_qr: "Compartir con QR",
+        game_url: "URL del Juego",
+        time_limit: "Límite de Tiempo",
+        correct_answer: "Respuesta Correcta",
+        option_a: "Opción A",
+        option_b: "Opción B",
+        option_c: "Opción C",
+        option_d: "Opción D",
+        enter_question: "Ingresa tu pregunta",
+        a_is_correct: "A es correcto",
+        b_is_correct: "B es correcto",
+        c_is_correct: "C es correcto",
+        d_is_correct: "D es correcto",
+        numeric_answer: "Respuesta Numérica",
+        tolerance: "Tolerancia",
+        edit_question: "Editar Pregunta",
+        load_saved_quiz: "Cargar Quiz Guardado",
+        question_number: "Pregunta",
+        waiting_for_players: "Esperando jugadores...",
+        game_starting: "¡El juego está comenzando!",
+        final_results: "Resultados Finales",
+        your_score: "Tu Puntuación",
+        rank: "Puesto",
+        answer_submitted: "Respuesta Enviada",
+        correct: "¡Correcto!",
+        incorrect: "Incorrecto",
+        time_up: "¡Se acabó el tiempo!",
+        next_question_manual: "Siguiente Pregunta (Control Manual)",
+        ai_generator: "Generador IA",
+        toolbar: "Barra de Herramientas",
+        back_to_top: "Volver Arriba",
+        remove_image: "Eliminar Imagen",
+        add_image: "Agregar Imagen",
+        multiple_choice: "Opción Múltiple",
+        multiple_correct: "Respuestas Múltiples Correctas",
+        true_false: "Verdadero/Falso",
+        numeric: "Respuesta Numérica",
+        easy: "Fácil",
+        medium: "Medio",
+        hard: "Difícil",
+        time_seconds: "Tiempo (seg)",
+        enter_numeric_answer: "Ingresa respuesta numérica",
+        global_time_limit: "Límite de tiempo global (segundos)",
+        quick_actions: "Acciones Rápidas",
+        tools: "Herramientas",
+        navigate: "Navegar",
+        settings: "Configuración",
+        hide: "Ocultar",
+        top: "Arriba",
+        bottom: "Abajo",
+        preview: "Vista Previa",
+        welcome: "¡Bienvenido",
+        waiting_for_players: "Esperando jugadores...",
+        game_starting: "¡El juego está comenzando!",
+        correct_answer_msg: "¡Correcto!",
+        incorrect_answer_msg: "¡Incorrecto!",
+        submitting: "Enviando...",
+        waiting_for_results: "Esperando resultados...",
+        points: "puntos",
+        position: "Posición",
+        final_score: "Puntuación Final",
+        leaderboard: "Tabla de Posiciones",
+        game_finished: "Juego Terminado",
+        play_again: "Jugar de Nuevo",
+        new_game: "Nuevo Juego",
+        question_x_of_y: "Pregunta {0} de {1}",
+        option_letter_a: "A",
+        option_letter_b: "B", 
+        option_letter_c: "C",
+        option_letter_d: "D",
+        time_up_msg: "¡Se acabó el tiempo!",
+        all_players_answered: "¡Todos los jugadores respondieron!",
+        waiting_host_advance: "Esperando que el anfitrión avance...",
+        share_with_qr_code: "Compartir con Código QR",
+        scan_to_join: "Escanea para unirte",
+        copy_game_url: "Copiar URL del Juego",
+        generating_questions: "Generando preguntas...",
+        questions_generated: "Preguntas generadas exitosamente",
+        error_generating: "Error al generar preguntas",
+        select_question_preview: "Selecciona una pregunta para vista previa",
+        generating_qr: "Generando Código QR...",
+        no_questions: "Sin preguntas",
+        enter_question_preview: "Ingresa tu pregunta arriba para ver vista previa",
+        add_question_preview: "Agrega una pregunta para ver vista previa",
+        please_enter_quiz_title: "Por favor ingresa un título para el quiz",
+        please_add_one_question: "Por favor agrega al menos una pregunta",
+        question_missing_text: "La pregunta {0} no tiene texto",
+        question_needs_two_options: "La pregunta {0} necesita al menos 2 opciones válidas",
+        please_enter_pin_and_name: "Por favor ingresa tanto el PIN del juego como tu nombre",
+        pin_must_be_six_digits: "El PIN del juego debe tener exactamente 6 dígitos",
+        name_max_twenty_chars: "El nombre debe tener 20 caracteres o menos",
+        not_connected_refresh: "No conectado al servidor. Por favor actualiza la página.",
+        please_enter_valid_number: "Por favor ingresa un número válido",
+        please_select_csv_json: "Por favor selecciona un archivo CSV o JSON",
+        invalid_file_format: "Formato de archivo inválido. Por favor verifica la estructura del archivo.",
+        error_importing_file: "Error al importar archivo. Por favor verifica el formato del archivo.",
+        quiz_saved_successfully: "Quiz guardado exitosamente como {0}",
+        failed_save_quiz: "Error al guardar quiz",
+        failed_load_quiz_list: "Error al cargar lista de quizzes",
+        quiz_loaded_successfully: "Quiz \"{0}\" cargado exitosamente!",
+        failed_load_quiz: "Error al cargar quiz",
+        failed_upload_image: "Error al subir imagen",
+        pdf_parsing_future_update: "El análisis de PDF se agregará en una actualización futura...",
+        docx_parsing_future_update: "El análisis de DOCX se agregará en una actualización futura...",
+        unsupported_file_format: "Formato de archivo no soportado. Por favor usa archivos TXT o MD...",
+        error_reading_file: "Error al leer archivo. Por favor intenta de nuevo...",
+        please_provide_source_material: "Por favor proporciona material fuente para generar preguntas.",
+        please_enter_api_key: "Por favor ingresa tu clave API para el proveedor seleccionado.",
+        error_generating_questions_detail: "Error generando preguntas: {0}",
+        failed_generate_qr_code: "Error al generar código QR",
+        loading_games: "Cargando juegos...",
+        loading_models: "Cargando modelos...",
+        error_loading_models: "Error al cargar modelos",
+        correct_answer_banner: "✅ Respuesta Correcta: {0}",
+        option_text_placeholder: "Texto de opción",
+        restore_autosave_confirm: "Se encontró un borrador de quiz auto-guardado. ¿Te gustaría restaurarlo?",
+        import_quiz_confirm: "¿Importar \"{0}\" con {1} preguntas? Esto reemplazará tu quiz actual.",
+        successfully_imported_questions: "¡{0} preguntas importadas exitosamente!",
+        successfully_generated_questions: "¡{0} preguntas generadas exitosamente!",
+        previous: "Anterior",
+        next: "Siguiente",
+        no_file_uploaded: "No se subió archivo",
+        upload_failed: "Error al subir",
+        invalid_quiz_data: "Datos de quiz inválidos",
+        untitled_quiz: "Quiz Sin Título",
+        enter_question_with_latex: "Ingresa tu pregunta (soporta LaTeX: $x^2 + y^2 = z^2$)",
+        general_content: "general",
+        mathematics_content: "matemáticas",
+        programming_content: "programación",
+        physics_content: "física",
+        chemistry_content: "química",
+        standard_formatting: "Las preguntas usarán formato estándar",
+        math_formatting: "Las preguntas incluirán formato LaTeX para ecuaciones",
+        code_formatting: "Las preguntas incluirán resaltado de sintaxis para código",
+        physics_formatting: "Las preguntas incluirán notación científica y unidades",
+        chemistry_formatting: "Las preguntas incluirán fórmulas y ecuaciones químicas",
+        choose_ai_provider: "Elegir Proveedor de IA:",
+        source_material: "Material Fuente:",
+        number_of_questions: "Número de Preguntas:",
+        difficulty_level: "Nivel de Dificultad:",
+        question_types: "Tipos de Preguntas:",
+        mixed: "Mixto",
+        api_key: "Clave API:",
+        api_key_stored_locally: "Tu clave API se almacena localmente y nunca se envía a nuestros servidores",
+        choose_model: "Elegir Modelo:",
+        select_ollama_model: "Selecciona qué modelo de Ollama usar para la generación",
+        paste_content_here: "Pega tu contenido de texto aquí, o sube un archivo abajo...",
+        content_type_detected: "Tipo de contenido detectado:",
+        or_upload_file: "O sube un archivo:",
+        supported_formats: "Formatos soportados: TXT, PDF, DOCX, Markdown",
+        cancel: "Cancelar",
+        generate_questions_btn: "Generar Preguntas",
+        ollama_free_local: "Ollama (Gratis, Local)",
+        huggingface_free: "Hugging Face (Nivel gratuito)",
+        openai_paid: "OpenAI (Pago)",
+        claude_paid: "Anthropic Claude (Pago)",
+        multiple_choice_type: "Opción Múltiple",
+        true_false_type: "Verdadero/Falso",
+        multiple_correct_type: "Respuestas Múltiples Correctas",
+        numeric_answer_type: "Respuesta Numérica"
+    },
+    pl: {
+        app_title: "QuizMaster Pro",
+        host_game: "Prowadź Grę",
+        join_game: "Dołącz do Gry",
+        start_game: "Rozpocznij Grę",
+        quiz_title: "Tytuł Quizu",
+        add_question: "Dodaj Pytanie",
+        save_quiz: "Zapisz Quiz",
+        load_quiz: "Wczytaj Quiz",
+        import_quiz: "Importuj Quiz",
+        preview_quiz: "Podgląd Quizu",
+        randomize_questions: "Losowa kolejność pytań",
+        randomize_answers: "Losowa pozycja odpowiedzi",
+        use_same_time: "Użyj tego samego czasu dla wszystkich pytań",
+        manual_advancement: "Ręczne przechodzenie do następnego pytania (kontrola prowadzącego)",
+        manual_advancement_desc: "Gdy włączone, kontrolujesz kiedy przejść do następnego pytania",
+        browse_games: "Przeglądaj Dostępne Gry",
+        refresh: "Odśwież",
+        back_to_join: "Powrót do Dołączania",
+        game_pin: "PIN Gry",
+        share_game: "Udostępnij Grę",
+        players_joined: "Dołączeni Gracze",
+        waiting_for_game: "Oczekiwanie na rozpoczęcie gry...",
+        you_are_in: "Jesteś w grze!",
+        enter_game_pin: "Wprowadź PIN Gry",
+        your_name: "Twoje Imię",
+        or: "LUB",
+        available_games: "Dostępne Gry",
+        no_games_found: "Nie znaleziono aktywnych gier",
+        ask_someone_host: "Poproś kogoś o prowadzenie gry lub stwórz własną!",
+        failed_load_games: "Błąd ładowania gier",
+        check_connection: "Sprawdź połączenie i spróbuj ponownie.",
+        players: "gracze",
+        questions: "pytania",
+        next_question: "Następne Pytanie",
+        submit_answer: "Wyślij Odpowiedź",
+        true: "PRAWDA",
+        false: "FAŁSZ",
+        enter_answer: "Wprowadź swoją odpowiedź",
+        question: "Pytanie",
+        of: "z",
+        welcome: "Witaj",
+        waiting_for_players: "Oczekiwanie na graczy...",
+        game_starting: "Gra się rozpoczyna!",
+        correct_answer_msg: "Prawidłowo!",
+        incorrect_answer_msg: "Nieprawidłowo!",
+        submitting: "Wysyłanie...",
+        waiting_for_results: "Oczekiwanie na wyniki...",
+        points: "punkty",
+        position: "Pozycja",
+        final_score: "Wynik Końcowy",
+        leaderboard: "Ranking",
+        game_finished: "Gra Zakończona",
+        play_again: "Zagraj Ponownie",
+        new_game: "Nowa Gra",
+        question_x_of_y: "Pytanie {0} z {1}",
+        option_letter_a: "A",
+        option_letter_b: "B",
+        option_letter_c: "C",
+        option_letter_d: "D",
+        time_up_msg: "Czas minął!",
+        all_players_answered: "Wszyscy gracze odpowiedzieli!",
+        waiting_host_advance: "Oczekiwanie na prowadzącego...",
+        share_with_qr_code: "Udostępnij Kodem QR",
+        scan_to_join: "Zeskanuj aby dołączyć",
+        copy_game_url: "Kopiuj URL Gry",
+        generating_questions: "Generowanie pytań...",
+        questions_generated: "Pytania wygenerowane pomyślnie",
+        error_generating: "Błąd generowania pytań",
+        select_question_preview: "Wybierz pytanie do podglądu",
+        generating_qr: "Generowanie Kodu QR...",
+        no_questions: "Brak pytań",
+        enter_question_preview: "Wprowadź pytanie powyżej aby zobaczyć podgląd",
+        add_question_preview: "Dodaj pytanie aby zobaczyć podgląd",
+        create_quiz: "Stwórz Swój Quiz",
+        live_preview: "Podgląd Na Żywo",
+        preview_settings: "Ustawienia Podglądu",
+        share_with_qr: "Udostępnij przez QR",
+        game_url: "URL Gry",
+        time_limit: "Limit Czasu",
+        correct_answer: "Prawidłowa Odpowiedź",
+        option_a: "Opcja A",
+        option_b: "Opcja B",
+        option_c: "Opcja C",
+        option_d: "Opcja D",
+        enter_question: "Wprowadź swoje pytanie",
+        a_is_correct: "A jest prawidłowe",
+        b_is_correct: "B jest prawidłowe",
+        c_is_correct: "C jest prawidłowe",
+        d_is_correct: "D jest prawidłowe",
+        numeric_answer: "Odpowiedź Numeryczna",
+        tolerance: "Tolerancja",
+        edit_question: "Edytuj Pytanie",
+        load_saved_quiz: "Wczytaj Zapisany Quiz",
+        question_number: "Pytanie",
+        waiting_for_players: "Oczekiwanie na graczy...",
+        game_starting: "Gra się rozpoczyna!",
+        final_results: "Wyniki Końcowe",
+        your_score: "Twój Wynik",
+        rank: "Miejsce",
+        answer_submitted: "Odpowiedź Wysłana",
+        correct: "Prawidłowo!",
+        incorrect: "Nieprawidłowo",
+        time_up: "Czas minął!",
+        next_question_manual: "Następne Pytanie (Kontrola Ręczna)",
+        ai_generator: "Generator AI",
+        toolbar: "Pasek Narzędzi",
+        back_to_top: "Powrót na Górę",
+        remove_image: "Usuń Obraz",
+        add_image: "Dodaj Obraz",
+        multiple_choice: "Wybór Wielokrotny",
+        multiple_correct: "Wiele Prawidłowych Odpowiedzi",
+        true_false: "Prawda/Fałsz",
+        numeric: "Odpowiedź Numeryczna",
+        easy: "Łatwy",
+        medium: "Średni",
+        hard: "Trudny",
+        time_seconds: "Czas (sek)",
+        enter_numeric_answer: "Wprowadź odpowiedź numeryczną",
+        global_time_limit: "Globalny limit czasu (sekundy)",
+        quick_actions: "Szybkie Akcje",
+        tools: "Narzędzia",
+        navigate: "Nawigacja",
+        settings: "Ustawienia",
+        hide: "Ukryj",
+        top: "Góra",
+        bottom: "Dół",
+        preview: "Podgląd",
+        please_enter_quiz_title: "Proszę wprowadzić tytuł quizu",
+        please_add_one_question: "Proszę dodać co najmniej jedno pytanie",
+        question_missing_text: "Pytanie {0} nie ma tekstu",
+        question_needs_two_options: "Pytanie {0} potrzebuje co najmniej 2 prawidłowych opcji",
+        please_enter_pin_and_name: "Proszę wprowadzić PIN gry i swoje imię",
+        pin_must_be_six_digits: "PIN gry musi mieć dokładnie 6 cyfr",
+        name_max_twenty_chars: "Imię musi mieć 20 znaków lub mniej",
+        not_connected_refresh: "Brak połączenia z serwerem. Proszę odświeżyć stronę.",
+        please_enter_valid_number: "Proszę wprowadzić prawidłowy numer",
+        please_select_csv_json: "Proszę wybrać plik CSV lub JSON",
+        invalid_file_format: "Nieprawidłowy format pliku. Proszę sprawdzić strukturę pliku.",
+        error_importing_file: "Błąd importowania pliku. Proszę sprawdzić format pliku.",
+        quiz_saved_successfully: "Quiz zapisany pomyślnie jako {0}",
+        failed_save_quiz: "Błąd zapisu quizu",
+        failed_load_quiz_list: "Błąd ładowania listy quizów",
+        quiz_loaded_successfully: "Quiz \"{0}\" wczytany pomyślnie!",
+        failed_load_quiz: "Błąd wczytywania quizu",
+        failed_upload_image: "Błąd przesyłania obrazu",
+        pdf_parsing_future_update: "Parsowanie PDF zostanie dodane w przyszłej aktualizacji...",
+        docx_parsing_future_update: "Parsowanie DOCX zostanie dodane w przyszłej aktualizacji...",
+        unsupported_file_format: "Nieobsługiwany format pliku. Proszę używać plików TXT lub MD...",
+        error_reading_file: "Błąd odczytu pliku. Proszę spróbować ponownie...",
+        please_provide_source_material: "Proszę podać materiał źródłowy do generowania pytań.",
+        please_enter_api_key: "Proszę wprowadzić klucz API dla wybranego dostawcy.",
+        error_generating_questions_detail: "Błąd generowania pytań: {0}",
+        failed_generate_qr_code: "Błąd generowania kodu QR",
+        loading_games: "Ładowanie gier...",
+        loading_models: "Ładowanie modeli...",
+        error_loading_models: "Błąd ładowania modeli",
+        correct_answer_banner: "✅ Prawidłowa Odpowiedź: {0}",
+        option_text_placeholder: "Tekst opcji",
+        restore_autosave_confirm: "Znaleziono automatycznie zapisany szkic quizu. Czy chciałbyś go przywrócić?",
+        import_quiz_confirm: "Importować \"{0}\" z {1} pytaniami? To zastąpi twój obecny quiz.",
+        successfully_imported_questions: "Pomyślnie zaimportowano {0} pytań!",
+        successfully_generated_questions: "Pomyślnie wygenerowano {0} pytań!",
+        previous: "Poprzedni",
+        next: "Następny",
+        no_file_uploaded: "Nie przesłano pliku",
+        upload_failed: "Błąd przesyłania",
+        invalid_quiz_data: "Nieprawidłowe dane quizu",
+        untitled_quiz: "Quiz Bez Tytułu",
+        enter_question_with_latex: "Wprowadź swoje pytanie (obsługuje LaTeX: $x^2 + y^2 = z^2$)",
+        general_content: "ogólne",
+        mathematics_content: "matematyka",
+        programming_content: "programowanie",
+        physics_content: "fizyka",
+        chemistry_content: "chemia",
+        standard_formatting: "Pytania będą używać standardowego formatowania",
+        math_formatting: "Pytania będą zawierać formatowanie LaTeX dla równań",
+        code_formatting: "Pytania będą zawierać podświetlanie składni dla kodu",
+        physics_formatting: "Pytania będą zawierać notację naukową i jednostki",
+        chemistry_formatting: "Pytania będą zawierać wzory i równania chemiczne",
+        choose_ai_provider: "Wybierz Dostawcę AI:",
+        source_material: "Materiał Źródłowy:",
+        number_of_questions: "Liczba Pytań:",
+        difficulty_level: "Poziom Trudności:",
+        question_types: "Typy Pytań:",
+        mixed: "Mieszane",
+        api_key: "Klucz API:",
+        api_key_stored_locally: "Twój klucz API jest przechowywany lokalnie i nigdy nie jest wysyłany na nasze serwery",
+        choose_model: "Wybierz Model:",
+        select_ollama_model: "Wybierz który model Ollama użyć do generowania",
+        paste_content_here: "Wklej tutaj swoją treść tekstową, lub prześlij plik poniżej...",
+        content_type_detected: "Wykryto typ treści:",
+        or_upload_file: "Lub prześlij plik:",
+        supported_formats: "Obsługiwane formaty: TXT, PDF, DOCX, Markdown",
+        cancel: "Anuluj",
+        generate_questions_btn: "Generuj Pytania",
+        ollama_free_local: "Ollama (Darmowy, Lokalny)",
+        huggingface_free: "Hugging Face (Darmowy poziom)",
+        openai_paid: "OpenAI (Płatny)",
+        claude_paid: "Anthropic Claude (Płatny)",
+        multiple_choice_type: "Wybór Wielokrotny",
+        true_false_type: "Prawda/Fałsz",
+        multiple_correct_type: "Wiele Prawidłowych Odpowiedzi",
+        numeric_answer_type: "Odpowiedź Numeryczna"
+    }
+};
+
+let currentLanguage = 'en';
+
+// Helper function to get translated text
+function getTranslation(key, ...args) {
+    let text = (translations[currentLanguage] && translations[currentLanguage][key]) || key;
+    // Handle placeholder substitution {0}, {1}, etc.
+    args.forEach((arg, index) => {
+        text = text.replace(`{${index}}`, arg);
+    });
+    return text;
+}
+
+// Helper function to set translated text content
+function setTranslatedText(elementOrId, translationKey, ...args) {
+    const element = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
+    if (element) {
+        element.textContent = getTranslation(translationKey, ...args);
+    }
+}
+
+// Helper function to set translated HTML content
+function setTranslatedHTML(elementOrId, translationKey, ...args) {
+    const element = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
+    if (element) {
+        element.innerHTML = getTranslation(translationKey, ...args);
+    }
+}
+
+// Helper function to get option letter (A, B, C, D) in current language
+function getOptionLetter(index) {
+    const letters = ['option_letter_a', 'option_letter_b', 'option_letter_c', 'option_letter_d'];
+    return getTranslation(letters[index] || 'option_letter_a');
+}
+
+// Helper function for translated alerts
+function showAlert(translationKey, ...args) {
+    alert(getTranslation(translationKey, ...args));
+}
+
+// Helper function for translated confirmations
+function showConfirm(translationKey, ...args) {
+    return confirm(getTranslation(translationKey, ...args));
+}
+
+function translatePage() {
+    const elements = document.querySelectorAll('[data-translate]');
+    elements.forEach(element => {
+        const key = element.getAttribute('data-translate');
+        if (translations[currentLanguage] && translations[currentLanguage][key]) {
+            element.textContent = translations[currentLanguage][key];
+        }
+    });
+    
+    // Handle placeholder translations
+    const placeholderElements = document.querySelectorAll('[data-translate-placeholder]');
+    placeholderElements.forEach(element => {
+        const key = element.getAttribute('data-translate-placeholder');
+        if (translations[currentLanguage] && translations[currentLanguage][key]) {
+            element.placeholder = translations[currentLanguage][key];
+        }
+    });
+    
+    // Handle select option translations specifically
+    const optionElements = document.querySelectorAll('option[data-translate]');
+    optionElements.forEach(option => {
+        const key = option.getAttribute('data-translate');
+        if (translations[currentLanguage] && translations[currentLanguage][key]) {
+            option.textContent = translations[currentLanguage][key];
+        }
+    });
+}
+
+function changeLanguage(lang) {
+    setLanguage(lang);
+}
+
+function setLanguage(lang) {
+    currentLanguage = lang;
+    localStorage.setItem('language', lang);
+    
+    // Update dropdown selection
+    const dropdown = document.getElementById('language-selector');
+    if (dropdown) {
+        dropdown.value = lang;
+    }
+    
+    translatePage();
+    
+    // Force re-translate preview content if it's currently shown
+    if (window.game && window.game.previewMode) {
+        setTimeout(() => {
+            window.game.updatePreview();
+        }, 50);
+    }
+    
+    // Re-translate any dynamic content that may not be caught by translatePage
+    setTimeout(() => {
+        // Force update all elements with data-translate attributes
+        const allTranslateElements = document.querySelectorAll('[data-translate]');
+        allTranslateElements.forEach(element => {
+            const key = element.getAttribute('data-translate');
+            if (key && translations[currentLanguage] && translations[currentLanguage][key]) {
+                element.textContent = translations[currentLanguage][key];
+            }
+        });
+        
+        // Force update all placeholders
+        const allPlaceholderElements = document.querySelectorAll('[data-translate-placeholder]');
+        allPlaceholderElements.forEach(element => {
+            const key = element.getAttribute('data-translate-placeholder');
+            if (key && translations[currentLanguage] && translations[currentLanguage][key]) {
+                element.placeholder = translations[currentLanguage][key];
+            }
+        });
+        
+        // Force update select options
+        const allOptionElements = document.querySelectorAll('option[data-translate]');
+        allOptionElements.forEach(option => {
+            const key = option.getAttribute('data-translate');
+            if (key && translations[currentLanguage] && translations[currentLanguage][key]) {
+                option.textContent = translations[currentLanguage][key];
+            }
+        });
+        
+        // Update question counters
+        const questionCounters = document.querySelectorAll('[id*="question-counter"]');
+        questionCounters.forEach(counter => {
+            const text = counter.textContent;
+            const match = text.match(/(\d+).*?(\d+)/);
+            if (match) {
+                counter.textContent = getTranslation('question_x_of_y', match[1], match[2]);
+            }
+        });
+        
+        // Update any manual advance buttons
+        const nextBtns = document.querySelectorAll('#next-question span[data-translate]');
+        nextBtns.forEach(btn => {
+            const key = btn.getAttribute('data-translate');
+            if (key && translations[currentLanguage] && translations[currentLanguage][key]) {
+                btn.textContent = translations[currentLanguage][key];
+            }
+        });
+        
+        // Force re-render preview if active
+        if (window.game) {
+            if (window.game.previewMode && window.game.updatePreview) {
+                window.game.updatePreview();
+            }
+            if (window.game.splitPreviewActive && window.game.updateSplitPreview) {
+                window.game.updateSplitPreview();
+            }
+        }
+    }, 100);
+}
+
 class KahootGame {
     constructor() {
         this.socket = io(window.location.origin, {
@@ -23,6 +743,7 @@ class KahootGame {
         this.checkURLParameters();
         this.initializeSounds();
         this.mathJaxRenderTimeout = null;
+        this.initializeLanguage();
     }
 
     initializeEventListeners() {
@@ -30,6 +751,16 @@ class KahootGame {
             this.showScreen('host-screen');
         });
         document.getElementById('join-btn').addEventListener('click', () => this.showScreen('join-screen'));
+        document.getElementById('browse-games').addEventListener('click', () => this.showGameBrowser());
+        document.getElementById('refresh-games').addEventListener('click', () => this.refreshActiveGames());
+        document.getElementById('back-to-join').addEventListener('click', () => this.showScreen('join-screen'));
+        
+        // Language selector event listeners
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                setLanguage(btn.getAttribute('data-lang'));
+            });
+        });
         
         document.getElementById('add-question').addEventListener('click', () => this.addQuestion());
         document.getElementById('save-quiz').addEventListener('click', () => this.saveQuiz());
@@ -42,8 +773,14 @@ class KahootGame {
         document.getElementById('start-hosting').addEventListener('click', () => this.startHosting());
         document.getElementById('start-hosting-top').addEventListener('click', () => this.startHosting());
         document.getElementById('start-hosting-main')?.addEventListener('click', () => this.startHosting());
+        document.getElementById('start-hosting-header-small')?.addEventListener('click', () => this.startHosting());
         document.getElementById('start-game').addEventListener('click', () => this.startGame());
-        document.getElementById('next-question').addEventListener('click', () => this.nextQuestion());
+        document.getElementById('next-question').addEventListener('click', (e) => {
+            console.log('Next question button clicked!');
+            e.preventDefault();
+            e.stopPropagation();
+            this.nextQuestion();
+        });
         
         document.getElementById('join-game').addEventListener('click', () => this.joinGame());
         document.getElementById('new-game').addEventListener('click', () => this.newGame());
@@ -125,7 +862,7 @@ class KahootGame {
 
         this.socket.on('player-joined', (data) => {
             this.gamePin = data.gamePin;
-            document.getElementById('player-info').textContent = `Welcome, ${data.playerName}!`;
+            document.getElementById('player-info').textContent = `${getTranslation('welcome')}, ${data.playerName}!`;
             this.showScreen('player-lobby');
         });
 
@@ -209,6 +946,95 @@ class KahootGame {
         this.socket.on('answer-statistics', (data) => {
             this.updateAnswerStatistics(data);
         });
+
+        this.socket.on('show-next-button', () => {
+            console.log('Received show-next-button event');
+            const nextButton = document.getElementById('next-question');
+            console.log('Next button element:', nextButton);
+            if (nextButton) {
+                nextButton.style.display = 'block';
+                nextButton.style.backgroundColor = '#e53e3e';
+                nextButton.style.color = 'white';
+                nextButton.style.fontSize = '1.2rem';
+                nextButton.style.position = 'fixed';
+                nextButton.style.top = '100px';
+                nextButton.style.right = '50px';
+                nextButton.style.zIndex = '99999';
+                nextButton.style.left = 'auto';
+                nextButton.style.bottom = 'auto';
+                nextButton.style.padding = '15px 25px';
+                nextButton.style.border = '3px solid white';
+                nextButton.style.borderRadius = '8px';
+                nextButton.style.cursor = 'pointer';
+                nextButton.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+                nextButton.style.animation = 'pulse 2s infinite';
+                nextButton.innerHTML = '⏭️ <span data-translate="next_question_manual">Next Question (Manual Control)</span>';
+                
+                // Add pulsing animation if not exists
+                if (!document.getElementById('pulse-animation-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'pulse-animation-style';
+                    style.textContent = `
+                        @keyframes pulse {
+                            0% { transform: scale(1); }
+                            50% { transform: scale(1.05); }
+                            100% { transform: scale(1); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                // Apply translation if not English
+                if (currentLanguage !== 'en') {
+                    const span = nextButton.querySelector('span[data-translate]');
+                    if (span && translations[currentLanguage] && translations[currentLanguage]['next_question_manual']) {
+                        span.textContent = translations[currentLanguage]['next_question_manual'];
+                    }
+                }
+                
+                // Ensure the button is clickable by removing any pointer-events issues
+                nextButton.style.pointerEvents = 'auto';
+                
+                // Add a click handler directly to be absolutely sure
+                nextButton.onclick = () => {
+                    console.log('Direct onclick handler triggered!');
+                    this.nextQuestion();
+                };
+                
+                console.log('Next button shown with manual styling');
+                console.log('Button styles applied:', nextButton.style.cssText);
+                console.log('Button position:', {
+                    top: nextButton.offsetTop,
+                    left: nextButton.offsetLeft,
+                    width: nextButton.offsetWidth,
+                    height: nextButton.offsetHeight,
+                    display: nextButton.style.display,
+                    visibility: getComputedStyle(nextButton).visibility
+                });
+                
+                // Flash the button to make it more obvious
+                let flashCount = 0;
+                const flashInterval = setInterval(() => {
+                    nextButton.style.backgroundColor = flashCount % 2 === 0 ? '#f56565' : '#e53e3e';
+                    flashCount++;
+                    if (flashCount > 6) {
+                        clearInterval(flashInterval);
+                        nextButton.style.backgroundColor = '#e53e3e';
+                    }
+                }, 300);
+            } else {
+                console.log('Next button not found!');
+                const allButtons = document.querySelectorAll('button');
+                console.log('All buttons found:', Array.from(allButtons).map(btn => btn.id || btn.className));
+            }
+        });
+
+        this.socket.on('hide-next-button', () => {
+            const nextButton = document.getElementById('next-question');
+            if (nextButton) {
+                nextButton.style.display = 'none';
+            }
+        });
     }
 
     showScreen(screenId) {
@@ -233,6 +1059,15 @@ class KahootGame {
             targetScreen.classList.add('active');
             this.currentScreen = screenId;
         }
+        
+        // Show header start button only on host screen
+        const headerStartBtn = document.getElementById('start-hosting-header-small');
+        if (headerStartBtn) {
+            headerStartBtn.style.display = screenId === 'host-screen' ? 'inline-flex' : 'none';
+        }
+        
+        // Always translate page content after screen change
+        setTimeout(() => translatePage(), 10);
     }
 
     addQuestion() {
@@ -331,13 +1166,13 @@ class KahootGame {
     startHosting() {
         const title = document.getElementById('quiz-title').value.trim();
         if (!title) {
-            alert('Please enter a quiz title');
+            showAlert('please_enter_quiz_title');
             return;
         }
 
         let questions = this.collectQuestions();
         if (questions.length === 0) {
-            alert('Please add at least one question');
+            showAlert('please_add_one_question');
             return;
         }
 
@@ -345,13 +1180,13 @@ class KahootGame {
         for (let i = 0; i < questions.length; i++) {
             const q = questions[i];
             if (!q.question || q.question.trim() === '') {
-                alert(`Question ${i + 1} is missing question text`);
+                showAlert('question_missing_text', i + 1);
                 return;
             }
             
             if (q.type === 'multiple-choice' || q.type === 'multiple-correct') {
                 if (!q.options || q.options.filter(opt => opt && opt.trim()).length < 2) {
-                    alert(`Question ${i + 1} needs at least 2 valid options`);
+                    showAlert('question_needs_two_options', i + 1);
                     return;
                 }
             }
@@ -369,11 +1204,16 @@ class KahootGame {
             questions = this.randomizeAnswers([...questions]);
         }
 
+        // Check if manual advancement is enabled
+        const manualAdvancement = document.getElementById('manual-advancement').checked;
+        console.log('Manual advancement setting:', manualAdvancement);
+
         const quiz = {
             title: title,
             questions: questions,
             randomized: shouldRandomizeQuestions,
-            answersRandomized: shouldRandomizeAnswers
+            answersRandomized: shouldRandomizeAnswers,
+            manualAdvancement: manualAdvancement
         };
 
         this.socket.emit('host-join', { quiz });
@@ -454,22 +1294,22 @@ class KahootGame {
         const name = document.getElementById('player-name').value.trim();
         
         if (!pin || !name) {
-            alert('Please enter both game PIN and your name');
+            showAlert('please_enter_pin_and_name');
             return;
         }
         
         if (pin.length !== 6 || !/^\d+$/.test(pin)) {
-            alert('Game PIN must be exactly 6 digits');
+            showAlert('pin_must_be_six_digits');
             return;
         }
         
         if (name.length > 20) {
-            alert('Name must be 20 characters or less');
+            showAlert('name_max_twenty_chars');
             return;
         }
 
         if (!this.socket.connected) {
-            alert('Not connected to server. Please refresh the page.');
+            showAlert('not_connected_refresh');
             return;
         }
 
@@ -510,7 +1350,7 @@ class KahootGame {
         } catch (error) {
             console.error('Failed to load QR code:', error);
             const qrLoading = document.querySelector('.qr-loading');
-            qrLoading.textContent = 'Failed to generate QR code';
+            setTranslatedText(qrLoading, 'failed_generate_qr_code');
         }
     }
 
@@ -579,7 +1419,7 @@ class KahootGame {
             const questionCounter = document.getElementById('question-counter');
             const currentQuestion = document.getElementById('current-question');
             
-            if (questionCounter) questionCounter.textContent = `Question ${data.questionNumber} of ${data.totalQuestions}`;
+            if (questionCounter) setTranslatedText(questionCounter, 'question_x_of_y', data.questionNumber, data.totalQuestions);
             if (currentQuestion) {
                 currentQuestion.innerHTML = this.formatCodeBlocks(data.question);
                 this.renderMathJax(currentQuestion);
@@ -602,6 +1442,13 @@ class KahootGame {
                 if (data.type === 'numeric') {
                     optionsContainer.style.display = 'none';
                 } else {
+                    // Clear any previous numeric answer displays
+                    optionsContainer.innerHTML = `
+                        <div class="option-display"></div>
+                        <div class="option-display"></div>
+                        <div class="option-display"></div>
+                        <div class="option-display"></div>
+                    `;
                     optionsContainer.style.display = 'grid';
                     const options = document.querySelectorAll('.option-display');
                     
@@ -609,15 +1456,15 @@ class KahootGame {
                     this.resetButtonStyles(options);
                 
                     if (data.type === 'true-false') {
-                        options[0].textContent = 'True';
-                        options[1].textContent = 'False';
+                        setTranslatedText(options[0], 'true');
+                        setTranslatedText(options[1], 'false');
                         options[2].style.display = 'none';
                         options[3].style.display = 'none';
                     } else {
                         options.forEach((option, index) => {
                             if (data.options && data.options[index]) {
                                 const formattedOption = this.formatCodeBlocks(data.options[index]);
-                                option.innerHTML = `${String.fromCharCode(65 + index)}: ${formattedOption}`;
+                                option.innerHTML = `${getOptionLetter(index)}: ${formattedOption}`;
                                 option.style.display = 'block';
                                 this.renderMathJax(option);
                             } else {
@@ -635,7 +1482,7 @@ class KahootGame {
             
             this.renderMathJax(document.getElementById('current-question'));
         } else {
-            document.getElementById('player-question-counter').textContent = `Question ${data.questionNumber} of ${data.totalQuestions}`;
+            setTranslatedText('player-question-counter', 'question_x_of_y', data.questionNumber, data.totalQuestions);
             
             // Display question text and image for players
             const playerQuestionText = document.getElementById('player-question-text');
@@ -669,7 +1516,7 @@ class KahootGame {
                     mcOptions.forEach((option, index) => {
                         if (data.options && data.options[index]) {
                             const formattedOption = this.formatCodeBlocks(data.options[index]);
-                            option.innerHTML = `${String.fromCharCode(65 + index)}: ${formattedOption}`;
+                            option.innerHTML = `${getOptionLetter(index)}: ${formattedOption}`;
                             option.style.display = 'block';
                             this.renderMathJax(option);
                         } else {
@@ -693,7 +1540,7 @@ class KahootGame {
                     checkboxLabels.forEach((label, index) => {
                         if (data.options && data.options[index]) {
                             const formattedOption = this.formatCodeBlocks(data.options[index]);
-                            label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${String.fromCharCode(65 + index)}: ${formattedOption}`;
+                            label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${getOptionLetter(index)}: ${formattedOption}`;
                             label.setAttribute('data-option', index);
                             this.renderMathJax(label);
                             label.style.display = 'flex';
@@ -827,7 +1674,7 @@ class KahootGame {
         }
         
         message.textContent = displayText;
-        document.getElementById('score-display').textContent = 'Waiting for results...';
+        setTranslatedText('score-display', 'waiting_for_results');
     }
 
     showCorrectAnswer(data) {
@@ -839,7 +1686,9 @@ class KahootGame {
                 options.forEach((option, index) => {
                     if (index === data.correctAnswer) {
                         option.style.border = '5px solid #2ecc71';
-                        option.style.backgroundColor = '#2ecc71';
+                        option.style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+                        option.style.color = '#2ecc71';
+                        option.style.fontWeight = 'bold';
                     }
                 });
             } else if (questionType === 'true-false') {
@@ -849,7 +1698,9 @@ class KahootGame {
                 options.forEach((option, index) => {
                     if (index === correctIndex) {
                         option.style.border = '5px solid #2ecc71';
-                        option.style.backgroundColor = '#2ecc71';
+                        option.style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+                        option.style.color = '#2ecc71';
+                        option.style.fontWeight = 'bold';
                     }
                 });
             } else if (questionType === 'multiple-correct') {
@@ -857,10 +1708,15 @@ class KahootGame {
                     data.correctAnswer.forEach(correctIndex => {
                         if (options[correctIndex]) {
                             options[correctIndex].style.border = '5px solid #2ecc71';
-                            options[correctIndex].style.backgroundColor = '#2ecc71';
+                            options[correctIndex].style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+                            options[correctIndex].style.color = '#2ecc71';
+                            options[correctIndex].style.fontWeight = 'bold';
                         }
                     });
                 }
+            } else if (questionType === 'numeric') {
+                // For numeric questions, show the correct answer in the question area
+                this.showNumericCorrectAnswer(data.correctAnswer, data.tolerance);
             }
         } else {
             // Only highlight correct answer options temporarily, don't override player feedback
@@ -891,7 +1747,31 @@ class KahootGame {
         }
     }
 
+    showNumericCorrectAnswer(correctAnswer, tolerance) {
+        if (!this.isHost) return;
+        
+        // Remove any existing correct answer display
+        const existingAnswer = document.querySelector('.correct-answer-display');
+        if (existingAnswer) {
+            existingAnswer.remove();
+        }
+        
+        // Show the answer in the options container for numeric questions
+        const optionsContainer = document.getElementById('answer-options');
+        if (optionsContainer) {
+            optionsContainer.style.display = 'block';
+            optionsContainer.innerHTML = `
+                <div class="correct-answer-display numeric-answer-display">
+                    <div class="correct-answer-banner">
+                        <strong>✅ Correct Answer: ${correctAnswer}</strong>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
     nextQuestion() {
+        console.log('nextQuestion() called - emitting next-question event');
         clearInterval(this.timer);
         this.socket.emit('next-question');
     }
@@ -964,7 +1844,7 @@ class KahootGame {
         }
         
         if (scoreElement) {
-            scoreElement.textContent = `${playerScore} points`;
+            scoreElement.textContent = `${playerScore} ${getTranslation('points')}`;
         }
         
         // Show top 3 players
@@ -1053,7 +1933,7 @@ class KahootGame {
         
         const answer = parseFloat(input.value);
         if (isNaN(answer)) {
-            alert('Please enter a valid number');
+            showAlert('please_enter_valid_number');
             return;
         }
         
@@ -1082,7 +1962,7 @@ class KahootGame {
         
         if (data.isCorrect) {
             feedback.style.backgroundColor = '#2ecc71';
-            message.textContent = '🎉 Correct!';
+            message.textContent = '🎉 ' + getTranslation('correct_answer_msg');
             this.showConfetti();
             // Play success sound (ascending notes)
             setTimeout(() => this.playSound(523, 0.15), 0);   // C
@@ -1090,7 +1970,7 @@ class KahootGame {
             setTimeout(() => this.playSound(784, 0.3), 300);  // G
         } else {
             feedback.style.backgroundColor = '#e74c3c';
-            message.textContent = '❌ Incorrect';
+            message.textContent = '❌ ' + getTranslation('incorrect_answer_msg');
             // Play error sound (descending notes)
             this.playSound(400, 0.2, 'sawtooth');
             setTimeout(() => this.playSound(300, 0.3, 'sawtooth'), 200);
@@ -1512,7 +2392,7 @@ class KahootGame {
                 const data = JSON.parse(autosave);
                 // Only load if it's recent (within 24 hours)
                 if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
-                    if (confirm('Found auto-saved quiz draft. Would you like to restore it?')) {
+                    if (showConfirm('restore_autosave_confirm')) {
                         document.getElementById('quiz-title').value = data.title || '';
                         
                         // Clear existing questions
@@ -1754,18 +2634,18 @@ class KahootGame {
                 } else if (file.name.endsWith('.csv')) {
                     quizData = this.parseCSV(e.target.result);
                 } else {
-                    alert('Please select a CSV or JSON file');
+                    showAlert('please_select_csv_json');
                     return;
                 }
                 
                 if (quizData && quizData.questions && Array.isArray(quizData.questions)) {
                     this.loadImportedQuiz(quizData);
                 } else {
-                    alert('Invalid file format. Please check the file structure.');
+                    showAlert('invalid_file_format');
                 }
             } catch (error) {
                 console.error('Import error:', error);
-                alert('Error importing file. Please check the file format.');
+                showAlert('error_importing_file');
             }
         };
         
@@ -1829,7 +2709,7 @@ class KahootGame {
     }
     
     loadImportedQuiz(quizData) {
-        if (confirm(`Import "${quizData.title || 'Imported Quiz'}" with ${quizData.questions.length} questions? This will replace your current quiz.`)) {
+        if (showConfirm('import_quiz_confirm', quizData.title || getTranslation('untitled_quiz'), quizData.questions.length)) {
             // Clear existing questions
             document.getElementById('questions-container').innerHTML = '';
             document.getElementById('quiz-title').value = quizData.title || 'Imported Quiz';
@@ -1840,20 +2720,20 @@ class KahootGame {
                 this.populateQuestion(index, question);
             });
             
-            alert(`Successfully imported ${quizData.questions.length} questions!`);
+            showAlert('successfully_imported_questions', quizData.questions.length);
         }
     }
     
     async saveQuiz() {
         const title = document.getElementById('quiz-title').value.trim();
         if (!title) {
-            alert('Please enter a quiz title');
+            showAlert('please_enter_quiz_title');
             return;
         }
         
         const questions = this.collectQuestions();
         if (questions.length === 0) {
-            alert('Please add at least one question');
+            showAlert('please_add_one_question');
             return;
         }
         
@@ -1871,10 +2751,10 @@ class KahootGame {
             }
             
             const result = await response.json();
-            alert(`Quiz saved successfully as ${result.filename}`);
+            showAlert('quiz_saved_successfully', result.filename);
         } catch (error) {
             console.error('Save quiz error:', error);
-            alert('Failed to save quiz');
+            showAlert('failed_save_quiz');
         }
     }
     
@@ -1903,7 +2783,7 @@ class KahootGame {
             document.getElementById('load-quiz-modal').style.display = 'flex';
         } catch (error) {
             console.error('Load quizzes error:', error);
-            alert('Failed to load quiz list');
+            showAlert('failed_load_quiz_list');
         }
     }
     
@@ -1933,10 +2813,10 @@ class KahootGame {
             });
             
             this.hideLoadQuizModal();
-            alert(`Quiz "${quiz.title}" loaded successfully!`);
+            showAlert('quiz_loaded_successfully', quiz.title);
         } catch (error) {
             console.error('Load quiz error:', error);
-            alert('Failed to load quiz');
+            showAlert('failed_load_quiz');
         }
     }
     
@@ -2132,6 +3012,92 @@ class KahootGame {
     }
 
     // Debounced MathJax rendering to improve performance
+    async showGameBrowser() {
+        this.showScreen('game-browser');
+        await this.refreshActiveGames();
+    }
+
+    async refreshActiveGames() {
+        const gamesContainer = document.getElementById('games-list');
+        gamesContainer.innerHTML = '<div class="loading-games">Loading games...</div>';
+
+        try {
+            const response = await fetch('/api/active-games');
+            const data = await response.json();
+
+            if (data.games && data.games.length > 0) {
+                gamesContainer.innerHTML = '';
+                data.games.forEach(game => this.createGameCard(game));
+            } else {
+                gamesContainer.innerHTML = `
+                    <div class="no-games">
+                        <h3>No active games found</h3>
+                        <p>Ask someone to host a game or create your own!</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Failed to fetch active games:', error);
+            gamesContainer.innerHTML = `
+                <div class="no-games">
+                    <h3>Failed to load games</h3>
+                    <p>Please check your connection and try again.</p>
+                </div>
+            `;
+        }
+    }
+
+    createGameCard(game) {
+        const gamesContainer = document.getElementById('games-list');
+        const gameCard = document.createElement('div');
+        gameCard.className = 'game-card';
+        
+        gameCard.innerHTML = `
+            <h3>${this.escapeHtml(game.title)}</h3>
+            <div class="game-info">
+                <span class="game-pin">${game.pin}</span>
+            </div>
+            <div class="game-stats">
+                <div class="game-stat">
+                    <span>👥</span>
+                    <span>${game.playerCount} players</span>
+                </div>
+                <div class="game-stat">
+                    <span>📝</span>
+                    <span>${game.questionCount} questions</span>
+                </div>
+            </div>
+            <button class="join-game-btn" onclick="window.game.joinGameByPin('${game.pin}')">
+                Join Game
+            </button>
+        `;
+        
+        gamesContainer.appendChild(gameCard);
+    }
+
+    joinGameByPin(pin) {
+        // Pre-fill the PIN and switch to join screen
+        document.getElementById('game-pin-input').value = pin;
+        this.showScreen('join-screen');
+        
+        // Focus on the name input
+        setTimeout(() => {
+            document.getElementById('player-name').focus();
+        }, 100);
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    initializeLanguage() {
+        // Load saved language preference
+        const savedLanguage = localStorage.getItem('language') || 'en';
+        setLanguage(savedLanguage);
+    }
+
     renderMathJax() {
         if (this.mathJaxRenderTimeout) {
             clearTimeout(this.mathJaxRenderTimeout);
@@ -2191,7 +3157,7 @@ class KahootGame {
         if (!elements) return;
         
         // Use a batch DOM update for better performance
-        const stylesToReset = ['border', 'backgroundColor'];
+        const stylesToReset = ['border', 'backgroundColor', 'color', 'fontWeight'];
         const classesToRemove = ['selected', 'correct', 'incorrect'];
         
         Array.from(elements).forEach(element => {
@@ -2280,7 +3246,7 @@ class KahootGame {
                 item.style.display = 'flex';
                 const label = item.querySelector('.option-label');
                 if (label) {
-                    label.textContent = String.fromCharCode(65 + index); // A, B, C, D
+                    label.textContent = getOptionLetter(index); // A, B, C, D
                 }
             } else {
                 item.style.display = 'none';
@@ -2408,14 +3374,14 @@ class KahootGame {
 
     updatePreviewNavigation(totalQuestions) {
         document.getElementById('preview-question-counter').textContent = 
-            `Question ${this.currentPreviewQuestion + 1} of ${totalQuestions}`;
+            getTranslation('question_x_of_y', this.currentPreviewQuestion + 1, totalQuestions);
         
         document.getElementById('preview-prev').disabled = this.currentPreviewQuestion === 0;
         document.getElementById('preview-next').disabled = this.currentPreviewQuestion === totalQuestions - 1;
     }
 
     extractQuestionDataForPreview(questionItem) {
-        const questionText = questionItem.querySelector('.question-text').value.trim() || 'Enter your question above to see preview';
+        const questionText = questionItem.querySelector('.question-text').value.trim() || getTranslation('enter_question_preview');
         const questionType = questionItem.querySelector('.question-type').value;
         const imageElement = questionItem.querySelector('.question-image');
         const imageUrl = imageElement ? imageElement.dataset.url || '' : '';
@@ -2445,7 +3411,7 @@ class KahootGame {
     renderQuestionPreview(data) {
         // Update question counter and text
         document.getElementById('preview-question-counter-display').textContent = 
-            `Question ${data.questionNumber} of ${data.totalQuestions}`;
+            getTranslation('question_x_of_y', data.questionNumber, data.totalQuestions);
         document.getElementById('preview-question-text').innerHTML = this.formatCodeBlocks(data.question);
 
         // Handle image
@@ -2506,7 +3472,7 @@ class KahootGame {
         previewCheckboxes.forEach((checkbox, index) => {
             if (options && options[index]) {
                 const formattedOption = this.formatCodeBlocks(options[index]);
-                checkbox.innerHTML = `<input type="checkbox" disabled> ${String.fromCharCode(65 + index)}: ${formattedOption}`;
+                checkbox.innerHTML = `<input type="checkbox" disabled> ${getOptionLetter(index)}: ${formattedOption}`;
                 checkbox.style.display = 'flex';
             } else {
                 checkbox.style.display = 'none';
@@ -2523,7 +3489,7 @@ class KahootGame {
     }
 
     showEmptyPreview() {
-        document.getElementById('preview-question-text').textContent = 'Add a question to see preview';
+        document.getElementById('preview-question-text').textContent = getTranslation('add_question_preview');
         document.getElementById('preview-question-counter-display').textContent = 'No questions';
         document.querySelectorAll('.preview-answer-type').forEach(type => type.style.display = 'none');
     }
@@ -2621,7 +3587,7 @@ class KahootGame {
 
     updateSplitPreviewNavigation(totalQuestions) {
         document.getElementById('preview-question-counter-split').textContent = 
-            `Question ${this.currentPreviewQuestion + 1} of ${totalQuestions}`;
+            getTranslation('question_x_of_y', this.currentPreviewQuestion + 1, totalQuestions);
         
         document.getElementById('preview-prev-split').disabled = this.currentPreviewQuestion === 0;
         document.getElementById('preview-next-split').disabled = this.currentPreviewQuestion === totalQuestions - 1;
@@ -2630,7 +3596,7 @@ class KahootGame {
     renderSplitQuestionPreview(data) {
         // Update question counter and text
         document.getElementById('preview-question-counter-display-split').textContent = 
-            `Question ${data.questionNumber} of ${data.totalQuestions}`;
+            getTranslation('question_x_of_y', data.questionNumber, data.totalQuestions);
         document.getElementById('preview-question-text-split').innerHTML = this.formatCodeBlocks(data.question);
 
         // Handle image
@@ -2701,7 +3667,7 @@ class KahootGame {
         previewCheckboxes.forEach((checkbox, index) => {
             if (options && options[index]) {
                 const formattedOption = this.formatCodeBlocks(options[index]);
-                checkbox.innerHTML = `<input type="checkbox" disabled> ${String.fromCharCode(65 + index)}: ${formattedOption}`;
+                checkbox.innerHTML = `<input type="checkbox" disabled> ${getOptionLetter(index)}: ${formattedOption}`;
                 checkbox.style.display = 'flex';
             } else {
                 checkbox.style.display = 'none';
@@ -2726,7 +3692,7 @@ class KahootGame {
     }
 
     showEmptySplitPreview() {
-        document.getElementById('preview-question-text-split').textContent = 'Add a question to see preview';
+        document.getElementById('preview-question-text-split').textContent = getTranslation('add_question_preview');
         document.getElementById('preview-question-counter-display-split').textContent = 'No questions';
         document.querySelectorAll('#preview-answer-area-split .preview-answer-type').forEach(type => type.style.display = 'none');
     }
@@ -3046,7 +4012,7 @@ async function uploadImage(input) {
         }
     } catch (error) {
         console.error('Error uploading image:', error);
-        alert('Failed to upload image');
+        showAlert('failed_upload_image');
     }
 }
 
@@ -3158,7 +4124,7 @@ class AIQuestionGenerator {
 
     async loadOllamaModels() {
         const modelSelect = document.getElementById('ollama-model');
-        modelSelect.innerHTML = '<option value="">Loading models...</option>';
+        modelSelect.innerHTML = `<option value="">${getTranslation('loading_models')}</option>`;
         
         try {
             const response = await fetch('/api/ollama/models');
@@ -3219,15 +4185,15 @@ class AIQuestionGenerator {
                 this.updateContentTypeIndicator(text);
             } else if (file.type === 'application/pdf') {
                 // For now, just show a message that PDF parsing will be added
-                alert('PDF parsing will be added in a future update. Please copy and paste the text content for now.');
+                showAlert('pdf_parsing_future_update');
             } else if (file.name.endsWith('.docx')) {
-                alert('DOCX parsing will be added in a future update. Please copy and paste the text content for now.');
+                showAlert('docx_parsing_future_update');
             } else {
-                alert('Unsupported file format. Please use TXT or MD files, or paste the content directly.');
+                showAlert('unsupported_file_format');
             }
         } catch (error) {
             console.error('Error reading file:', error);
-            alert('Error reading file. Please try again or paste the content directly.');
+            showAlert('error_reading_file');
         }
     }
 
@@ -3278,7 +4244,14 @@ class AIQuestionGenerator {
         const contentType = this.detectContentType(content);
         const formatInstructions = this.getFormatInstructions(contentType);
 
+        // Determine language based on current UI language and content language hints
+        const languagePrompt = currentLanguage === 'es' ? 
+            'Generate questions in SPANISH. All question text, options, and explanations must be in Spanish.' :
+            'Generate questions in ENGLISH.';
+            
         return `You must create ${options.count} quiz questions about the EXACT content provided below. Use the specific functions, equations, or examples given.
+
+${languagePrompt}
 
 CONTENT TO USE:
 ${content}
@@ -3418,14 +4391,14 @@ STRICT RULES:
 
         // Validation
         if (!content) {
-            alert('Please provide source material to generate questions from.');
+            showAlert('please_provide_source_material');
             return;
         }
 
         if (this.providers[provider].apiKey) {
             const apiKey = document.getElementById('ai-api-key').value.trim();
             if (!apiKey) {
-                alert('Please enter your API key for the selected provider.');
+                showAlert('please_enter_api_key');
                 return;
             }
             // Save API key to localStorage
@@ -3465,14 +4438,14 @@ STRICT RULES:
             if (questions && questions.length > 0) {
                 this.addGeneratedQuestions(questions);
                 this.closeModal();
-                alert(`Successfully generated ${questions.length} questions!`);
+                showAlert('successfully_generated_questions', questions.length);
             } else {
                 throw new Error('No questions were generated');
             }
 
         } catch (error) {
             console.error('Error generating questions:', error);
-            alert(`Error generating questions: ${error.message}`);
+            showAlert('error_generating_questions_detail', error.message);
         } finally {
             statusDiv.style.display = 'none';
             generateBtn.disabled = false;
@@ -3566,28 +4539,20 @@ IMPORTANT: Generate completely new and unique questions. Do not repeat any previ
         }
         
         try {
-            const response = await fetch('https://api.anthropic.com/v1/messages', {
+            const response = await fetch('/api/claude/generate', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': apiKey,
-                    'anthropic-version': '2023-06-01'
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: 'claude-3-haiku-20240307',
-                    max_tokens: 1024,
-                    messages: [
-                        {
-                            role: 'user',
-                            content: prompt
-                        }
-                    ]
+                    prompt: prompt,
+                    apiKey: apiKey
                 })
             });
 
             if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`Claude API error: ${response.status} - ${error}`);
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Server error: ${response.status}`);
             }
 
             const data = await response.json();
@@ -3614,7 +4579,9 @@ IMPORTANT: Generate completely new and unique questions. Do not repeat any previ
             try {
                 const parsed = JSON.parse(responseText);
                 questions = Array.isArray(parsed) ? parsed : [parsed];
-            } catch {
+                console.log('Successfully parsed JSON:', questions);
+            } catch (parseError) {
+                console.log('JSON parse failed:', parseError);
                 // If that fails, try to extract JSON array from the response
                 const arrayMatch = responseText.match(/\[[\s\S]*\]/);
                 if (arrayMatch) {
@@ -3631,22 +4598,35 @@ IMPORTANT: Generate completely new and unique questions. Do not repeat any previ
                 }
             }
             
-            return this.validateQuestions(questions);
+            console.log('About to validate questions:', questions);
+            const validatedQuestions = this.validateQuestions(questions);
+            console.log('Validation result:', validatedQuestions);
+            return validatedQuestions;
         } catch (error) {
             console.error('Error parsing AI response:', responseText);
+            console.error('Detailed error:', error);
             throw new Error('Failed to parse AI response. Please try again.');
         }
     }
 
     validateQuestions(questions) {
         const validQuestions = [];
-        for (const q of questions) {
+        console.log('Validating questions, count:', questions.length);
+        
+        for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
+            console.log(`Validating question ${i}:`, q);
+            
             if (q.question && q.type && q.correctAnswer !== undefined) {
-                // Basic LaTeX validation - skip questions with LaTeX errors
-                if (this.hasLatexErrors(q.question)) {
-                    console.warn('Skipping question with LaTeX errors:', q.question);
-                    continue;
+                console.log('Basic validation passed for question', i);
+                
+                // Basic LaTeX validation - temporarily disabled for debugging
+                const hasErrors = this.hasLatexErrors(q.question);
+                if (hasErrors) {
+                    console.warn('LaTeX validation would skip:', q.question);
+                    console.warn('But allowing it through for now...');
                 }
+                console.log('LaTeX validation passed for question', i);
                 
                 // Set default values for missing fields
                 q.difficulty = q.difficulty || 'medium';
@@ -3654,10 +4634,21 @@ IMPORTANT: Generate completely new and unique questions. Do not repeat any previ
                 
                 // Validate question type
                 if (['multiple-choice', 'true-false', 'multiple-correct', 'numeric'].includes(q.type)) {
+                    console.log('Question type validation passed for question', i);
                     validQuestions.push(q);
+                } else {
+                    console.warn('Invalid question type:', q.type);
                 }
+            } else {
+                console.warn('Question failed basic validation:', {
+                    hasQuestion: !!q.question,
+                    hasType: !!q.type,
+                    hasCorrectAnswer: q.correctAnswer !== undefined
+                });
             }
         }
+        
+        console.log('Validation complete. Valid questions:', validQuestions.length);
         return validQuestions;
     }
 
@@ -3813,4 +4804,9 @@ function openAIGeneratorModal() {
 document.addEventListener('DOMContentLoaded', () => {
     window.game = new KahootGame();
     window.aiGenerator = new AIQuestionGenerator();
+    
+    // Initialize language selector
+    const savedLanguage = localStorage.getItem('language') || 'en';
+    setLanguage(savedLanguage);
+    translatePage();
 });
