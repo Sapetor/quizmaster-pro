@@ -149,7 +149,74 @@ const translations = {
         multiple_choice_type: "Multiple Choice",
         true_false_type: "True/False",
         multiple_correct_type: "Multiple Correct Answers",
-        numeric_answer_type: "Numeric Answer"
+        numeric_answer_type: "Numeric Answer",
+        
+        // Additional UI elements and messages
+        submit: "Submit",
+        submit_answer: "Submit Answer",
+        question_preview: "Question Preview",
+        close: "Close",
+        reset: "Reset",
+        question_will_appear_here: "Question will appear here",
+        questions_will_appear_here: "Questions will appear here",
+        live_answer_statistics: "Live Answer Statistics",
+        next_question: "Next Question",
+        leaderboard_title: "🏆 Leaderboard",
+        game_complete: "🎉 Game Complete!",
+        quiz_complete: "🎉 Quiz Complete!",
+        your_final_rank: "Your Final Rank",
+        top_players: "🏆 Top Players",
+        preview_settings_title: "⚙️ Preview Settings",
+        split_ratio: "Split Ratio",
+        font_size: "Font Size",
+        spacing: "Spacing",
+        button_size: "Button Size",
+        normal: "Normal",
+        minimal: "Minimal",
+        comfortable: "Comfortable",
+        spacious: "Spacious",
+        small: "Small",
+        large: "Large",
+        extra_large: "Extra Large",
+        
+        // Error messages and alerts
+        scroll_shortcuts_only_when_preview: "Scroll shortcuts only work when Live Preview is active",
+        please_add_question_to_preview: "Please add at least one question to preview",
+        csv_header_required: "CSV must have header and at least one data row",
+        failed_fetch_models: "Failed to fetch models",
+        no_models_available: "No models available",
+        error_loading_models_detail: "Error loading models",
+        unsupported_provider: "Unsupported provider",
+        no_questions_generated: "No questions were generated",
+        select_ollama_model_first: "Please select an Ollama model first",
+        cannot_connect_ollama: "Cannot connect to Ollama. Make sure Ollama is installed and running locally.",
+        huggingface_integration_coming: "Hugging Face integration coming soon",
+        enter_claude_api_key: "Please enter your Claude API key",
+        cannot_connect_claude: "Cannot connect to Claude API. Please check your internet connection.",
+        no_valid_json_response: "No valid JSON found in response",
+        failed_parse_ai_response: "Failed to parse AI response. Please try again.",
+        
+        // Game flow messages
+        pin_detected: "PIN detected: ",
+        no_saved_quizzes_found: "No saved quizzes found.",
+        imported_quiz: "Imported Quiz",
+        true_display: "True",
+        false_display: "False",
+        na_position: "N/A",
+        
+        // Additional placeholders
+        enter_api_key_placeholder: "Enter your API key",
+        loading_models_placeholder: "Loading models...",
+        
+        // Preview content
+        close_preview: "❌ Close Preview",
+        toggle_live_preview: "📱 Toggle Live Preview",
+        
+        // Response summary text
+        of_players_responded: "of {0} players responded",
+        
+        // Image alt text
+        question_image: "Question Image"
     },
     es: {
         app_title: "QuizMaster Pro",
@@ -354,7 +421,74 @@ const translations = {
         multiple_choice_type: "Opción Múltiple",
         true_false_type: "Verdadero/Falso",
         multiple_correct_type: "Respuestas Múltiples Correctas",
-        numeric_answer_type: "Respuesta Numérica"
+        numeric_answer_type: "Respuesta Numérica",
+        
+        // Additional UI elements and messages
+        submit: "Enviar",
+        submit_answer: "Enviar Respuesta",
+        question_preview: "Vista Previa de Pregunta",
+        close: "Cerrar",
+        reset: "Restablecer",
+        question_will_appear_here: "La pregunta aparecerá aquí",
+        questions_will_appear_here: "Las preguntas aparecerán aquí",
+        live_answer_statistics: "Estadísticas de Respuestas en Vivo",
+        next_question: "Siguiente Pregunta",
+        leaderboard_title: "🏆 Tabla de Posiciones",
+        game_complete: "🎉 ¡Juego Completado!",
+        quiz_complete: "🎉 ¡Quiz Completado!",
+        your_final_rank: "Tu Clasificación Final",
+        top_players: "🏆 Mejores Jugadores",
+        preview_settings_title: "⚙️ Configuración de Vista Previa",
+        split_ratio: "Proporción de División",
+        font_size: "Tamaño de Fuente",
+        spacing: "Espaciado",
+        button_size: "Tamaño de Botón",
+        normal: "Normal",
+        minimal: "Mínimo",
+        comfortable: "Cómodo",
+        spacious: "Espacioso",
+        small: "Pequeño",
+        large: "Grande",
+        extra_large: "Extra Grande",
+        
+        // Error messages and alerts
+        scroll_shortcuts_only_when_preview: "Los atajos de desplazamiento solo funcionan cuando la Vista Previa está activa",
+        please_add_question_to_preview: "Por favor agrega al menos una pregunta para vista previa",
+        csv_header_required: "CSV debe tener encabezado y al menos una fila de datos",
+        failed_fetch_models: "Error al obtener modelos",
+        no_models_available: "No hay modelos disponibles",
+        error_loading_models_detail: "Error al cargar modelos",
+        unsupported_provider: "Proveedor no soportado",
+        no_questions_generated: "No se generaron preguntas",
+        select_ollama_model_first: "Por favor selecciona un modelo de Ollama primero",
+        cannot_connect_ollama: "No se puede conectar a Ollama. Asegúrate de que Ollama esté instalado y ejecutándose localmente.",
+        huggingface_integration_coming: "La integración con Hugging Face llegará pronto",
+        enter_claude_api_key: "Por favor ingresa tu clave API de Claude",
+        cannot_connect_claude: "No se puede conectar a la API de Claude. Verifica tu conexión a internet.",
+        no_valid_json_response: "No se encontró JSON válido en la respuesta",
+        failed_parse_ai_response: "Error al analizar respuesta de IA. Inténtalo de nuevo.",
+        
+        // Game flow messages
+        pin_detected: "PIN detectado: ",
+        no_saved_quizzes_found: "No se encontraron quizzes guardados.",
+        imported_quiz: "Quiz Importado",
+        true_display: "Verdadero",
+        false_display: "Falso",
+        na_position: "N/A",
+        
+        // Additional placeholders
+        enter_api_key_placeholder: "Ingresa tu clave API",
+        loading_models_placeholder: "Cargando modelos...",
+        
+        // Preview content
+        close_preview: "❌ Cerrar Vista Previa",
+        toggle_live_preview: "📱 Alternar Vista Previa",
+        
+        // Response summary text
+        of_players_responded: "de {0} jugadores respondieron",
+        
+        // Image alt text
+        question_image: "Imagen de Pregunta"
     },
     pl: {
         app_title: "QuizMaster Pro",
@@ -559,7 +693,74 @@ const translations = {
         multiple_choice_type: "Wybór Wielokrotny",
         true_false_type: "Prawda/Fałsz",
         multiple_correct_type: "Wiele Prawidłowych Odpowiedzi",
-        numeric_answer_type: "Odpowiedź Numeryczna"
+        numeric_answer_type: "Odpowiedź Numeryczna",
+        
+        // Additional UI elements and messages
+        submit: "Wyślij",
+        submit_answer: "Wyślij Odpowiedź",
+        question_preview: "Podgląd Pytania",
+        close: "Zamknij",
+        reset: "Resetuj",
+        question_will_appear_here: "Pytanie pojawi się tutaj",
+        questions_will_appear_here: "Pytania pojawią się tutaj",
+        live_answer_statistics: "Statystyki Odpowiedzi na Żywo",
+        next_question: "Następne Pytanie",
+        leaderboard_title: "🏆 Ranking",
+        game_complete: "🎉 Gra Ukończona!",
+        quiz_complete: "🎉 Quiz Ukończony!",
+        your_final_rank: "Twoja Końcowa Pozycja",
+        top_players: "🏆 Najlepsi Gracze",
+        preview_settings_title: "⚙️ Ustawienia Podglądu",
+        split_ratio: "Proporcja Podziału",
+        font_size: "Rozmiar Czcionki",
+        spacing: "Odstępy",
+        button_size: "Rozmiar Przycisków",
+        normal: "Normalny",
+        minimal: "Minimalny",
+        comfortable: "Wygodny",
+        spacious: "Przestronny",
+        small: "Mały",
+        large: "Duży",
+        extra_large: "Bardzo Duży",
+        
+        // Error messages and alerts
+        scroll_shortcuts_only_when_preview: "Skróty przewijania działają tylko gdy Podgląd na Żywo jest aktywny",
+        please_add_question_to_preview: "Proszę dodać co najmniej jedno pytanie do podglądu",
+        csv_header_required: "CSV musi mieć nagłówek i co najmniej jeden wiersz danych",
+        failed_fetch_models: "Błąd pobierania modeli",
+        no_models_available: "Brak dostępnych modeli",
+        error_loading_models_detail: "Błąd ładowania modeli",
+        unsupported_provider: "Nieobsługiwany dostawca",
+        no_questions_generated: "Nie wygenerowano pytań",
+        select_ollama_model_first: "Proszę najpierw wybrać model Ollama",
+        cannot_connect_ollama: "Nie można połączyć z Ollama. Upewnij się, że Ollama jest zainstalowana i uruchomiona lokalnie.",
+        huggingface_integration_coming: "Integracja z Hugging Face wkrótce",
+        enter_claude_api_key: "Proszę wprowadzić klucz API Claude",
+        cannot_connect_claude: "Nie można połączyć z API Claude. Sprawdź połączenie internetowe.",
+        no_valid_json_response: "Nie znaleziono prawidłowego JSON w odpowiedzi",
+        failed_parse_ai_response: "Błąd analizy odpowiedzi AI. Spróbuj ponownie.",
+        
+        // Game flow messages
+        pin_detected: "Wykryto PIN: ",
+        no_saved_quizzes_found: "Nie znaleziono zapisanych quizów.",
+        imported_quiz: "Importowany Quiz",
+        true_display: "Prawda",
+        false_display: "Fałsz",
+        na_position: "N/D",
+        
+        // Additional placeholders
+        enter_api_key_placeholder: "Wprowadź swój klucz API",
+        loading_models_placeholder: "Ładowanie modeli...",
+        
+        // Preview content
+        close_preview: "❌ Zamknij Podgląd",
+        toggle_live_preview: "📱 Przełącz Podgląd na Żywo",
+        
+        // Response summary text
+        of_players_responded: "z {0} graczy odpowiedziało",
+        
+        // Image alt text
+        question_image: "Obraz Pytania"
     }
 };
 
@@ -1269,7 +1470,7 @@ class KahootGame {
                     
                 case 'true-false':
                     const tfCorrect = item.querySelector('.true-false-options .correct-answer').value;
-                    question.options = ['True', 'False']; // Display names
+                    question.options = [getTranslation('true_display'), getTranslation('false_display')]; // Display names
                     question.correctAnswer = tfCorrect; // Will be "true" or "false" (lowercase)
                     questions.push(question);
                     break;
@@ -1365,7 +1566,7 @@ class KahootGame {
             // Show feedback that the PIN was detected from QR code
             const pinInput = document.getElementById('game-pin-input');
             const originalPlaceholder = pinInput.placeholder;
-            pinInput.placeholder = `PIN detected: ${pin}`;
+            pinInput.placeholder = `${getTranslation('pin_detected')}${pin}`;
             setTimeout(() => {
                 pinInput.placeholder = originalPlaceholder;
             }, 3000);
@@ -1915,7 +2116,7 @@ class KahootGame {
         // Immediately disable button and provide visual feedback
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
+            submitBtn.textContent = getTranslation('submitting');
         }
         
         const checkboxes = document.querySelectorAll('#player-multiple-correct .option-checkbox:checked');
@@ -1940,7 +2141,7 @@ class KahootGame {
         // Immediately disable controls and provide visual feedback
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
+            submitBtn.textContent = getTranslation('submitting');
         }
         if (input) {
             input.disabled = true;
@@ -2134,7 +2335,7 @@ class KahootGame {
     scrollToTop() {
         // Only work when live preview is active
         if (!isPreviewMode) {
-            alert('Scroll shortcuts only work when Live Preview is active');
+            showAlert('scroll_shortcuts_only_when_preview');
             return;
         }
         
@@ -2147,7 +2348,7 @@ class KahootGame {
     scrollToBottom() {
         // Only work when live preview is active
         if (!isPreviewMode) {
-            alert('Scroll shortcuts only work when Live Preview is active');
+            showAlert('scroll_shortcuts_only_when_preview');
             return;
         }
         
@@ -2424,7 +2625,7 @@ class KahootGame {
         const questions = this.collectQuestions();
         
         if (questions.length === 0) {
-            alert('Please add at least one question to preview');
+            showAlert('please_add_question_to_preview');
             return;
         }
         
@@ -2703,7 +2904,7 @@ class KahootGame {
         }
         
         return {
-            title: 'Imported Quiz',
+            title: getTranslation('imported_quiz'),
             questions: questions
         };
     }
@@ -3231,7 +3432,7 @@ class KahootGame {
                 item.style.display = 'flex';
                 const label = item.querySelector('.option-label');
                 if (label) {
-                    label.textContent = index === 0 ? 'True' : 'False';
+                    label.textContent = index === 0 ? getTranslation('true_display') : getTranslation('false_display');
                 }
             } else {
                 item.style.display = 'none';
@@ -4130,7 +4331,7 @@ class AIQuestionGenerator {
             const response = await fetch('/api/ollama/models');
             
             if (!response.ok) {
-                throw new Error('Failed to fetch models');
+                throw new Error(getTranslation('failed_fetch_models'));
             }
             
             const data = await response.json();
@@ -4150,11 +4351,11 @@ class AIQuestionGenerator {
                     modelSelect.value = savedModel;
                 }
             } else {
-                modelSelect.innerHTML = '<option value="">No models available</option>';
+                modelSelect.innerHTML = `<option value="">${getTranslation('no_models_available')}</option>`;
             }
         } catch (error) {
             console.error('Error loading Ollama models:', error);
-            modelSelect.innerHTML = '<option value="">Error loading models</option>';
+            modelSelect.innerHTML = `<option value="">${getTranslation('error_loading_models')}</option>`;
         }
     }
 
@@ -4432,7 +4633,7 @@ STRICT RULES:
                     questions = await this.generateWithClaude(prompt);
                     break;
                 default:
-                    throw new Error('Unsupported provider');
+                    throw new Error(getTranslation('unsupported_provider'));
             }
 
             if (questions && questions.length > 0) {
@@ -4440,7 +4641,7 @@ STRICT RULES:
                 this.closeModal();
                 showAlert('successfully_generated_questions', questions.length);
             } else {
-                throw new Error('No questions were generated');
+                throw new Error(getTranslation('no_questions_generated'));
             }
 
         } catch (error) {
@@ -4457,7 +4658,7 @@ STRICT RULES:
             const selectedModel = document.getElementById('ollama-model').value;
             
             if (!selectedModel) {
-                throw new Error('Please select an Ollama model first');
+                throw new Error(getTranslation('select_ollama_model_first'));
             }
             
             // Add randomization and context clearing to prevent repetition
@@ -4494,7 +4695,7 @@ IMPORTANT: Generate completely new and unique questions. Do not repeat any previ
             return this.parseAIResponse(data.response);
         } catch (error) {
             if (error.message.includes('fetch')) {
-                throw new Error('Cannot connect to Ollama. Make sure Ollama is installed and running locally.');
+                throw new Error(getTranslation('cannot_connect_ollama'));
             }
             throw error;
         }
@@ -4528,14 +4729,14 @@ IMPORTANT: Generate completely new and unique questions. Do not repeat any previ
 
     async generateWithHuggingFace(prompt) {
         // Placeholder for Hugging Face implementation
-        throw new Error('Hugging Face integration coming soon');
+        throw new Error(getTranslation('huggingface_integration_coming'));
     }
 
     async generateWithClaude(prompt) {
         const apiKey = document.getElementById('ai-api-key').value;
         
         if (!apiKey) {
-            throw new Error('Please enter your Claude API key');
+            throw new Error(getTranslation('enter_claude_api_key'));
         }
         
         try {
@@ -4564,7 +4765,7 @@ IMPORTANT: Generate completely new and unique questions. Do not repeat any previ
             return this.parseAIResponse(data.content[0].text);
         } catch (error) {
             if (error.message.includes('fetch')) {
-                throw new Error('Cannot connect to Claude API. Please check your internet connection.');
+                throw new Error(getTranslation('cannot_connect_claude'));
             }
             throw error;
         }
@@ -4593,7 +4794,7 @@ IMPORTANT: Generate completely new and unique questions. Do not repeat any previ
                         const singleQuestion = JSON.parse(objectMatch[0]);
                         questions = [singleQuestion];
                     } else {
-                        throw new Error('No valid JSON found in response');
+                        throw new Error(getTranslation('no_valid_json_response'));
                     }
                 }
             }
@@ -4605,7 +4806,7 @@ IMPORTANT: Generate completely new and unique questions. Do not repeat any previ
         } catch (error) {
             console.error('Error parsing AI response:', responseText);
             console.error('Detailed error:', error);
-            throw new Error('Failed to parse AI response. Please try again.');
+            throw new Error(getTranslation('failed_parse_ai_response'));
         }
     }
 

@@ -327,7 +327,7 @@
                                 <div id="preview-numeric-split" class="preview-answer-type" style="display: none;">
                                     <div class="numeric-input-container">
                                         <input type="number" id="preview-numeric-input-split" placeholder="Enter your answer" disabled data-translate-placeholder="enter_answer">
-                                        <button class="btn primary" disabled>Submit</button>
+                                        <button class="btn primary" disabled data-translate="submit">Submit</button>
                                     </div>
                                 </div>
                             </div>
@@ -342,22 +342,22 @@
             <div id="preview-modal" class="preview-modal">
                 <div class="preview-modal-header">
                     <div class="preview-title-section">
-                        <h2>📱 Question Preview</h2>
+                        <h2>📱 <span data-translate="question_preview">Question Preview</span></h2>
                     </div>
                     <button id="close-preview" class="close-btn" onclick="closePreviewModal()">×</button>
                 </div>
                 
                 <div class="preview-navigation-bar">
                     <button id="preview-prev" class="nav-btn">◀ <span data-translate="previous">Previous</span></button>
-                    <span id="preview-question-counter">Question 1 of 1</span>
+                    <span id="preview-question-counter"><span data-translate="question">Question</span> 1 <span data-translate="of">of</span> 1</span>
                     <button id="preview-next" class="nav-btn"><span data-translate="next">Next</span> ▶</button>
                 </div>
                 
                 <div id="preview-viewport" class="preview-viewport desktop-viewport">
                     <div id="preview-content" class="preview-content">
                         <div class="player-question-area">
-                            <div id="preview-question-counter-display">Question 1 of 1</div>
-                            <div id="preview-question-text">Select a question to preview</div>
+                            <div id="preview-question-counter-display"><span data-translate="question">Question</span> 1 <span data-translate="of">of</span> 1</div>
+                            <div id="preview-question-text" data-translate="select_question_preview">Select a question to preview</div>
                             <div id="preview-question-image" style="display: none;">
                                 <img id="preview-question-img" src="" alt="Question Image">
                             </div>
@@ -404,7 +404,7 @@
                             <div id="preview-numeric" class="preview-answer-type" style="display: none;">
                                 <div class="numeric-input-container">
                                     <input type="number" id="preview-numeric-input" placeholder="Enter your answer" disabled data-translate-placeholder="enter_answer">
-                                    <button class="btn primary" disabled>Submit</button>
+                                    <button class="btn primary" disabled data-translate="submit">Submit</button>
                                 </div>
                             </div>
                         </div>
@@ -446,7 +446,7 @@
                     <div id="question-image-display" class="question-image-container" style="display: none;">
                         <img id="host-question-image" src="" alt="Question Image">
                     </div>
-                    <h2 id="current-question">Question will appear here</h2>
+                    <h2 id="current-question" data-translate="question_will_appear_here">Question will appear here</h2>
                     <div id="answer-options" class="options-grid">
                         <div class="option-display" data-option="0">A</div>
                         <div class="option-display" data-option="1">B</div>
@@ -456,7 +456,7 @@
                     
                     <!-- Real-time Answer Statistics -->
                     <div id="answer-statistics" class="answer-stats" style="display: none;">
-                        <h3>Live Answer Statistics</h3>
+                        <h3 data-translate="live_answer_statistics">Live Answer Statistics</h3>
                         <div class="stats-grid">
                             <div class="stat-item" data-option="0">
                                 <span class="option-label">A</span>
@@ -488,11 +488,11 @@
                             </div>
                         </div>
                         <div class="response-summary">
-                            <span id="responses-count">0</span> of <span id="total-players">0</span> players responded
+                            <span id="responses-count">0</span> <span data-translate="of_players_responded">of {0} players responded</span>
                         </div>
                     </div>
                 </div>
-                <button id="next-question" class="btn primary" style="display: none;">Next Question</button>
+                <button id="next-question" class="btn primary" style="display: none;" data-translate="next_question">Next Question</button>
             </div>
         </div>
 
@@ -546,7 +546,7 @@
                     <div id="player-question-image" class="question-image-container" style="display: none;">
                         <img id="player-question-img" src="" alt="Question Image">
                     </div>
-                    <h3 id="player-question-text">Question will appear here</h3>
+                    <h3 id="player-question-text" data-translate="question_will_appear_here">Question will appear here</h3>
                 </div>
                 
                 <div id="player-multiple-choice" class="player-answer-type">
@@ -573,20 +573,20 @@
                             <input type="checkbox" class="option-checkbox"> D
                         </label>
                     </div>
-                    <button id="submit-multiple" class="btn primary">Submit Answer</button>
+                    <button id="submit-multiple" class="btn primary" data-translate="submit_answer">Submit Answer</button>
                 </div>
                 
                 <div id="player-true-false" class="player-answer-type" style="display: none;">
                     <div class="true-false-options">
-                        <button class="tf-option" data-answer="true">TRUE</button>
-                        <button class="tf-option" data-answer="false">FALSE</button>
+                        <button class="tf-option" data-answer="true" data-translate="true">TRUE</button>
+                        <button class="tf-option" data-answer="false" data-translate="false">FALSE</button>
                     </div>
                 </div>
                 
                 <div id="player-numeric" class="player-answer-type" style="display: none;">
                     <div class="numeric-input-container">
                         <input type="number" id="numeric-answer-input" placeholder="Enter your answer" step="any" data-translate-placeholder="enter_answer">
-                        <button id="submit-numeric" class="btn primary">Submit Answer</button>
+                        <button id="submit-numeric" class="btn primary" data-translate="submit_answer">Submit Answer</button>
                     </div>
                 </div>
                 
@@ -599,28 +599,28 @@
 
         <div id="leaderboard-screen" class="screen">
             <div class="leaderboard-container">
-                <h2>🏆 Leaderboard</h2>
+                <h2 data-translate="leaderboard_title">🏆 Leaderboard</h2>
                 <div id="leaderboard-list" class="leaderboard"></div>
                 <div id="final-results" class="final-results hidden">
-                    <h3>🎉 Game Complete!</h3>
-                    <button id="new-game" class="btn primary">New Game</button>
+                    <h3 data-translate="game_complete">🎉 Game Complete!</h3>
+                    <button id="new-game" class="btn primary" data-translate="new_game">New Game</button>
                 </div>
             </div>
         </div>
         
         <div id="player-final-screen" class="screen">
             <div class="player-final-container">
-                <h2>🎉 Quiz Complete!</h2>
+                <h2 data-translate="quiz_complete">🎉 Quiz Complete!</h2>
                 <div id="player-final-rank" class="player-rank">
-                    <h3>Your Final Rank</h3>
+                    <h3 data-translate="your_final_rank">Your Final Rank</h3>
                     <div id="final-position" class="final-position">#1</div>
                     <div id="final-score" class="final-score">500 points</div>
                 </div>
                 <div id="top-players" class="top-players">
-                    <h3>🏆 Top Players</h3>
+                    <h3 data-translate="top_players">🏆 Top Players</h3>
                     <div id="final-leaderboard" class="final-leaderboard"></div>
                 </div>
-                <button id="play-again" class="btn primary">Play Again</button>
+                <button id="play-again" class="btn primary" data-translate="play_again">Play Again</button>
             </div>
         </div>
         
@@ -630,7 +630,7 @@
                 <h3 data-translate="load_saved_quiz">Load Saved Quiz</h3>
                 <div id="quiz-list" class="quiz-list"></div>
                 <div class="modal-actions">
-                    <button id="cancel-load" class="btn secondary">Cancel</button>
+                    <button id="cancel-load" class="btn secondary" data-translate="cancel">Cancel</button>
                 </div>
             </div>
         </div>
@@ -641,7 +641,7 @@
                 <h3 data-translate="preview_quiz">Quiz Preview</h3>
                 <div id="preview-content" class="preview-content"></div>
                 <div class="modal-actions">
-                    <button id="cancel-preview" class="btn secondary">Close</button>
+                    <button id="cancel-preview" class="btn secondary" data-translate="close">Close</button>
                 </div>
             </div>
         </div>
@@ -649,39 +649,39 @@
         <!-- Preview Settings Sidebar -->
         <div id="preview-settings-sidebar" class="settings-sidebar" style="display: none;">
             <div class="settings-header">
-                <h4>⚙️ Preview Settings</h4>
+                <h4 data-translate="preview_settings_title">⚙️ Preview Settings</h4>
                 <button id="close-preview-settings" class="close-btn">×</button>
             </div>
             
             <div class="settings-content">
                 <!-- Start Game Button at Top -->
                 <div class="settings-group">
-                    <button id="start-hosting-top" class="btn primary start-game-top">🚀 Start Game</button>
+                    <button id="start-hosting-top" class="btn primary start-game-top">🚀 <span data-translate="start_game">Start Game</span></button>
                 </div>
                 
                 <div class="settings-group">
-                    <label>Split Ratio: <span id="split-ratio-value">50% / 50%</span></label>
+                    <label><span data-translate="split_ratio">Split Ratio</span>: <span id="split-ratio-value">50% / 50%</span></label>
                     <div class="slider-container">
                         <input type="range" id="split-ratio-slider" min="30" max="80" value="50" class="custom-slider">
                     </div>
                 </div>
                 
                 <div class="settings-group">
-                    <label>Font Size: <span id="font-size-value">1.0x</span></label>
+                    <label><span data-translate="font_size">Font Size</span>: <span id="font-size-value">1.0x</span></label>
                     <div class="slider-container">
                         <input type="range" id="font-size-slider" min="0.7" max="1.8" step="0.1" value="1.0" class="custom-slider">
                     </div>
                 </div>
                 
                 <div class="settings-group">
-                    <label>Spacing: <span id="spacing-value">Normal</span></label>
+                    <label><span data-translate="spacing">Spacing</span>: <span id="spacing-value" data-translate="normal">Normal</span></label>
                     <div class="slider-container">
                         <input type="range" id="spacing-slider" min="0.5" max="2.0" step="0.1" value="1.0" class="custom-slider">
                     </div>
                 </div>
                 
                 <div class="settings-group">
-                    <label>Button Size: <span id="button-size-value">Normal</span></label>
+                    <label><span data-translate="button_size">Button Size</span>: <span id="button-size-value" data-translate="normal">Normal</span></label>
                     <div class="slider-container">
                         <input type="range" id="button-size-slider" min="0.7" max="1.5" step="0.1" value="1.0" class="custom-slider">
                     </div>
@@ -689,7 +689,7 @@
             </div>
             
             <div class="settings-actions">
-                <button id="reset-preview-settings" class="btn secondary small">Reset</button>
+                <button id="reset-preview-settings" class="btn secondary small" data-translate="reset">Reset</button>
             </div>
         </div>
         
@@ -712,14 +712,14 @@
                     <div class="model-selection" id="model-selection" style="display: none;">
                         <label for="ollama-model" data-translate="choose_model">Choose Model:</label>
                         <select id="ollama-model" class="input-field">
-                            <option value="">Loading models...</option>
+                            <option value="" data-translate="loading_models_placeholder">Loading models...</option>
                         </select>
                         <small data-translate="select_ollama_model">Select which Ollama model to use for generation</small>
                     </div>
                     
                     <div class="api-key-section" id="api-key-section" style="display: none;">
                         <label for="ai-api-key" data-translate="api_key">API Key:</label>
-                        <input type="password" id="ai-api-key" class="input-field" placeholder="Enter your API key">
+                        <input type="password" id="ai-api-key" class="input-field" placeholder="Enter your API key" data-translate-placeholder="enter_api_key_placeholder">
                         <small data-translate="api_key_stored_locally">Your API key is stored locally and never sent to our servers</small>
                     </div>
                 </div>
@@ -778,7 +778,7 @@
                 
                 <div class="generation-status" id="generation-status" style="display: none;">
                     <div class="loading-spinner"></div>
-                    <span>Generating questions...</span>
+                    <span data-translate="generating_questions">Generating questions...</span>
                 </div>
                 
                 <div class="modal-actions">

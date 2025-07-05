@@ -1682,6 +1682,31 @@ pre code {
     font-weight: 700;
 }
 
+/* Start Game Button - Consistent Width Across Languages */
+.btn:has([data-translate="start_game"]),
+.btn.primary:has([data-translate="start_game"]),
+button[id*="start"]:has([data-translate="start_game"]),
+button:has([data-translate="start_game"]) {
+    min-width: 160px;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+/* Legacy selectors for backward compatibility */
+.large-start-btn,
+.start-game-header,
+.start-game-top {
+    min-width: 160px;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
 /* Start Game Top Button */
 .start-game-top {
     margin: 20px 0;
