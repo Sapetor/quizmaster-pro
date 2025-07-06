@@ -2634,7 +2634,6 @@ select.input-field {
     appearance: none;
     -webkit-appearance: none;
 }
-}
 
 /* Modern Card and Container Enhancements */
 .card, .host-container, .join-container, .quiz-settings, .time-settings {
