@@ -2344,7 +2344,7 @@ button:has([data-translate="start_game"]) {
     }
     
     /* Ensure proper viewport usage for mobile */
-    .screen.active {
+    div.screen.active {
         display: block !important;
         min-height: 100vh;
         overflow-x: hidden;
@@ -2516,12 +2516,13 @@ header h1 {
     white-space: nowrap;
 }
 
-.screen {
+/* Force screen display with highest specificity */
+div.screen {
     display: none !important;
     animation: fadeIn 0.3s ease-in;
 }
 
-.screen.active {
+div.screen.active {
     display: block !important;
 }
 
@@ -3701,7 +3702,7 @@ h3 {
     }
     
     /* Ensure all content is scrollable on mobile - only for active screens */
-    .screen.active {
+    div.screen.active {
         flex: 1;
         overflow-y: auto;
         padding-bottom: 20px;
