@@ -1775,6 +1775,7 @@ button:has([data-translate="start_game"]) {
 
 /* Enhanced Game Screens */
 .screen {
+    display: none;
     animation: fadeIn 0.5s ease-in;
 }
 
@@ -3703,8 +3704,8 @@ h3 {
         font-size: 1rem;
     }
     
-    /* Ensure all content is scrollable on mobile */
-    .screen {
+    /* Ensure all content is scrollable on mobile - only for active screens */
+    .screen.active {
         flex: 1;
         overflow-y: auto;
         padding-bottom: 20px;
