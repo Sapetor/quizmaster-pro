@@ -3078,6 +3078,7 @@ h3 {
     padding: 30px;
     border-radius: 20px;
     backdrop-filter: blur(10px);
+    margin-top: -10px;
 }
 
 .quiz-builder h2 {
@@ -3125,6 +3126,8 @@ h3 {
     text-align: center;
     max-width: 800px;
     margin: 0 auto;
+    padding: 20px;
+    margin-top: -20px;
 }
 
 .qr-section {
@@ -3372,7 +3375,8 @@ h3 {
     max-width: 500px;
     margin: 0 auto;
     text-align: center;
-    padding: 40px 20px;
+    padding: 20px;
+    margin-top: -10px;
 }
 
 .player-question-area {

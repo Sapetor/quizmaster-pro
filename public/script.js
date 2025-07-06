@@ -1166,22 +1166,37 @@ class KahootGame {
             const nextButton = document.getElementById('next-question');
             console.log('Next button element:', nextButton);
             if (nextButton) {
-                nextButton.style.display = 'block';
-                nextButton.style.backgroundColor = '#e53e3e';
-                nextButton.style.color = 'white';
-                nextButton.style.fontSize = '1.2rem';
-                nextButton.style.position = 'fixed';
-                nextButton.style.top = '100px';
-                nextButton.style.right = '50px';
-                nextButton.style.zIndex = '99999';
-                nextButton.style.left = 'auto';
-                nextButton.style.bottom = 'auto';
-                nextButton.style.padding = '15px 25px';
-                nextButton.style.border = '3px solid white';
-                nextButton.style.borderRadius = '8px';
-                nextButton.style.cursor = 'pointer';
-                nextButton.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-                nextButton.style.animation = 'pulse 2s infinite';
+                // Clear all existing styles that might interfere
+                nextButton.removeAttribute('style');
+                
+                // Apply comprehensive styling
+                nextButton.style.cssText = `
+                    display: block !important;
+                    position: fixed !important;
+                    top: 100px !important;
+                    right: 50px !important;
+                    left: auto !important;
+                    bottom: auto !important;
+                    width: auto !important;
+                    height: auto !important;
+                    min-width: 180px !important;
+                    min-height: 50px !important;
+                    background-color: #e53e3e !important;
+                    color: white !important;
+                    font-size: 1.2rem !important;
+                    font-weight: bold !important;
+                    padding: 15px 25px !important;
+                    border: 3px solid white !important;
+                    border-radius: 8px !important;
+                    cursor: pointer !important;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+                    z-index: 99999 !important;
+                    pointer-events: auto !important;
+                    animation: pulse 2s infinite !important;
+                    opacity: 1 !important;
+                    visibility: visible !important;
+                    transform: none !important;
+                `;
                 nextButton.innerHTML = '⏭️ <span data-translate="next_question_manual">Next Question (Manual Control)</span>';
                 
                 // Add pulsing animation if not exists
