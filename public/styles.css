@@ -2783,6 +2783,25 @@ h3 {
     }
 }
 
+/* CRITICAL: Force screen switching to work properly */
+body div.container div.screen:not(.active) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: absolute !important;
+    top: -9999px !important;
+    left: -9999px !important;
+}
+
+body div.container div.screen.active {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+}
+
 /* Correct Answer Display for Numeric Questions */
 .correct-answer-display {
     margin-top: 20px;
