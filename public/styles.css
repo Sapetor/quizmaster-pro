@@ -2517,12 +2517,12 @@ header h1 {
 }
 
 .screen {
-    display: none;
+    display: none !important;
     animation: fadeIn 0.3s ease-in;
 }
 
 .screen.active {
-    display: block;
+    display: block !important;
 }
 
 @keyframes fadeIn {
