@@ -2345,7 +2345,7 @@ button:has([data-translate="start_game"]) {
     
     /* Ensure proper viewport usage for mobile */
     .screen.active {
-        display: block;
+        display: block !important;
         min-height: 100vh;
         overflow-x: hidden;
     }
