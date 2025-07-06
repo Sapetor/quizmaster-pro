@@ -1773,11 +1773,7 @@ button:has([data-translate="start_game"]) {
     transform: translateY(-2px);
 }
 
-/* Enhanced Game Screens */
-.screen {
-    display: none;
-    animation: fadeIn 0.5s ease-in;
-}
+/* Enhanced Game Screens - Removed duplicate rule, keeping the complete one later */
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
