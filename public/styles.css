@@ -2346,10 +2346,9 @@ button:has([data-translate="start_game"]) {
         padding: 8px 12px;
     }
     
-    /* Ensure proper viewport usage */
+    /* Ensure proper viewport usage for mobile */
     .screen.active {
-        display: flex;
-        flex-direction: column;
+        display: block;
         min-height: 100vh;
         overflow-x: hidden;
     }
