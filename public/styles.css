@@ -2480,7 +2480,7 @@ header {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     padding: 15px 0;
     gap: 20px;
 }
@@ -3078,7 +3078,7 @@ h3 {
     padding: 30px;
     border-radius: 20px;
     backdrop-filter: blur(10px);
-    margin-top: -10px;
+    margin-top: -20px;
 }
 
 .quiz-builder h2 {
@@ -3127,7 +3127,7 @@ h3 {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
-    margin-top: -20px;
+    margin-top: -30px;
 }
 
 .qr-section {
@@ -3376,7 +3376,7 @@ h3 {
     margin: 0 auto;
     text-align: center;
     padding: 20px;
-    margin-top: -10px;
+    margin-top: -20px;
 }
 
 .player-question-area {
