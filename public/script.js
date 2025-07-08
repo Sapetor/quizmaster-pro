@@ -1757,6 +1757,9 @@ class KahootGame {
             document.querySelectorAll('.player-answer-type').forEach(type => type.style.display = 'none');
             document.getElementById('answer-feedback').classList.add('hidden');
             
+            // Reset result flag for new question
+            this.resultShown = false;
+            
             
             switch (data.type) {
                 case 'multiple-choice':
@@ -2203,6 +2206,12 @@ class KahootGame {
     }
 
     showPlayerResult(data) {
+        // Prevent multiple result displays for the same question
+        if (this.resultShown) {
+            return;
+        }
+        this.resultShown = true;
+        
         const feedback = document.getElementById('answer-feedback');
         const message = document.getElementById('feedback-message');
         const score = document.getElementById('score-display');

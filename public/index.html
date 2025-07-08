@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2025">
+    <link rel="stylesheet" href="styles.css?v=2025-animation-fix">
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -492,7 +492,6 @@
                         </div>
                     </div>
                 </div>
-                <button id="next-question" class="btn primary" style="display: none;" data-translate="next_question">Next Question</button>
             </div>
         </div>
 
@@ -601,6 +600,7 @@
             <div class="leaderboard-container">
                 <h2 data-translate="leaderboard_title">🏆 Leaderboard</h2>
                 <div id="leaderboard-list" class="leaderboard"></div>
+                <button id="next-question" class="btn primary" style="display: none;" data-translate="next_question">Next Question</button>
                 <div id="final-results" class="final-results hidden">
                     <h3 data-translate="game_complete">🎉 Game Complete!</h3>
                     <button id="new-game" class="btn primary" data-translate="new_game">New Game</button>

@@ -2232,7 +2232,6 @@ button:has([data-translate="start_game"]) {
 @media (max-width: 768px) {
     .container {
         padding: 15px;
-        min-height: 100vh;
         display: flex;
         flex-direction: column;
         overflow-x: hidden;
@@ -2469,7 +2468,6 @@ button:has([data-translate="start_game"]) {
     max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
-    min-height: 100vh;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -2516,15 +2514,7 @@ header h1 {
     white-space: nowrap;
 }
 
-/* Force screen display with highest specificity */
-div.screen {
-    display: none !important;
-    animation: fadeIn 0.3s ease-in;
-}
-
-div.screen.active {
-    display: block !important;
-}
+/* Removed conflicting screen rules - using more specific rules below */
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
@@ -2783,22 +2773,23 @@ h3 {
 }
 
 /* CRITICAL: Force screen switching to work properly */
-body div.container div.screen:not(.active) {
+.screen {
     display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    position: absolute !important;
-    top: -9999px !important;
-    left: -9999px !important;
 }
 
-body div.container div.screen.active {
+.screen.active {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
     position: static !important;
     top: auto !important;
     left: auto !important;
+}
+
+/* Manual advancement button - ensure it's always visible when shown */
+#next-question {
+    z-index: 9999 !important;
+    pointer-events: auto !important;
 }
 
 /* Correct Answer Display for Numeric Questions */
@@ -3096,7 +3087,7 @@ body div.container div.screen.active {
     padding: 30px;
     border-radius: 20px;
     backdrop-filter: blur(10px);
-    margin-top: -20px;
+    margin-top: 20px;
 }
 
 .quiz-builder h2 {
@@ -3145,7 +3136,7 @@ body div.container div.screen.active {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
-    margin-top: -30px;
+    margin-top: 20px;
 }
 
 .qr-section {
@@ -3394,7 +3385,7 @@ body div.container div.screen.active {
     margin: 0 auto;
     text-align: center;
     padding: 20px;
-    margin-top: -20px;
+    margin-top: 20px;
 }
 
 .player-question-area {
@@ -3668,7 +3659,6 @@ body div.container div.screen.active {
 @media (max-width: 768px) {
     .container {
         padding: 10px;
-        min-height: 100vh;
         display: flex;
         flex-direction: column;
         overflow-y: auto;

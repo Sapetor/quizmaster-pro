@@ -238,6 +238,59 @@ Server binds to `0.0.0.0:3000` by default for local network access. Uses environ
 - **Green Highlighting Bug Fix**: Fixed incorrect green highlighting of first alternative in multiple choice questions by properly resetting color and fontWeight styles
 - **Numeric Answer Display Fix**: Fixed numeric question correct answer display (including constant e) by properly sending tolerance parameter in question-timeout events
 
+## Critical Bug Fixes Applied (July 2025)
+
+### Screen Navigation System Fix (CRITICAL - RESOLVED)
+**Problem**: Screen navigation completely broken - all screens displaying simultaneously with large vertical gaps causing excessive scrolling
+**Root Cause**: Multiple conflicting CSS rules for screen display causing layout chaos:
+1. Conflicting `.screen` display rules with different specificity levels
+2. Container elements forcing full viewport height (`min-height: 100vh`) creating unnecessary vertical space
+3. Negative margins on lobby and join containers pushing content down
+**Solution Applied**:
+- **CSS Rule Cleanup**: Removed conflicting screen display rules, simplified to single authoritative ruleset
+- **Container Height Fix**: Removed `min-height: 100vh` from `.container` and mobile containers
+- **Margin Normalization**: Changed negative margins (`margin-top: -20px`, `margin-top: -30px`) to positive values (`margin-top: 20px`)
+- **Cache Busting**: Updated CSS version to force browser refresh
+**Files Modified**: `public/styles.css`, `public/index.html`
+**Status**: ✅ RESOLVED - Screen navigation now works properly, content displays at top without gaps
+
+### Container Layout Spacing Fix (CRITICAL - RESOLVED)  
+**Problem**: Huge vertical gaps between header and content, requiring excessive scrolling to reach QR codes and game lobby
+**Root Cause**: Layout improvements accidentally introduced viewport height constraints and negative margins that created spacing chaos
+**Technical Details**:
+- `.container` was forcing `min-height: 100vh` causing flex layout to stretch unnecessarily
+- `.host-container, .join-container` had `margin-top: -20px` pushing content down
+- `.lobby-container` had `margin-top: -30px` creating large gaps above content
+- Mobile responsive rules also enforced `min-height: 100vh` compounding the issue
+**Solution**: Systematic removal of height constraints and margin corrections
+**Impact**: Content now appears immediately below header without gaps, proper visual hierarchy restored
+
+### Manual Advancement Button Fix (CRITICAL - RESOLVED)
+**Problem**: Manual advancement button completely invisible and non-functional - no way to advance game in manual mode
+**Root Cause**: Button element placed in wrong screen container:
+- Button was in `host-game-screen` but manual advancement needed during `leaderboard-screen`
+- Host switches to leaderboard after each question, making button invisible on wrong screen
+**Solution Applied**:
+- **Button Relocation**: Moved `#next-question` button from `host-game-screen` to `leaderboard-screen`
+- **Duplicate Removal**: Removed old button instance to prevent conflicts
+- **JavaScript Enhancement**: Added comprehensive styling and positioning in `show-next-button` event handler
+**Files Modified**: `public/index.html`, `public/script.js`
+**Status**: ✅ RESOLVED - Manual advancement button now appears on leaderboard screen and functions correctly
+
+### Player Animation Loop Fix (RESOLVED)
+**Problem**: Correct/incorrect answer animations and sounds playing on repeat during manual advancement when host doesn't immediately advance
+**Root Cause**: Multiple `player-result` events sent from server while waiting for host to click "Next Question", each triggering `showPlayerResult()` function repeatedly
+**Technical Details**:
+- Server correctly sends `show-next-button` but continues sending `player-result` events 
+- Each event triggered animations and sounds again, creating annoying loop
+- No protection against duplicate result displays for same question
+**Solution Applied**:
+- **Result Flag**: Added `this.resultShown` flag to prevent multiple displays of same result
+- **Flag Reset**: Reset flag to `false` when new question starts in `displayQuestion()`
+- **Early Return**: If result already shown, function returns immediately without animation
+**Impact**: Result animations now play once per question, manual advancement feels smooth
+**Final Game Safety**: ✅ Verified - Final game stage uses different functions, unaffected by this change
+
 ### Layout & Responsive Design Improvements (January 2025)
 - **Header Layout Optimization**: Converted header to CSS Grid layout with proper column distribution and responsive header controls
 - **Enhanced Modal System**: Improved modal positioning with better backdrop blur, responsive sizing (min(900px, 95vw)), and enhanced shadow effects
