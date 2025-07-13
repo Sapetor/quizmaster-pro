@@ -1,10 +1,51 @@
-/* Import CSS Variables and Typography */
-@import './css/variables.css';
-@import './css/base.css';
-@import './css/animations.css';
-@import './css/responsive.css';
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-
+:root {
+    --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    --bg-secondary: rgba(255,255,255,0.18);
+    --bg-glass: rgba(255,255,255,0.12);
+    --text-primary: white;
+    --text-secondary: #2563eb;
+    --modal-bg: rgba(255,255,255,0.98);
+    --modal-text: #1e293b;
+    --card-bg: rgba(255,255,255,0.15);
+    --border-color: rgba(255,255,255,0.3);
+    --accent-primary: #2563eb;
+    --accent-secondary: #dc2626;
+    --success-color: #16a34a;
+    --warning-color: #ea580c;
+    --error-color: #dc2626;
+    --shadow-soft: 0 8px 32px rgba(0,0,0,0.15);
+    --shadow-hover: 0 12px 40px rgba(0,0,0,0.2);
+    --border-radius: 16px;
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Customizable Preview Settings - Optimized Ratios */
+    --split-left: 50fr;
+    --split-right: 50fr;
+    --preview-font-base: 1em;
+    --preview-font-question: 1.1em;
+    --preview-font-option: 0.95rem;
+    --preview-font-small: 0.7rem;
+    --preview-spacing: 8px;
+    --preview-spacing-small: 4px;
+    --preview-spacing-large: 12px;
+    --preview-button-padding: 8px 12px;
+    --preview-button-height: 40px;
+    --preview-content-padding: 8px;
+    --preview-question-padding: 8px;
+    --preview-header-padding: 3px 4px;
+    --preview-nav-padding: 3px 4px;
+    --preview-button-spacing: 6px 0;
+    --preview-option-margin: 4px 0;
+    --preview-border-radius: 5px;
+    --preview-line-height: 1.4;
+    --preview-section-gap: 12px;
+}
 
 [data-theme="dark"] {
     --bg-primary: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1c2128 100%);
@@ -22,6 +63,33 @@
     --error-color: #f85149;
 }
 
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-primary);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: var(--text-primary);
+    transition: var(--transition-smooth);
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+}
 
 /* Modal Styles */
 .modal {
@@ -43,6 +111,10 @@
     box-sizing: border-box;
 }
 
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 
 .modal-content {
     background: var(--modal-bg);
@@ -69,6 +141,16 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
 }
 
+@keyframes modalSlideIn {
+    from { 
+        transform: translateY(20px); 
+        opacity: 0; 
+    }
+    to { 
+        transform: translateY(0); 
+        opacity: 1; 
+    }
+}
 
 .modal-content.large {
     max-width: min(900px, 95vw);
@@ -700,6 +782,10 @@
     animation: spin 1s linear infinite;
 }
 
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 
 .generation-status span {
     color: var(--text-primary);
@@ -735,6 +821,16 @@
     animation: modalSlideIn 0.3s ease-out;
 }
 
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
 
 /* Preview Modal Header */
 .preview-modal-header {
@@ -1203,7 +1299,31 @@ pre code {
     line-height: 1.4;
 }
 
-/* Responsive adjustments for mobile players with code - moved to responsive.css */
+/* Responsive adjustments for mobile players with code */
+@media (max-width: 768px) {
+    .player-game-container:has(pre) {
+        max-width: 95vw;
+        padding: 10px 5px;
+    }
+    
+    .player-question-area:has(pre) {
+        padding: 10px 15px;
+        margin: 10px 5px;
+    }
+    
+    #player-question-text pre,
+    .player-option pre {
+        font-size: 0.7em;
+        padding: 12px;
+        max-width: calc(95vw - 20px);
+        overflow-x: auto;
+    }
+    
+    .player-option:has(pre) {
+        padding: 12px 15px;
+        font-size: 0.95rem;
+    }
+}
 
 /* True/False and Numeric input areas with code */
 .tf-options:has(pre),
@@ -1341,6 +1461,16 @@ pre code {
     color: white;
 }
 
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) translateX(-100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+    }
+}
 
 .preview-header-controls {
     display: flex;
@@ -1348,6 +1478,16 @@ pre code {
     align-items: center;
 }
 
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 .settings-row {
     display: flex;
@@ -1411,6 +1551,16 @@ pre code {
     animation: fadeInUp 0.3s ease;
 }
 
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 .device-btn {
     padding: 3px 6px;
@@ -1536,9 +1686,40 @@ pre code {
     font-size: 0.8em;
 }
 
-/* Responsive adjustments for split screen - moved to responsive.css */
+/* Responsive adjustments for split screen */
+@media (max-width: 1000px) {
+    .host-container.split-screen {
+        grid-template-columns: 1fr !important;
+        height: auto;
+        gap: 15px;
+    }
+    
+    .quiz-preview-section {
+        order: -1;
+        max-height: 50vh;
+        min-height: 300px;
+    }
+    
+    .quiz-editor-section {
+        padding-right: 0;
+    }
+}
 
 /* Large screen optimizations */
+@media (min-width: 1400px) {
+    .container {
+        max-width: min(1800px, 98vw);
+    }
+    
+    .host-container:not(.split-screen) .quiz-editor-section {
+        max-width: 1600px;
+    }
+    
+    :root {
+        --split-left: 70%;
+        --split-right: 30%;
+    }
+}
 
 /* Desktop-only elements */
 .desktop-only {
@@ -1724,7 +1905,21 @@ pre code {
 
 /* Dynamic Preview Classes - Removed static classes, now using CSS variables directly */
 
-/* Mobile Responsive - moved to responsive.css */
+/* Mobile Responsive */
+@media (max-width: 1024px) {
+    .left-toolbar {
+        display: none !important;
+    }
+    
+    .desktop-only {
+        display: none !important;
+    }
+    
+    #host-screen.with-toolbar .host-container,
+    #host-screen.with-toolbar.collapsed .host-container {
+        margin-left: 0;
+    }
+}
 
 @media (max-width: 768px) {
     .preview-modal {
@@ -1980,6 +2175,10 @@ button:has([data-translate="start_game"]) {
 
 /* Enhanced Game Screens - Removed duplicate rule, keeping the complete one later */
 
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 /* Enhanced Timer */
 .timer {
@@ -2007,7 +2206,15 @@ button:has([data-translate="start_game"]) {
     animation: pulse-critical 0.5s infinite alternate;
 }
 
+@keyframes pulse-warning {
+    from { transform: scale(1); }
+    to { transform: scale(1.05); }
+}
 
+@keyframes pulse-critical {
+    from { transform: scale(1); box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4); }
+    to { transform: scale(1.1); box-shadow: 0 6px 20px rgba(255, 107, 107, 0.8); }
+}
 
 /* Enhanced Player Options */
 .player-option {
@@ -2281,6 +2488,21 @@ button:has([data-translate="start_game"]) {
     animation: gameCompleteGlow 2s ease-in-out;
 }
 
+@keyframes gameCompleteGlow {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(255, 215, 0, 0);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+        background: linear-gradient(45deg, #f6ad00, #ffed4e, #f6ad00);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(255, 215, 0, 0);
+    }
+}
 
 .final-results {
     position: relative;
@@ -2694,6 +2916,10 @@ header h1 {
 
 /* Removed conflicting screen rules - using more specific rules below */
 
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 .menu-options {
     display: grid;
@@ -2816,7 +3042,31 @@ select.input-field {
     border-color: rgba(255, 255, 255, 0.3);
 }
 
-/* Enhanced Headings - Moved to base.css */
+/* Enhanced Headings */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5em;
+}
+
+h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+h2 {
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
 
 /* Loading States */
 .loading {
@@ -2839,6 +3089,9 @@ select.input-field {
     animation: spin 1s linear infinite;
 }
 
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
 
 /* Enhanced Quiz Item Cards */
 .quiz-item {
@@ -2910,6 +3163,14 @@ select.input-field {
     box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
 }
 
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 8px 30px rgba(66, 153, 225, 0.3);
+    }
+    50% {
+        box-shadow: 0 8px 40px rgba(66, 153, 225, 0.5);
+    }
+}
 
 /* CRITICAL: Force screen switching to work properly */
 .screen {
@@ -3215,6 +3476,16 @@ select.input-field {
     }
 }
 
+@keyframes slideInDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
 
 .join-container {
     max-width: 500px;
@@ -3511,6 +3782,14 @@ select.input-field {
 .dot:nth-child(1) { animation-delay: -0.32s; }
 .dot:nth-child(2) { animation-delay: -0.16s; }
 
+@keyframes bounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
 
 .player-lobby-container, .player-game-container {
     max-width: 500px;
@@ -4171,7 +4450,11 @@ select.input-field {
     }
 }
 
-/* Improved Light Mode Contrast - Variables moved to variables.css */
+/* Improved Light Mode Contrast */
+:root {
+    --text-contrast: #1e293b;
+    --bg-contrast: rgba(255,255,255,0.92);
+}
 
 [data-theme="light"] .modal-content,
 [data-theme="light"] .card {

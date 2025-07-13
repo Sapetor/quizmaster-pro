@@ -1,0 +1,170 @@
+/**
+ * Component Styles - Buttons, inputs, cards, basic UI elements
+ */
+
+/* Container and Screen Management */
+.container {
+    width: 100%;
+    max-width: min(1600px, 96vw);
+    margin: 0 auto;
+    padding: 0 15px;
+    transition: var(--transition-smooth);
+}
+
+/* Enhanced Button Styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 28px;
+    background: var(--bg-glass);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: -0.01em;
+    box-shadow: var(--shadow-soft);
+    min-height: 48px;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    background: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.5);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-soft);
+}
+
+.btn.primary {
+    background: linear-gradient(135deg, var(--accent-primary), #3b82f6);
+    border-color: var(--accent-primary);
+    color: white;
+    font-weight: 600;
+}
+
+.btn.primary:hover {
+    background: linear-gradient(135deg, #1d4ed8, var(--accent-primary));
+    transform: translateY(-3px);
+    box-shadow: 0 16px 50px rgba(37, 99, 235, 0.3);
+}
+
+.btn.secondary {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+.btn.danger {
+    background: linear-gradient(135deg, var(--error-color), #ef4444);
+    border-color: var(--error-color);
+    color: white;
+    font-weight: 600;
+}
+
+.btn.danger:hover {
+    background: linear-gradient(135deg, #b91c1c, var(--error-color));
+    box-shadow: 0 16px 50px rgba(220, 38, 38, 0.3);
+}
+
+.btn.small {
+    padding: 8px 16px;
+    font-size: 14px;
+    min-height: 36px;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: var(--shadow-soft) !important;
+}
+
+/* Input Styles */
+input, select, textarea {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: var(--transition-smooth);
+    width: 100%;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Card Styles */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-soft);
+    transition: var(--transition-smooth);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Loading States */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Focus Enhancement */
+*:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+}

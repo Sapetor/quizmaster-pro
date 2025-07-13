@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuizMaster Pro - Interactive Quiz Platform</title>
+    <title data-translate="page_title">QuizMaster Pro - Interactive Quiz Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=2025-animation-fix">
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <link rel="stylesheet" href="styles.css?v=recovery-original-13000">
+    <!-- Removed problematic polyfill.io CDN - MathJax handles ES6 polyfills automatically -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script>
@@ -19,24 +19,43 @@
                 packages: {'[+]': ['ams', 'newcommand', 'configmacros']},
                 processEscapes: true,
                 processEnvironments: true,
-                tags: 'none'
+                tags: 'none',
+                autoload: {
+                    color: [],
+                    colorv2: ['color']
+                }
             },
             chtml: {
                 scale: 1,
                 minScale: 0.5,
                 matchFontHeight: false,
                 displayAlign: 'center',
-                displayIndent: '0em'
+                displayIndent: '0em',
+                fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2'
             },
             startup: {
                 ready: () => {
-                    console.log('MathJax is ready');
+                    console.log('MathJax is ready for QuizMaster Pro');
                     MathJax.startup.defaultReady();
+                    
+                    // Mark as ready for our application
+                    window.mathJaxReady = true;
+                    
+                    // Dispatch custom event for modules that need to know
+                    document.dispatchEvent(new CustomEvent('mathjax-ready'));
                 }
             },
             options: {
                 skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-                includeHtmlTags: {br: '\n', wbr: '', '#comment': ''}
+                includeHtmlTags: {br: '\n', wbr: '', '#comment': ''},
+                processHtmlClass: 'tex2jax_process',
+                ignoreHtmlClass: 'tex2jax_ignore',
+                renderActions: {
+                    addMenu: [0, '', '']  // Disable MathJax context menu for game performance
+                }
+            },
+            loader: {
+                load: ['[tex]/ams', '[tex]/newcommand', '[tex]/configmacros']
             }
         };
     </script>
@@ -48,14 +67,20 @@
             <div class="header-controls">
                 <div class="language-selector">
                     <select id="language-selector" class="language-dropdown" onchange="changeLanguage(this.value)">
-                        <option value="en" data-flag="🇺🇸">🇺🇸 English</option>
-                        <option value="es" data-flag="🇪🇸">🇪🇸 Español</option>
-                        <option value="pl" data-flag="🇵🇱">🇵🇱 Polski</option>
+                        <option value="en" data-flag="🇺🇸" data-translate="language_en">🇺🇸 English</option>
+                        <option value="es" data-flag="🇪🇸" data-translate="language_es">🇪🇸 Español</option>
+                        <option value="fr" data-flag="🇫🇷" data-translate="language_fr">🇫🇷 Français</option>
+                        <option value="de" data-flag="🇩🇪" data-translate="language_de">🇩🇪 Deutsch</option>
+                        <option value="it" data-flag="🇮🇹" data-translate="language_it">🇮🇹 Italiano</option>
+                        <option value="pt" data-flag="🇵🇹" data-translate="language_pt">🇵🇹 Português</option>
+                        <option value="pl" data-flag="🇵🇱" data-translate="language_pl">🇵🇱 Polski</option>
+                        <option value="ja" data-flag="🇯🇵" data-translate="language_ja">🇯🇵 日本語</option>
+                        <option value="zh" data-flag="🇨🇳" data-translate="language_zh">🇨🇳 中文</option>
                     </select>
                 </div>
-                <button id="start-hosting-header-small" class="btn primary small start-game-header" style="display: none;" title="Start your quiz">🚀 <span data-translate="start_game">Start Game</span></button>
-                <button id="fullscreen-toggle" class="theme-toggle" title="Toggle fullscreen (F11)">⛶</button>
-                <button id="theme-toggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
+                <button id="start-hosting-header-small" class="btn primary small start-game-header" style="display: none;" data-translate-title="start_quiz_tooltip">🚀 <span data-translate="start_game">Start Game</span></button>
+                <button id="fullscreen-toggle" class="theme-toggle" data-translate-title="toggle_fullscreen_tooltip">⛶</button>
+                <button id="theme-toggle" class="theme-toggle" data-translate-title="toggle_dark_mode_tooltip" onclick="console.log('Theme button clicked directly!'); window.toggleTheme();">🌙</button>
             </div>
         </header>
 
@@ -71,31 +96,35 @@
             <div class="left-toolbar" id="left-toolbar" style="display: none;">
                 <div class="toolbar-section">
                     <h5 data-translate="quick_actions">Quick Actions</h5>
-                    <button class="toolbar-btn" id="toolbar-add-question" title="Add Question">
+                    <button class="toolbar-btn" id="toolbar-add-question" data-translate-title="add_question_tooltip">
                         <span class="toolbar-icon">➕</span>
                         <span class="toolbar-label" data-translate="add_question">Add Q</span>
                     </button>
-                    <button class="toolbar-btn" id="toolbar-save" title="Save Quiz">
+                    <button class="toolbar-btn" id="toolbar-save" data-translate-title="save_quiz_tooltip">
                         <span class="toolbar-icon">💾</span>
                         <span class="toolbar-label" data-translate="save_quiz">Save</span>
                     </button>
-                    <button class="toolbar-btn" id="toolbar-load" title="Load Quiz">
+                    <button class="toolbar-btn" id="toolbar-load" data-translate-title="load_quiz_tooltip">
                         <span class="toolbar-icon">📂</span>
                         <span class="toolbar-label" data-translate="load_quiz">Load</span>
+                    </button>
+                    <button class="toolbar-btn" id="toolbar-load-last" title="Quick Debug: Load quiz and start game automatically">
+                        <span class="toolbar-icon">⚡</span>
+                        <span class="toolbar-label">Debug</span>
                     </button>
                 </div>
                 
                 <div class="toolbar-section">
                     <h5 data-translate="tools">Tools</h5>
-                    <button class="toolbar-btn" id="toolbar-ai-gen" title="AI Generator">
+                    <button class="toolbar-btn" id="toolbar-ai-gen" data-translate-title="ai_generator_tooltip">
                         <span class="toolbar-icon">🤖</span>
                         <span class="toolbar-label" data-translate="ai_generator">AI Gen</span>
                     </button>
-                    <button class="toolbar-btn" id="toolbar-preview" title="Toggle Preview">
+                    <button class="toolbar-btn" id="toolbar-preview" data-translate-title="toggle_preview_tooltip">
                         <span class="toolbar-icon">📱</span>
                         <span class="toolbar-label" data-translate="preview">Preview</span>
                     </button>
-                    <button class="toolbar-btn" id="toolbar-import" title="Import File">
+                    <button class="toolbar-btn" id="toolbar-import" data-translate-title="import_file_tooltip">
                         <span class="toolbar-icon">📥</span>
                         <span class="toolbar-label" data-translate="import_quiz">Import</span>
                     </button>
@@ -103,11 +132,11 @@
                 
                 <div class="toolbar-section">
                     <h5 data-translate="navigate">Navigate</h5>
-                    <button class="toolbar-btn" id="toolbar-top" title="Back to Top">
+                    <button class="toolbar-btn" id="toolbar-top" data-translate-title="back_to_top_tooltip">
                         <span class="toolbar-icon">⬆️</span>
                         <span class="toolbar-label" data-translate="top">Top</span>
                     </button>
-                    <button class="toolbar-btn" id="toolbar-bottom" title="Go to Bottom">
+                    <button class="toolbar-btn" id="toolbar-bottom" data-translate-title="go_to_bottom_tooltip">
                         <span class="toolbar-icon">⬇️</span>
                         <span class="toolbar-label" data-translate="bottom">Bottom</span>
                     </button>
@@ -115,14 +144,14 @@
                 
                 <div class="toolbar-section">
                     <h5 data-translate="settings">Settings</h5>
-                    <button class="toolbar-btn" id="toolbar-preview-settings" title="Preview Settings">
+                    <button class="toolbar-btn" id="toolbar-preview-settings" data-translate-title="preview_settings_tooltip">
                         <span class="toolbar-icon">⚙️</span>
                         <span class="toolbar-label" data-translate="preview">Preview</span>
                     </button>
                 </div>
                 
                 <div class="toolbar-section toolbar-toggle">
-                    <button class="toolbar-btn" id="toolbar-collapse" title="Collapse Toolbar">
+                    <button class="toolbar-btn" id="toolbar-collapse" data-translate-title="collapse_toolbar_tooltip">
                         <span class="toolbar-icon">◀️</span>
                         <span class="toolbar-label" data-translate="hide">Hide</span>
                     </button>
@@ -137,23 +166,27 @@
                     <input type="text" id="quiz-title" placeholder="Quiz Title" class="input-field" data-translate-placeholder="quiz_title">
                     
                     <div class="quiz-settings">
-                        <label>
-                            <input type="checkbox" id="randomize-questions"> <span data-translate="randomize_questions">Randomize question order</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" id="randomize-answers"> <span data-translate="randomize_answers">Randomize answer positions</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" id="use-global-time" onchange="toggleGlobalTime()"> <span data-translate="use_same_time">Use same time for all questions</span>
-                        </label>
-                        <label style="border: 2px solid #4299e1; border-radius: 8px; padding: 8px; background: rgba(66, 153, 225, 0.1);">
-                            <input type="checkbox" id="manual-advancement"> <strong>🎮 <span data-translate="manual_advancement">Manual question advancement (host control)</span></strong>
-                            <small style="display: block; margin-top: 4px; opacity: 0.8;" data-translate="manual_advancement_desc">When enabled, you control when to advance to the next question</small>
-                        </label>
-                        <div id="global-time-container" class="time-setting-container" style="display: none;">
-                            <label class="time-input-label">
-                                <span data-translate="global_time_limit">Global time limit (seconds):</span>
-                                <input type="number" id="global-time-limit" min="5" max="300" value="20" class="time-input">
+                        <div class="general-options">
+                            <label>
+                                <input type="checkbox" id="randomize-questions"> <span data-translate="randomize_questions">Randomize question order</span>
+                            </label>
+                            <label>
+                                <input type="checkbox" id="randomize-answers"> <span data-translate="randomize_answers">Randomize answer positions</span>
+                            </label>
+                            <label>
+                                <input type="checkbox" id="use-global-time" onchange="toggleGlobalTime()"> <span data-translate="use_same_time">Use same time for all questions</span>
+                            </label>
+                            <div id="global-time-container" class="time-setting-container" style="display: none;">
+                                <label class="time-input-label">
+                                    <span data-translate="global_time_limit">Global time limit (seconds):</span>
+                                    <input type="number" id="global-time-limit" min="5" max="300" value="20" class="time-input">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="advanced-options">
+                            <label class="manual-advancement-option" style="border: 2px solid #4299e1; border-radius: 8px; padding: 8px; background: rgba(66, 153, 225, 0.1);">
+                                <input type="checkbox" id="manual-advancement"> <strong>🎮 <span data-translate="manual_advancement">Manual question advancement (host control)</span></strong>
+                                <small style="display: block; margin-top: 4px; opacity: 0.8;" data-translate="manual_advancement_desc">When enabled, you control when to advance to the next question</small>
                             </label>
                         </div>
                         
@@ -267,13 +300,21 @@
                 <div class="quiz-preview-section" id="quiz-preview-section" style="display: none;">
                     <div class="preview-header">
                         <h4 data-translate="live_preview">Live Preview</h4>
+                        <div class="preview-header-controls">
+                            <button id="preview-settings-btn" class="nav-btn settings-btn" onclick="togglePreviewSettings()">⚙️</button>
+                            <button id="toggle-preview" class="btn secondary" onclick="togglePreviewMode()" data-translate="close_live_preview">Close Live Preview</button>
+                        </div>
                     </div>
                     
                     <div class="preview-navigation-bar">
-                        <button id="preview-prev-split" class="nav-btn">◀</button>
+                        <div class="preview-nav-section">
+                            <button id="preview-prev-split" class="nav-btn">◀</button>
+                            <button id="preview-next-split" class="nav-btn">▶</button>
+                        </div>
                         <span id="preview-question-counter-split">Q1/1</span>
-                        <button id="preview-next-split" class="nav-btn">▶</button>
-                        <button id="scroll-to-question" class="nav-btn edit-btn" onclick="scrollToCurrentQuestion()">✏️ <span data-translate="edit_question">Edit Question</span></button>
+                        <div class="preview-nav-section">
+                            <button id="scroll-to-question" class="nav-btn edit-btn" onclick="scrollToCurrentQuestion()">✏️ <span data-translate="edit_question">Edit Question</span></button>
+                        </div>
                     </div>
                     
                     <div id="preview-viewport-split" class="preview-viewport-split desktop-viewport">
@@ -335,6 +376,36 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Floating Back to Top Button -->
+            <button id="back-to-top-float" class="back-to-top-float" onclick="scrollToTop()" style="display: none;">
+                ⬆️
+            </button>
+            
+            <!-- Preview Settings Popup -->
+            <div id="preview-settings-panel" class="preview-settings-popup" style="display: none;">
+                <div class="settings-popup-header">
+                    <h4 data-translate="preview_settings_title">Preview Settings</h4>
+                    <button class="close-btn" onclick="togglePreviewSettings()">×</button>
+                </div>
+                <div class="settings-popup-content">
+                    <div class="settings-row">
+                        <label for="preview-split-ratio" data-translate="split_ratio">Split Ratio</label>
+                        <input type="range" id="preview-split-ratio" min="20" max="80" value="50" oninput="updateSplitRatio(this.value)">
+                        <span id="split-ratio-display">50/50</span>
+                    </div>
+                    <div class="settings-row">
+                        <label for="preview-font-size" data-translate="font_size">Font Size</label>
+                        <input type="range" id="preview-font-size" min="12" max="20" value="16" oninput="updatePreviewFontSize(this.value)">
+                        <span id="font-size-display">16px</span>
+                    </div>
+                    <div class="settings-row">
+                        <label for="preview-spacing" data-translate="spacing">Spacing</label>
+                        <input type="range" id="preview-spacing" min="8" max="20" value="12" oninput="updatePreviewSpacing(this.value)">
+                        <span id="spacing-display">12px</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Preview Modal Overlay -->
@@ -348,9 +419,12 @@
                 </div>
                 
                 <div class="preview-navigation-bar">
-                    <button id="preview-prev" class="nav-btn">◀ <span data-translate="previous">Previous</span></button>
+                    <div class="preview-nav-section">
+                        <button id="preview-prev" class="nav-btn">◀ <span data-translate="previous">Previous</span></button>
+                        <button id="preview-next" class="nav-btn"><span data-translate="next">Next</span> ▶</button>
+                    </div>
                     <span id="preview-question-counter"><span data-translate="question">Question</span> 1 <span data-translate="of">of</span> 1</span>
-                    <button id="preview-next" class="nav-btn"><span data-translate="next">Next</span> ▶</button>
+                    <button id="edit-current-question" class="nav-btn edit-btn">✏️ <span data-translate="edit_question">Edit Question</span></button>
                 </div>
                 
                 <div id="preview-viewport" class="preview-viewport desktop-viewport">
@@ -614,7 +688,7 @@
                 <div id="player-final-rank" class="player-rank">
                     <h3 data-translate="your_final_rank">Your Final Rank</h3>
                     <div id="final-position" class="final-position">#1</div>
-                    <div id="final-score" class="final-score">500 points</div>
+                    <div id="final-score" class="final-score">0 <span data-translate="points">points</span></div>
                 </div>
                 <div id="top-players" class="top-players">
                     <h3 data-translate="top_players">🏆 Top Players</h3>
@@ -790,6 +864,9 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js"></script>
+    <!-- Modular ES6 Structure -->
+<script type="module" src="js/main.js?consolidated=true&time=1752268883"></script>
+    <!-- Backup monolithic script (disabled for modular testing) -->
+    <!-- <script src="script.js.backup"></script> -->
 </body>
 </html>

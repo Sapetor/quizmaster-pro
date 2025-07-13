@@ -1,0 +1,385 @@
+/**
+ * Animations and Keyframes - Motion effects and transitions
+ * Safe extraction - visual effects that don't affect layout
+ */
+
+/* Core Animation Keyframes */
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) translateX(-100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+    }
+}
+
+@keyframes slideInDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Rotation Animations */
+@keyframes spin {
+    0% { 
+        transform: rotate(0deg); 
+    }
+    100% { 
+        transform: rotate(360deg); 
+    }
+}
+
+/* Modal Animations */
+@keyframes modalFadeIn {
+    from { 
+        opacity: 0; 
+    }
+    to { 
+        opacity: 1; 
+    }
+}
+
+@keyframes modalSlideIn {
+    from { 
+        transform: translateY(20px); 
+        opacity: 0; 
+    }
+    to { 
+        transform: translateY(0); 
+        opacity: 1; 
+    }
+}
+
+/* Alternative Modal Slide In */
+@keyframes modalSlideInAlt {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Pulse Animations */
+@keyframes pulse-warning {
+    from { 
+        transform: scale(1); 
+    }
+    to { 
+        transform: scale(1.05); 
+    }
+}
+
+@keyframes pulse-critical {
+    from { 
+        transform: scale(1); 
+        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4); 
+    }
+    to { 
+        transform: scale(1.1); 
+        box-shadow: 0 6px 20px rgba(255, 107, 107, 0.8); 
+    }
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 8px 30px rgba(66, 153, 225, 0.3);
+    }
+    50% {
+        box-shadow: 0 8px 40px rgba(66, 153, 225, 0.5);
+    }
+}
+
+/* Game Completion Animation */
+@keyframes gameCompleteGlow {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(255, 215, 0, 0);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+        background: linear-gradient(45deg, #f6ad00, #ffed4e, #f6ad00);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(255, 215, 0, 0);
+    }
+}
+
+/* Bounce Animation */
+@keyframes bounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+/* Loading Dot Animation */
+@keyframes loadingDots {
+    0%, 80%, 100% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Scale Animations */
+@keyframes scaleIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes scaleOut {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* Shake Animation */
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-5px);
+    }
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+/* Button Hover Glow */
+@keyframes buttonGlow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(37, 99, 235, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(37, 99, 235, 0.6);
+    }
+}
+
+/* Progress Animation */
+@keyframes progressFill {
+    from {
+        width: 0%;
+    }
+    to {
+        width: 100%;
+    }
+}
+
+/* Heartbeat Animation */
+@keyframes heartbeat {
+    0%, 100% {
+        transform: scale(1);
+    }
+    14% {
+        transform: scale(1.1);
+    }
+    28% {
+        transform: scale(1);
+    }
+    42% {
+        transform: scale(1.1);
+    }
+    70% {
+        transform: scale(1);
+    }
+}
+
+/* Typing Animation */
+@keyframes typing {
+    from {
+        width: 0;
+    }
+    to {
+        width: 100%;
+    }
+}
+
+@keyframes blink {
+    0%, 50% {
+        border-color: transparent;
+    }
+    51%, 100% {
+        border-color: var(--text-primary);
+    }
+}
+
+/* Floating Animation */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Wiggle Animation */
+@keyframes wiggle {
+    0%, 7% {
+        transform: rotateZ(0);
+    }
+    15% {
+        transform: rotateZ(-15deg);
+    }
+    20% {
+        transform: rotateZ(10deg);
+    }
+    25% {
+        transform: rotateZ(-10deg);
+    }
+    30% {
+        transform: rotateZ(6deg);
+    }
+    35% {
+        transform: rotateZ(-4deg);
+    }
+    40%, 100% {
+        transform: rotateZ(0);
+    }
+}
+
+/* Animation Utility Classes */
+.animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.animate-fadeInUp {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.animate-slideInLeft {
+    animation: slideInLeft 0.3s ease-out;
+}
+
+.animate-slideInDown {
+    animation: slideInDown 0.3s ease-out;
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+.animate-bounce {
+    animation: bounce 1s infinite;
+}
+
+.animate-pulse {
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.animate-heartbeat {
+    animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+.animate-wiggle {
+    animation: wiggle 1s ease-in-out;
+}
+
+.animate-shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+/* Animation Control Classes */
+.animation-paused {
+    animation-play-state: paused !important;
+}
+
+.animation-delay-1 {
+    animation-delay: 0.1s;
+}
+
+.animation-delay-2 {
+    animation-delay: 0.2s;
+}
+
+.animation-delay-3 {
+    animation-delay: 0.3s;
+}
+
+/* Performance Optimizations */
+.will-animate {
+    will-change: transform, opacity;
+}
+
+.gpu-layer {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

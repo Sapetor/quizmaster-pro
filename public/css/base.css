@@ -1,0 +1,191 @@
+/**
+ * CSS Reset and Base Typography
+ * Safe extraction - global base styles that don't affect layout
+ */
+
+/* CSS Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Base Body Styles */
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-primary);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: var(--text-primary);
+    transition: var(--transition-smooth);
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+    overflow-x: hidden;
+}
+
+/* Background Gradient Effects */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Typography Hierarchy */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5em;
+}
+
+h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+h2 {
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+h5 {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+h6 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* Paragraph and Text Elements */
+p {
+    margin-bottom: 1em;
+    line-height: 1.6;
+}
+
+/* List Styles */
+ul, ol {
+    margin-bottom: 1em;
+    padding-left: 1.5em;
+}
+
+li {
+    margin-bottom: 0.25em;
+}
+
+/* Link Styles */
+a {
+    color: var(--accent-primary);
+    text-decoration: none;
+    transition: var(--transition-smooth);
+}
+
+a:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+
+/* Text Selection */
+::selection {
+    background: var(--accent-primary);
+    color: white;
+}
+
+::-moz-selection {
+    background: var(--accent-primary);
+    color: white;
+}
+
+/* Focus Outline */
+:focus {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* Strong and Emphasis */
+strong {
+    font-weight: 600;
+}
+
+em {
+    font-style: italic;
+}
+
+/* Code Typography (monospace) */
+code, pre, .code {
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+}
+
+code {
+    background: rgba(0, 0, 0, 0.3);
+    color: #FFD700;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+pre {
+    background: rgba(0, 0, 0, 0.4);
+    color: #f8f8f2;
+    padding: 15px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 10px 0;
+    font-size: 0.8em;
+    line-height: 1.5;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    white-space: pre;
+    text-align: left;
+    tab-size: 4;
+    -moz-tab-size: 4;
+}
+
+pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+    border: none;
+}
+
+/* Small Text */
+small {
+    font-size: 0.875em;
+    opacity: 0.8;
+}
+
+/* Blockquote */
+blockquote {
+    border-left: 4px solid var(--accent-primary);
+    padding-left: 1em;
+    margin: 1em 0;
+    font-style: italic;
+    opacity: 0.9;
+}

@@ -1,0 +1,350 @@
+/**
+ * Responsive Design - Media queries and mobile/tablet/desktop optimizations
+ * Safe extraction - conditional rules that only apply at specific screen sizes
+ */
+
+/* Large Desktop Optimizations (1400px+) */
+@media (min-width: 1400px) {
+    .container {
+        max-width: min(1800px, 98vw);
+    }
+    
+    .host-container:not(.split-screen) .quiz-editor-section {
+        max-width: 1600px;
+    }
+}
+
+/* Tablet Portrait and Small Desktop (1024px and below) */
+@media (max-width: 1024px) {
+    .left-toolbar {
+        display: none !important;
+    }
+    
+    .desktop-only {
+        display: none !important;
+    }
+    
+    #host-screen.with-toolbar .host-container,
+    #host-screen.with-toolbar.collapsed .host-container {
+        margin-left: 0;
+    }
+    
+    .host-container, 
+    #host-screen .host-container {
+        margin-left: 0 !important;
+    }
+}
+
+/* Medium Tablet and Small Desktop (1000px and below) */
+@media (max-width: 1000px) {
+    .host-container.split-screen {
+        grid-template-columns: 1fr !important;
+        height: auto;
+        gap: 15px;
+    }
+    
+    .quiz-preview-section {
+        order: -1;
+        max-height: 50vh;
+        min-height: 300px;
+    }
+    
+    .quiz-editor-section {
+        padding-right: 0;
+    }
+}
+
+/* Mobile and Small Tablet (768px and below) */
+@media (max-width: 768px) {
+    /* Container and Layout */
+    .container {
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+    }
+    
+    /* Player Game Container */
+    .player-game-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding: 10px;
+        box-sizing: border-box;
+    }
+    
+    /* Header Adjustments */
+    header h1 {
+        font-size: 2rem;
+    }
+    
+    /* PIN Display */
+    .pin-display {
+        font-size: 2.5rem;
+        letter-spacing: 5px;
+    }
+    
+    /* Games Grid */
+    .games-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .browser-actions {
+        flex-direction: column;
+    }
+    
+    /* Preview Modal */
+    .preview-modal {
+        width: 98%;
+        height: 95%;
+        border-radius: 15px;
+    }
+    
+    .preview-modal-header {
+        padding: 15px 20px;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .preview-title-section {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .preview-device-toggle {
+        justify-content: center;
+    }
+    
+    .device-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    /* Answer Statistics */
+    .answer-stats {
+        padding: 15px;
+        margin-top: 20px;
+    }
+    
+    .stats-grid {
+        gap: 10px;
+    }
+    
+    .stat-item {
+        gap: 10px;
+        padding: 8px;
+    }
+    
+    .option-label {
+        font-size: 0.9rem;
+        min-width: 25px;
+        height: 25px;
+    }
+    
+    .option-count {
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .option-percentage {
+        font-size: 0.8rem;
+    }
+}
+
+/* Code-Specific Mobile Optimizations */
+@media (max-width: 768px) {
+    /* Player containers with code blocks */
+    .player-game-container:has(pre) {
+        max-width: 95vw;
+        padding: 10px 5px;
+    }
+    
+    .player-question-area:has(pre) {
+        padding: 10px 15px;
+        margin: 10px 5px;
+    }
+    
+    /* Code blocks in mobile */
+    #player-question-text pre,
+    .player-option pre {
+        font-size: 0.7em;
+        padding: 12px;
+        max-width: calc(95vw - 20px);
+        overflow-x: auto;
+    }
+    
+    .player-option:has(pre) {
+        padding: 12px 15px;
+        font-size: 0.95rem;
+        text-align: left;
+    }
+}
+
+/* Alternative Mobile Layout (768px and below) */
+@media (max-width: 768px) {
+    /* Alternative container styling for specific screens */
+    .container {
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+}
+
+/* Extra Small Mobile (480px and below) */
+@media (max-width: 480px) {
+    .container {
+        padding: 8px;
+    }
+    
+    header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .pin-display {
+        font-size: 2rem;
+        letter-spacing: 3px;
+    }
+    
+    .preview-modal {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+    }
+    
+    .preview-modal-header {
+        padding: 10px 15px;
+    }
+    
+    .device-btn {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+    }
+    
+    .answer-stats {
+        padding: 10px;
+        margin-top: 15px;
+    }
+    
+    .stat-item {
+        gap: 8px;
+        padding: 6px;
+    }
+    
+    .option-label {
+        font-size: 0.8rem;
+        min-width: 20px;
+        height: 20px;
+    }
+    
+    .option-count {
+        font-size: 1rem;
+    }
+    
+    .option-percentage {
+        font-size: 0.7rem;
+    }
+}
+
+/* Ultra Wide Desktop (1600px+) */
+@media (min-width: 1600px) {
+    .container {
+        max-width: min(2000px, 95vw);
+    }
+    
+    .host-container:not(.split-screen) .quiz-editor-section {
+        max-width: 1800px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    /* Hide interactive elements */
+    .left-toolbar,
+    .preview-modal,
+    .modal,
+    button,
+    .btn {
+        display: none !important;
+    }
+    
+    /* Optimize for print */
+    .container {
+        max-width: 100%;
+        padding: 0;
+    }
+    
+    .card,
+    .question-container {
+        background: white !important;
+        color: black !important;
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+    
+    /* Ensure readable text */
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    /* Page breaks */
+    .quiz-item,
+    .question-item {
+        page-break-inside: avoid;
+        margin-bottom: 20px;
+    }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    /* Enhance for retina displays */
+    .card,
+    .modal-content {
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+}
+
+/* Dark Mode Media Query Support */
+@media (prefers-color-scheme: dark) {
+    /* Auto dark mode styles can be added here if needed */
+    /* Currently handled by manual theme toggle */
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    /* Override animations module for accessibility */
+    .host-container.split-screen {
+        transition: none !important;
+    }
+    
+    .modal,
+    .preview-modal {
+        animation: none !important;
+    }
+    
+    .card:hover,
+    .btn:hover {
+        transform: none !important;
+    }
+}
+
+/* Landscape Phone Orientation */
+@media (max-width: 768px) and (orientation: landscape) {
+    .player-game-container {
+        height: 100vh;
+        padding: 5px 10px;
+    }
+    
+    .preview-modal {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .quiz-preview-section {
+        max-height: 40vh;
+    }
+}

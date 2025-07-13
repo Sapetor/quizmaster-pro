@@ -1,0 +1,215 @@
+/**
+ * Toolbar Styles - Left navigation toolbar and tools
+ */
+
+/* Left Toolbar */
+.left-toolbar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 60px;
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-right: 1px solid var(--border-color);
+    z-index: 200;
+    transition: var(--transition-smooth);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 8px;
+    gap: 15px;
+    overflow-y: auto;
+    box-shadow: var(--shadow-soft);
+}
+
+.left-toolbar.collapsed {
+    width: 32px;
+    padding: 20px 4px;
+}
+
+.left-toolbar:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Toolbar Sections */
+.toolbar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.toolbar-section h5 {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 5px;
+    text-align: center;
+    padding: 0 4px;
+}
+
+/* Toolbar Buttons */
+.toolbar-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: var(--bg-glass);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    position: relative;
+    overflow: hidden;
+}
+
+.toolbar-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--accent-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.2);
+}
+
+.toolbar-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.1);
+}
+
+.toolbar-btn.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+}
+
+/* Toolbar Icons */
+.toolbar-icon {
+    font-size: 18px;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+.toolbar-label {
+    font-size: 8px;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1;
+    opacity: 0.9;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Toolbar Divider */
+.toolbar-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 8px 4px;
+}
+
+/* Back to Top Button */
+.back-to-top-float {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    z-index: 1000;
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.back-to-top-float:hover {
+    background: #1d4ed8;
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
+}
+
+.back-to-top-float.show {
+    display: flex;
+    animation: fadeInUp 0.3s ease-out;
+}
+
+/* In split-screen mode, position back-to-top button relative to left column */
+.host-container.split-screen .back-to-top-float {
+    right: calc(50% + 15px);
+    transform: translateX(50%);
+}
+
+/* Toolbar Responsive Behavior */
+@media (max-width: 768px) {
+    .left-toolbar {
+        width: 50px;
+        padding: 15px 6px;
+    }
+    
+    .left-toolbar.collapsed {
+        width: 28px;
+        padding: 15px 3px;
+    }
+    
+    .toolbar-btn {
+        width: 38px;
+        height: 38px;
+    }
+    
+    .toolbar-icon {
+        font-size: 16px;
+    }
+    
+    .toolbar-label {
+        font-size: 7px;
+    }
+    
+    .host-container.with-toolbar {
+        margin-left: 50px;
+        max-width: calc(100vw - 50px);
+    }
+}
+
+/* Ultra-small screens */
+@media (max-width: 480px) {
+    .left-toolbar {
+        width: 40px;
+        padding: 10px 4px;
+    }
+    
+    .toolbar-btn {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .toolbar-icon {
+        font-size: 14px;
+    }
+    
+    .toolbar-label {
+        display: none;
+    }
+    
+    .host-container.with-toolbar {
+        margin-left: 40px;
+        max-width: calc(100vw - 40px);
+    }
+}

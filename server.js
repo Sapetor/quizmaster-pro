@@ -9,6 +9,33 @@ const multer = require('multer');
 const QRCode = require('qrcode');
 const os = require('os');
 
+// Import configuration constants
+const CONFIG = {
+    TIMING: {
+        DEFAULT_QUESTION_TIME: 20,
+        LEADERBOARD_DISPLAY_TIME: 3000,
+        GAME_START_DELAY: 3000,
+        AUTO_ADVANCE_DELAY: 3000,
+    },
+    SCORING: {
+        BASE_POINTS: 100,
+        MAX_BONUS_TIME: 10000,
+        TIME_BONUS_DIVISOR: 10,
+        DIFFICULTY_MULTIPLIERS: { 'easy': 1, 'medium': 2, 'hard': 3 },
+        DEFAULT_TOLERANCE: 0.1,
+    },
+    LIMITS: {
+        MAX_PLAYER_NAME_LENGTH: 20,
+        MAX_FILE_SIZE: 5 * 1024 * 1024,
+        PIN_LENGTH: 6,
+    },
+    NETWORK: {
+        PING_TIMEOUT: 60000,
+        PING_INTERVAL: 25000,
+        UPGRADE_TIMEOUT: 30000,
+    }
+};
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -28,14 +55,23 @@ const io = socketIo(server, {
     },
     methods: ["GET", "POST"]
   },
-  pingTimeout: 60000,
-  pingInterval: 25000,
-  upgradeTimeout: 30000,
+  pingTimeout: CONFIG.NETWORK.PING_TIMEOUT,
+  pingInterval: CONFIG.NETWORK.PING_INTERVAL,
+  upgradeTimeout: CONFIG.NETWORK.UPGRADE_TIMEOUT,
   allowUpgrades: true
 });
 
 app.use(cors());
 app.use(express.json());
+
+// Disable caching for development
+app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Expires', '-1');
+    res.set('Pragma', 'no-cache');
+    next();
+});
+
 app.use(express.static('public'));
 
 // Ensure directories exist
@@ -57,7 +93,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: CONFIG.LIMITS.MAX_FILE_SIZE },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -397,14 +433,17 @@ class Game {
   }
 
   nextQuestion() {
-    if (this.isAdvancing) return false;
-    this.isAdvancing = true;
-    this.currentQuestion++;
-    this.gameState = 'question';
-    this.questionTimer = null;
-    this.advanceTimer = null;
-    const hasMore = this.currentQuestion < this.quiz.questions.length;
-    this.isAdvancing = false;
+    // Check if we can advance before incrementing
+    const nextQuestionIndex = this.currentQuestion + 1;
+    const hasMore = nextQuestionIndex < this.quiz.questions.length;
+    
+    if (hasMore) {
+      this.currentQuestion = nextQuestionIndex;
+      this.gameState = 'question';
+      this.questionTimer = null;
+      this.advanceTimer = null;
+    }
+    
     return hasMore;
   }
   
@@ -511,6 +550,17 @@ class Game {
 
   getAnswerStatistics() {
     const question = this.quiz.questions[this.currentQuestion];
+    
+    // Return empty stats if question doesn't exist (game ended)
+    if (!question) {
+      return {
+        totalPlayers: this.players.size,
+        answeredPlayers: 0,
+        answerCounts: {},
+        questionType: 'multiple-choice'
+      };
+    }
+    
     const stats = {
       totalPlayers: this.players.size,
       answeredPlayers: 0,
@@ -566,6 +616,17 @@ class Game {
 }
 
 function advanceToNextQuestion(game, io) {
+  console.log(`advanceToNextQuestion: Called for game ${game.pin}, currentQuestion=${game.currentQuestion}, total=${game.quiz.questions.length}`);
+  
+  // Prevent advancement if game is already finished or advancing
+  if (game.gameState === 'finished' || game.isAdvancing) {
+    console.log(`advanceToNextQuestion: Game ${game.pin} already finished/advancing, skipping`);
+    return;
+  }
+  
+  // Set advancing flag to prevent duplicate calls
+  game.isAdvancing = true;
+  
   // Clear any existing advance timer to prevent duplication
   if (game.advanceTimer) {
     clearTimeout(game.advanceTimer);
@@ -573,48 +634,106 @@ function advanceToNextQuestion(game, io) {
   }
   
   game.advanceTimer = setTimeout(() => {
+    // Double-check game state before proceeding
+    if (game.gameState === 'finished') {
+      console.log(`advanceToNextQuestion: Game ${game.pin} finished during timer, skipping`);
+      game.isAdvancing = false;
+      return;
+    }
+    
     game.updateLeaderboard();
     io.to(`game-${game.pin}`).emit('question-end', {
       leaderboard: game.leaderboard.slice(0, 5)
     });
     
-    // Check if manual advancement is enabled
-    console.log(`Checking advancement for game ${game.pin}: Manual = ${game.manualAdvancement}`);
-    if (game.manualAdvancement) {
+    // Check if manual advancement is enabled AND there are more questions
+    const hasMoreQuestions = (game.currentQuestion + 1) < game.quiz.questions.length;
+    console.log(`Checking advancement for game ${game.pin}: Manual = ${game.manualAdvancement}, currentQuestion=${game.currentQuestion}, hasMore=${hasMoreQuestions}`);
+    
+    if (game.manualAdvancement && hasMoreQuestions) {
       // Show next question button for host and wait for manual trigger
       console.log(`Showing next button for manual advancement in game ${game.pin} to host ${game.hostId}`);
       io.to(game.hostId).emit('show-next-button');
+      game.isAdvancing = false; // Reset for manual mode
+    } else if (game.manualAdvancement && !hasMoreQuestions) {
+      // Manual mode but no more questions - end the game
+      console.log(`Manual mode: No more questions for game ${game.pin}, ending`);
+      game.isAdvancing = false;
+      endGame(game, io);
     } else {
       // Auto-advance to next question
-      console.log(`Auto-advancing game ${game.pin} in 3 seconds`);
+      console.log(`Auto-advancing game ${game.pin} in ${CONFIG.TIMING.AUTO_ADVANCE_DELAY}ms`);
       game.advanceTimer = setTimeout(() => {
+        if (game.gameState === 'finished') {
+          console.log(`Auto-advance: Game ${game.pin} finished during auto-advance timer, skipping`);
+          game.isAdvancing = false;
+          return;
+        }
+        
+        console.log(`Auto-advance: Calling nextQuestion() for game ${game.pin}`);
         if (game.nextQuestion()) {
           startQuestion(game, io);
         } else {
           // No more questions - end the game
+          console.log(`Auto-advance: No more questions for game ${game.pin}, ending`);
           endGame(game, io);
         }
-      }, 3000);
+        game.isAdvancing = false; // Reset after auto-advance
+      }, CONFIG.TIMING.AUTO_ADVANCE_DELAY);
     }
-  }, 3000);
+  }, CONFIG.TIMING.LEADERBOARD_DISPLAY_TIME);
 }
 
 function endGame(game, io) {
   // Prevent multiple game endings
-  if (game.gameState === 'finished') return;
+  if (game.gameState === 'finished') {
+    console.log(`endGame: Game ${game.pin} already finished, skipping`);
+    return;
+  }
   
   console.log(`Ending game ${game.pin}`);
   game.gameState = 'finished';
   game.endTime = new Date().toISOString();
+  
+  // Reset advancing flags to prevent stuck states
+  game.isAdvancing = false;
+  
+  // Clear any pending timers
+  if (game.questionTimer) {
+    clearTimeout(game.questionTimer);
+    game.questionTimer = null;
+  }
+  if (game.advanceTimer) {
+    clearTimeout(game.advanceTimer);
+    game.advanceTimer = null;
+  }
+  
+  // CRITICAL: Hide manual advancement button immediately when game ends
+  io.to(game.hostId).emit('hide-next-button');
+  
+  // Debug: Log player scores before final leaderboard generation
+  console.log('Final player scores before leaderboard update:');
+  game.players.forEach((player, playerId) => {
+    console.log(`  Player ${player.name} (${playerId}): ${player.score} points`);
+  });
+  
   game.updateLeaderboard();
+  
+  // Debug: Log final leaderboard
+  console.log('Final leaderboard:', game.leaderboard.map(p => ({ name: p.name, score: p.score })));
+  
   game.saveResults();
   
-  // Add slight delay to ensure all previous events are processed
+  // Add longer delay to ensure all previous events are processed completely
   setTimeout(() => {
-    io.to(`game-${game.pin}`).emit('game-end', {
-      finalLeaderboard: game.leaderboard
-    });
-  }, 500);
+    // Double-check game is still finished (race condition protection)
+    if (game.gameState === 'finished') {
+      console.log('Sending final leaderboard to clients:', game.leaderboard.map(p => ({ name: p.name, score: p.score })));
+      io.to(`game-${game.pin}`).emit('game-end', {
+        finalLeaderboard: game.leaderboard
+      });
+    }
+  }, 1000); // Increased delay from 500ms to 1000ms
 }
 
 function startQuestion(game, io) {
@@ -678,9 +797,17 @@ function startQuestion(game, io) {
     game.players.forEach((player, playerId) => {
       const playerAnswer = player.answers[game.currentQuestion];
       if (playerAnswer) {
+        // Player answered - send their actual result
         io.to(playerId).emit('player-result', {
           isCorrect: playerAnswer.isCorrect,
           points: playerAnswer.points,
+          totalScore: player.score
+        });
+      } else {
+        // Player didn't answer - send incorrect result (0 points)
+        io.to(playerId).emit('player-result', {
+          isCorrect: false,
+          points: 0,
           totalScore: player.score
         });
       }
@@ -692,13 +819,19 @@ function startQuestion(game, io) {
 }
 
 function autoAdvanceGame(game, io) {
+  console.log(`Starting game ${game.pin} with ${game.quiz.questions.length} questions`);
   setTimeout(() => {
+    if (game.gameState === 'finished') {
+      console.log(`Game ${game.pin} already finished, skipping`);
+      return;
+    }
+    
     if (game.nextQuestion()) {
       startQuestion(game, io);
     } else {
-      console.error('Failed to start first question - no questions available');
+      endGame(game, io);
     }
-  }, 3000);
+  }, CONFIG.TIMING.GAME_START_DELAY);
 }
 
 io.on('connection', (socket) => {
@@ -753,31 +886,44 @@ io.on('connection', (socket) => {
   });
 
   socket.on('player-join', (data) => {
+    console.log('Player join attempt received:', data);
+    console.log('Data type:', typeof data);
+    
     if (!data || typeof data !== 'object') {
+      console.log('Invalid request data - not object');
       socket.emit('error', { message: 'Invalid request data' });
       return;
     }
     
     const { pin, name } = data;
+    console.log('Extracted PIN:', pin, 'Name:', name);
+    console.log('PIN type:', typeof pin, 'Name type:', typeof name);
     
     if (!pin || !name || typeof pin !== 'string' || typeof name !== 'string') {
+      console.log('PIN and name validation failed');
       socket.emit('error', { message: 'PIN and name are required' });
       return;
     }
     
-    if (name.length > 20 || name.trim().length === 0) {
-      socket.emit('error', { message: 'Name must be 1-20 characters' });
+    if (name.length > CONFIG.LIMITS.MAX_PLAYER_NAME_LENGTH || name.trim().length === 0) {
+      socket.emit('error', { message: `Name must be 1-${CONFIG.LIMITS.MAX_PLAYER_NAME_LENGTH} characters` });
       return;
     }
     
     const game = games.get(pin);
+    console.log('Looking for game with PIN:', pin);
+    console.log('Game found:', !!game);
+    console.log('Available games:', Array.from(games.keys()));
     
     if (!game) {
+      console.log('Game not found for PIN:', pin);
       socket.emit('error', { message: 'Game not found' });
       return;
     }
     
+    console.log('Game state:', game.gameState);
     if (game.gameState !== 'lobby') {
+      console.log('Game already started, state:', game.gameState);
       socket.emit('error', { message: 'Game already started' });
       return;
     }
@@ -786,10 +932,18 @@ io.on('connection', (socket) => {
     players.set(socket.id, { gamePin: pin, name });
     
     socket.join(`game-${pin}`);
-    socket.emit('player-joined', { gamePin: pin, playerName: name });
+    
+    // Get current players list for modular client compatibility
+    const currentPlayers = Array.from(game.players.values()).map(p => ({ id: p.id, name: p.name }));
+    
+    socket.emit('player-joined', { 
+      gamePin: pin, 
+      playerName: name,
+      players: currentPlayers
+    });
     
     io.to(`game-${pin}`).emit('player-list-update', {
-      players: Array.from(game.players.values()).map(p => ({ id: p.id, name: p.name }))
+      players: currentPlayers
     });
     
     console.log(`Player ${name} joined game ${pin}`);
@@ -797,11 +951,22 @@ io.on('connection', (socket) => {
 
   socket.on('start-game', () => {
     const game = Array.from(games.values()).find(g => g.hostId === socket.id);
-    if (!game) return;
+    if (!game) {
+      console.log('DEBUG: start-game called but no game found for host:', socket.id);
+      return;
+    }
 
+    console.log(`Starting game ${game.pin} with ${game.quiz.questions.length} questions, manual advancement: ${game.manualAdvancement}`);
+    
     game.gameState = 'starting';
     game.startTime = new Date().toISOString();
-    io.to(`game-${game.pin}`).emit('game-starting');
+    
+    // Send proper game-started event for modular client compatibility
+    io.to(`game-${game.pin}`).emit('game-started', {
+      gamePin: game.pin,
+      questionCount: game.quiz.questions.length,
+      manualAdvancement: game.manualAdvancement
+    });
     
     // Start the auto-advancing game flow
     autoAdvanceGame(game, io);
@@ -880,9 +1045,17 @@ io.on('connection', (socket) => {
           game.players.forEach((player, playerId) => {
             const playerAnswer = player.answers[game.currentQuestion];
             if (playerAnswer) {
+              // Player answered - send their actual result
               io.to(playerId).emit('player-result', {
                 isCorrect: playerAnswer.isCorrect,
                 points: playerAnswer.points,
+                totalScore: player.score
+              });
+            } else {
+              // Player didn't answer - send incorrect result (0 points)
+              io.to(playerId).emit('player-result', {
+                isCorrect: false,
+                points: 0,
                 totalScore: player.score
               });
             }
@@ -896,7 +1069,22 @@ io.on('connection', (socket) => {
 
   socket.on('next-question', () => {
     const game = Array.from(games.values()).find(g => g.hostId === socket.id);
-    if (!game || game.isAdvancing) return;
+    if (!game || game.isAdvancing) {
+      console.log(`Ignoring next-question: game=${!!game}, isAdvancing=${game?.isAdvancing}`);
+      return;
+    }
+    
+    // CRITICAL: Prevent manual advancement if game is already finished
+    if (game.gameState === 'finished') {
+      console.log(`Ignoring next-question for finished game ${game.pin}`);
+      io.to(game.hostId).emit('hide-next-button');
+      return;
+    }
+
+    console.log(`Manual next-question for game ${game.pin}, currentQuestion=${game.currentQuestion}`);
+
+    // Set advancing flag to prevent race conditions
+    game.isAdvancing = true;
 
     // Clear any pending auto-advance timers
     if (game.advanceTimer) {
@@ -904,7 +1092,7 @@ io.on('connection', (socket) => {
       game.advanceTimer = null;
     }
     
-    // Hide the next question button
+    // Hide the next question button immediately
     io.to(game.hostId).emit('hide-next-button');
     
     // Move to next question manually
@@ -912,8 +1100,12 @@ io.on('connection', (socket) => {
       startQuestion(game, io);
     } else {
       // No more questions - end the game
+      console.log(`Manual advancement: No more questions for game ${game.pin}, ending`);
       endGame(game, io);
     }
+    
+    // Reset advancing flag
+    game.isAdvancing = false;
   });
 
   socket.on('disconnect', () => {
