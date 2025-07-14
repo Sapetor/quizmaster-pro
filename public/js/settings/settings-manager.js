@@ -151,18 +151,43 @@ export class SettingsManager {
     enterFullscreen() {
         const element = document.documentElement;
         
-        if (element.requestFullscreen) {
-            element.requestFullscreen();
-        } else if (element.mozRequestFullScreen) { // Firefox
-            element.mozRequestFullScreen();
-        } else if (element.webkitRequestFullscreen) { // Chrome, Safari, Opera
-            element.webkitRequestFullscreen();
-        } else if (element.msRequestFullscreen) { // IE/Edge
-            element.msRequestFullscreen();
+        try {
+            let fullscreenPromise;
+            
+            if (element.requestFullscreen) {
+                fullscreenPromise = element.requestFullscreen();
+            } else if (element.mozRequestFullScreen) { // Firefox
+                fullscreenPromise = element.mozRequestFullScreen();
+            } else if (element.webkitRequestFullscreen) { // Chrome, Safari, Opera
+                fullscreenPromise = element.webkitRequestFullscreen();
+            } else if (element.msRequestFullscreen) { // IE/Edge
+                fullscreenPromise = element.msRequestFullscreen();
+            }
+            
+            // Handle promise-based fullscreen API
+            if (fullscreenPromise && fullscreenPromise.then) {
+                fullscreenPromise
+                    .then(() => {
+                        this.settings.fullscreenMode = true;
+                        this.updateFullscreenButton();
+                        this.saveSettings();
+                    })
+                    .catch((err) => {
+                        console.warn('Fullscreen request failed:', err.message);
+                        this.settings.fullscreenMode = false;
+                        this.updateFullscreenButton();
+                    });
+            } else {
+                // For older browsers that don't return a promise
+                this.settings.fullscreenMode = true;
+                this.updateFullscreenButton();
+                this.saveSettings();
+            }
+        } catch (err) {
+            console.warn('Fullscreen not supported or blocked:', err.message);
+            this.settings.fullscreenMode = false;
+            this.updateFullscreenButton();
         }
-        
-        this.settings.fullscreenMode = true;
-        this.updateFullscreenButton();
     }
 
     /**

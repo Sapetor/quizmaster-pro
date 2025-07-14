@@ -15,7 +15,21 @@ export class PreviewManager {
         this.previewListenersSet = false;
         this.splitPreviewListenersSet = false;
         this.previewMode = false;
+        this.manualNavigationInProgress = false;
         this.updatePreviewDebounced = this.debounce(() => this.updateSplitPreview(), 300);
+        
+        // Store listener references for proper cleanup
+        this.listeners = {
+            prevBtn: null,
+            nextBtn: null,
+            scrollBtn: null,
+            inputHandler: null,
+            changeHandler: null,
+            radioHandler: null,
+            checkboxHandler: null,
+            trueFalseHandler: null,
+            imageHandler: null
+        };
     }
 
     /**
@@ -54,7 +68,26 @@ export class PreviewManager {
             // Initialize preview
             this.initializeSplitPreview();
         } else {
-            // Hide preview
+            // Clean up listeners first
+            this.cleanupPreviewListeners();
+            
+            // Clear any pending timeouts to prevent glitchy behavior
+            clearTimeout(this.autoScrollTimeout);
+            clearTimeout(this.updatePreviewTimeout);
+            
+            // Stop any pending debounced updates
+            if (this.updatePreviewDebounced && this.updatePreviewDebounced.cancel) {
+                this.updatePreviewDebounced.cancel();
+            }
+            
+            // Temporarily disable ALL transitions to prevent glitching
+            hostContainer.style.transition = 'none';
+            previewSection.style.transition = 'none';
+            
+            // Force a reflow to ensure transitions are disabled
+            hostContainer.offsetHeight;
+            
+            // Hide preview and remove split-screen class simultaneously
             previewSection.style.display = 'none';
             hostContainer.classList.remove('split-screen');
             
@@ -66,8 +99,13 @@ export class PreviewManager {
                 toggleBtn.setAttribute('data-translate', 'toggle_live_preview');
             }
             
-            // Clean up listeners
-            this.cleanupPreviewListeners();
+            // Re-enable transitions after layout changes are complete
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    hostContainer.style.transition = '';
+                    previewSection.style.transition = '';
+                }, 50);
+            });
         }
     }
 
@@ -76,7 +114,17 @@ export class PreviewManager {
      */
     initializeSplitPreview() {
         logger.debug('Initializing split preview system');
+        
+        // Reset preview state completely
         this.currentPreviewQuestion = 0;
+        this.manualNavigationInProgress = false;
+        
+        // Clear any existing update timeouts
+        clearTimeout(this.updatePreviewTimeout);
+        clearTimeout(this.autoScrollTimeout);
+        
+        logger.debug('Preview state reset - currentPreviewQuestion:', this.currentPreviewQuestion);
+        
         this.setupSplitPreviewEventListeners();
         this.updateSplitPreview();
         
@@ -113,38 +161,64 @@ export class PreviewManager {
         const nextBtn = document.getElementById('preview-next-split');
         const scrollBtn = document.getElementById('scroll-to-question');
         
+        // Store listener references for cleanup
+        this.listeners.prevBtn = () => {
+            const questionItems = document.querySelectorAll('.question-item');
+            logger.debug(`Prev button clicked: current=${this.currentPreviewQuestion}, total=${questionItems.length}`);
+            
+            // Set manual navigation flag to prevent auto-scroll conflicts
+            this.manualNavigationInProgress = true;
+            
+            if (this.currentPreviewQuestion > 0) {
+                this.currentPreviewQuestion--;
+                logger.debug(`Moving to previous question: ${this.currentPreviewQuestion}`);
+                this.updateSplitPreview();
+            } else {
+                logger.debug('Already at first question, not going back');
+            }
+            
+            // Clear flag after a short delay
+            setTimeout(() => {
+                this.manualNavigationInProgress = false;
+            }, 500);
+        };
+
+        this.listeners.nextBtn = () => {
+            const questionItems = document.querySelectorAll('.question-item');
+            const maxIndex = questionItems.length - 1;
+            logger.debug(`Next button clicked: current=${this.currentPreviewQuestion}, max=${maxIndex}, total=${questionItems.length}`);
+            
+            // Set manual navigation flag to prevent auto-scroll conflicts
+            this.manualNavigationInProgress = true;
+            
+            if (this.currentPreviewQuestion < maxIndex) {
+                this.currentPreviewQuestion++;
+                logger.debug(`Moving to next question: ${this.currentPreviewQuestion}`);
+                this.updateSplitPreview();
+            } else {
+                logger.debug('Already at last question, not advancing');
+            }
+            
+            // Clear flag after a short delay
+            setTimeout(() => {
+                this.manualNavigationInProgress = false;
+            }, 500);
+        };
+
+        this.listeners.scrollBtn = () => {
+            this.scrollToCurrentQuestion();
+        };
+
         if (prevBtn) {
-            prevBtn.addEventListener('click', () => {
-                logger.debug(`Prev button clicked: current=${this.currentPreviewQuestion}`);
-                if (this.currentPreviewQuestion > 0) {
-                    this.currentPreviewQuestion--;
-                    logger.debug(`Moving to previous question: ${this.currentPreviewQuestion}`);
-                    this.updateSplitPreview();
-                } else {
-                    logger.debug('Already at first question, not going back');
-                }
-            });
+            prevBtn.addEventListener('click', this.listeners.prevBtn);
         }
 
         if (nextBtn) {
-            nextBtn.addEventListener('click', () => {
-                const questionItems = document.querySelectorAll('.question-item');
-                const maxIndex = questionItems.length - 1;
-                logger.debug(`Next button clicked: current=${this.currentPreviewQuestion}, max=${maxIndex}, total=${questionItems.length}`);
-                if (this.currentPreviewQuestion < maxIndex) {
-                    this.currentPreviewQuestion++;
-                    logger.debug(`Moving to next question: ${this.currentPreviewQuestion}`);
-                    this.updateSplitPreview();
-                } else {
-                    logger.debug('Already at last question, not advancing');
-                }
-            });
+            nextBtn.addEventListener('click', this.listeners.nextBtn);
         }
 
         if (scrollBtn) {
-            scrollBtn.addEventListener('click', () => {
-                this.scrollToCurrentQuestion();
-            });
+            scrollBtn.addEventListener('click', this.listeners.scrollBtn);
         }
 
         // Real-time updates for split screen
@@ -155,56 +229,52 @@ export class PreviewManager {
      * Setup real-time preview updates for split screen
      */
     setupRealTimeSplitPreviewUpdates() {
-        // Question text changes
-        document.addEventListener('input', (e) => {
+        // Store listener references for cleanup
+        this.listeners.inputHandler = (e) => {
             if (e.target.matches('.question-text, .option, .numeric-answer, .numeric-tolerance')) {
                 this.updatePreviewDebounced();
                 // Smart auto-scroll with debouncing to prevent jumping
                 this.smartAutoScrollToEditedQuestion(e.target);
             }
-        });
+        };
 
-        // DISABLED AUTO-SCROLL ON FOCUS TO PREVENT JUMPING
-        // document.addEventListener('focus', (e) => {
-        //     if (e.target.matches('.question-text, .option, .numeric-answer, .numeric-tolerance')) {
-        //         this.autoScrollToEditedQuestion(e.target);
-        //     }
-        // }, true);
-
-        // Question type changes
-        document.addEventListener('change', (e) => {
+        this.listeners.changeHandler = (e) => {
             if (e.target.matches('.question-type, .time-input, .question-difficulty')) {
                 this.updatePreviewDebounced();
             }
-        });
+        };
 
-        // Option changes (for multiple choice)
-        document.addEventListener('change', (e) => {
+        this.listeners.radioHandler = (e) => {
             if (e.target.matches('input[type="radio"][name^="correct-"]')) {
                 this.updatePreviewDebounced();
             }
-        });
+        };
 
-        // Multiple correct answers
-        document.addEventListener('change', (e) => {
+        this.listeners.checkboxHandler = (e) => {
             if (e.target.matches('input[type="checkbox"][name^="multiple-correct-"]')) {
                 this.updatePreviewDebounced();
             }
-        });
+        };
 
-        // True/false selection
-        document.addEventListener('change', (e) => {
+        this.listeners.trueFalseHandler = (e) => {
             if (e.target.matches('input[type="radio"][name^="tf-"]')) {
                 this.updatePreviewDebounced();
             }
-        });
+        };
 
-        // Image uploads
-        document.addEventListener('change', (e) => {
+        this.listeners.imageHandler = (e) => {
             if (e.target.matches('.image-input')) {
                 this.updatePreviewDebounced();
             }
-        });
+        };
+
+        // Add event listeners
+        document.addEventListener('input', this.listeners.inputHandler);
+        document.addEventListener('change', this.listeners.changeHandler);
+        document.addEventListener('change', this.listeners.radioHandler);
+        document.addEventListener('change', this.listeners.checkboxHandler);
+        document.addEventListener('change', this.listeners.trueFalseHandler);
+        document.addEventListener('change', this.listeners.imageHandler);
     }
 
     /**
@@ -218,6 +288,13 @@ export class PreviewManager {
         const stack = new Error().stack;
         const caller = stack.split('\n')[2]?.trim() || 'unknown';
         logger.debug(`UPDATE SPLIT PREVIEW: total=${totalQuestions}, current=${this.currentPreviewQuestion}, caller=${caller}`);
+        
+        // DEBUG: Log all question items and their indices
+        questionItems.forEach((item, index) => {
+            const questionType = item.querySelector('.question-type')?.value || 'unknown';
+            const questionText = item.querySelector('.question-text')?.value?.substring(0, 30) || 'empty';
+            logger.debug(`Question ${index}: type=${questionType}, text="${questionText}"`);
+        });
         
         if (totalQuestions === 0) {
             this.showEmptySplitPreview();
@@ -241,17 +318,25 @@ export class PreviewManager {
         const currentQuestion = questionItems[this.currentPreviewQuestion];
         if (!currentQuestion) {
             logger.error(`Current question not found at index ${this.currentPreviewQuestion}, total questions: ${totalQuestions}`);
+            logger.debug('Available question items:', questionItems.length, 'DOM nodes found');
+            
             // Only reset to 0 if we have questions and current index is invalid
-            if (totalQuestions > 0) {
+            if (totalQuestions > 0 && questionItems.length > 0) {
                 logger.debug('Resetting to question 0');
                 this.currentPreviewQuestion = 0;
                 const firstQuestion = questionItems[0];
-                if (!firstQuestion) return;
+                if (!firstQuestion) {
+                    logger.error('First question also not found, aborting preview update');
+                    return;
+                }
                 
                 const questionData = this.extractQuestionDataForPreview(firstQuestion);
                 questionData.questionNumber = 1;
                 questionData.totalQuestions = totalQuestions;
                 this.renderSplitQuestionPreview(questionData);
+            } else {
+                logger.warn('No questions available for preview');
+                this.showEmptySplitPreview();
             }
             return;
         }
@@ -388,7 +473,13 @@ export class PreviewManager {
      * Render split question preview
      */
     renderSplitQuestionPreview(data) {
-        console.log('Rendering preview for question:', data);
+        logger.debug('Rendering preview for question:', {
+            question: data.question?.substring(0, 50) + '...',
+            type: data.type,
+            questionNumber: data.questionNumber,
+            totalQuestions: data.totalQuestions,
+            optionsCount: data.options?.length || 0
+        });
         
         // Update question counter and text
         const counterDisplay = document.getElementById('preview-question-counter-display-split');
@@ -471,25 +562,42 @@ export class PreviewManager {
         });
         
         logger.debug('Rendering answer type:', data.type, 'with options:', data.options);
+        logger.debug('Question data for rendering:', {
+            questionNumber: data.questionNumber,
+            type: data.type,
+            hasOptions: !!data.options,
+            optionsLength: data.options?.length,
+            correctAnswer: data.correctAnswer,
+            correctAnswers: data.correctAnswers
+        });
         
         // Show appropriate answer type
         switch (data.type) {
             case 'multiple-choice':
+                logger.debug('🔤 Rendering multiple choice preview');
                 this.renderSplitMultipleChoicePreview(data.options, data.correctAnswer);
                 break;
             case 'multiple-correct':
+                logger.debug('☑️ Rendering multiple correct preview');
                 this.renderSplitMultipleCorrectPreview(data.options, data.correctAnswers);
                 break;
             case 'true-false':
+                logger.debug('✅ Rendering true/false preview');
                 this.renderSplitTrueFalsePreview(data.correctAnswer);
                 break;
             case 'numeric':
+                logger.debug('🔢 Rendering numeric preview');
                 this.renderSplitNumericPreview();
                 break;
+            default:
+                logger.warn('Unknown question type:', data.type);
         }
         
         // Render LaTeX in split preview with proper targeting and retry mechanism
-        this.renderMathJaxWithRetry();
+        // Use setTimeout to ensure DOM updates are complete before MathJax
+        setTimeout(() => {
+            this.renderMathJaxWithRetry();
+        }, 100);
     }
 
     /**
@@ -695,6 +803,12 @@ export class PreviewManager {
         // Only work when split preview is active
         if (!this.previewMode) return;
         
+        // Add a flag to prevent auto-scroll during manual navigation
+        if (this.manualNavigationInProgress) {
+            logger.debug('Manual navigation in progress, skipping auto-scroll');
+            return;
+        }
+        
         // Find which question this input belongs to
         const questionItem = inputElement.closest('.question-item');
         if (!questionItem) return;
@@ -721,10 +835,61 @@ export class PreviewManager {
      * Clean up preview listeners
      */
     cleanupPreviewListeners() {
+        logger.debug('Cleaning up preview listeners');
+        
+        // Remove navigation button listeners
+        const prevBtn = document.getElementById('preview-prev-split');
+        const nextBtn = document.getElementById('preview-next-split');
+        const scrollBtn = document.getElementById('scroll-to-question');
+        
+        if (prevBtn && this.listeners.prevBtn) {
+            prevBtn.removeEventListener('click', this.listeners.prevBtn);
+        }
+        if (nextBtn && this.listeners.nextBtn) {
+            nextBtn.removeEventListener('click', this.listeners.nextBtn);
+        }
+        if (scrollBtn && this.listeners.scrollBtn) {
+            scrollBtn.removeEventListener('click', this.listeners.scrollBtn);
+        }
+        
+        // Remove document-level listeners
+        if (this.listeners.inputHandler) {
+            document.removeEventListener('input', this.listeners.inputHandler);
+        }
+        if (this.listeners.changeHandler) {
+            document.removeEventListener('change', this.listeners.changeHandler);
+        }
+        if (this.listeners.radioHandler) {
+            document.removeEventListener('change', this.listeners.radioHandler);
+        }
+        if (this.listeners.checkboxHandler) {
+            document.removeEventListener('change', this.listeners.checkboxHandler);
+        }
+        if (this.listeners.trueFalseHandler) {
+            document.removeEventListener('change', this.listeners.trueFalseHandler);
+        }
+        if (this.listeners.imageHandler) {
+            document.removeEventListener('change', this.listeners.imageHandler);
+        }
+        
+        // Clear listener references
+        this.listeners = {
+            prevBtn: null,
+            nextBtn: null,
+            scrollBtn: null,
+            inputHandler: null,
+            changeHandler: null,
+            radioHandler: null,
+            checkboxHandler: null,
+            trueFalseHandler: null,
+            imageHandler: null
+        };
+        
+        // Reset flags
         this.previewListenersSet = false;
         this.splitPreviewListenersSet = false;
-        // Note: In a real implementation, you'd want to remove specific listeners
-        // For now, we'll just reset the flags
+        
+        logger.debug('Preview listeners cleanup completed');
     }
 
     /**
@@ -750,6 +915,7 @@ export class PreviewManager {
         const previewElement = document.getElementById('preview-content-split');
         
         if (!previewElement) {
+            logger.warn(`Preview element not found, attempt ${attempt + 1}/${maxAttempts + 1}`);
             if (attempt < maxAttempts) {
                 setTimeout(() => this.renderMathJaxWithRetry(attempt + 1), 100);
             }
@@ -758,26 +924,42 @@ export class PreviewManager {
 
         logger.debug(`MathJax attempt ${attempt + 1}/${maxAttempts + 1}`);
         
-        if (this.mathRenderer && this.mathRenderer.renderMathJax) {
-            logger.debug('Using MathRenderer.renderMathJax with preview element');
-            this.mathRenderer.renderMathJax(previewElement);
-        } else if (window.MathJax && window.MathJax.typesetPromise) {
-            logger.debug('Using global MathJax.typesetPromise on preview element');
-            window.MathJax.typesetPromise([previewElement]).then(() => {
-                logger.debug('MathJax rendering completed for preview');
-            }).catch((err) => {
-                logger.warn('MathJax rendering error in preview:', err);
-                if (attempt < maxAttempts) {
-                    setTimeout(() => this.renderMathJaxWithRetry(attempt + 1), 300);
-                }
-            });
-        } else if (window.MathJax && window.MathJax.Hub) {
-            logger.debug('Using MathJax v2 Hub.Queue');
-            window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, previewElement]);
-        } else {
-            logger.debug('No MathJax available, retrying...');
+        // Check if MathJax is ready
+        if (!window.MathJax) {
+            logger.warn('MathJax not loaded yet, retrying...');
             if (attempt < maxAttempts) {
                 setTimeout(() => this.renderMathJaxWithRetry(attempt + 1), 200);
+            }
+            return;
+        }
+        
+        try {
+            if (this.mathRenderer && this.mathRenderer.renderMathJax) {
+                logger.debug('Using MathRenderer.renderMathJax with preview element');
+                this.mathRenderer.renderMathJax(previewElement);
+            } else if (window.MathJax.typesetPromise) {
+                logger.debug('Using global MathJax.typesetPromise on preview element');
+                window.MathJax.typesetPromise([previewElement]).then(() => {
+                    logger.debug('MathJax rendering completed for preview');
+                }).catch((err) => {
+                    logger.warn('MathJax rendering error in preview:', err);
+                    if (attempt < maxAttempts) {
+                        setTimeout(() => this.renderMathJaxWithRetry(attempt + 1), 300);
+                    }
+                });
+            } else if (window.MathJax.Hub) {
+                logger.debug('Using MathJax v2 Hub.Queue');
+                window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, previewElement]);
+            } else {
+                logger.warn('MathJax loaded but no rendering method available');
+                if (attempt < maxAttempts) {
+                    setTimeout(() => this.renderMathJaxWithRetry(attempt + 1), 200);
+                }
+            }
+        } catch (err) {
+            logger.error('MathJax rendering exception:', err);
+            if (attempt < maxAttempts) {
+                setTimeout(() => this.renderMathJaxWithRetry(attempt + 1), 300);
             }
         }
     }

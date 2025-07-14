@@ -135,15 +135,27 @@ export class GameManager {
             }
             
             if (hostOptionsContainer) {
+                // Always clear previous content to prevent leaking between question types
+                hostOptionsContainer.innerHTML = '';
+                
                 if (data.type === 'numeric') {
                     hostOptionsContainer.style.display = 'none';
-                } else {
-                    // Use the original monolithic structure with option-display divs
+                } else if (data.type === 'true-false') {
+                    // True/False needs special structure with .tf-option class and .true-false-options container
                     hostOptionsContainer.innerHTML = `
-                        <div class="option-display"></div>
-                        <div class="option-display"></div>
-                        <div class="option-display"></div>
-                        <div class="option-display"></div>
+                        <div class="true-false-options">
+                            <div class="tf-option true-btn" data-answer="true">${getTranslation('true')}</div>
+                            <div class="tf-option false-btn" data-answer="false">${getTranslation('false')}</div>
+                        </div>
+                    `;
+                    hostOptionsContainer.style.display = 'block';
+                } else {
+                    // Use the original monolithic structure with option-display divs and data attributes for colorful styling
+                    hostOptionsContainer.innerHTML = `
+                        <div class="option-display" data-option="0"></div>
+                        <div class="option-display" data-option="1"></div>
+                        <div class="option-display" data-option="2"></div>
+                        <div class="option-display" data-option="3"></div>
                     `;
                     hostOptionsContainer.style.display = 'grid';
                     const options = document.querySelectorAll('.option-display');
@@ -151,16 +163,17 @@ export class GameManager {
                     // Reset all option styles from previous questions
                     this.resetButtonStyles(options);
                 
-                    if (data.type === 'true-false') {
-                        options[0].textContent = getTranslation('true');
-                        options[1].textContent = getTranslation('false');
-                        options[2].style.display = 'none';
-                        options[3].style.display = 'none';
-                    } else if (data.type === 'multiple-choice' || data.type === 'multiple-correct') {
+                    if (data.type === 'multiple-choice' || data.type === 'multiple-correct') {
                         data.options.forEach((option, index) => {
                             if (options[index]) {
                                 options[index].innerHTML = `${getOptionLetter(index)}: ${option}`;
                                 options[index].style.display = 'block';
+                                // Add data-multiple attribute for multiple-correct questions to get special styling
+                                if (data.type === 'multiple-correct') {
+                                    options[index].setAttribute('data-multiple', 'true');
+                                } else {
+                                    options[index].removeAttribute('data-multiple');
+                                }
                             }
                         });
                         // Hide unused options
@@ -665,7 +678,6 @@ export class GameManager {
                 logger.debug('Highlighted correct T/F option:', correctAnswer, 'at index:', index);
             }
         } else {
-            const tfOptions = document.querySelectorAll('.true-btn, .false-btn');
             const correctTFOption = document.querySelector(`[data-answer="${correctAnswer}"]`);
             if (correctTFOption && (correctTFOption.classList.contains('true-btn') || correctTFOption.classList.contains('false-btn'))) {
                 correctTFOption.classList.add('correct-answer');
@@ -843,12 +855,18 @@ export class GameManager {
         if (!this.isHost || !data) return;
         
         logger.debug('Answer statistics data received:', data);
+        logger.debug('Data structure:', {
+            answeredPlayers: data.answeredPlayers,
+            totalPlayers: data.totalPlayers,
+            answerCounts: data.answerCounts,
+            questionType: data.questionType || data.type
+        });
         
-        // Create statistics container if it doesn't exist
+        // Get existing statistics container
         let statisticsContainer = document.getElementById('answer-statistics');
         if (!statisticsContainer) {
-            this.createAnswerStatisticsContainer();
-            statisticsContainer = document.getElementById('answer-statistics');
+            logger.warn('Answer statistics container not found in HTML');
+            return;
         }
         
         // Show statistics container
@@ -888,56 +906,32 @@ export class GameManager {
         }
     }
 
-    /**
-     * Create answer statistics container if it doesn't exist
-     */
-    createAnswerStatisticsContainer() {
-        if (document.getElementById('answer-statistics')) return;
-        
-        const hostGameScreen = document.getElementById('host-game-screen');
-        if (!hostGameScreen) return;
-        
-        const statisticsHTML = `
-            <div id="answer-statistics" style="display: none; margin-top: 20px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; backdrop-filter: blur(10px);">
-                <h3 style="color: white; margin-bottom: 10px;">${getTranslation('live_answer_statistics')}</h3>
-                <div class="stats-header" style="color: white; margin-bottom: 15px;">
-                    <span id="responses-count">0</span> / <span id="total-players">0</span> ${getTranslation('responses')}
-                </div>
-                <div id="stats-content"></div>
-            </div>
-        `;
-        
-        hostGameScreen.insertAdjacentHTML('beforeend', statisticsHTML);
-    }
 
     /**
      * Show statistics for multiple choice questions
      */
     showMultipleChoiceStatistics(optionCount) {
-        const statsContent = document.querySelector('.stats-grid');
+        const statsContent = document.getElementById('stats-grid');
         if (!statsContent) return;
         
-        statsContent.innerHTML = '';
-        for (let i = 0; i < optionCount; i++) {
-            const statItem = document.createElement('div');
-            statItem.className = 'stat-item';
-            statItem.id = `stat-item-${i}`;
-            statItem.style.cssText = `
-                display: flex;
-                align-items: center;
-                margin-bottom: 8px;
-                padding: 8px;
-                background: rgba(255,255,255,0.1);
-                border-radius: 5px;
-            `;
-            statItem.innerHTML = `
-                <div class="stat-letter" style="width: 30px; color: white; font-weight: bold;">${getOptionLetter(i)}</div>
-                <div class="stat-bar" style="flex: 1; height: 20px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 0 10px; overflow: hidden;">
-                    <div class="stat-fill" id="stat-fill-${i}" style="height: 100%; background: linear-gradient(90deg, #4CAF50, #45a049); width: 0%; transition: width 0.3s ease;"></div>
-                </div>
-                <div class="stat-count" id="stat-count-${i}" style="width: 40px; color: white; font-weight: bold; text-align: right;">0</div>
-            `;
-            statsContent.appendChild(statItem);
+        // Update existing stat item labels for multiple choice
+        for (let i = 0; i < 4; i++) {
+            const statItem = document.getElementById(`stat-item-${i}`);
+            const optionLabel = statItem?.querySelector('.option-label');
+            
+            if (statItem && optionLabel) {
+                if (i < optionCount) {
+                    statItem.style.display = 'flex';
+                    optionLabel.textContent = getOptionLetter(i);
+                    // Reset values
+                    const statCount = statItem.querySelector('.stat-count');
+                    const statFill = statItem.querySelector('.stat-fill');
+                    if (statCount) statCount.textContent = '0';
+                    if (statFill) statFill.style.width = '0%';
+                } else {
+                    statItem.style.display = 'none';
+                }
+            }
         }
     }
 
@@ -945,50 +939,39 @@ export class GameManager {
      * Show statistics for true/false questions
      */
     showTrueFalseStatistics() {
-        const statsContent = document.querySelector('.stats-grid');
+        const statsContent = document.getElementById('stats-grid');
         if (!statsContent) return;
         
-        const trueItem = document.createElement('div');
-        trueItem.className = 'stat-item';
-        trueItem.id = 'stat-item-0';
-        trueItem.style.cssText = `
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-            padding: 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 5px;
-        `;
-        trueItem.innerHTML = `
-            <div class="stat-letter" style="width: 60px; color: white; font-weight: bold;">${getTranslation('true')}</div>
-            <div class="stat-bar" style="flex: 1; height: 20px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 0 10px; overflow: hidden;">
-                <div class="stat-fill" id="stat-fill-0" style="height: 100%; background: linear-gradient(90deg, #4CAF50, #45a049); width: 0%; transition: width 0.3s ease;"></div>
-            </div>
-            <div class="stat-count" id="stat-count-0" style="width: 40px; color: white; font-weight: bold; text-align: right;">0</div>
-        `;
-        
-        const falseItem = document.createElement('div');
-        falseItem.className = 'stat-item';
-        falseItem.id = 'stat-item-1';
-        falseItem.style.cssText = `
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-            padding: 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 5px;
-        `;
-        falseItem.innerHTML = `
-            <div class="stat-letter" style="width: 60px; color: white; font-weight: bold;">${getTranslation('false')}</div>
-            <div class="stat-bar" style="flex: 1; height: 20px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 0 10px; overflow: hidden;">
-                <div class="stat-fill" id="stat-fill-1" style="height: 100%; background: linear-gradient(90deg, #f44336, #d32f2f); width: 0%; transition: width 0.3s ease;"></div>
-            </div>
-            <div class="stat-count" id="stat-count-1" style="width: 40px; color: white; font-weight: bold; text-align: right;">0</div>
-        `;
-        
-        statsContent.innerHTML = '';
-        statsContent.appendChild(trueItem);
-        statsContent.appendChild(falseItem);
+        // Update existing stat items for true/false - show only first 2
+        for (let i = 0; i < 4; i++) {
+            const statItem = document.getElementById(`stat-item-${i}`);
+            const optionLabel = statItem?.querySelector('.option-label');
+            
+            if (statItem && optionLabel) {
+                if (i === 0) {
+                    // True option
+                    statItem.style.display = 'flex';
+                    optionLabel.textContent = getTranslation('true');
+                    // Reset values
+                    const statCount = statItem.querySelector('.stat-count');
+                    const statFill = statItem.querySelector('.stat-fill');
+                    if (statCount) statCount.textContent = '0';
+                    if (statFill) statFill.style.width = '0%';
+                } else if (i === 1) {
+                    // False option
+                    statItem.style.display = 'flex';
+                    optionLabel.textContent = getTranslation('false');
+                    // Reset values
+                    const statCount = statItem.querySelector('.stat-count');
+                    const statFill = statItem.querySelector('.stat-fill');
+                    if (statCount) statCount.textContent = '0';
+                    if (statFill) statFill.style.width = '0%';
+                } else {
+                    // Hide unused options
+                    statItem.style.display = 'none';
+                }
+            }
+        }
     }
 
     /**
@@ -998,13 +981,25 @@ export class GameManager {
         const statCount = document.getElementById(`stat-count-${index}`);
         const statFill = document.getElementById(`stat-fill-${index}`);
         
+        logger.debug(`updateStatItem: index=${index}, count=${count}, totalAnswered=${totalAnswered}`);
+        
         if (statCount) {
             statCount.textContent = count;
+            logger.debug(`Updated stat count for index ${index}: ${count}`);
+        } else {
+            logger.warn(`stat-count-${index} element not found`);
         }
         
-        if (statFill && totalAnswered > 0) {
-            const percentage = (count / totalAnswered) * 100;
-            statFill.style.width = `${percentage}%`;
+        if (statFill) {
+            if (totalAnswered > 0) {
+                const percentage = (count / totalAnswered) * 100;
+                statFill.style.width = `${percentage}%`;
+                logger.debug(`Updated stat fill for index ${index}: ${percentage}%`);
+            } else {
+                statFill.style.width = '0%';
+            }
+        } else {
+            logger.warn(`stat-fill-${index} element not found`);
         }
     }
 

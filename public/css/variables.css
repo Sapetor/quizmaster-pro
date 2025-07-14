@@ -3,8 +3,102 @@
  * Safe extraction - pure value declarations that won't break layout
  */
 
-/* CSS Custom Properties */
+/* Modern Design System */
 :root {
+    /* === MODERN COLOR PALETTE === */
+    --color-primary-50: #eff6ff;
+    --color-primary-100: #dbeafe;
+    --color-primary-500: #3b82f6;
+    --color-primary-600: #2563eb;
+    --color-primary-700: #1d4ed8;
+    --color-primary-900: #1e3a8a;
+    
+    /* Semantic Colors */
+    --color-success-500: #10b981;
+    --color-warning-500: #f59e0b;
+    --color-error-500: #ef4444;
+    
+    /* === COLORFUL OPTIONS SYSTEM === */
+    /* Option A - Blue */
+    --option-0-start: #3b82f6;
+    --option-0-end: #2563eb;
+    --option-0-shadow: rgba(59, 130, 246, 0.3);
+    --option-0-shadow-hover: rgba(59, 130, 246, 0.5);
+    
+    /* Option B - Green */
+    --option-1-start: #10b981;
+    --option-1-end: #059669;
+    --option-1-shadow: rgba(16, 185, 129, 0.3);
+    --option-1-shadow-hover: rgba(16, 185, 129, 0.5);
+    
+    /* Option C - Orange */
+    --option-2-start: #f59e0b;
+    --option-2-end: #d97706;
+    --option-2-shadow: rgba(245, 158, 11, 0.3);
+    --option-2-shadow-hover: rgba(245, 158, 11, 0.5);
+    
+    /* Option D - Red */
+    --option-3-start: #ef4444;
+    --option-3-end: #dc2626;
+    --option-3-shadow: rgba(239, 68, 68, 0.3);
+    --option-3-shadow-hover: rgba(239, 68, 68, 0.5);
+    
+    /* Option E - Purple */
+    --option-4-start: #8b5cf6;
+    --option-4-end: #7c3aed;
+    --option-4-shadow: rgba(139, 92, 246, 0.3);
+    --option-4-shadow-hover: rgba(139, 92, 246, 0.5);
+    
+    /* Option F - Cyan */
+    --option-5-start: #06b6d4;
+    --option-5-end: #0891b2;
+    --option-5-shadow: rgba(6, 182, 212, 0.3);
+    --option-5-shadow-hover: rgba(6, 182, 212, 0.5);
+    
+    /* True/False Colors */
+    --true-color-start: var(--option-1-start);
+    --true-color-end: var(--option-1-end);
+    --true-shadow: var(--option-1-shadow);
+    --true-shadow-hover: var(--option-1-shadow-hover);
+    
+    --false-color-start: var(--option-3-start);
+    --false-color-end: var(--option-3-end);
+    --false-shadow: var(--option-3-shadow);
+    --false-shadow-hover: var(--option-3-shadow-hover);
+    
+    /* === GLASS MORPHISM SYSTEM === */
+    --glass-light: rgba(255, 255, 255, 0.1);
+    --glass-medium: rgba(255, 255, 255, 0.15);
+    --glass-strong: rgba(255, 255, 255, 0.2);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    
+    /* Backdrop Blur System */
+    --blur-subtle: blur(8px);
+    --blur-medium: blur(16px);
+    --blur-strong: blur(24px);
+    
+    /* === MODERN SHADOWS === */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.2);
+    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+    
+    /* === TYPOGRAPHY SCALE === */
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+    --text-3xl: 1.875rem;
+    --text-4xl: 2.25rem;
+    
+    /* Line Heights */
+    --leading-tight: 1.25;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.75;
+
+/* CSS Custom Properties */
     /* Background Variables */
     --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
     --bg-secondary: rgba(255,255,255,0.18);
@@ -34,8 +128,18 @@
     /* Shadows and Effects */
     --shadow-soft: 0 8px 32px rgba(0,0,0,0.15);
     --shadow-hover: 0 12px 40px rgba(0,0,0,0.2);
+    --shadow-light: rgba(0,0,0,0.1);
     --border-radius: 16px;
+    --border-radius-small: 12px;
+    --border-radius-medium: 15px;
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Glass Effect Variants */
+    --bg-glass-light: rgba(255,255,255,0.1);
+    
+    /* Accent Colors */
+    --accent-primary: #667eea;
+    --accent-secondary-gradient: #764ba2;
     
     /* Preview Settings Variables */
     --split-left: 50fr;
@@ -58,6 +162,38 @@
     --preview-header-padding: 3px 4px;
     --preview-button-spacing: 6px 0;
     --preview-option-margin: 4px 0;
+}
+
+/* === DARK THEME SUPPORT === */
+[data-theme="dark"] {
+    /* Modern Glass Morphism for Dark Mode */
+    --glass-light: rgba(255, 255, 255, 0.05);
+    --glass-medium: rgba(255, 255, 255, 0.08);
+    --glass-strong: rgba(255, 255, 255, 0.12);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    
+    /* Enhanced Shadows for Dark Mode */
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
+    --shadow-glow: 0 0 20px rgba(96, 165, 250, 0.4);
+
+/* Dark Theme Variables - Critical for theme switching */
+    --bg-primary: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1c2128 100%);
+    --bg-secondary: rgba(255,255,255,0.08);
+    --text-primary: #f0f6fc;
+    --text-secondary: #58a6ff;
+    --modal-bg: #1c2128;
+    --modal-text: #f8fafc;
+    --card-bg: rgba(255,255,255,0.08);
+    --border-color: rgba(255,255,255,0.2);
+    --accent-primary: #58a6ff;
+    --accent-secondary: #f85149;
+    --success-color: #56d364;
+    --warning-color: #e3b341;
+    --error-color: #f85149;
+    --bg-glass: rgba(255,255,255,0.08);
+    --text-contrast: #f0f6fc;
+    --bg-contrast: rgba(13,17,23,0.92);
 }
 
 /* Desktop Preview Ratios */

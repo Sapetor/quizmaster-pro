@@ -40,45 +40,118 @@ body::before {
     z-index: -1;
 }
 
-/* Typography Hierarchy */
+/* === MODERN TYPOGRAPHY SYSTEM === */
 h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
+    line-height: var(--leading-tight);
     margin-bottom: 0.5em;
+    font-family: Inter, sans-serif;
 }
 
 h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+    font-size: var(--text-4xl);
+    font-weight: 800;
+    line-height: var(--leading-tight);
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--color-primary-500) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 h2 {
-    font-size: 2rem;
-    font-weight: 600;
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    color: var(--text-primary);
 }
 
 h3 {
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
     font-weight: 600;
+    color: var(--text-primary);
 }
 
 h4 {
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
     font-weight: 600;
+    color: var(--text-primary);
 }
 
 h5 {
-    font-size: 1.125rem;
+    font-size: var(--text-lg);
     font-weight: 600;
+    color: var(--text-secondary);
 }
 
 h6 {
-    font-size: 1rem;
+    font-size: var(--text-base);
     font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* === MODERN ANIMATIONS === */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Animation Classes */
+.animate-slide-in {
+    animation: slideInUp 0.4s ease-out;
+}
+
+.animate-fade-in {
+    animation: fadeInScale 0.3s ease-out;
+}
+
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Interactive Elements */
+.interactive {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.interactive:hover {
+    transform: translateY(-2px);
+}
+
+/* Focus Indicators */
+.focus-ring:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 /* Paragraph and Text Elements */
@@ -189,3 +262,23 @@ blockquote {
     font-style: italic;
     opacity: 0.9;
 }
+
+/* LaTeX Processing States - Critical for math rendering */
+.processing-math {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.math-ready {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+/* Ensure MathJax elements don't break layout */
+.mjx-container {
+    display: inline-block !important;
+    vertical-align: middle !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+}
+

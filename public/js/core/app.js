@@ -97,15 +97,10 @@ export class QuizGame {
         // Screen navigation
         safeAddEventListener('host-btn', 'click', () => {
             this.uiManager.showScreen('host-screen');
-            // Auto-open the toolbar when hosting
-            const toolbar = document.getElementById('left-toolbar');
-            if (toolbar) {
-                toolbar.style.display = 'block';
-                // Add with-toolbar class to host container for proper layout
-                const hostContainer = document.querySelector('.host-container');
-                if (hostContainer) {
-                    hostContainer.classList.add('with-toolbar');
-                }
+            // Always ensure toolbar is visible and layout is properly set
+            const hostContainer = document.querySelector('.host-container');
+            if (hostContainer) {
+                hostContainer.classList.add('with-toolbar');
             }
         });
         safeAddEventListener('join-btn', 'click', () => this.uiManager.showScreen('join-screen'));
@@ -539,7 +534,6 @@ export class QuizGame {
             { id: 'toolbar-preview', handler: () => this.togglePreviewMode() },
             { id: 'toolbar-ai-gen', handler: () => this.openAIGeneratorModal() },
             { id: 'toolbar-import', handler: () => this.quizManager.importQuiz() },
-            { id: 'toolbar-collapse', handler: () => this.toggleToolbar() },
             { id: 'toolbar-preview-settings', handler: () => this.togglePreviewSettings() },
             { id: 'toolbar-top', handler: () => this.scrollToTop() },
             { id: 'toolbar-bottom', handler: () => this.scrollToBottom() },
@@ -728,13 +722,49 @@ export class QuizGame {
      * Update game translations when language changes
      */
     updateGameTranslations() {
-        // Update question counter if in game
+        // Update host question counter if visible and has content
         const questionCounter = document.getElementById('question-counter');
-        if (questionCounter && this.gameManager.currentQuestion !== undefined) {
-            const currentQ = this.gameManager.currentQuestion + 1;
-            const totalQ = this.gameManager.questions ? this.gameManager.questions.length : 0;
-            if (totalQ > 0) {
+        if (questionCounter && questionCounter.textContent.trim()) {
+            // Extract current numbers from existing text and rebuild with new translation
+            const match = questionCounter.textContent.match(/(\d+).*?(\d+)/);
+            if (match) {
+                const currentQ = match[1];
+                const totalQ = match[2];
                 questionCounter.textContent = `${getTranslation('question')} ${currentQ} ${getTranslation('of')} ${totalQ}`;
+            }
+        }
+        
+        // Update player question counter if visible and has content
+        const playerQuestionCounter = document.getElementById('player-question-counter');
+        if (playerQuestionCounter && playerQuestionCounter.textContent.trim()) {
+            // Extract current numbers from existing text and rebuild with new translation
+            const match = playerQuestionCounter.textContent.match(/(\d+).*?(\d+)/);
+            if (match) {
+                const currentQ = match[1];
+                const totalQ = match[2];
+                playerQuestionCounter.textContent = `${getTranslation('question')} ${currentQ} ${getTranslation('of')} ${totalQ}`;
+            }
+        }
+        
+        // Update preview question counter if visible and has content
+        const previewCounter = document.getElementById('preview-question-counter');
+        if (previewCounter && previewCounter.textContent.trim()) {
+            const match = previewCounter.textContent.match(/(\d+).*?(\d+)/);
+            if (match) {
+                const currentQ = match[1];
+                const totalQ = match[2];
+                previewCounter.textContent = `${getTranslation('question')} ${currentQ} ${getTranslation('of')} ${totalQ}`;
+            }
+        }
+        
+        // Update preview question counter display inside preview content
+        const previewCounterDisplay = document.getElementById('preview-question-counter-display');
+        if (previewCounterDisplay && previewCounterDisplay.textContent.trim()) {
+            const match = previewCounterDisplay.textContent.match(/(\d+).*?(\d+)/);
+            if (match) {
+                const currentQ = match[1];
+                const totalQ = match[2];
+                previewCounterDisplay.textContent = `${getTranslation('question')} ${currentQ} ${getTranslation('of')} ${totalQ}`;
             }
         }
         
@@ -805,38 +835,6 @@ export class QuizGame {
         }
     }
 
-    /**
-     * Toggle toolbar visibility
-     */
-    toggleToolbar() {
-        logger.info('Toggle toolbar called');
-        const toolbar = document.getElementById('left-toolbar');
-        const hostContainer = document.querySelector('.host-container');
-        
-        if (toolbar) {
-            const isVisible = toolbar.style.display !== 'none';
-            logger.debug(`Toolbar current state: ${isVisible ? 'visible' : 'hidden'}`);
-            
-            toolbar.style.display = isVisible ? 'none' : 'block';
-            
-            // Update host container class for proper layout
-            if (hostContainer) {
-                if (isVisible) {
-                    hostContainer.classList.remove('with-toolbar');
-                } else {
-                    hostContainer.classList.add('with-toolbar');
-                }
-                logger.debug(`Host container with-toolbar class: ${hostContainer.classList.contains('with-toolbar')}`);
-            }
-            
-            logger.info(`Toolbar ${isVisible ? 'hidden' : 'shown'}`);
-        } else {
-            logger.error('Toolbar element not found');
-            // Debug available toolbar elements
-            const toolbarElements = document.querySelectorAll('[id*="toolbar"]');
-            logger.debug('Available toolbar elements:', Array.from(toolbarElements).map(el => el.id));
-        }
-    }
 
     /**
      * Scroll to top (wrapper for global function)

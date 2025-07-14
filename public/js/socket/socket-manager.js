@@ -52,6 +52,9 @@ export class SocketManager {
                 this.gameManager.setPlayerInfo(data.playerName, false);
                 this.gameManager.setGamePin(data.gamePin);
                 console.log('🔥 CRITICAL: After setPlayerInfo, isHost =', this.gameManager.isHost);
+                
+                // Update lobby display with game information
+                this.updatePlayerLobbyDisplay(data.gamePin, data.players);
             } else {
                 console.log('🔥 CRITICAL: playerName or gamePin missing:', {
                     playerName: data.playerName,
@@ -200,6 +203,14 @@ export class SocketManager {
         this.socket.on('player-list-update', (data) => {
             console.log('Player list updated:', data);
             this.gameManager.updatePlayersList(data.players);
+            
+            // Update player count in lobby if we're in player lobby
+            if (this.uiManager.currentScreen === 'player-lobby') {
+                const lobbyPlayerCount = document.getElementById('lobby-player-count');
+                if (lobbyPlayerCount && data.players) {
+                    lobbyPlayerCount.textContent = data.players.length;
+                }
+            }
         });
 
         // Error handling
@@ -359,6 +370,31 @@ export class SocketManager {
             name: playerName
         });
         console.log('Emitted player-join event');
+    }
+
+    /**
+     * Update player lobby display with game information
+     */
+    updatePlayerLobbyDisplay(gamePin, players) {
+        // Update game PIN display
+        const lobbyPinDisplay = document.getElementById('lobby-pin-display');
+        if (lobbyPinDisplay && gamePin) {
+            lobbyPinDisplay.textContent = gamePin;
+        }
+
+        // Update player count
+        const lobbyPlayerCount = document.getElementById('lobby-player-count');
+        if (lobbyPlayerCount && players) {
+            lobbyPlayerCount.textContent = players.length;
+        }
+
+        // Show the lobby info section
+        const lobbyInfo = document.getElementById('lobby-info');
+        if (lobbyInfo) {
+            lobbyInfo.style.display = 'flex';
+        }
+
+        console.log('Updated player lobby display:', { gamePin, playerCount: players?.length });
     }
 
     /**

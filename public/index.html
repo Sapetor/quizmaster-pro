@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=recovery-original-13000">
+    <link rel="stylesheet" href="css/main.css?v=modular-4.8">
     <!-- Removed problematic polyfill.io CDN - MathJax handles ES6 polyfills automatically -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -91,9 +91,9 @@
             </div>
         </div>
 
-        <div id="host-screen" class="screen">
+        <div id="host-screen" class="screen with-toolbar">
             <!-- Left Toolbar -->
-            <div class="left-toolbar" id="left-toolbar" style="display: none;">
+            <div class="left-toolbar" id="left-toolbar">
                 <div class="toolbar-section">
                     <h5 data-translate="quick_actions">Quick Actions</h5>
                     <button class="toolbar-btn" id="toolbar-add-question" data-translate-title="add_question_tooltip">
@@ -150,12 +150,6 @@
                     </button>
                 </div>
                 
-                <div class="toolbar-section toolbar-toggle">
-                    <button class="toolbar-btn" id="toolbar-collapse" data-translate-title="collapse_toolbar_tooltip">
-                        <span class="toolbar-icon">◀️</span>
-                        <span class="toolbar-label" data-translate="hide">Hide</span>
-                    </button>
-                </div>
             </div>
             
             <div class="host-container" id="host-container">
@@ -531,38 +525,38 @@
                     <!-- Real-time Answer Statistics -->
                     <div id="answer-statistics" class="answer-stats" style="display: none;">
                         <h3 data-translate="live_answer_statistics">Live Answer Statistics</h3>
-                        <div class="stats-grid">
-                            <div class="stat-item" data-option="0">
-                                <span class="option-label">A</span>
+                        <div class="stats-grid" id="stats-grid">
+                            <div class="stat-item" id="stat-item-0">
+                                <div class="option-label">A</div>
                                 <div class="stat-bar">
-                                    <div class="stat-fill" style="width: 0%"></div>
+                                    <div class="stat-fill" id="stat-fill-0" style="width: 0%"></div>
                                 </div>
-                                <span class="stat-count">0</span>
+                                <div class="stat-count" id="stat-count-0">0</div>
                             </div>
-                            <div class="stat-item" data-option="1">
-                                <span class="option-label">B</span>
+                            <div class="stat-item" id="stat-item-1">
+                                <div class="option-label">B</div>
                                 <div class="stat-bar">
-                                    <div class="stat-fill" style="width: 0%"></div>
+                                    <div class="stat-fill" id="stat-fill-1" style="width: 0%"></div>
                                 </div>
-                                <span class="stat-count">0</span>
+                                <div class="stat-count" id="stat-count-1">0</div>
                             </div>
-                            <div class="stat-item" data-option="2">
-                                <span class="option-label">C</span>
+                            <div class="stat-item" id="stat-item-2">
+                                <div class="option-label">C</div>
                                 <div class="stat-bar">
-                                    <div class="stat-fill" style="width: 0%"></div>
+                                    <div class="stat-fill" id="stat-fill-2" style="width: 0%"></div>
                                 </div>
-                                <span class="stat-count">0</span>
+                                <div class="stat-count" id="stat-count-2">0</div>
                             </div>
-                            <div class="stat-item" data-option="3">
-                                <span class="option-label">D</span>
+                            <div class="stat-item" id="stat-item-3">
+                                <div class="option-label">D</div>
                                 <div class="stat-bar">
-                                    <div class="stat-fill" style="width: 0%"></div>
+                                    <div class="stat-fill" id="stat-fill-3" style="width: 0%"></div>
                                 </div>
-                                <span class="stat-count">0</span>
+                                <div class="stat-count" id="stat-count-3">0</div>
                             </div>
                         </div>
-                        <div class="response-summary">
-                            <span id="responses-count">0</span> <span data-translate="of_players_responded">of {0} players responded</span>
+                        <div class="response-summary" id="response-summary">
+                            <span id="responses-count">0</span> of <span id="total-players">0</span> players have answered
                         </div>
                     </div>
                 </div>
@@ -601,6 +595,28 @@
             <div class="player-lobby-container">
                 <h2 data-translate="waiting_for_game">Waiting for game to start...</h2>
                 <p id="player-info" data-translate="you_are_in">You're in!</p>
+                
+                <div class="lobby-info" id="lobby-info" style="display: none;">
+                    <div class="lobby-detail">
+                        <span class="lobby-detail-label">
+                            <span>🎯</span>
+                            <span data-translate="game_pin">Game PIN</span>
+                        </span>
+                        <span class="lobby-detail-value" id="lobby-pin-display">------</span>
+                    </div>
+                    <div class="lobby-detail">
+                        <span class="lobby-detail-label">
+                            <span>👥</span>
+                            <span data-translate="players_joined">Players</span>
+                        </span>
+                        <span class="lobby-detail-value" id="lobby-player-count">1</span>
+                    </div>
+                </div>
+                
+                <div class="lobby-status">
+                    <span data-translate="connected_waiting">Connected - Waiting for host</span>
+                </div>
+                
                 <div class="loading-animation">
                     <div class="dot"></div>
                     <div class="dot"></div>

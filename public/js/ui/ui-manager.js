@@ -124,24 +124,35 @@ export class UIManager {
         const gameCard = document.createElement('div');
         gameCard.className = 'game-card';
         
+        // Make the entire card clickable
+        gameCard.style.cursor = 'pointer';
+        gameCard.addEventListener('click', (e) => {
+            // Prevent double-click if user clicks the button specifically
+            e.preventDefault();
+            window.game.joinGameByPin(game.pin);
+        });
+        
         gameCard.innerHTML = `
-            <h3>${this.escapeHtml(game.title)}</h3>
+            <div class="game-title">${this.escapeHtml(game.title)}</div>
             <div class="game-info">
-                <span class="game-pin">${game.pin}</span>
-            </div>
-            <div class="game-stats">
-                <div class="game-stat">
-                    <span>👥</span>
-                    <span>${game.playerCount} ${getTranslation('players')}</span>
+                <div class="game-detail">
+                    <span class="game-detail-icon">🎯</span>
+                    <span>PIN: <strong>${game.pin}</strong></span>
                 </div>
-                <div class="game-stat">
-                    <span>❓</span>
-                    <span>${game.questionCount} ${getTranslation('questions')}</span>
+                <div class="game-detail">
+                    <span class="game-detail-icon">👥</span>
+                    <span class="game-players-count">${game.playerCount}</span> ${getTranslation('players')}
+                </div>
+                <div class="game-detail">
+                    <span class="game-detail-icon">❓</span>
+                    <span>${game.questionCount}</span> ${getTranslation('questions')}
+                </div>
+                <div class="game-detail">
+                    <span class="game-detail-icon">🟢</span>
+                    <span class="game-status waiting">${getTranslation('waiting_for_players') || 'Waiting'}</span>
                 </div>
             </div>
-            <button class="join-game-btn" onclick="window.game.joinGameByPin('${game.pin}')">
-                ${getTranslation('join_game')}
-            </button>
+            <div class="game-pin-display">${game.pin}</div>
         `;
         
         gamesContainer.appendChild(gameCard);

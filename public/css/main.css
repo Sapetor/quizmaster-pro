@@ -3,7 +3,10 @@
  * Main entry point that imports all CSS modules
  */
 
-/* Base styles - Variables, reset, typography, themes */
+/* CSS Variables - MUST be first for theme switching */
+@import './variables.css';
+
+/* Base styles - Reset, typography, global styles */
 @import './base.css';
 
 /* Layout systems - Grid, containers, screen management */
@@ -29,6 +32,7 @@
 
 /* Animations and transitions - Keyframes and motion */
 @import './animations.css';
+
 
 /**
  * CSS Module Structure:

@@ -2,76 +2,103 @@
  * Component Styles - Buttons, inputs, cards, basic UI elements
  */
 
-/* Container and Screen Management */
-.container {
-    width: 100%;
-    max-width: min(1600px, 96vw);
-    margin: 0 auto;
-    padding: 0 15px;
-    transition: var(--transition-smooth);
-}
+/* Container defined in layout.css - removed duplicate */
 
-/* Enhanced Button Styles */
+/* === MODERN BUTTON SYSTEM === */
 .btn {
+    /* Base Modern Button */
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 14px 28px;
-    background: var(--bg-glass);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    font-family: 'Inter', sans-serif;
-    font-size: 16px;
-    font-weight: 500;
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--border-radius-small);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    line-height: var(--leading-tight);
     text-decoration: none;
     cursor: pointer;
-    transition: var(--transition-smooth);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+    min-height: 44px;
+    font-family: Inter, sans-serif;
     letter-spacing: -0.01em;
-    box-shadow: var(--shadow-soft);
-    min-height: 48px;
+    
+    /* Default Glass Style */
+    background: var(--glass-medium);
+    backdrop-filter: var(--blur-medium);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-    background: rgba(255,255,255,0.2);
-    border-color: rgba(255,255,255,0.5);
+    background: var(--glass-strong);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary-500);
 }
 
 .btn:active {
     transform: translateY(0);
-    box-shadow: var(--shadow-soft);
+    box-shadow: var(--shadow-sm);
 }
 
-.btn.primary {
-    background: linear-gradient(135deg, var(--accent-primary), #3b82f6);
-    border-color: var(--accent-primary);
+/* === BUTTON VARIANTS === */
+.btn.primary, .btn-primary {
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
     color: white;
-    font-weight: 600;
+    box-shadow: var(--shadow-md), var(--shadow-glow);
+    border: 1px solid transparent;
 }
 
-.btn.primary:hover {
-    background: linear-gradient(135deg, #1d4ed8, var(--accent-primary));
-    transform: translateY(-3px);
-    box-shadow: 0 16px 50px rgba(37, 99, 235, 0.3);
+.btn.primary:hover, .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg), 0 0 25px rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-700));
 }
 
-.btn.secondary {
-    background: var(--bg-secondary);
-    border-color: var(--border-color);
+.btn.secondary, .btn-glass {
+    background: var(--glass-medium);
+    backdrop-filter: var(--blur-medium);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
 }
 
-.btn.danger {
-    background: linear-gradient(135deg, var(--error-color), #ef4444);
-    border-color: var(--error-color);
+.btn.secondary:hover, .btn-glass:hover {
+    background: var(--glass-strong);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary-500);
+}
+
+.btn.danger, .btn-error {
+    background: linear-gradient(135deg, var(--color-error-500), #dc2626);
     color: white;
-    font-weight: 600;
+    box-shadow: var(--shadow-md);
+    border: 1px solid transparent;
+}
+
+.btn.danger:hover, .btn-error:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--color-success-500), #059669);
+    color: white;
+    box-shadow: var(--shadow-md);
+    border: 1px solid transparent;
+}
+
+.btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, #059669, #047857);
 }
 
 .btn.danger:hover {
@@ -93,47 +120,91 @@
 }
 
 /* Input Styles */
+/* === MODERN FORM INPUTS === */
 input, select, textarea {
-    background: var(--bg-glass);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 12px 16px;
-    color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
-    font-size: 16px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: var(--transition-smooth);
     width: 100%;
+    padding: 16px;
+    background: var(--glass-light);
+    backdrop-filter: var(--blur-medium);
+    border: 1.5px solid var(--glass-border);
+    border-radius: var(--border-radius-small);
+    color: var(--text-primary);
+    font-size: var(--text-base);
+    font-family: Inter, sans-serif;
+    transition: all 0.2s ease;
+    outline: none;
+    box-shadow: var(--shadow-sm);
+    min-height: 48px; /* Touch-friendly */
 }
 
 input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--color-primary-500);
+    background: var(--glass-medium);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), var(--shadow-md);
+    transform: translateY(-1px);
 }
 
-input::placeholder {
+/* Theme-aware placeholder colors */
+input::placeholder, textarea::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+/* Dark theme specific adjustments */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #f8fafc;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
     color: rgba(255, 255, 255, 0.6);
 }
 
-/* Card Styles */
+/* Light theme specific adjustments */
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: #1e293b;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+/* === MODERN GLASS CARDS === */
 .card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
+    background: var(--glass-medium);
+    backdrop-filter: var(--blur-medium);
+    border: 1px solid var(--glass-border);
     border-radius: var(--border-radius);
-    padding: 24px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: var(--shadow-soft);
-    transition: var(--transition-smooth);
+    padding: 32px;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
 }
 
 .card:hover {
+    background: var(--glass-strong);
     transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-    background: rgba(255, 255, 255, 0.2);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-primary-500);
+}
+
+.card.interactive {
+    cursor: pointer;
+}
+
+.card.glass-strong {
+    background: var(--glass-strong);
+    backdrop-filter: var(--blur-strong);
 }
 
 /* Loading States */
@@ -167,4 +238,1187 @@ input::placeholder {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
     border-radius: 4px;
+}
+
+/* Critical Component Styles from styles.css */
+
+/* Checkbox and Toggle Styles */
+.options-checkboxes label {
+    display: block;
+    margin: 10px 0;
+    padding: 10px;
+    background: var(--bg-glass-light);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.options-checkboxes label:hover {
+    background: rgba(255,255,255,0.15);
+    transform: translateY(-1px);
+}
+
+.options-checkboxes input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(0.9); /* Reduced from 1.2 to 0.9 */
+    accent-color: var(--accent-primary);
+}
+
+/* Checkbox Labels */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text-primary);
+    padding: 8px 0;
+}
+
+.checkbox-label input[type="checkbox"] {
+    transform: scale(1.1);
+    accent-color: var(--accent-primary);
+}
+
+/* === CHECKBOX OPTIONS - SIMPLE CHECKBOX LIST STYLE === */
+/* These should look like simple checkbox lists, not styled buttons */
+.checkbox-option {
+    display: flex !important;
+    align-items: center !important;
+    padding: 6px 12px !important;
+    margin: 8px 0 !important;
+    color: var(--text-primary) !important;
+    font-size: 1.1rem !important;
+    font-family: Inter, sans-serif !important;
+    line-height: 1.4 !important;
+    cursor: pointer !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    border-radius: 8px !important;
+    background: rgba(255,255,255,0.05) !important;
+    transition: all 0.2s ease !important;
+    width: 100% !important;
+    max-width: 500px !important;
+    box-sizing: border-box !important;
+    min-height: auto !important;
+    height: auto !important;
+}
+
+/* Override all colorful preview rules to use neutral styling - MAXIMUM SPECIFICITY */
+.preview-content .checkbox-option,
+.preview-content-split .checkbox-option,
+.preview-content .player-checkbox-options .checkbox-option,
+.preview-content-split .player-checkbox-options .checkbox-option,
+.checkbox-option.preview-checkbox,
+.checkbox-option.preview-checkbox[data-option="0"],
+.checkbox-option.preview-checkbox[data-option="1"], 
+.checkbox-option.preview-checkbox[data-option="2"],
+.checkbox-option.preview-checkbox[data-option="3"],
+.checkbox-option.preview-checkbox[data-option="4"],
+.checkbox-option.preview-checkbox[data-option="5"],
+.checkbox-option.preview-checkbox:nth-child(1),
+.checkbox-option.preview-checkbox:nth-child(2),
+.checkbox-option.preview-checkbox:nth-child(3),
+.checkbox-option.preview-checkbox:nth-child(4),
+.checkbox-option.preview-checkbox:nth-child(5),
+.checkbox-option.preview-checkbox:nth-child(6),
+.preview-content .player-checkbox-options .checkbox-option:nth-child(1),
+.preview-content-split .player-checkbox-options .checkbox-option:nth-child(1),
+.preview-content .player-checkbox-options .checkbox-option:nth-child(2),
+.preview-content-split .player-checkbox-options .checkbox-option:nth-child(2),
+.preview-content .player-checkbox-options .checkbox-option:nth-child(3),
+.preview-content-split .player-checkbox-options .checkbox-option:nth-child(3),
+.preview-content .player-checkbox-options .checkbox-option:nth-child(4),
+.preview-content-split .player-checkbox-options .checkbox-option:nth-child(4),
+.preview-content .player-checkbox-options .checkbox-option:nth-child(5),
+.preview-content-split .player-checkbox-options .checkbox-option:nth-child(5),
+.preview-content .player-checkbox-options .checkbox-option:nth-child(6),
+.preview-content-split .player-checkbox-options .checkbox-option:nth-child(6) {
+    background: rgba(255,255,255,0.05) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 500px !important;
+    min-height: auto !important;
+    height: auto !important;
+    padding: 6px 12px !important;
+}
+
+/* Dark theme overrides - MAXIMUM SPECIFICITY */
+[data-theme="dark"] .preview-content .checkbox-option,
+[data-theme="dark"] .preview-content-split .checkbox-option,
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option,
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option,
+[data-theme="dark"] .checkbox-option.preview-checkbox,
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(1),
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(1),
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(2),
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(2),
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(3),
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(3),
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(4),
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(4),
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(5),
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(5),
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(6),
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(6) {
+    background: rgba(255,255,255,0.05) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    box-shadow: none !important;
+    min-height: auto !important;
+    height: auto !important;
+    padding: 6px 12px !important;
+}
+
+/* Hover and interaction states */
+.checkbox-option:hover {
+    background: rgba(255,255,255,0.1) !important;
+    border-color: var(--color-primary-500) !important;
+}
+
+/* Checkbox input styling */
+.checkbox-option input[type="checkbox"] {
+    margin-right: 12px !important;
+    width: 18px !important;
+    height: 18px !important;
+    accent-color: var(--color-primary-500) !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+}
+
+/* Checked state styling */
+.checkbox-option input[type="checkbox"]:checked {
+    accent-color: var(--color-success-500) !important;
+}
+
+/* When checkbox is checked, highlight the entire option */
+.checkbox-option:has(input[type="checkbox"]:checked) {
+    background: rgba(16, 185, 129, 0.1) !important;
+    border-color: var(--color-success-500) !important;
+    color: var(--color-success-500) !important;
+}
+
+/* Theme Toggle */
+.theme-toggle {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+}
+
+.theme-toggle:hover {
+    background: var(--accent-primary);
+    color: white;
+    transform: scale(1.1);
+}
+
+/* QR Section and Game PIN */
+.qr-section {
+    margin: 30px 0;
+    padding: 20px;
+    background: var(--card-bg);
+    border-radius: var(--border-radius-medium);
+    border: 1px solid var(--border-color);
+}
+
+.qr-container {
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 120px;
+}
+
+.pin-display {
+    font-size: 4rem;
+    font-weight: bold;
+    background: var(--border-color);
+    padding: 20px;
+    border-radius: var(--border-radius-medium);
+    margin: 30px 0;
+    color: var(--text-primary);
+    text-align: center;
+    border: 2px solid var(--border-color);
+}
+
+#qr-code-image {
+    max-width: 200px;
+    max-height: 200px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    background: white;
+    padding: 10px;
+}
+
+/* Utility Elements */
+.settings-btn {
+    padding: 8px 12px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.settings-btn:hover {
+    background: var(--color-primary);
+    color: white;
+}
+
+/* Quiz Actions and Settings - Critical missing styles */
+.quiz-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.quiz-actions .btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+.quiz-settings {
+    margin: 10px 0; /* Reduced margin */
+    padding: 0; /* Remove padding to eliminate gray blocks */
+    background: transparent; /* Remove gray background */
+    border: none; /* Remove border */
+    border-radius: 0;
+}
+
+.quiz-settings label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-primary);
+    cursor: pointer;
+    margin-bottom: 6px; /* Reduced from 10px to 6px for closer spacing */
+    padding: 0; /* Remove padding to eliminate gray boxes */
+    background: transparent; /* Ensure no background */
+    border: none;
+}
+
+/* === FIX BIG CHECKBOXES IN QUIZ SETTINGS === */
+.quiz-settings input[type="checkbox"],
+.general-options input[type="checkbox"],
+.advanced-options input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    transform: scale(1) !important; /* Override any scaling */
+    accent-color: var(--color-primary-500);
+    margin-right: 8px;
+}
+
+/* === FIX GRAY BOXES AND RECTANGLE SHAPE AROUND QUIZ SETTINGS LABELS === */
+.quiz-settings label,
+.general-options label,
+.advanced-options label {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 4px 0 !important; /* Closer spacing */
+    border: none !important;
+    box-shadow: none !important;
+    min-height: auto !important; /* Remove any fixed height */
+    height: auto !important; /* Let content determine height */
+    display: flex !important; /* Ensure proper flex layout */
+    align-items: center !important; /* Center align checkbox and text */
+    justify-content: flex-start !important;
+    width: auto !important; /* Remove any fixed width */
+    max-width: none !important; /* Remove width constraints */
+}
+
+/* Fix checkbox dimensions - force square size */
+#randomize-answers,
+#randomize-questions,
+#use-global-time,
+.quiz-settings input[type="checkbox"],
+.general-options input[type="checkbox"],
+.advanced-options input[type="checkbox"],
+.ai-generator-modal input[type="checkbox"],
+#ai-generator-modal input[type="checkbox"],
+.checkbox-group input[type="checkbox"],
+/* Exclude editor checkboxes from modal styling */
+.modal input[type="checkbox"]:not(.correct-option):not(.options-checkboxes input[type="checkbox"]) {
+    width: 13px !important;
+    height: 13px !important;
+    min-height: 13px !important;
+    max-height: 13px !important;
+    margin: 0 8px 0 0 !important;
+    padding: 0 !important;
+    appearance: auto !important;
+    -webkit-appearance: auto !important;
+    -moz-appearance: auto !important;
+    cursor: pointer !important;
+    vertical-align: middle !important;
+    flex-shrink: 0 !important;
+    transform: none !important;
+    scale: none !important;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    accent-color: var(--color-primary-500) !important;
+}
+
+.quiz-settings label:hover,
+.general-options label:hover,
+.advanced-options label:hover,
+.ai-generator-modal label:hover,
+#ai-generator-modal label:hover,
+.checkbox-group label:hover,
+.modal .checkbox-label:hover {
+    background: transparent !important;
+    transform: none !important;
+}
+
+/* AI Generator Modal checkbox labels - prevent gray backgrounds */
+.ai-generator-modal .checkbox-label,
+#ai-generator-modal .checkbox-label,
+.checkbox-group .checkbox-label,
+.modal .checkbox-label {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 4px 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    min-height: auto !important;
+    height: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: auto !important;
+    max-width: none !important;
+    color: var(--modal-text) !important;
+}
+
+/* === EDITOR CHECKBOXES - RESET TO NORMAL SIZE === */
+.multiple-correct-options input[type="checkbox"],
+.options-checkboxes input[type="checkbox"],
+.correct-option {
+    width: 16px !important;
+    height: 16px !important;
+    min-height: 16px !important;
+    max-height: 16px !important;
+    margin: 0 8px 0 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    scale: none !important;
+    appearance: auto !important;
+    -webkit-appearance: auto !important;
+    -moz-appearance: auto !important;
+}
+
+/* Editor checkbox labels - prevent styling conflicts */
+.multiple-correct-options label,
+.options-checkboxes label {
+    background: transparent !important;
+    padding: 10px !important;
+    margin: 10px 0 !important;
+    border-radius: 8px !important;
+    display: block !important;
+    cursor: pointer !important;
+    color: var(--text-primary) !important;
+    font-size: 1rem !important;
+    transition: all 0.3s ease !important;
+    min-height: auto !important;
+    height: auto !important;
+}
+
+/* AI Generator Modal - Light mode text readability fixes */
+[data-theme="light"] .ai-generator-modal,
+[data-theme="light"] #ai-generator-modal,
+[data-theme="light"] .modal {
+    color: var(--text-contrast) !important;
+}
+
+[data-theme="light"] .ai-generator-modal label,
+[data-theme="light"] #ai-generator-modal label,
+[data-theme="light"] .modal label,
+[data-theme="light"] .checkbox-label,
+[data-theme="light"] .option-group label {
+    color: var(--text-contrast) !important;
+}
+
+[data-theme="light"] .ai-generator-modal small,
+[data-theme="light"] #ai-generator-modal small,
+[data-theme="light"] .modal small {
+    color: rgba(30, 41, 59, 0.7) !important; /* Slightly lighter for secondary text */
+}
+
+[data-theme="light"] .ai-generator-modal .content-type-label,
+[data-theme="light"] #ai-generator-modal .content-type-label,
+[data-theme="light"] .modal .content-type-label {
+    color: var(--text-contrast) !important;
+}
+
+.general-options {
+    margin-bottom: 8px; /* Much closer spacing */
+}
+
+.advanced-options {
+    margin-top: 8px; /* Much closer spacing */
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+}
+
+.manual-advancement-option {
+    position: relative;
+    transition: var(--transition-smooth);
+}
+
+.manual-advancement-option:hover {
+    background: rgba(66, 153, 225, 0.15) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.2);
+}
+
+/* Time Settings Styling - Critical missing styles */
+.time-setting-container {
+    margin: 10px 0 10px 20px;
+    padding: 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.time-input-label {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    opacity: 0.9;
+}
+
+.time-settings label {
+    margin-bottom: 10px;
+}
+
+.time-input {
+    background: var(--modal-bg);
+    color: var(--modal-text);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 8px 12px;
+    width: 80px;
+    margin-left: 10px;
+}
+
+.time-limit-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-limit-container label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.question-time-limit {
+    background: var(--modal-bg);
+    color: var(--modal-text);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 6px 8px;
+    width: 60px;
+    font-size: 0.9rem;
+}
+
+#global-time-container {
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 5px;
+}
+
+#global-time-container label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.utility-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.btn.small {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    min-width: auto;
+}
+
+#start-hosting-main {
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+    padding: 15px 25px;
+}
+
+/* === GAME BROWSER STYLING === */
+
+/* Browser Container - Modern Glass Design */
+.browser-container {
+    text-align: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px 20px 20px; /* Consistent with lobby/join containers */
+}
+
+.browser-container h2:first-child {
+    margin-top: 0;
+    margin-bottom: 15px; /* Consistent with lobby styling */
+}
+
+/* Game Cards - Modern Glass Morphism */
+.game-card,
+.available-game {
+    background: var(--glass-medium);
+    backdrop-filter: var(--blur-medium);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    text-align: left;
+    box-shadow: var(--shadow-sm);
+}
+
+.game-card:hover,
+.available-game:hover {
+    background: var(--glass-strong);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-primary-500);
+}
+
+.game-card:active,
+.available-game:active {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Game Card Content */
+.game-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+    line-height: 1.3;
+}
+
+.game-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.game-detail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.game-detail-icon {
+    width: 16px;
+    text-align: center;
+    opacity: 0.8;
+}
+
+.game-pin-display {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--color-primary-500);
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 8px 12px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    margin: 12px 0;
+    letter-spacing: 2px;
+}
+
+.game-players-count {
+    font-weight: 600;
+    color: var(--color-success-500);
+}
+
+.game-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.game-status.waiting {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--color-success-500);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.game-status.in-progress {
+    background: rgba(251, 191, 36, 0.15);
+    color: var(--color-warning-500);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+/* Join Button in Card */
+.game-card .btn,
+.available-game .btn {
+    width: 100%;
+    margin-top: auto;
+    font-size: 0.9rem;
+    padding: 10px 16px;
+}
+
+/* Loading State */
+.loading-games {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    background: var(--glass-light);
+    border-radius: var(--border-radius);
+    border: 1px dashed var(--glass-border);
+    margin: 20px 0;
+}
+
+.loading-games::before {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 32px;
+    margin: 0 auto 16px;
+    border: 3px solid var(--glass-border);
+    border-top: 3px solid var(--color-primary-500);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Empty State */
+.no-games-found {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+    background: var(--glass-light);
+    border-radius: var(--border-radius);
+    border: 1px dashed var(--glass-border);
+    margin: 20px 0;
+}
+
+.no-games-found h3 {
+    margin: 0 0 12px 0;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+}
+
+.no-games-found p {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* === PLAYER LOBBY STYLING === */
+
+/* Player Lobby Container - Modern Glass Design */
+.player-lobby-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    background: var(--glass-medium);
+    backdrop-filter: var(--blur-medium);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-large);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Glass overlay effect */
+.player-lobby-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.05) 50%,
+        rgba(255, 255, 255, 0.1) 100%
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+
+.player-lobby-container > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Lobby Title */
+.player-lobby-container h2 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 16px 0;
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    line-height: 1.2;
+}
+
+/* Player Info */
+.player-lobby-container p {
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--color-success-500);
+    margin: 0 0 40px 0;
+    opacity: 0.9;
+}
+
+/* Modern Loading Animation */
+.loading-animation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.loading-animation .dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    animation: loading-bounce 1.5s ease-in-out infinite;
+}
+
+.loading-animation .dot:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.loading-animation .dot:nth-child(2) {
+    animation-delay: 0.3s;
+}
+
+.loading-animation .dot:nth-child(3) {
+    animation-delay: 0.6s;
+}
+
+@keyframes loading-bounce {
+    0%, 80%, 100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.7;
+    }
+    40% {
+        transform: translateY(-20px) scale(1.1);
+        opacity: 1;
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.6);
+    }
+}
+
+/* Additional lobby information */
+.lobby-info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 32px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+.lobby-detail {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+.lobby-detail-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.lobby-detail-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Status indicator */
+.lobby-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--color-success-500);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-top: 24px;
+}
+
+.lobby-status::before {
+    content: '🟢';
+    animation: pulse-status 2s ease-in-out infinite;
+}
+
+@keyframes pulse-status {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .player-lobby-container {
+        padding: 30px 16px;
+        margin: 10px;
+        min-height: 50vh;
+    }
+    
+    .player-lobby-container h2 {
+        font-size: 1.8rem;
+    }
+    
+    .player-lobby-container p {
+        font-size: 1.2rem;
+    }
+    
+    .loading-animation .dot {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .player-lobby-container {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"] .lobby-info {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .player-lobby-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.25);
+    color: #1e293b;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .player-lobby-container h2 {
+    color: #1e293b;
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+[data-theme="light"] .player-lobby-container p {
+    color: #059669;
+    opacity: 1;
+}
+
+[data-theme="light"] .lobby-info {
+    background: rgba(248, 250, 252, 0.8);
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #1e293b;
+}
+
+[data-theme="light"] .lobby-detail {
+    color: #64748b;
+}
+
+[data-theme="light"] .lobby-detail-label {
+    color: #64748b;
+}
+
+[data-theme="light"] .lobby-detail-value {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+[data-theme="light"] .lobby-status {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.4);
+    color: #059669;
+}
+
+/* Light theme game browser styling */
+[data-theme="light"] .game-card,
+[data-theme="light"] .available-game {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #1e293b;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .game-card:hover,
+[data-theme="light"] .available-game:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #2563eb;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .game-title {
+    color: #1e293b;
+}
+
+[data-theme="light"] .game-detail {
+    color: #64748b;
+}
+
+[data-theme="light"] .game-pin-display {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+[data-theme="light"] .game-players-count {
+    color: #059669;
+}
+
+[data-theme="light"] .game-status.waiting {
+    background: rgba(34, 197, 94, 0.1);
+    color: #059669;
+    border-color: rgba(34, 197, 94, 0.4);
+}
+
+[data-theme="light"] .game-status.in-progress {
+    background: rgba(251, 191, 36, 0.1);
+    color: #d97706;
+    border-color: rgba(251, 191, 36, 0.4);
+}
+
+[data-theme="light"] .loading-games {
+    background: rgba(248, 250, 252, 0.8);
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #64748b;
+}
+
+[data-theme="light"] .loading-games::before {
+    border-color: rgba(0, 0, 0, 0.2);
+    border-top-color: #2563eb;
+}
+
+[data-theme="light"] .no-games-found {
+    background: rgba(248, 250, 252, 0.8);
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #64748b;
+}
+
+[data-theme="light"] .no-games-found h3 {
+    color: #1e293b;
+}
+
+[data-theme="light"] .browser-container h2 {
+    color: #1e293b;
+}
+
+/* Light theme browser actions */
+[data-theme="light"] .browser-actions .btn.secondary {
+    background: rgba(248, 250, 252, 0.8);
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #1e293b;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .browser-actions .btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #2563eb;
+    color: #2563eb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* === QUESTION FORM LAYOUT IMPROVEMENTS === */
+
+/* Question item container with better spacing */
+.question-item {
+    background: var(--glass-light);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    margin-bottom: 24px;
+    transition: all 0.3s ease;
+}
+
+.question-item:hover {
+    background: var(--glass-medium);
+    border-color: var(--color-primary-500);
+    box-shadow: var(--shadow-md);
+}
+
+/* Question meta section - horizontal layout for type and difficulty */
+.question-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    align-items: end;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+}
+
+/* Make dropdowns smaller and more compact */
+.question-type,
+.question-difficulty {
+    width: 100% !important;
+    min-height: 40px !important;
+    padding: 6px 12px !important;
+    font-size: 14px !important;
+    background: var(--glass-medium) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 6px !important;
+}
+
+/* Time limit container styling */
+.time-limit-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-limit-container label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.question-time-limit {
+    width: 60px !important;
+    min-height: 32px !important;
+    padding: 4px 8px !important;
+    font-size: 13px !important;
+    text-align: center;
+}
+
+/* Question content section - larger and more prominent */
+.question-content {
+    margin-top: 20px;
+}
+
+/* Make question text area larger and more prominent */
+.question-text {
+    width: 100% !important;
+    min-height: 100px !important;
+    padding: 16px !important;
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+    background: var(--glass-medium) !important;
+    border: 2px solid var(--glass-border) !important;
+    border-radius: 12px !important;
+    margin-bottom: 16px !important;
+    resize: vertical !important;
+}
+
+.question-text:focus {
+    border-color: var(--color-primary-500) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Image upload section styling */
+.image-upload {
+    margin: 16px 0;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px dashed var(--glass-border);
+}
+
+.image-upload label {
+    display: block;
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.image-input {
+    font-size: 13px !important;
+    padding: 8px !important;
+    min-height: auto !important;
+    background: transparent !important;
+}
+
+/* Answer options section - medium size between meta and question */
+.options-container,
+.answer-options {
+    margin-top: 16px;
+}
+
+.options-container input,
+.answer-options input {
+    min-height: 44px !important;
+    padding: 12px !important;
+    font-size: 15px !important;
+    margin-bottom: 12px !important;
+}
+
+/* Visual hierarchy with different border styles */
+.question-meta {
+    border-left: 4px solid var(--color-primary-500);
+}
+
+.question-content {
+    border-left: 4px solid var(--color-success-500);
+}
+
+.options-container,
+.answer-options {
+    border-left: 4px solid var(--color-warning-500);
 }

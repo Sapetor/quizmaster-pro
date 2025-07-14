@@ -236,10 +236,16 @@ export function updatePreviewSpacing(value) {
             container.style.gap = `${value}px`;
         });
         
-        // Apply to individual options
-        const options = previewContent.querySelectorAll('.player-option, .preview-option, .checkbox-option, .tf-option');
+        // Apply to individual options (excluding checkbox options to maintain consistent sizing)
+        const options = previewContent.querySelectorAll('.player-option, .preview-option, .tf-option');
         options.forEach(option => {
             option.style.marginBottom = `${value}px`;
+        });
+        
+        // Keep checkbox options at consistent 8px margin
+        const checkboxOptions = previewContent.querySelectorAll('.checkbox-option');
+        checkboxOptions.forEach(option => {
+            option.style.marginBottom = '8px';
         });
     }
     

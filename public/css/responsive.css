@@ -9,7 +9,7 @@
         max-width: min(1800px, 98vw);
     }
     
-    .host-container:not(.split-screen) .quiz-editor-section {
+    .host-container:not(.split-screen):not(.with-toolbar) .quiz-editor-section {
         max-width: 1600px;
     }
 }
@@ -253,7 +253,7 @@
         max-width: min(2000px, 95vw);
     }
     
-    .host-container:not(.split-screen) .quiz-editor-section {
+    .host-container:not(.split-screen):not(.with-toolbar) .quiz-editor-section {
         max-width: 1800px;
     }
 }
