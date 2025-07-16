@@ -58,7 +58,7 @@
 
 /* Host Game Screen */
 .game-container {
-    max-width: 1400px;
+    max-width: 1600px; /* Use same width for all questions for consistency */
     margin: 0 auto;
     padding: 20px;
     display: flex;
@@ -76,7 +76,12 @@
     text-align: center;
     position: relative;
     overflow: hidden;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1600px; /* Consistent width for all questions */
 }
+
+/* Code questions styling handled below in the enhanced layout section */
 
 /* Glass overlay effect for question display */
 .question-display::before {
@@ -99,6 +104,44 @@
 .question-display > * {
     position: relative;
     z-index: 2;
+}
+
+/* === LAYOUT SUPPORT FOR CODE-HEAVY QUESTIONS === */
+
+/* Question display with code gets enhanced spacing - Using :has() and class-based fallback */
+.question-display:has(pre),
+.question-display.has-code {
+    padding: 48px 40px;
+    /* Width is now consistent via base .question-display rule */
+}
+
+/* Options grid with code gets enhanced layout */
+.options-grid:has(pre),
+.options-grid.has-code {
+    max-width: 800px; /* Same width as LaTeX questions for consistency */
+    gap: 20px; /* More space between options */
+}
+
+/* Game container adjustments for code content */
+/* Ensure code questions use same width as LaTeX questions on desktop */
+@media (min-width: 769px) {
+    .game-container:has(pre),
+    .game-container.has-code {
+        max-width: 1600px; /* Same as base .game-container */
+        padding: 20px; /* Same as base .game-container */
+    }
+    
+    .question-display:has(pre),
+    .question-display.has-code {
+        max-width: 1600px; /* Same as base .question-display */
+        padding: 48px 40px; /* Same as existing code padding */
+    }
+    
+    .options-grid:has(pre),
+    .options-grid.has-code {
+        max-width: 800px; /* Same as base .options-grid */
+        gap: 20px; /* More space between options */
+    }
 }
 
 /* Question Header - Counter and Timer */
@@ -154,6 +197,38 @@
     margin: 20px 0 30px;
     color: var(--text-primary);
     max-width: 100%;
+}
+
+/* === HOST CODE SNIPPET STYLING === */
+
+/* Normalize host code blocks to match client appearance */
+#current-question pre {
+    font-size: 0.6em; /* 2rem × 0.6em = 1.2rem (matches client: 1.5rem × 0.8em = 1.2rem) */
+}
+
+/* Fix visual rendering offset - compensate for browser rendering artifact */
+#current-question pre code {
+    display: block;
+    transform: translateX(-1px); /* Fix 1px visual gap at start of first line */
+}
+
+/* Inline code in host questions - theme-aware styling */
+#current-question code {
+    background: rgba(255, 255, 255, 0.1);
+    color: #87CEEB;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+    font-weight: 600;
+    font-size: 0.9em;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Light mode override for host question inline code */
+[data-theme="light"] #current-question code {
+    background: rgba(15, 23, 42, 0.95);
+    color: #e2e8f0;
+    border: 1px solid rgba(15, 23, 42, 0.2);
 }
 
 /* Question Image Display */
@@ -276,6 +351,144 @@
     }
 }
 
+/* === HOST OPTION CODE SNIPPET STYLING === */
+
+/* Code blocks in host option displays */
+.option-display pre {
+    background: rgba(0, 0, 0, 0.4);
+    color: #f8f8f2;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+    font-size: 0.8em;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre;
+    text-align: left;
+    tab-size: 4;
+    -moz-tab-size: 4;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Fix first line indentation in host option code blocks */
+.option-display pre::first-line {
+    text-indent: 0;
+    margin-left: 0;
+    padding-left: 0;
+}
+
+/* Inline code in host options - theme-aware styling */
+.option-display code {
+    background: rgba(255, 255, 255, 0.1);
+    color: #87CEEB;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+    font-weight: 600;
+    font-size: 0.85em;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Light mode override for host option inline code */
+[data-theme="light"] .option-display code {
+    background: rgba(15, 23, 42, 0.95);
+    color: #e2e8f0;
+    border: 1px solid rgba(15, 23, 42, 0.2);
+}
+
+/* Light mode override for client question and option code - match host styling */
+[data-theme="light"] #player-question-text code,
+[data-theme="light"] .player-option code {
+    background: rgba(15, 23, 42, 0.95);
+    color: #e2e8f0;
+    border: 1px solid rgba(15, 23, 42, 0.2);
+}
+
+/* Light mode pre blocks - improved contrast with dark background */
+[data-theme="light"] #current-question pre,
+[data-theme="light"] .option-display pre,
+[data-theme="light"] #player-question-text pre,
+[data-theme="light"] .player-option pre {
+    background: rgba(30, 41, 59, 0.95) !important;
+    color: #f1f5f9 !important;
+    border: 1px solid rgba(30, 41, 59, 0.3) !important;
+    display: block !important;
+    white-space: pre !important;
+    line-height: 1.4 !important;
+}
+
+/* Ensure code blocks always render as single containers (not per-line backgrounds) */
+[data-theme="light"] #current-question pre *,
+[data-theme="light"] .option-display pre *,
+[data-theme="light"] #player-question-text pre *,
+[data-theme="light"] .player-option pre * {
+    background: none !important;
+    display: inline !important;
+}
+
+/* Force consistent single-container background structure */
+[data-theme="light"] #current-question pre code,
+[data-theme="light"] .option-display pre code,
+[data-theme="light"] #player-question-text pre code,
+[data-theme="light"] .player-option pre code {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    color: inherit !important;
+    display: inline !important;
+}
+
+/* Dark mode unified background structure - preserve syntax highlighting colors */
+:not([data-theme="light"]) #current-question pre,
+:not([data-theme="light"]) .option-display pre,
+:not([data-theme="light"]) #player-question-text pre,
+:not([data-theme="light"]) .player-option pre {
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    display: block !important;
+    white-space: pre !important;
+    line-height: 1.4 !important;
+    /* Don't override color - let syntax highlighting work */
+}
+
+/* Ensure code blocks always render as single containers in dark mode */
+:not([data-theme="light"]) #current-question pre *,
+:not([data-theme="light"]) .option-display pre *,
+:not([data-theme="light"]) #player-question-text pre *,
+:not([data-theme="light"]) .player-option pre * {
+    background: none !important;
+    display: inline !important;
+}
+
+/* Force consistent single-container background structure in dark mode */
+:not([data-theme="light"]) #current-question pre code,
+:not([data-theme="light"]) .option-display pre code,
+:not([data-theme="light"]) #player-question-text pre code,
+:not([data-theme="light"]) .player-option pre code {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    color: inherit !important;
+    display: inline !important;
+}
+
+/* Layout adjustments for options with code */
+.option-display:has(pre) {
+    text-align: left;
+    padding: 20px 24px;
+    min-height: auto;
+    line-height: 1.4;
+}
+
+/* Ensure code doesn't break colorful backgrounds */
+.option-display pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+}
+
 /* Player Game Screen */
 .player-game-container {
     width: 100%;
@@ -334,12 +547,15 @@
     box-shadow: var(--shadow-sm);
 }
 
-/* Enhanced Player Options Grid */
+/* Enhanced Player Options Grid - Force Vertical Layout */
 .player-options {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 16px;
     margin: 0;
+    align-items: center;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 /* Modern Player Option Buttons - COLORFUL LIKE LIVE PREVIEW */
@@ -355,15 +571,19 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 70px;
-    text-align: center;
+    text-align: left;
     position: relative;
     overflow: hidden;
     font-family: Inter, sans-serif;
     border: none;
     outline: none;
+    width: 100%;
+    max-width: 500px;
 }
+
+/* All player options are now left-aligned by default - removed redundant :has(pre) rule */
 
 /* Colorful Player Options - Matching Live Preview and Host */
 /* === COLORFUL PLAYER OPTIONS === */
@@ -530,64 +750,17 @@
     box-shadow: var(--shadow-soft);
 }
 
-/* Player Options */
+/* Player Options - Ensure Vertical Layout Consistency */
 .player-options {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 15px;
-    margin-top: 20px;
-}
-
-.player-option {
-    background: var(--card-bg);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
-    font-size: 18px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition-smooth);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 20px auto 0 auto;
     align-items: center;
-    justify-content: center;
-    min-height: 80px;
+    max-width: 600px;
 }
 
-.player-option:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-hover);
-    background: rgba(255, 255, 255, 0.2);
-    border-color: var(--accent-primary);
-}
-
-.player-option.selected {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-    color: white;
-    transform: translateY(-3px);
-    box-shadow: 0 15px 40px rgba(37, 99, 235, 0.3);
-}
-
-.player-option.correct {
-    background: var(--success-color);
-    border-color: var(--success-color);
-    color: white;
-}
-
-.player-option.incorrect {
-    background: var(--error-color);
-    border-color: var(--error-color);
-    color: white;
-}
-
-.player-option.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none !important;
-}
+/* Legacy player-option styling removed - conflicts with modern colorful design above */
 
 /* === ANSWER STATISTICS (HOST) === */
 .answer-stats {
@@ -979,7 +1152,7 @@
 #player-multiple-correct .checkbox-option input[type="checkbox"] {
     margin-right: 12px;
     transform: scale(1.2);
-    accent-color: white;
+    accent-color: var(--color-primary-500);
 }
 
 /* Colorful Multiple Correct Options - Host Display */
@@ -1127,10 +1300,48 @@
 .leaderboard-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 40px 20px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 32px;
+    background: linear-gradient(135deg, 
+        rgba(59, 130, 246, 0.1) 0%, 
+        rgba(147, 51, 234, 0.1) 100%);
+    border-radius: var(--border-radius-large);
+    backdrop-filter: var(--blur-medium);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-lg);
+    animation: slideInUp 0.6s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.leaderboard-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.1) 0%, 
+        rgba(255, 255, 255, 0.05) 50%, 
+        rgba(255, 255, 255, 0.1) 100%);
+    pointer-events: none;
+}
+
+.leaderboard-container h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    margin-bottom: 16px;
+    text-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+    position: relative;
+    z-index: 1;
 }
 
 /* Leaderboard */
@@ -1142,6 +1353,121 @@
     padding: 40px;
     box-shadow: var(--shadow-lg);
     width: 100%;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.leaderboard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.05) 0%, 
+        rgba(255, 255, 255, 0.02) 50%, 
+        rgba(255, 255, 255, 0.05) 100%);
+    pointer-events: none;
+}
+
+.leaderboard .leaderboard-item {
+    background: var(--glass-light);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: var(--transition-smooth);
+    position: relative;
+    z-index: 1;
+}
+
+.leaderboard .leaderboard-item:hover {
+    background: var(--glass-medium);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* Medal styling for top 3 in host leaderboard */
+.leaderboard .leaderboard-item:nth-child(1) {
+    border-color: #ffd700;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.08) 100%);
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.2);
+}
+
+.leaderboard .leaderboard-item:nth-child(2) {
+    border-color: #c0c0c0;
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.15) 0%, rgba(192, 192, 192, 0.08) 100%);
+    box-shadow: 0 4px 20px rgba(192, 192, 192, 0.2);
+}
+
+.leaderboard .leaderboard-item:nth-child(3) {
+    border-color: #cd7f32;
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.15) 0%, rgba(205, 127, 50, 0.08) 100%);
+    box-shadow: 0 4px 20px rgba(205, 127, 50, 0.2);
+}
+
+/* Final Results Section */
+.final-results {
+    background: var(--glass-strong);
+    backdrop-filter: var(--blur-strong);
+    border: 2px solid var(--glass-border);
+    border-radius: var(--border-radius-large);
+    padding: 48px 40px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    margin-top: 24px;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.final-results::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(16, 185, 129, 0.1) 0%, 
+        rgba(5, 150, 105, 0.05) 100%);
+    pointer-events: none;
+}
+
+.final-results h3 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Better visibility in dark mode */
+[data-theme="dark"] .final-results h3 {
+    color: #ffffff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Better visibility in light mode */
+[data-theme="light"] .final-results h3 {
+    color: #1f2937;
+    text-shadow: 0 2px 8px rgba(255, 255, 255, 0.5);
+}
+
+.final-results .btn {
+    margin-top: 16px;
+    padding: 16px 32px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
 }
 
 .leaderboard-title {
@@ -1235,17 +1561,168 @@
     width: 100%;
     max-width: 800px;
     margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.final-leaderboard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.05) 0%, 
+        rgba(255, 255, 255, 0.02) 50%, 
+        rgba(255, 255, 255, 0.05) 100%);
+    pointer-events: none;
+}
+
+.final-leaderboard .leaderboard-item {
+    background: var(--glass-light);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: var(--transition-smooth);
+    position: relative;
+    z-index: 1;
+}
+
+.final-leaderboard .leaderboard-item:hover {
+    background: var(--glass-medium);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* Medal styling for top 3 players */
+.final-leaderboard .leaderboard-item:nth-child(1) {
+    border-color: #ffd700;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
+}
+
+.final-leaderboard .leaderboard-item:nth-child(2) {
+    border-color: #c0c0c0;
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.1) 0%, rgba(192, 192, 192, 0.05) 100%);
+}
+
+.final-leaderboard .leaderboard-item:nth-child(3) {
+    border-color: #cd7f32;
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.1) 0%, rgba(205, 127, 50, 0.05) 100%);
 }
 
 /* Player Final Container */
 .player-final-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 40px 20px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 32px;
     align-items: center;
+    background: linear-gradient(135deg, 
+        rgba(59, 130, 246, 0.1) 0%, 
+        rgba(147, 51, 234, 0.1) 100%);
+    border-radius: var(--border-radius-large);
+    backdrop-filter: var(--blur-medium);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-lg);
+    animation: slideInUp 0.6s ease-out;
+}
+
+.player-final-container h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    margin-bottom: 16px;
+    text-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+}
+
+/* Player Final Rank Card */
+.player-rank {
+    background: var(--glass-strong);
+    backdrop-filter: var(--blur-strong);
+    border: 2px solid var(--glass-border);
+    border-radius: var(--border-radius-large);
+    padding: 40px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    min-width: 320px;
+    position: relative;
+    overflow: hidden;
+}
+
+.player-rank::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.1) 0%, 
+        rgba(255, 255, 255, 0.05) 50%, 
+        rgba(255, 255, 255, 0.1) 100%);
+    pointer-events: none;
+}
+
+.player-rank h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.final-position {
+    font-size: 4rem;
+    font-weight: 900;
+    color: var(--accent-primary);
+    text-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+    margin-bottom: 16px;
+    position: relative;
+    z-index: 1;
+}
+
+.final-score {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--color-success-500);
+    background: linear-gradient(135deg, 
+        rgba(16, 185, 129, 0.2) 0%, 
+        rgba(5, 150, 105, 0.1) 100%);
+    padding: 12px 24px;
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+    position: relative;
+    z-index: 1;
+}
+
+/* Top Players Section */
+.top-players {
+    width: 100%;
+    max-width: 800px;
+}
+
+.top-players h3 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 24px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Result Feedback */
@@ -1511,6 +1988,38 @@
         min-height: 60px;
     }
     
+    /* === HOST CODE BLOCKS MOBILE === */
+    
+    /* Host question code blocks inherit base styles on mobile */
+    
+    /* Host option code blocks on mobile */
+    .option-display pre {
+        font-size: 0.75rem;
+        padding: 12px;
+        margin: 10px 0;
+        max-width: calc(100vw - 80px);
+        overflow-x: auto;
+    }
+    
+    /* Layout adjustments for code-heavy questions on mobile */
+    .question-display:has(pre),
+    .question-display.has-code {
+        padding: 20px 16px;
+        max-width: 100%;
+    }
+    
+    .options-grid:has(pre),
+    .options-grid.has-code {
+        max-width: 100%;
+        gap: 16px;
+    }
+    
+    .game-container:has(pre),
+    .game-container.has-code {
+        max-width: 100%;
+        padding: 16px;
+    }
+    
     /* Player Game Screen */
     .player-game-container {
         padding: 16px;
@@ -1526,14 +2035,16 @@
     }
     
     .player-options {
-        grid-template-columns: 1fr;
         gap: 12px;
+        max-width: 100%;
+        margin: 16px auto 0 auto;
     }
     
     .player-option {
         padding: 16px;
         font-size: 1rem;
         min-height: 60px;
+        max-width: 100%;
     }
     
     .player-answer-type {
@@ -1616,5 +2127,33 @@
     
     #player-question-text {
         font-size: 1.2rem;
+    }
+    
+    /* === ULTRA-MOBILE HOST CODE BLOCKS === */
+    
+    /* Host question code blocks inherit base styles on small screens */
+    
+    /* Host option code blocks on very small screens */
+    .option-display pre {
+        font-size: 0.65rem;
+        padding: 10px;
+        margin: 8px 0;
+        max-width: calc(100vw - 60px);
+    }
+    
+    /* Ultra-compact layout for code-heavy questions */
+    .question-display:has(pre),
+    .question-display.has-code {
+        padding: 16px 12px;
+    }
+    
+    .options-grid:has(pre),
+    .options-grid.has-code {
+        gap: 12px;
+    }
+    
+    .game-container:has(pre),
+    .game-container.has-code {
+        padding: 12px;
     }
 }

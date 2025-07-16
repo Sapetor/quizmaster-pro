@@ -37,8 +37,9 @@
 .header-controls {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     flex-wrap: wrap;
+    padding: 8px 0;
 }
 
 /* Host Container Layout System */
@@ -121,9 +122,9 @@
 }
 
 /* Toolbar Layout Integration - Move content right when toolbar is visible */
-.host-container.with-toolbar {
-    margin-left: 90px !important; /* 85px toolbar + 5px spacing */
-    max-width: calc(100vw - 200px) !important; /* Much narrower to fit properly */
+.host-screen .host-container.with-toolbar {
+    margin-left: 90px; /* 85px toolbar + 5px spacing */
+    max-width: calc(100vw - 200px); /* Much narrower to fit properly */
     transition: all 0.3s ease;
 }
 
@@ -132,12 +133,12 @@
     display: flex;
     justify-content: center;
     padding: 15px;
-    margin-left: 90px !important; /* Maintain toolbar spacing */
+    margin-left: 90px; /* Maintain toolbar spacing */
     margin-right: auto;
 }
 
 .host-container.with-toolbar .quiz-editor-section {
-    padding-left: 10px !important;
+    padding-left: 10px;
     transition: all 0.3s ease;
 }
 
@@ -146,7 +147,7 @@
     max-width: calc(1400px - 90px); /* Account for toolbar width */
     width: 100%;
     padding: 0;
-    padding-left: 10px !important;
+    padding-left: 10px;
 }
 
 /* Move header when toolbar is active - use CSS :has selector */
@@ -192,9 +193,33 @@ body:has(.host-container.with-toolbar) header {
 
 .join-container {
     text-align: center;
-    max-width: 400px;
+    max-width: 480px;
     margin: 0 auto;
-    padding: 20px 20px 40px; /* Reduced top padding from 40px to 20px */
+    padding: 40px 30px;
+    background: var(--glass-medium);
+    backdrop-filter: var(--blur-medium);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-large);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Glass overlay effect for join container */
+.join-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.05) 50%,
+        rgba(255, 255, 255, 0.1) 100%
+    );
+    pointer-events: none;
 }
 
 .lobby-container {
@@ -239,11 +264,7 @@ body:has(.host-container.with-toolbar) header {
     gap: 20px;
 }
 
-.game-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
+/* .game-container styling moved to game.css for better organization */
 
 /* Grid Layouts */
 .games-grid {
@@ -308,11 +329,14 @@ body:has(.host-container.with-toolbar) header {
     flex: 1.2; /* Give more space to editor when code is present */
 }
 
-.player-game-container:has(pre),
+/* Removed overly wide container rules for code questions
+   Code questions should use same width as LaTeX questions */
+
+/* .player-game-container:has(pre),
 .player-question-area:has(pre) {
     max-width: 90vw;
     margin: 0 auto;
-}
+} */
 
 .player-question-area:has(pre) {
     padding: 15px 20px;

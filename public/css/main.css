@@ -4,34 +4,34 @@
  */
 
 /* CSS Variables - MUST be first for theme switching */
-@import './variables.css';
+@import './variables.css?v=9.3';
 
 /* Base styles - Reset, typography, global styles */
-@import './base.css';
+@import './base.css?v=9.3';
 
 /* Layout systems - Grid, containers, screen management */
-@import './layout.css';
+@import './layout.css?v=9.3';
 
 /* UI components - Buttons, inputs, cards */
-@import './components.css';
+@import './components.css?v=9.3';
 
 /* Modal systems - All modal dialogs and overlays */
-@import './modals.css';
+@import './modals.css?v=9.3';
 
 /* Game screens - Lobby, gameplay, results */
-@import './game.css';
+@import './game.css?v=9.3';
 
 /* Live preview system - Split-screen preview functionality */
-@import './preview.css';
+@import './preview.css?v=9.3';
 
 /* Left toolbar - Navigation and tools */
-@import './toolbar.css';
+@import './toolbar.css?v=9.3';
 
 /* Responsive design - Media queries and mobile optimizations */
-@import './responsive.css';
+@import './responsive.css?v=9.3';
 
 /* Animations and transitions - Keyframes and motion */
-@import './animations.css';
+@import './animations.css?v=9.3';
 
 
 /**

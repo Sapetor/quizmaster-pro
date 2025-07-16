@@ -165,6 +165,38 @@
 }
 
 /* === DARK THEME SUPPORT === */
+[data-theme="light"] {
+    /* Modern Glass Morphism for Light Mode */
+    --glass-light: rgba(255, 255, 255, 0.8);
+    --glass-medium: rgba(255, 255, 255, 0.9);
+    --glass-strong: rgba(255, 255, 255, 0.95);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    
+    /* Enhanced Shadows for Light Mode */
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+    --shadow-xl: 0 15px 40px rgba(0, 0, 0, 0.2);
+    --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.3);
+
+    /* Light Theme Variables - Critical for theme switching */
+    --bg-primary: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+    --bg-secondary: rgba(37, 99, 235, 0.05);
+    --text-primary: #1e293b;
+    --text-secondary: #2563eb;
+    --modal-bg: rgba(255, 255, 255, 0.95);
+    --modal-text: #1e293b;
+    --card-bg: rgba(255, 255, 255, 0.8);
+    --border-color: rgba(0, 0, 0, 0.1);
+    --accent-primary: #2563eb;
+    --accent-secondary: #dc2626;
+    --success-color: #16a34a;
+    --warning-color: #ea580c;
+    --error-color: #dc2626;
+    --bg-glass: rgba(255, 255, 255, 0.8);
+    --text-contrast: #1e293b;
+    --bg-contrast: rgba(255, 255, 255, 0.95);
+}
+
 [data-theme="dark"] {
     /* Modern Glass Morphism for Dark Mode */
     --glass-light: rgba(255, 255, 255, 0.05);
@@ -175,9 +207,10 @@
     /* Enhanced Shadows for Dark Mode */
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 15px 40px rgba(0, 0, 0, 0.5);
     --shadow-glow: 0 0 20px rgba(96, 165, 250, 0.4);
 
-/* Dark Theme Variables - Critical for theme switching */
+    /* Dark Theme Variables - Critical for theme switching */
     --bg-primary: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1c2128 100%);
     --bg-secondary: rgba(255,255,255,0.08);
     --text-primary: #f0f6fc;

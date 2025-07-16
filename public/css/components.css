@@ -115,8 +115,8 @@
 .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    transform: none !important;
-    box-shadow: var(--shadow-soft) !important;
+    transform: none;
+    box-shadow: var(--shadow-soft);
 }
 
 /* Input Styles */
@@ -306,44 +306,19 @@ input::placeholder, textarea::placeholder {
 }
 
 /* Override all colorful preview rules to use neutral styling - MAXIMUM SPECIFICITY */
+/* Consolidated checkbox option styling for all preview contexts */
 .preview-content .checkbox-option,
 .preview-content-split .checkbox-option,
-.preview-content .player-checkbox-options .checkbox-option,
-.preview-content-split .player-checkbox-options .checkbox-option,
-.checkbox-option.preview-checkbox,
-.checkbox-option.preview-checkbox[data-option="0"],
-.checkbox-option.preview-checkbox[data-option="1"], 
-.checkbox-option.preview-checkbox[data-option="2"],
-.checkbox-option.preview-checkbox[data-option="3"],
-.checkbox-option.preview-checkbox[data-option="4"],
-.checkbox-option.preview-checkbox[data-option="5"],
-.checkbox-option.preview-checkbox:nth-child(1),
-.checkbox-option.preview-checkbox:nth-child(2),
-.checkbox-option.preview-checkbox:nth-child(3),
-.checkbox-option.preview-checkbox:nth-child(4),
-.checkbox-option.preview-checkbox:nth-child(5),
-.checkbox-option.preview-checkbox:nth-child(6),
-.preview-content .player-checkbox-options .checkbox-option:nth-child(1),
-.preview-content-split .player-checkbox-options .checkbox-option:nth-child(1),
-.preview-content .player-checkbox-options .checkbox-option:nth-child(2),
-.preview-content-split .player-checkbox-options .checkbox-option:nth-child(2),
-.preview-content .player-checkbox-options .checkbox-option:nth-child(3),
-.preview-content-split .player-checkbox-options .checkbox-option:nth-child(3),
-.preview-content .player-checkbox-options .checkbox-option:nth-child(4),
-.preview-content-split .player-checkbox-options .checkbox-option:nth-child(4),
-.preview-content .player-checkbox-options .checkbox-option:nth-child(5),
-.preview-content-split .player-checkbox-options .checkbox-option:nth-child(5),
-.preview-content .player-checkbox-options .checkbox-option:nth-child(6),
-.preview-content-split .player-checkbox-options .checkbox-option:nth-child(6) {
-    background: rgba(255,255,255,0.05) !important;
-    color: var(--text-primary) !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-    box-shadow: none !important;
-    width: 100% !important;
-    max-width: 500px !important;
-    min-height: auto !important;
-    height: auto !important;
-    padding: 6px 12px !important;
+.checkbox-option.preview-checkbox {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-primary);
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: none;
+    width: 100%;
+    max-width: 500px;
+    min-height: auto;
+    height: auto;
+    padding: 6px 12px;
 }
 
 /* Dark theme overrides - MAXIMUM SPECIFICITY */
@@ -389,34 +364,132 @@ input::placeholder, textarea::placeholder {
     flex-shrink: 0 !important;
 }
 
-/* Checked state styling */
+/* Checked state styling - neutral colors */
 .checkbox-option input[type="checkbox"]:checked {
-    accent-color: var(--color-success-500) !important;
+    accent-color: var(--color-primary-500) !important;
 }
 
-/* When checkbox is checked, highlight the entire option */
+/* When checkbox is checked, use neutral highlight */
 .checkbox-option:has(input[type="checkbox"]:checked) {
-    background: rgba(16, 185, 129, 0.1) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
     border-color: var(--color-success-500) !important;
     color: var(--color-success-500) !important;
 }
 
 /* Theme Toggle */
 .theme-toggle {
-    background: var(--bg-glass);
-    border: 1px solid var(--border-color);
-    border-radius: 50%;
-    padding: 8px;
+    background: var(--glass-medium);
+    backdrop-filter: var(--blur-medium);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 10px 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--text-primary);
     font-size: 1.2rem;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
 }
 
 .theme-toggle:hover {
     background: var(--accent-primary);
     color: white;
-    transform: scale(1.1);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-primary);
+}
+
+/* Header-specific language selector styling */
+.header-controls .language-selector {
+    position: relative;
+}
+
+.header-controls .language-dropdown {
+    width: auto;
+    min-width: 160px;
+    padding: 10px 36px 10px 12px;
+    font-size: 14px;
+    min-height: 44px;
+    border-radius: 12px;
+    background: var(--glass-medium);
+    backdrop-filter: var(--blur-medium);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-sm);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    position: relative;
+}
+
+/* CSS-only dropdown arrow to avoid SVG issues */
+.header-controls .language-dropdown::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid var(--text-primary);
+    pointer-events: none;
+    opacity: 0.6;
+    transition: all 0.3s ease;
+}
+
+.header-controls .language-dropdown:hover {
+    background: var(--glass-light);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary-400);
+}
+
+.header-controls .language-dropdown:hover::after {
+    opacity: 1;
+    border-top-color: var(--color-primary-500);
+}
+
+.header-controls .language-dropdown:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    background: var(--glass-medium);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.header-controls .language-dropdown:focus::after {
+    opacity: 1;
+    border-top-color: var(--color-primary-500);
+}
+
+/* Dark theme arrow color */
+[data-theme="dark"] .header-controls .language-dropdown::after {
+    border-top-color: var(--text-primary);
+}
+
+/* Header start game button improvements */
+.header-controls .start-game-header {
+    padding: 10px 16px;
+    font-size: 14px;
+    min-height: 44px;
+    border-radius: 12px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    box-shadow: var(--shadow-sm), 0 0 0 1px rgba(59, 130, 246, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.header-controls .start-game-header:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md), 0 0 0 1px rgba(59, 130, 246, 0.2);
 }
 
 /* QR Section and Game PIN */
@@ -1421,4 +1494,102 @@ input::placeholder, textarea::placeholder {
 .options-container,
 .answer-options {
     border-left: 4px solid var(--color-warning-500);
+}
+
+/* === JOIN SCREEN STYLING === */
+
+/* Enhanced join container content */
+.join-container h2 {
+    position: relative;
+    z-index: 1;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    color: var(--text-primary);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Join form inputs */
+.join-container input {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+    padding: 18px 24px;
+    border-radius: var(--border-radius);
+    transition: all 0.3s ease;
+}
+
+.join-container input:first-of-type {
+    margin-top: 0.5rem;
+}
+
+/* Enhanced join button */
+.join-container .btn.primary {
+    position: relative;
+    z-index: 1;
+    font-size: 1.2rem;
+    font-weight: 600;
+    padding: 16px 32px;
+    margin: 1rem 0 2rem 0;
+    min-width: 200px;
+    border-radius: var(--border-radius);
+    transition: all 0.3s ease;
+}
+
+.join-container .btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl), 0 0 30px rgba(59, 130, 246, 0.5);
+}
+
+/* Join divider styling */
+.join-divider {
+    position: relative;
+    z-index: 1;
+    margin: 2rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.join-divider::before,
+.join-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--glass-border),
+        transparent
+    );
+}
+
+.join-divider span {
+    padding: 0 1.5rem;
+    background: var(--glass-light);
+    border-radius: 20px;
+    padding: 8px 16px;
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--blur-medium);
+}
+
+/* Browse games button */
+.join-container .btn.secondary {
+    position: relative;
+    z-index: 1;
+    font-size: 1.1rem;
+    padding: 14px 28px;
+    border-radius: var(--border-radius);
+    transition: all 0.3s ease;
+}
+
+.join-container .btn.secondary:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }

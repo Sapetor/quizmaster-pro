@@ -487,12 +487,14 @@ pre code {
     flex: 1.2; /* Give more space to editor when code is present */
 }
 
-/* Enhanced player-side code display */
-.player-game-container:has(pre),
+/* Removed overly wide container rules for code questions
+   Code questions should use same width as LaTeX questions */
+
+/* .player-game-container:has(pre),
 .player-question-area:has(pre) {
-    max-width: 90vw; /* Wider container for code questions */
+    max-width: 90vw;
     margin: 0 auto;
-}
+} */
 
 .player-question-area:has(pre) {
     padding: 15px 20px;
@@ -504,7 +506,7 @@ pre code {
 .player-option pre {
     font-size: 0.8em; /* Slightly larger than other constrained spaces */
     padding: 15px;
-    max-width: calc(90vw - 40px);
+    max-width: 100%; /* Use container width instead of viewport width */
     margin: 15px auto;
     border-radius: 8px;
 }
@@ -514,7 +516,7 @@ pre code {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    max-width: 90vw;
+    max-width: 600px; /* Use same width as normal player options */
     margin: 0 auto;
 }
 
@@ -527,7 +529,10 @@ pre code {
 
 /* Responsive adjustments for mobile players with code */
 @media (max-width: 768px) {
-    .player-game-container:has(pre) {
+    /* Removed overly wide mobile container rules for code questions
+       Code questions should use same width as LaTeX questions */
+    
+    /* .player-game-container:has(pre) {
         max-width: 95vw;
         padding: 10px 5px;
     }
@@ -535,7 +540,7 @@ pre code {
     .player-question-area:has(pre) {
         padding: 10px 15px;
         margin: 10px 5px;
-    }
+    } */
     
     #player-question-text pre,
     .player-option pre {
@@ -554,7 +559,7 @@ pre code {
 /* True/False and Numeric input areas with code */
 .tf-options:has(pre),
 .numeric-input-container:has(pre) {
-    max-width: 90vw;
+    max-width: 600px; /* Use same width as normal options */
     margin: 0 auto;
 }
 

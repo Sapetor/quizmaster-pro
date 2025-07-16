@@ -154,8 +154,10 @@
 
 /* Code-Specific Mobile Optimizations */
 @media (max-width: 768px) {
-    /* Player containers with code blocks */
-    .player-game-container:has(pre) {
+    /* Removed overly wide mobile container rules for code questions
+       Code questions should use same width as LaTeX questions */
+    
+    /* .player-game-container:has(pre) {
         max-width: 95vw;
         padding: 10px 5px;
     }
@@ -163,7 +165,7 @@
     .player-question-area:has(pre) {
         padding: 10px 15px;
         margin: 10px 5px;
-    }
+    } */
     
     /* Code blocks in mobile */
     #player-question-text pre,

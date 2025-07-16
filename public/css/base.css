@@ -276,9 +276,9 @@ blockquote {
 
 /* Ensure MathJax elements don't break layout */
 .mjx-container {
-    display: inline-block !important;
-    vertical-align: middle !important;
-    max-width: 100% !important;
-    overflow-x: auto !important;
+    display: inline-block;
+    vertical-align: middle;
+    max-width: 100%;
+    overflow-x: auto;
 }
 
