@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/main.css?v=modular-4.8">
+    <link rel="stylesheet" href="css/main.css?v=modular-9.4-fix-split-screen-toolbar-v5">
     <!-- Removed problematic polyfill.io CDN - MathJax handles ES6 polyfills automatically -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -80,7 +80,7 @@
                 </div>
                 <button id="start-hosting-header-small" class="btn primary small start-game-header" style="display: none;" data-translate-title="start_quiz_tooltip">🚀 <span data-translate="start_game">Start Game</span></button>
                 <button id="fullscreen-toggle" class="theme-toggle" data-translate-title="toggle_fullscreen_tooltip">⛶</button>
-                <button id="theme-toggle" class="theme-toggle" data-translate-title="toggle_dark_mode_tooltip" onclick="console.log('Theme button clicked directly!'); window.toggleTheme();">🌙</button>
+                <button id="theme-toggle" class="theme-toggle" data-translate-title="toggle_dark_mode_tooltip" onclick="console.log('Theme button clicked directly!'); window.toggleTheme();">☀️</button>
             </div>
         </header>
 
@@ -506,21 +506,29 @@
 
         <div id="host-game-screen" class="screen">
             <div class="game-container">
-                <div class="question-display">
-                    <div class="question-header">
-                        <span id="question-counter">Question 1 of 5</span>
-                        <div id="timer" class="timer">20</div>
-                    </div>
+                <!-- Host-specific header with timer and counter -->
+                <div class="question-header">
+                    <span id="question-counter">Question 1 of 5</span>
+                    <div id="timer" class="timer">20</div>
+                </div>
+                
+                <!-- Use client-style question display -->
+                <div id="host-question-display" class="player-question-area">
                     <div id="question-image-display" class="question-image-container" style="display: none;">
                         <img id="host-question-image" src="" alt="Question Image">
                     </div>
-                    <h2 id="current-question">Question will appear here</h2>
-                    <div id="answer-options" class="options-grid">
-                        <div class="option-display" data-option="0">A</div>
-                        <div class="option-display" data-option="1">B</div>
-                        <div class="option-display" data-option="2">C</div>
-                        <div class="option-display" data-option="3">D</div>
+                    <h3 id="current-question">Question will appear here</h3>
+                </div>
+                
+                <!-- Use client-style options -->
+                <div id="host-multiple-choice" class="player-answer-type">
+                    <div id="answer-options" class="player-options">
+                        <div class="player-option" data-option="0">A</div>
+                        <div class="player-option" data-option="1">B</div>
+                        <div class="player-option" data-option="2">C</div>
+                        <div class="player-option" data-option="3">D</div>
                     </div>
+                </div>
                     
                     <!-- Real-time Answer Statistics -->
                     <div id="answer-statistics" class="answer-stats" style="display: none;">

@@ -47,20 +47,36 @@
 }
 
 /* === BUTTON VARIANTS === */
-.btn.primary, .btn-primary {
-    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+
+/* Base colored button pattern */
+.btn.primary,
+.btn.danger,
+.btn.success {
     color: white;
-    box-shadow: var(--shadow-md), var(--shadow-glow);
+    box-shadow: var(--shadow-md);
     border: 1px solid transparent;
 }
 
-.btn.primary:hover, .btn-primary:hover {
+.btn.primary:hover,
+.btn.danger:hover,
+.btn.success:hover {
     transform: translateY(-1px);
-    box-shadow: var(--shadow-lg), 0 0 25px rgba(59, 130, 246, 0.4);
-    background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-700));
+    box-shadow: var(--shadow-lg);
 }
 
-.btn.secondary, .btn-glass {
+/* Primary button variant */
+.btn.primary {
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    box-shadow: var(--shadow-md), var(--shadow-glow);
+}
+
+.btn.primary:hover {
+    background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-700));
+    box-shadow: var(--shadow-lg), 0 0 25px rgba(59, 130, 246, 0.4);
+}
+
+/* Secondary button variant */
+.btn.secondary {
     background: var(--glass-medium);
     backdrop-filter: var(--blur-medium);
     border: 1px solid var(--glass-border);
@@ -68,43 +84,31 @@
     box-shadow: var(--shadow-sm);
 }
 
-.btn.secondary:hover, .btn-glass:hover {
+.btn.secondary:hover {
     background: var(--glass-strong);
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
     border-color: var(--color-primary-500);
 }
 
-.btn.danger, .btn-error {
+/* Danger button variant */
+.btn.danger {
     background: linear-gradient(135deg, var(--color-error-500), #dc2626);
-    color: white;
-    box-shadow: var(--shadow-md);
-    border: 1px solid transparent;
-}
-
-.btn.danger:hover, .btn-error:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-lg);
-    background: linear-gradient(135deg, #dc2626, #b91c1c);
-}
-
-.btn-success {
-    background: linear-gradient(135deg, var(--color-success-500), #059669);
-    color: white;
-    box-shadow: var(--shadow-md);
-    border: 1px solid transparent;
-}
-
-.btn-success:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-lg);
-    background: linear-gradient(135deg, #059669, #047857);
 }
 
 .btn.danger:hover {
-    background: linear-gradient(135deg, #b91c1c, var(--error-color));
-    box-shadow: 0 16px 50px rgba(220, 38, 38, 0.3);
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
 }
+
+/* Success button variant */
+.btn.success {
+    background: linear-gradient(135deg, var(--color-success-500), #059669);
+}
+
+.btn.success:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+}
+
 
 .btn.small {
     padding: 8px 16px;
@@ -284,25 +288,27 @@ input::placeholder, textarea::placeholder {
 
 /* === CHECKBOX OPTIONS - SIMPLE CHECKBOX LIST STYLE === */
 /* These should look like simple checkbox lists, not styled buttons */
-.checkbox-option {
-    display: flex !important;
-    align-items: center !important;
-    padding: 6px 12px !important;
-    margin: 8px 0 !important;
-    color: var(--text-primary) !important;
-    font-size: 1.1rem !important;
-    font-family: Inter, sans-serif !important;
-    line-height: 1.4 !important;
-    cursor: pointer !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-    border-radius: 8px !important;
-    background: rgba(255,255,255,0.05) !important;
-    transition: all 0.2s ease !important;
-    width: 100% !important;
-    max-width: 500px !important;
-    box-sizing: border-box !important;
-    min-height: auto !important;
-    height: auto !important;
+.quiz-editor .checkbox-option,
+.preview-content .checkbox-option,
+.preview-content-split .checkbox-option {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    margin: 8px 0;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-family: Inter, sans-serif;
+    line-height: 1.4;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    transition: all 0.2s ease;
+    width: 100%;
+    max-width: 500px;
+    box-sizing: border-box;
+    min-height: auto;
+    height: auto;
 }
 
 /* Override all colorful preview rules to use neutral styling - MAXIMUM SPECIFICITY */
@@ -339,19 +345,21 @@ input::placeholder, textarea::placeholder {
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(5),
 [data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(6),
 [data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(6) {
-    background: rgba(255,255,255,0.05) !important;
-    color: #f8fafc !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-    box-shadow: none !important;
-    min-height: auto !important;
-    height: auto !important;
-    padding: 6px 12px !important;
+    background: rgba(255,255,255,0.05);
+    color: #f8fafc;
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: none;
+    min-height: auto;
+    height: auto;
+    padding: 6px 12px;
 }
 
 /* Hover and interaction states */
-.checkbox-option:hover {
-    background: rgba(255,255,255,0.1) !important;
-    border-color: var(--color-primary-500) !important;
+.quiz-editor .checkbox-option:hover,
+.preview-content .checkbox-option:hover,
+.preview-content-split .checkbox-option:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: var(--color-primary-500);
 }
 
 /* Checkbox input styling */
@@ -595,18 +603,18 @@ input::placeholder, textarea::placeholder {
 .quiz-settings label,
 .general-options label,
 .advanced-options label {
-    background: transparent !important;
-    padding: 0 !important;
-    margin: 4px 0 !important; /* Closer spacing */
-    border: none !important;
-    box-shadow: none !important;
-    min-height: auto !important; /* Remove any fixed height */
-    height: auto !important; /* Let content determine height */
-    display: flex !important; /* Ensure proper flex layout */
-    align-items: center !important; /* Center align checkbox and text */
-    justify-content: flex-start !important;
-    width: auto !important; /* Remove any fixed width */
-    max-width: none !important; /* Remove width constraints */
+    background: transparent;
+    padding: 0;
+    margin: 4px 0; /* Closer spacing */
+    border: none;
+    box-shadow: none;
+    min-height: auto; /* Remove any fixed height */
+    height: auto; /* Let content determine height */
+    display: flex; /* Ensure proper flex layout */
+    align-items: center; /* Center align checkbox and text */
+    justify-content: flex-start;
+    width: auto; /* Remove any fixed width */
+    max-width: none; /* Remove width constraints */
 }
 
 /* Fix checkbox dimensions - force square size */

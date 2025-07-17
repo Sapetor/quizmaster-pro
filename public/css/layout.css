@@ -77,6 +77,13 @@
     overflow: hidden;
 }
 
+/* Adjust split-screen positioning when toolbar is active */
+.host-container.split-screen.with-toolbar {
+    margin-left: 95px; /* Small gap from toolbar */
+    width: calc(100% - 95px); /* Use remaining space after toolbar */
+    max-width: calc(100vw - 105px); /* Prevent overflow */
+}
+
 /* Quiz Editor Section */
 .quiz-editor-section {
     background: rgba(255, 255, 255, 0.1);
@@ -121,8 +128,8 @@
     -webkit-backdrop-filter: none;
 }
 
-/* Toolbar Layout Integration - Move content right when toolbar is visible */
-.host-screen .host-container.with-toolbar {
+/* Toolbar Layout Integration - Move content right when toolbar is visible (but not in split-screen) */
+.host-screen .host-container.with-toolbar:not(.split-screen) {
     margin-left: 90px; /* 85px toolbar + 5px spacing */
     max-width: calc(100vw - 200px); /* Much narrower to fit properly */
     transition: all 0.3s ease;
