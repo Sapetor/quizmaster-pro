@@ -7,6 +7,7 @@ import { getTranslation, getOptionLetter } from '../utils/translations.js';
 import { TIMING, logger } from '../core/config.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { mathJaxService } from '../utils/mathjax-service.js';
+import { domManager } from '../utils/dom-manager.js';
 
 export class GameManager {
     constructor(socket, uiManager, soundManager, socketManager = null) {
@@ -15,6 +16,9 @@ export class GameManager {
         this.soundManager = soundManager;
         this.socketManager = socketManager;
         this.mathRenderer = new MathRenderer();
+        
+        // Initialize DOM Manager with common game elements
+        domManager.initializeGameElements();
         
         // Game state
         this.isHost = false;
@@ -44,9 +48,9 @@ export class GameManager {
         // Reset button states for new question
         this.resetButtonStatesForNewQuestion();
         
-        const questionElement = document.getElementById('player-question-text');
-        const hostQuestionElement = document.getElementById('current-question');
-        const hostOptionsContainer = document.getElementById('answer-options');
+        const questionElement = domManager.get('player-question-text');
+        const hostQuestionElement = domManager.get('current-question');
+        const hostOptionsContainer = domManager.get('answer-options');
         
         // For players, we'll dynamically find the correct container based on question type
         let optionsContainer = null;
@@ -62,7 +66,7 @@ export class GameManager {
             document.querySelectorAll('.player-answer-type').forEach(type => type.style.display = 'none');
             
             if (data.type === 'multiple-choice') {
-                const multipleChoiceContainer = document.getElementById('player-multiple-choice');
+                const multipleChoiceContainer = domManager.get('player-multiple-choice');
                 logger.debug('multipleChoiceContainer found:', !!multipleChoiceContainer);
                 if (multipleChoiceContainer) {
                     multipleChoiceContainer.style.display = 'block';
@@ -70,7 +74,7 @@ export class GameManager {
                     logger.debug('Player optionsContainer set to:', optionsContainer);
                 }
             } else if (data.type === 'multiple-correct') {
-                const multipleCorrectContainer = document.getElementById('player-multiple-correct');
+                const multipleCorrectContainer = domManager.get('player-multiple-correct');
                 logger.debug('multipleCorrectContainer found:', !!multipleCorrectContainer);
                 if (multipleCorrectContainer) {
                     multipleCorrectContainer.style.display = 'block';
@@ -78,7 +82,7 @@ export class GameManager {
                     logger.debug('Player checkbox optionsContainer set to:', optionsContainer);
                 }
             } else if (data.type === 'true-false') {
-                const trueFalseContainer = document.getElementById('player-true-false');
+                const trueFalseContainer = domManager.get('player-true-false');
                 logger.debug('trueFalseContainer found:', !!trueFalseContainer);
                 if (trueFalseContainer) {
                     trueFalseContainer.style.display = 'block';
@@ -86,7 +90,7 @@ export class GameManager {
                     logger.debug('Player optionsContainer set to:', optionsContainer);
                 }
             } else if (data.type === 'numeric') {
-                const numericContainer = document.getElementById('player-numeric');
+                const numericContainer = domManager.get('player-numeric');
                 logger.debug('numericContainer found:', !!numericContainer);
                 if (numericContainer) {
                     numericContainer.style.display = 'block';
@@ -329,7 +333,7 @@ export class GameManager {
      * Update the question counter display (host)
      */
     updateQuestionCounter(current, total) {
-        const counterElement = document.getElementById('question-counter');
+        const counterElement = domManager.get('question-counter');
         if (counterElement) {
             counterElement.textContent = `${getTranslation('question')} ${current} ${getTranslation('of')} ${total}`;
         }
@@ -339,7 +343,7 @@ export class GameManager {
      * Update the question counter display (player)
      */
     updatePlayerQuestionCounter(current, total) {
-        const counterElement = document.getElementById('player-question-counter');
+        const counterElement = domManager.get('player-question-counter');
         if (counterElement) {
             counterElement.textContent = `${getTranslation('question')} ${current} ${getTranslation('of')} ${total}`;
         }
@@ -349,7 +353,7 @@ export class GameManager {
      * Submit multiple correct answer
      */
     submitMultipleCorrectAnswer() {
-        const submitBtn = document.getElementById('submit-multiple');
+        const submitBtn = domManager.get('submit-multiple');
         
         // Immediately disable button and provide visual feedback
         if (submitBtn) {
@@ -469,7 +473,7 @@ export class GameManager {
      * Submit numeric answer
      */
     submitNumericAnswer() {
-        const input = document.getElementById('numeric-answer-input');
+        const input = domManager.get('numeric-answer-input');
         if (!input || input.value.trim() === '') return;
         
         const answer = parseFloat(input.value);
