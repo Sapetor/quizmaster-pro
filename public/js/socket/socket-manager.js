@@ -78,11 +78,11 @@ export class SocketManager {
 
         this.socket.on('question-start', (data) => {
             console.log('Question started:', data);
-            console.log('Question time value:', data.time, 'Type:', typeof data.time);
+            console.log('Question timeLimit value:', data.timeLimit, 'Type:', typeof data.timeLimit);
             this.gameManager.displayQuestion(data);
             
             // Ensure timer has valid duration
-            const timerDuration = data.time && !isNaN(data.time) ? data.time * 1000 : 30000; // Default 30 seconds
+            const timerDuration = data.timeLimit && !isNaN(data.timeLimit) ? data.timeLimit * 1000 : 30000; // Default 30 seconds
             console.log('Timer duration calculated:', timerDuration);
             this.gameManager.startTimer(timerDuration);
             

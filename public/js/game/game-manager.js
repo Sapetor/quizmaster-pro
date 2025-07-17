@@ -37,6 +37,29 @@ export class GameManager {
      */
     displayQuestion(data) {
         logger.debug('Displaying question:', data);
+        
+        // Initialize display state
+        this.initializeQuestionDisplay(data);
+        
+        // Get DOM elements and containers
+        const elements = this.getQuestionElements();
+        const optionsContainer = this.setupQuestionContainers(data);
+        
+        // Update content based on host/player mode
+        if (this.isHost) {
+            this.updateHostDisplay(data, elements);
+        } else {
+            this.updatePlayerDisplay(data, elements, optionsContainer);
+        }
+        
+        // Finalize display
+        this.finalizeQuestionDisplay(data);
+    }
+
+    /**
+     * Initialize question display state and reset for new question
+     */
+    initializeQuestionDisplay(data) {
         logger.debug('Question options:', data.options);
         logger.debug('Question type:', data.type);
         logger.debug('CRITICAL: this.isHost =', this.isHost);
@@ -48,274 +71,380 @@ export class GameManager {
         // Reset button states for new question
         this.resetButtonStatesForNewQuestion();
         
-        const questionElement = domManager.get('player-question-text');
-        const hostQuestionElement = domManager.get('current-question');
-        const hostOptionsContainer = domManager.get('answer-options');
-        
-        // For players, we'll dynamically find the correct container based on question type
-        let optionsContainer = null;
         // EMERGENCY FIX: Force isHost to false for all non-host users
         if (this.playerName && this.playerName !== 'Host' && this.isHost !== false) {
             logger.warn('EMERGENCY: Forcing isHost to false for player:', this.playerName);
             this.isHost = false;
         }
+    }
+
+    /**
+     * Get question display elements
+     */
+    getQuestionElements() {
+        return {
+            questionElement: domManager.get('player-question-text'),
+            hostQuestionElement: domManager.get('current-question'),
+            hostOptionsContainer: domManager.get('answer-options')
+        };
+    }
+
+    /**
+     * Setup question containers based on question type
+     */
+    setupQuestionContainers(data) {
+        let optionsContainer = null;
         
         if (!this.isHost) {
-            logger.debug('Player mode - setting up containers');
-            // Show the appropriate answer type container
-            document.querySelectorAll('.player-answer-type').forEach(type => type.style.display = 'none');
-            
-            if (data.type === 'multiple-choice') {
-                const multipleChoiceContainer = domManager.get('player-multiple-choice');
-                logger.debug('multipleChoiceContainer found:', !!multipleChoiceContainer);
-                if (multipleChoiceContainer) {
-                    multipleChoiceContainer.style.display = 'block';
-                    optionsContainer = multipleChoiceContainer.querySelector('.player-options');
-                    logger.debug('Player optionsContainer set to:', optionsContainer);
-                }
-            } else if (data.type === 'multiple-correct') {
-                const multipleCorrectContainer = domManager.get('player-multiple-correct');
-                logger.debug('multipleCorrectContainer found:', !!multipleCorrectContainer);
-                if (multipleCorrectContainer) {
-                    multipleCorrectContainer.style.display = 'block';
-                    optionsContainer = multipleCorrectContainer.querySelector('.player-checkbox-options');
-                    logger.debug('Player checkbox optionsContainer set to:', optionsContainer);
-                }
-            } else if (data.type === 'true-false') {
-                const trueFalseContainer = domManager.get('player-true-false');
-                logger.debug('trueFalseContainer found:', !!trueFalseContainer);
-                if (trueFalseContainer) {
-                    trueFalseContainer.style.display = 'block';
-                    optionsContainer = trueFalseContainer.querySelector('.true-false-options');
-                    logger.debug('Player optionsContainer set to:', optionsContainer);
-                }
-            } else if (data.type === 'numeric') {
-                const numericContainer = domManager.get('player-numeric');
-                logger.debug('numericContainer found:', !!numericContainer);
-                if (numericContainer) {
-                    numericContainer.style.display = 'block';
-                    optionsContainer = numericContainer.querySelector('.numeric-input-container');
-                    logger.debug('Player optionsContainer set to:', optionsContainer);
-                }
-            }
+            optionsContainer = this.setupPlayerContainers(data);
         } else {
             logger.debug('Host mode');
         }
         
-        if (this.isHost) {
-            // Switch to host game screen when new question starts
-            this.uiManager.showScreen('host-game-screen');
-            
-            // Hide answer statistics during question
-            this.hideAnswerStatistics();
-            
-            // Update question counter for host
-            this.updateQuestionCounter(data.questionNumber, data.totalQuestions);
-            
-            // Host display
-            if (hostQuestionElement) {
-                hostQuestionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
-                logger.debug('Host question HTML set:', data.question);
-                // Debug what MathJax properties exist and force render
-                logger.debug('MathJax debug:', {
-                    exists: !!window.MathJax,
-                    typesetPromise: !!window.MathJax?.typesetPromise,
-                    startup: !!window.MathJax?.startup,
-                    tex2jax: !!window.MathJax?.tex2jax,
-                    Hub: !!window.MathJax?.Hub,
-                    keys: window.MathJax ? Object.keys(window.MathJax) : 'none'
-                });
-                
-                // Render MathJax for host question
-                mathJaxService.renderElement(hostQuestionElement, 100).then(() => {
-                    logger.debug('MathJax question rendering completed');
-                }).catch(err => {
-                    logger.error('MathJax question render error:', err);
-                });
+        return optionsContainer;
+    }
+
+    /**
+     * Setup player containers based on question type
+     */
+    setupPlayerContainers(data) {
+        logger.debug('Player mode - setting up containers');
+        
+        // Hide all answer type containers
+        document.querySelectorAll('.player-answer-type').forEach(type => type.style.display = 'none');
+        
+        const containerMap = {
+            'multiple-choice': {
+                containerId: 'player-multiple-choice',
+                optionsSelector: '.player-options'
+            },
+            'multiple-correct': {
+                containerId: 'player-multiple-correct',
+                optionsSelector: '.player-checkbox-options'
+            },
+            'true-false': {
+                containerId: 'player-true-false',
+                optionsSelector: '.true-false-options'
+            },
+            'numeric': {
+                containerId: 'player-numeric',
+                optionsSelector: '.numeric-input-container'
             }
-            
-            if (hostOptionsContainer) {
-                // Always clear previous content to prevent leaking between question types
-                hostOptionsContainer.innerHTML = '';
-                
-                if (data.type === 'numeric') {
-                    hostOptionsContainer.style.display = 'none';
-                } else if (data.type === 'true-false') {
-                    // True/False needs special structure with .tf-option class and .true-false-options container
-                    hostOptionsContainer.innerHTML = `
-                        <div class="true-false-options">
-                            <div class="tf-option true-btn" data-answer="true">${getTranslation('true')}</div>
-                            <div class="tf-option false-btn" data-answer="false">${getTranslation('false')}</div>
-                        </div>
-                    `;
-                    hostOptionsContainer.style.display = 'block';
-                } else {
-                    // Use the original monolithic structure with option-display divs and data attributes for colorful styling
-                    hostOptionsContainer.innerHTML = `
-                        <div class="option-display" data-option="0"></div>
-                        <div class="option-display" data-option="1"></div>
-                        <div class="option-display" data-option="2"></div>
-                        <div class="option-display" data-option="3"></div>
-                    `;
-                    hostOptionsContainer.style.display = 'grid';
-                    const options = document.querySelectorAll('.option-display');
-                    
-                    // Reset all option styles from previous questions
-                    this.resetButtonStyles(options);
-                
-                    if (data.type === 'multiple-choice' || data.type === 'multiple-correct') {
-                        data.options.forEach((option, index) => {
-                            if (options[index]) {
-                                options[index].innerHTML = `${getOptionLetter(index)}: ${this.mathRenderer.formatCodeBlocks(option)}`;
-                                options[index].style.display = 'block';
-                                // Add data-multiple attribute for multiple-correct questions to get special styling
-                                if (data.type === 'multiple-correct') {
-                                    options[index].setAttribute('data-multiple', 'true');
-                                } else {
-                                    options[index].removeAttribute('data-multiple');
-                                }
-                            }
-                        });
-                        // Hide unused options
-                        for (let i = data.options.length; i < 4; i++) {
-                            if (options[i]) {
-                                options[i].style.display = 'none';
-                            }
-                        }
-                    }
-                }
-                
-                // Render MathJax for host options
-                mathJaxService.renderElement(hostOptionsContainer, 150).then(() => {
-                    logger.debug('MathJax options rendering completed');
-                }).catch(err => {
-                    logger.error('MathJax options render error:', err);
-                });
-            }
+        };
+        
+        const config = containerMap[data.type];
+        if (!config) {
+            logger.warn('Unknown question type:', data.type);
+            return null;
+        }
+        
+        const container = domManager.get(config.containerId);
+        logger.debug(`${config.containerId} found:`, !!container);
+        
+        if (container) {
+            container.style.display = 'block';
+            const optionsContainer = container.querySelector(config.optionsSelector);
+            logger.debug('Player optionsContainer set to:', optionsContainer);
+            return optionsContainer;
+        }
+        
+        return null;
+    }
+
+    /**
+     * Update host display with question content
+     */
+    updateHostDisplay(data, elements) {
+        logger.debug('Host mode - updating display');
+        
+        // Switch to host game screen when new question starts
+        this.uiManager.showScreen('host-game-screen');
+        
+        // Hide answer statistics during question
+        this.hideAnswerStatistics();
+        
+        // Update question counter for host
+        this.updateQuestionCounter(data.questionNumber, data.totalQuestions);
+        
+        // Update host question content
+        this.updateHostQuestionContent(data, elements.hostQuestionElement);
+        
+        // Update host options content
+        this.updateHostOptionsContent(data, elements.hostOptionsContainer);
+    }
+
+    /**
+     * Update host question content and render MathJax
+     */
+    updateHostQuestionContent(data, hostQuestionElement) {
+        if (!hostQuestionElement) return;
+        
+        hostQuestionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
+        logger.debug('Host question HTML set:', data.question);
+        
+        // Debug MathJax status
+        logger.debug('MathJax debug:', {
+            exists: !!window.MathJax,
+            typesetPromise: !!window.MathJax?.typesetPromise,
+            startup: !!window.MathJax?.startup,
+            tex2jax: !!window.MathJax?.tex2jax,
+            Hub: !!window.MathJax?.Hub,
+            keys: window.MathJax ? Object.keys(window.MathJax) : 'none'
+        });
+        
+        // Render MathJax for host question
+        mathJaxService.renderElement(hostQuestionElement, 100).then(() => {
+            logger.debug('MathJax question rendering completed');
+        }).catch(err => {
+            logger.error('MathJax question render error:', err);
+        });
+    }
+
+    /**
+     * Update host options content based on question type
+     */
+    updateHostOptionsContent(data, hostOptionsContainer) {
+        if (!hostOptionsContainer) return;
+        
+        // Always clear previous content to prevent leaking between question types
+        hostOptionsContainer.innerHTML = '';
+        
+        if (data.type === 'numeric') {
+            hostOptionsContainer.style.display = 'none';
+        } else if (data.type === 'true-false') {
+            this.setupHostTrueFalseOptions(hostOptionsContainer);
         } else {
-            // Player display
-            // Update question counter for player
-            this.updatePlayerQuestionCounter(data.questionNumber, data.totalQuestions);
-            
-            if (questionElement) {
-                questionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
-                // Render MathJax for player question
-                mathJaxService.renderElement(questionElement, 100).then(() => {
-                    logger.debug('MathJax rendering completed for player question');
-                }).catch(err => {
-                    logger.error('MathJax player question render error:', err);
-                });
-            }
-            
-            // Update existing static elements with question data
-            this.selectedAnswer = null;
-            
-            if (data.type === 'multiple-choice') {
-                if (optionsContainer) {
-                    logger.debug('Found optionsContainer for multiple choice:', optionsContainer);
-                    const existingButtons = optionsContainer.querySelectorAll('.player-option');
-                    existingButtons.forEach((button, index) => {
-                        if (index < data.options.length) {
-                            button.innerHTML = `<span class="option-letter">${getOptionLetter(index)}:</span> ${this.mathRenderer.formatCodeBlocks(data.options[index])}`;
-                            button.setAttribute('data-answer', index.toString());
-                            button.classList.remove('selected', 'disabled');
-                            button.style.display = 'block';
-                            
-                            // Remove old listeners and add new ones
-                            button.replaceWith(button.cloneNode(true));
-                            const newButton = optionsContainer.children[index];
-                            newButton.addEventListener('click', () => {
-                                logger.debug('Button clicked:', index);
-                                this.selectAnswer(index);
-                            });
-                        } else {
-                            button.style.display = 'none';
-                        }
-                    });
-                }
-            } else if (data.type === 'multiple-correct') {
-                if (optionsContainer) {
-                    logger.debug('Found optionsContainer for multiple correct:', optionsContainer);
-                    const checkboxes = optionsContainer.querySelectorAll('.option-checkbox');
-                    const checkboxLabels = optionsContainer.querySelectorAll('.checkbox-option');
-                    
-                    checkboxes.forEach(cb => cb.checked = false);
-                    checkboxLabels.forEach((label, index) => {
-                        if (data.options && data.options[index]) {
-                            const formattedOption = this.mathRenderer.formatCodeBlocks(data.options[index]);
-                            label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${getOptionLetter(index)}: ${formattedOption}`;
-                            label.setAttribute('data-option', index);
-                        } else {
-                            label.style.display = 'none';
-                        }
-                    });
-                }
-            } else if (data.type === 'true-false') {
-                if (optionsContainer) {
-                    logger.debug('Found optionsContainer for true/false:', optionsContainer);
-                    const buttons = optionsContainer.querySelectorAll('.tf-option');
-                    buttons.forEach((button, index) => {
-                        button.classList.remove('selected', 'disabled');
-                        button.setAttribute('data-answer', index.toString());
-                        
-                        // Remove old listeners and add new ones
-                        button.replaceWith(button.cloneNode(true));
-                        const newButton = optionsContainer.children[index];
-                        newButton.addEventListener('click', () => {
-                            logger.debug('True/False button clicked:', index);
-                            // Convert index to boolean: 0 = true, 1 = false
-                            const booleanAnswer = index === 0;
-                            logger.debug('Converting T/F index', index, 'to boolean:', booleanAnswer);
-                            this.selectAnswer(booleanAnswer);
-                        });
-                    });
-                }
-            } else if (data.type === 'numeric') {
-                if (optionsContainer) {
-                    logger.debug('Found optionsContainer for numeric:', optionsContainer);
-                    const input = optionsContainer.querySelector('#numeric-answer-input');
-                    const submitButton = optionsContainer.querySelector('#submit-numeric');
-                    
-                    if (input) {
-                        input.value = '';
-                        input.disabled = false;
-                        input.placeholder = getTranslation('enter_numeric_answer');
-                    }
-                    
-                    if (submitButton) {
-                        submitButton.disabled = false;
-                        submitButton.textContent = getTranslation('submit');
-                        
-                        // Remove old listeners and add new ones
-                        submitButton.replaceWith(submitButton.cloneNode(true));
-                        const newSubmitButton = optionsContainer.querySelector('#submit-numeric');
-                        newSubmitButton.addEventListener('click', () => {
-                            this.submitNumericAnswer();
-                        });
-                    }
-                    
-                    if (input) {
-                        // Remove old listeners and add new ones
-                        input.replaceWith(input.cloneNode(true));
-                        const newInput = optionsContainer.querySelector('#numeric-answer-input');
-                        newInput.addEventListener('keypress', (e) => {
-                            if (e.key === 'Enter') {
-                                this.submitNumericAnswer();
-                            }
-                        });
+            this.setupHostMultipleChoiceOptions(data, hostOptionsContainer);
+        }
+        
+        // Render MathJax for host options
+        mathJaxService.renderElement(hostOptionsContainer, 150).then(() => {
+            logger.debug('MathJax options rendering completed');
+        }).catch(err => {
+            logger.error('MathJax options render error:', err);
+        });
+    }
+
+    /**
+     * Setup host true/false options
+     */
+    setupHostTrueFalseOptions(hostOptionsContainer) {
+        hostOptionsContainer.innerHTML = `
+            <div class="true-false-options">
+                <div class="tf-option true-btn" data-answer="true">${getTranslation('true')}</div>
+                <div class="tf-option false-btn" data-answer="false">${getTranslation('false')}</div>
+            </div>
+        `;
+        hostOptionsContainer.style.display = 'block';
+    }
+
+    /**
+     * Setup host multiple choice options
+     */
+    setupHostMultipleChoiceOptions(data, hostOptionsContainer) {
+        hostOptionsContainer.innerHTML = `
+            <div class="option-display" data-option="0"></div>
+            <div class="option-display" data-option="1"></div>
+            <div class="option-display" data-option="2"></div>
+            <div class="option-display" data-option="3"></div>
+        `;
+        hostOptionsContainer.style.display = 'grid';
+        const options = document.querySelectorAll('.option-display');
+        
+        // Reset all option styles from previous questions
+        this.resetButtonStyles(options);
+    
+        if (data.type === 'multiple-choice' || data.type === 'multiple-correct') {
+            data.options.forEach((option, index) => {
+                if (options[index]) {
+                    options[index].innerHTML = `${getOptionLetter(index)}: ${this.mathRenderer.formatCodeBlocks(option)}`;
+                    options[index].style.display = 'block';
+                    // Add data-multiple attribute for multiple-correct questions to get special styling
+                    if (data.type === 'multiple-correct') {
+                        options[index].setAttribute('data-multiple', 'true');
+                    } else {
+                        options[index].removeAttribute('data-multiple');
                     }
                 }
-            }
-            
-            // Render math in player options
-            if (optionsContainer) {
-                mathJaxService.renderElement(optionsContainer, 150).then(() => {
-                    logger.debug('MathJax rendering completed for player options');
-                }).catch(err => {
-                    logger.error('MathJax player options render error:', err);
-                });
+            });
+            // Hide unused options
+            for (let i = data.options.length; i < 4; i++) {
+                if (options[i]) {
+                    options[i].style.display = 'none';
+                }
             }
         }
+    }
+
+    /**
+     * Update player display with question content
+     */
+    updatePlayerDisplay(data, elements, optionsContainer) {
+        logger.debug('Player mode - updating display');
+        
+        // Update question counter for player
+        this.updatePlayerQuestionCounter(data.questionNumber, data.totalQuestions);
+        
+        // Update player question content
+        this.updatePlayerQuestionContent(data, elements.questionElement);
+        
+        // Reset selected answer for new question
+        this.selectedAnswer = null;
+        
+        // Update player options based on question type
+        this.updatePlayerOptions(data, optionsContainer);
+    }
+
+    /**
+     * Update player question content and render MathJax
+     */
+    updatePlayerQuestionContent(data, questionElement) {
+        if (!questionElement) return;
+        
+        questionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
+        
+        // Render MathJax for player question
+        mathJaxService.renderElement(questionElement, 100).then(() => {
+            logger.debug('MathJax rendering completed for player question');
+        }).catch(err => {
+            logger.error('MathJax player question render error:', err);
+        });
+    }
+
+    /**
+     * Update player options based on question type
+     */
+    updatePlayerOptions(data, optionsContainer) {
+        if (!optionsContainer) return;
+        
+        if (data.type === 'multiple-choice') {
+            this.setupPlayerMultipleChoiceOptions(data, optionsContainer);
+        } else if (data.type === 'multiple-correct') {
+            this.setupPlayerMultipleCorrectOptions(data, optionsContainer);
+        } else if (data.type === 'true-false') {
+            this.setupPlayerTrueFalseOptions(data, optionsContainer);
+        } else if (data.type === 'numeric') {
+            this.setupPlayerNumericOptions(data, optionsContainer);
+        }
+        
+        // Render MathJax for player options
+        mathJaxService.renderElement(optionsContainer, 150).then(() => {
+            logger.debug('MathJax rendering completed for player options');
+        }).catch(err => {
+            logger.error('MathJax player options render error:', err);
+        });
+    }
+
+    /**
+     * Setup player multiple choice options
+     */
+    setupPlayerMultipleChoiceOptions(data, optionsContainer) {
+        logger.debug('Setting up player multiple choice options');
+        const existingButtons = optionsContainer.querySelectorAll('.player-option');
+        existingButtons.forEach((button, index) => {
+            if (index < data.options.length) {
+                button.innerHTML = `<span class="option-letter">${getOptionLetter(index)}:</span> ${this.mathRenderer.formatCodeBlocks(data.options[index])}`;
+                button.setAttribute('data-answer', index.toString());
+                button.classList.remove('selected', 'disabled');
+                button.style.display = 'block';
+                
+                // Remove old listeners and add new ones
+                button.replaceWith(button.cloneNode(true));
+                const newButton = optionsContainer.children[index];
+                newButton.addEventListener('click', () => {
+                    logger.debug('Button clicked:', index);
+                    this.selectAnswer(index);
+                });
+            } else {
+                button.style.display = 'none';
+            }
+        });
+    }
+
+    /**
+     * Setup player multiple correct options
+     */
+    setupPlayerMultipleCorrectOptions(data, optionsContainer) {
+        logger.debug('Setting up player multiple correct options');
+        const checkboxes = optionsContainer.querySelectorAll('.option-checkbox');
+        const checkboxLabels = optionsContainer.querySelectorAll('.checkbox-option');
+        
+        checkboxes.forEach(cb => cb.checked = false);
+        checkboxLabels.forEach((label, index) => {
+            if (data.options && data.options[index]) {
+                const formattedOption = this.mathRenderer.formatCodeBlocks(data.options[index]);
+                label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${getOptionLetter(index)}: ${formattedOption}`;
+                label.setAttribute('data-option', index);
+            } else {
+                label.style.display = 'none';
+            }
+        });
+    }
+
+    /**
+     * Setup player true/false options
+     */
+    setupPlayerTrueFalseOptions(data, optionsContainer) {
+        logger.debug('Setting up player true/false options');
+        const buttons = optionsContainer.querySelectorAll('.tf-option');
+        buttons.forEach((button, index) => {
+            button.classList.remove('selected', 'disabled');
+            button.setAttribute('data-answer', index.toString());
+            
+            // Remove old listeners and add new ones
+            button.replaceWith(button.cloneNode(true));
+            const newButton = optionsContainer.children[index];
+            newButton.addEventListener('click', () => {
+                logger.debug('True/False button clicked:', index);
+                // Convert index to boolean: 0 = true, 1 = false
+                const booleanAnswer = index === 0;
+                logger.debug('Converting T/F index', index, 'to boolean:', booleanAnswer);
+                this.selectAnswer(booleanAnswer);
+            });
+        });
+    }
+
+    /**
+     * Setup player numeric options
+     */
+    setupPlayerNumericOptions(data, optionsContainer) {
+        logger.debug('Setting up player numeric options');
+        const input = optionsContainer.querySelector('#numeric-answer-input');
+        const submitButton = optionsContainer.querySelector('#submit-numeric');
+        
+        if (input) {
+            input.value = '';
+            input.disabled = false;
+            input.placeholder = getTranslation('enter_numeric_answer');
+            
+            // Remove old listeners and add new ones
+            input.replaceWith(input.cloneNode(true));
+            const newInput = optionsContainer.querySelector('#numeric-answer-input');
+            newInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.submitNumericAnswer();
+                }
+            });
+        }
+        
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = getTranslation('submit');
+            
+            // Remove old listeners and add new ones
+            submitButton.replaceWith(submitButton.cloneNode(true));
+            const newSubmitButton = optionsContainer.querySelector('#submit-numeric');
+            newSubmitButton.addEventListener('click', () => {
+                this.submitNumericAnswer();
+            });
+        }
+    }
+
+    /**
+     * Finalize question display with common actions
+     */
+    finalizeQuestionDisplay(data) {
+        logger.debug('Finalizing question display');
         
         // Play question start sound
         if (this.soundManager.isEnabled()) {
@@ -324,9 +453,6 @@ export class GameManager {
         
         // Store current question data
         this.currentQuestion = data;
-        
-        // Update question counter if element exists
-        this.updateQuestionCounter(data.questionNumber, data.totalQuestions);
     }
 
     /**

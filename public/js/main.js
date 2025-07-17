@@ -29,6 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Apply saved theme immediately
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.body.setAttribute('data-theme', savedTheme);
+        
+        // Update theme toggle icon to match current theme
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️'; // Moon for dark, sun for light
+        }
+        
         console.log('Applied theme:', savedTheme);
         
         // Wait a bit for initialization to complete, then set language

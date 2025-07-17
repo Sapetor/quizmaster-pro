@@ -72,15 +72,17 @@ export class SettingsManager {
         if (theme === 'dark') {
             body.classList.add('dark-theme');
             body.classList.remove('light-theme');
+            body.setAttribute('data-theme', 'dark');
             if (themeToggle) {
-                themeToggle.textContent = '☀️';
+                themeToggle.textContent = '🌙'; // Moon represents dark mode
                 themeToggle.title = getTranslation('switch_light_mode');
             }
         } else {
             body.classList.add('light-theme');
             body.classList.remove('dark-theme');
+            body.setAttribute('data-theme', 'light');
             if (themeToggle) {
-                themeToggle.textContent = '🌙';
+                themeToggle.textContent = '☀️'; // Sun represents light mode
                 themeToggle.title = getTranslation('switch_dark_mode');
             }
         }
@@ -92,9 +94,18 @@ export class SettingsManager {
      * Toggle theme between light and dark
      */
     toggleTheme() {
-        const newTheme = this.settings.theme === 'light' ? 'dark' : 'light';
+        // Get current theme from DOM to ensure accuracy
+        const body = document.body;
+        const currentTheme = body.getAttribute('data-theme') || this.settings.theme || 'light';
+        console.log('Current theme from DOM:', currentTheme);
+        console.log('Current theme from settings:', this.settings.theme);
+        
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        console.log('New theme will be:', newTheme);
+        
         this.applyTheme(newTheme);
         this.saveSettings();
+        console.log('Theme after toggle:', this.settings.theme);
     }
 
     /**
@@ -321,10 +332,10 @@ export class SettingsManager {
         const themeToggle = document.getElementById('theme-toggle');
         if (themeToggle) {
             if (this.settings.theme === 'dark') {
-                themeToggle.textContent = '☀️';
+                themeToggle.textContent = '🌙'; // Moon represents dark mode
                 themeToggle.title = getTranslation('switch_light_mode');
             } else {
-                themeToggle.textContent = '🌙';
+                themeToggle.textContent = '☀️'; // Sun represents light mode
                 themeToggle.title = getTranslation('switch_dark_mode');
             }
         }

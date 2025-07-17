@@ -639,7 +639,7 @@ export class PreviewManager {
             const optionDiv = document.createElement('div');
             optionDiv.className = `player-option preview-option ${isCorrect ? 'correct-preview' : ''}`;
             optionDiv.setAttribute('data-option', index);
-            optionDiv.innerHTML = `${getOptionLetter(index)}: ${option}`;
+            optionDiv.innerHTML = `${getOptionLetter(index)}: ${this.formatCodeBlocks(option)}`;
             optionsContainer.appendChild(optionDiv);
             
             logger.debug(`Added option ${index}: ${option} (${isCorrect ? 'correct' : 'incorrect'})`);
@@ -669,7 +669,7 @@ export class PreviewManager {
             const optionDiv = document.createElement('div');
             optionDiv.className = `checkbox-option preview-checkbox ${isCorrect ? 'correct-preview' : ''}`;
             optionDiv.setAttribute('data-option', index);
-            optionDiv.innerHTML = `<input type="checkbox" ${isCorrect ? 'checked' : ''} disabled> ${getOptionLetter(index)}: ${option}`;
+            optionDiv.innerHTML = `<input type="checkbox" ${isCorrect ? 'checked' : ''} disabled> ${getOptionLetter(index)}: ${this.formatCodeBlocks(option)}`;
             optionsContainer.appendChild(optionDiv);
         });
     }

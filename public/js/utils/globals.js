@@ -271,7 +271,7 @@ export function toggleTheme() {
         
         body.setAttribute('data-theme', newTheme);
         if (themeToggle) {
-            themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+            themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️'; // Moon for dark, sun for light
         }
         localStorage.setItem('theme', newTheme);
         console.log('Theme switched to:', newTheme);

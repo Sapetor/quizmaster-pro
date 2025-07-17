@@ -457,7 +457,7 @@ export class QuizGame {
             
             let questionHTML = `
                 <h3>${getTranslation('question')} ${index + 1}</h3>
-                <div class="preview-question-text">${question.question}</div>
+                <div class="preview-question-text">${this.mathRenderer.formatCodeBlocks(question.question)}</div>
                 <div class="preview-question-meta">
                     <span>${getTranslation('type')}: ${getTranslation(question.type)}</span>
                     <span>${getTranslation('time')}: ${question.time}s</span>
@@ -473,7 +473,7 @@ export class QuizGame {
                     
                     questionHTML += `
                         <div class="preview-option ${isCorrect ? 'correct' : ''}">
-                            ${String.fromCharCode(65 + optIndex)}. ${option}
+                            ${String.fromCharCode(65 + optIndex)}. ${this.mathRenderer.formatCodeBlocks(option)}
                         </div>
                     `;
                 });
@@ -569,47 +569,103 @@ export class QuizGame {
      */
     async loadLastQuiz() {
         try {
-            const response = await fetch('/api/quizzes');
-            const data = await response.json();
+            console.log('🐛 DEBUG: Loading width comparison quiz...');
             
-            if (data.quizzes && data.quizzes.length > 0) {
-                // Find the 7-question LaTeX examples quiz or just pick the first one
-                let targetQuiz = data.quizzes.find(quiz => 
-                    quiz.title.includes('Mathematical') || 
-                    quiz.title.includes('LaTeX') ||
-                    quiz.title.includes('7')
-                ) || data.quizzes[0];
-                
-                console.log('Quick loading quiz for debug:', targetQuiz.title);
-                
-                // Load the quiz (not awaitable, so use callback approach)
-                this.quizManager.loadQuiz(targetQuiz.filename);
-                
-                // Wait a bit for quiz to load, then start the game
-                setTimeout(() => {
-                    console.log('Auto-starting game for debugging...');
-                    this.startHosting();
-                }, 2000); // Increased delay to ensure quiz loads
-                
-                console.log(`Debug: Loading "${targetQuiz.title}" and starting game...`);
-            } else {
-                console.log('No saved quizzes found via API - using direct quiz loading');
-                // Use quiz manager directly - this method definitely exists
-                const filename = 'advanced_quiz_with_latex_images.json';
-                console.log('Loading quiz file:', filename);
-                this.quizManager.loadQuiz(filename);
-                
-                console.log('Debug: Loading LaTeX quiz - starting in 2 seconds...');
-                
-                setTimeout(() => {
-                    console.log('Auto-starting LaTeX quiz...');
-                    this.startHosting();
-                }, 2000);
-            }
+            // Load our specific debug quiz for width testing
+            const debugQuizFilename = 'debug-width-quiz.json';
+            console.log('Loading debug quiz file:', debugQuizFilename);
+            
+            this.quizManager.loadQuiz(debugQuizFilename);
+            
+            // Wait for quiz to load, then start the game
+            setTimeout(() => {
+                console.log('🐛 DEBUG: Auto-starting width comparison quiz...');
+                this.startHosting();
+            }, 2000);
+            
+            console.log('🐛 DEBUG: Loading "Debug Quiz - Width Comparison" and starting game...');
+            
+            // Add debugging after game starts
+            setTimeout(() => {
+                this.debugQuestionWidths();
+            }, 5000); // Wait for game to fully start
+            
         } catch (error) {
-            console.error('Error in quick debug load:', error);
-            console.error('Failed to load quiz for debugging:', error);
+            console.error('🐛 DEBUG: Error loading debug quiz:', error);
+            
+            // Fallback to original behavior
+            try {
+                const response = await fetch('/api/quizzes');
+                const data = await response.json();
+                
+                if (data.quizzes && data.quizzes.length > 0) {
+                    let targetQuiz = data.quizzes[0];
+                    console.log('Fallback: loading quiz for debug:', targetQuiz.title);
+                    this.quizManager.loadQuiz(targetQuiz.filename);
+                    
+                    setTimeout(() => {
+                        console.log('Auto-starting fallback quiz...');
+                        this.startHosting();
+                    }, 2000);
+                }
+            } catch (fallbackError) {
+                console.error('Failed to load any quiz for debugging:', fallbackError);
+            }
         }
+    }
+    
+    /**
+     * Debug function to analyze question width styles
+     */
+    debugQuestionWidths() {
+        console.log('🔎 WIDTH DEBUG: Analyzing question display styles...');
+        
+        const questionDisplay = document.querySelector('.question-display');
+        const gameContainer = document.querySelector('.game-container');
+        const currentQuestion = document.querySelector('#current-question');
+        
+        if (questionDisplay) {
+            const styles = window.getComputedStyle(questionDisplay);
+            console.log('📏 .question-display styles:', {
+                'max-width': styles.maxWidth,
+                'width': styles.width,
+                'margin-left': styles.marginLeft,
+                'margin-right': styles.marginRight,
+                'padding': styles.padding,
+                'box-sizing': styles.boxSizing
+            });
+            
+            // Check for :has(pre) detection
+            const hasPreElements = questionDisplay.querySelectorAll('pre').length > 0;
+            const hasCodeClass = questionDisplay.classList.contains('has-code');
+            console.log('📝 Code detection:', {
+                'has <pre> elements': hasPreElements,
+                'has .has-code class': hasCodeClass,
+                'classes': Array.from(questionDisplay.classList)
+            });
+        }
+        
+        if (gameContainer) {
+            const styles = window.getComputedStyle(gameContainer);
+            console.log('📏 .game-container styles:', {
+                'max-width': styles.maxWidth,
+                'width': styles.width,
+                'margin': styles.margin
+            });
+        }
+        
+        if (currentQuestion) {
+            const hasCode = currentQuestion.innerHTML.includes('<pre>');
+            const questionText = currentQuestion.textContent.substring(0, 50) + '...';
+            console.log('📄 Current question:', {
+                'text': questionText,
+                'contains code': hasCode,
+                'innerHTML length': currentQuestion.innerHTML.length
+            });
+        }
+        
+        // Log all CSS rules that might affect width
+        console.log('📋 CSS Debug: Check browser DevTools > Elements > Computed styles for detailed CSS rules');
     }
 
     /**
@@ -800,7 +856,7 @@ export class QuizGame {
         
         body.setAttribute('data-theme', newTheme);
         if (themeToggle) {
-            themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+            themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️'; // Moon for dark, sun for light
         }
         localStorage.setItem('theme', newTheme);
         logger.debug('Theme switched to:', newTheme);
