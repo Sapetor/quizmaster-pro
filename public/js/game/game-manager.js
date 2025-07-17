@@ -6,6 +6,7 @@
 import { getTranslation, getOptionLetter } from '../utils/translations.js';
 import { TIMING, logger } from '../core/config.js';
 import { MathRenderer } from '../utils/math-renderer.js';
+import { mathJaxService } from '../utils/mathjax-service.js';
 
 export class GameManager {
     constructor(socket, uiManager, soundManager, socketManager = null) {
@@ -109,7 +110,7 @@ export class GameManager {
             
             // Host display
             if (hostQuestionElement) {
-                hostQuestionElement.innerHTML = data.question;
+                hostQuestionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
                 logger.debug('Host question HTML set:', data.question);
                 // Debug what MathJax properties exist and force render
                 logger.debug('MathJax debug:', {
@@ -121,17 +122,12 @@ export class GameManager {
                     keys: window.MathJax ? Object.keys(window.MathJax) : 'none'
                 });
                 
-                // Simple MathJax rendering with delay
-                setTimeout(() => {
-                    if (window.MathJax?.typesetPromise) {
-                        logger.debug('Rendering MathJax for host question');
-                        window.MathJax.typesetPromise([hostQuestionElement]).then(() => {
-                            logger.debug('MathJax question rendering completed');
-                        }).catch(err => {
-                            logger.error('MathJax question render error:', err);
-                        });
-                    }
-                }, 100); // Simple 100ms delay
+                // Render MathJax for host question
+                mathJaxService.renderElement(hostQuestionElement, 100).then(() => {
+                    logger.debug('MathJax question rendering completed');
+                }).catch(err => {
+                    logger.error('MathJax question render error:', err);
+                });
             }
             
             if (hostOptionsContainer) {
@@ -166,7 +162,7 @@ export class GameManager {
                     if (data.type === 'multiple-choice' || data.type === 'multiple-correct') {
                         data.options.forEach((option, index) => {
                             if (options[index]) {
-                                options[index].innerHTML = `${getOptionLetter(index)}: ${option}`;
+                                options[index].innerHTML = `${getOptionLetter(index)}: ${this.mathRenderer.formatCodeBlocks(option)}`;
                                 options[index].style.display = 'block';
                                 // Add data-multiple attribute for multiple-correct questions to get special styling
                                 if (data.type === 'multiple-correct') {
@@ -185,17 +181,12 @@ export class GameManager {
                     }
                 }
                 
-                // Simple MathJax rendering for options with delay
-                setTimeout(() => {
-                    if (window.MathJax?.typesetPromise) {
-                        logger.debug('Rendering MathJax for host options');
-                        window.MathJax.typesetPromise([hostOptionsContainer]).then(() => {
-                            logger.debug('MathJax options rendering completed');
-                        }).catch(err => {
-                            logger.error('MathJax options render error:', err);
-                        });
-                    }
-                }, 150); // Simple 150ms delay, slightly after question
+                // Render MathJax for host options
+                mathJaxService.renderElement(hostOptionsContainer, 150).then(() => {
+                    logger.debug('MathJax options rendering completed');
+                }).catch(err => {
+                    logger.error('MathJax options render error:', err);
+                });
             }
         } else {
             // Player display
@@ -203,17 +194,13 @@ export class GameManager {
             this.updatePlayerQuestionCounter(data.questionNumber, data.totalQuestions);
             
             if (questionElement) {
-                questionElement.innerHTML = data.question;
-                // Simple MathJax rendering for player with delay
-                setTimeout(() => {
-                    if (window.MathJax?.typesetPromise) {
-                        window.MathJax.typesetPromise([questionElement]).then(() => {
-                            logger.debug('MathJax rendering completed for player question');
-                        }).catch(err => {
-                            logger.error('MathJax player question render error:', err);
-                        });
-                    }
-                }, 100);
+                questionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
+                // Render MathJax for player question
+                mathJaxService.renderElement(questionElement, 100).then(() => {
+                    logger.debug('MathJax rendering completed for player question');
+                }).catch(err => {
+                    logger.error('MathJax player question render error:', err);
+                });
             }
             
             // Update existing static elements with question data
@@ -225,7 +212,7 @@ export class GameManager {
                     const existingButtons = optionsContainer.querySelectorAll('.player-option');
                     existingButtons.forEach((button, index) => {
                         if (index < data.options.length) {
-                            button.innerHTML = `<span class="option-letter">${getOptionLetter(index)}:</span> ${data.options[index]}`;
+                            button.innerHTML = `<span class="option-letter">${getOptionLetter(index)}:</span> ${this.mathRenderer.formatCodeBlocks(data.options[index])}`;
                             button.setAttribute('data-answer', index.toString());
                             button.classList.remove('selected', 'disabled');
                             button.style.display = 'block';
@@ -251,10 +238,9 @@ export class GameManager {
                     checkboxes.forEach(cb => cb.checked = false);
                     checkboxLabels.forEach((label, index) => {
                         if (data.options && data.options[index]) {
-                            const formattedOption = data.options[index]; // this.formatCodeBlocks(data.options[index]);
+                            const formattedOption = this.mathRenderer.formatCodeBlocks(data.options[index]);
                             label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${getOptionLetter(index)}: ${formattedOption}`;
                             label.setAttribute('data-option', index);
-                            // this.renderMathJax(label);
                         } else {
                             label.style.display = 'none';
                         }
@@ -317,17 +303,13 @@ export class GameManager {
                 }
             }
             
-            // Render math in player options with delay
+            // Render math in player options
             if (optionsContainer) {
-                setTimeout(() => {
-                    if (window.MathJax?.typesetPromise) {
-                        window.MathJax.typesetPromise([optionsContainer]).then(() => {
-                            logger.debug('MathJax rendering completed for player options');
-                        }).catch(err => {
-                            logger.error('MathJax player options render error:', err);
-                        });
-                    }
-                }, 150);
+                mathJaxService.renderElement(optionsContainer, 150).then(() => {
+                    logger.debug('MathJax rendering completed for player options');
+                }).catch(err => {
+                    logger.error('MathJax player options render error:', err);
+                });
             }
         }
         
