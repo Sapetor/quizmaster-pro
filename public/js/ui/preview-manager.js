@@ -18,6 +18,7 @@ export class PreviewManager {
         this.splitPreviewListenersSet = false;
         this.previewMode = false;
         this.manualNavigationInProgress = false;
+        this.mathJaxRenderingInProgress = false; // Prevent multiple simultaneous renders
         this.updatePreviewDebounced = this.debounce(() => this.updateSplitPreview(), 300);
         
         // Store listener references for proper cleanup
@@ -69,11 +70,7 @@ export class PreviewManager {
             
             // Initialize preview
             this.initializeSplitPreview();
-            
-            // Ensure MathJax renders when preview is opened
-            setTimeout(() => {
-                this.renderMathJaxForPreview();
-            }, 200);
+            // initializeSplitPreview() already calls updateSplitPreview() which calls renderMathJaxForPreview()
         } else {
             // Clean up listeners first
             this.cleanupPreviewListeners();
@@ -170,11 +167,7 @@ export class PreviewManager {
                 this.currentPreviewQuestion--;
                 logger.debug(`Moving to previous question: ${this.currentPreviewQuestion}`);
                 this.updateSplitPreview();
-                
-                // Force MathJax re-rendering after navigation
-                setTimeout(() => {
-                    this.renderMathJaxForPreview();
-                }, 100);
+                // updateSplitPreview() already calls renderMathJaxForPreview()
             } else {
                 logger.debug('Already at first question, not going back');
             }
@@ -197,11 +190,7 @@ export class PreviewManager {
                 this.currentPreviewQuestion++;
                 logger.debug(`Moving to next question: ${this.currentPreviewQuestion}`);
                 this.updateSplitPreview();
-                
-                // Force MathJax re-rendering after navigation
-                setTimeout(() => {
-                    this.renderMathJaxForPreview();
-                }, 100);
+                // updateSplitPreview() already calls renderMathJaxForPreview()
             } else {
                 logger.debug('Already at last question, not advancing');
             }
@@ -608,12 +597,21 @@ export class PreviewManager {
      * Render MathJax for preview content with enhanced navigation support
      */
     renderMathJaxForPreview() {
+        // Prevent multiple simultaneous renders
+        if (this.mathJaxRenderingInProgress) {
+            logger.debug('🔒 MathJax rendering already in progress, skipping');
+            return;
+        }
+
         const previewElement = document.getElementById('preview-content-split');
         
         if (!previewElement) {
             logger.warn('Preview content element not found for MathJax rendering');
             return;
         }
+
+        // Set rendering lock
+        this.mathJaxRenderingInProgress = true;
 
         // Use requestAnimationFrame to ensure content is populated before rendering
         requestAnimationFrame(() => {
@@ -654,13 +652,18 @@ export class PreviewManager {
                                 this.mathJaxService.renderElement(previewElement, renderTimeout, 3)
                                     .then(() => {
                                         logger.debug('✅ Preview MathJax rendering completed successfully (Windows delayed)');
+                                        this.mathJaxRenderingInProgress = false; // Clear rendering lock
                                     })
                                     .catch(err => {
                                         logger.warn('🔍 Preview MathJax rendering failed, trying fallback:', err);
-                                        this.fallbackMathJaxRender(previewElement);
+                                        this.fallbackMathJaxRender(previewElement)
+                                            .finally(() => {
+                                                this.mathJaxRenderingInProgress = false; // Clear rendering lock
+                                            });
                                     });
                             } else {
                                 logger.debug('📝 LaTeX content disappeared during Windows delay, skipping render');
+                                this.mathJaxRenderingInProgress = false; // Clear rendering lock
                             }
                         }, 100); // Additional 100ms delay for Windows content stability
                     } else {
@@ -668,16 +671,22 @@ export class PreviewManager {
                         this.mathJaxService.renderElement(previewElement, renderTimeout, 3)
                             .then(() => {
                                 logger.debug('✅ Preview MathJax rendering completed successfully');
+                                this.mathJaxRenderingInProgress = false; // Clear rendering lock
                             })
                             .catch(err => {
                                 logger.warn('🔍 Preview MathJax rendering failed, trying fallback:', err);
-                                this.fallbackMathJaxRender(previewElement);
+                                this.fallbackMathJaxRender(previewElement)
+                                    .finally(() => {
+                                        this.mathJaxRenderingInProgress = false; // Clear rendering lock
+                                    });
                             });
                     }
                 } else if (!hasLatexContent) {
                     logger.debug('📝 No LaTeX content found in preview, skipping MathJax rendering');
+                    this.mathJaxRenderingInProgress = false; // Clear rendering lock
                 } else {
                     logger.warn('🔍 MathJax service not available for preview rendering');
+                    this.mathJaxRenderingInProgress = false; // Clear rendering lock
                     
                     // Try direct MathJax rendering as fallback
                     if (hasLatexContent && window.MathJax) {
@@ -695,7 +704,7 @@ export class PreviewManager {
         if (window.MathJax && window.MathJax.typesetPromise) {
             logger.debug('🔄 Using fallback MathJax rendering for preview');
             
-            window.MathJax.typesetPromise([element])
+            return window.MathJax.typesetPromise([element])
                 .then(() => {
                     logger.debug('✅ Fallback MathJax rendering completed');
                 })
@@ -704,6 +713,7 @@ export class PreviewManager {
                 });
         } else {
             logger.warn('🚫 No MathJax rendering methods available');
+            return Promise.resolve(); // Return resolved promise when no MathJax available
         }
     }
 
@@ -932,11 +942,7 @@ export class PreviewManager {
                 console.log(`🎯 Auto-scrolling preview from question ${this.currentPreviewQuestion + 1} to ${questionIndex + 1}`);
                 this.currentPreviewQuestion = questionIndex;
                 this.updateSplitPreview();
-                
-                // Force MathJax re-rendering after auto-scroll navigation
-                setTimeout(() => {
-                    this.renderMathJaxForPreview();
-                }, 150);
+                // updateSplitPreview() already calls renderMathJaxForPreview()
             } else {
                 console.log(`❌ Invalid questionIndex: ${questionIndex}, not updating preview`);
             }
