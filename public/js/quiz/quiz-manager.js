@@ -6,12 +6,14 @@
 import { getTranslation, showAlert } from '../utils/translations.js';
 import { createQuestionElement } from '../utils/question-utils.js';
 import { MathRenderer } from '../utils/math-renderer.js';
+import { errorHandler } from '../utils/error-handler.js';
 
 export class QuizManager {
     constructor(uiManager) {
         this.uiManager = uiManager;
         this.mathRenderer = new MathRenderer();
         this.autoSaveTimeout = null;
+        this.errorHandler = errorHandler; // Add ErrorHandler for future use
     }
 
     /**
@@ -192,7 +194,7 @@ export class QuizManager {
                 showAlert('error', data.message || getTranslation('failed_save_quiz'));
             }
         } catch (error) {
-            console.error('Error saving quiz:', error);
+            this.errorHandler.log(error, { operation: 'saveQuiz' });
             showAlert('error', getTranslation('failed_save_quiz'));
         }
     }
@@ -246,7 +248,7 @@ export class QuizManager {
                 }
             }
         } catch (error) {
-            console.error('Error loading quizzes:', error);
+            this.errorHandler.log(error, { operation: 'loadQuizzes' });
             const quizList = document.getElementById('quiz-list');
             if (quizList) {
                 quizList.innerHTML = `

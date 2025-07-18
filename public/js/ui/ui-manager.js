@@ -5,10 +5,12 @@
 
 import { getTranslation, translatePage } from '../utils/translations.js';
 import { TIMING } from '../core/config.js';
+import { errorHandler } from '../utils/error-handler.js';
 
 export class UIManager {
     constructor() {
         this.currentScreen = 'main-menu';
+        this.errorHandler = errorHandler; // Add ErrorHandler for future use
     }
 
     showScreen(screenId) {
