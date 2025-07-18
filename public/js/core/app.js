@@ -571,45 +571,68 @@ export class QuizGame {
         try {
             console.log('🐛 DEBUG: Loading width comparison quiz...');
             
-            // Load our specific debug quiz for width testing
-            const debugQuizFilename = 'debug-width-quiz.json';
-            console.log('Loading debug quiz file:', debugQuizFilename);
+            // First check if we can fetch the quiz list
+            const response = await fetch('/api/quizzes');
+            if (!response.ok) {
+                throw new Error(`Failed to fetch quizzes: ${response.status} ${response.statusText}`);
+            }
             
-            this.quizManager.loadQuiz(debugQuizFilename);
+            const data = await response.json();
+            console.log('Available quizzes:', data.quizzes?.length || 0);
+            
+            // Look for debug quiz first
+            const debugQuizFilename = 'debug-width-quiz.json';
+            const debugQuiz = data.quizzes?.find(q => q.filename === debugQuizFilename);
+            
+            let targetQuiz = null;
+            if (debugQuiz) {
+                console.log('Found debug quiz:', debugQuiz.title);
+                targetQuiz = debugQuiz;
+            } else if (data.quizzes && data.quizzes.length > 0) {
+                console.log('Debug quiz not found, using first available quiz');
+                targetQuiz = data.quizzes[0];
+            } else {
+                throw new Error('No quizzes available');
+            }
+            
+            console.log('Loading quiz for debug:', targetQuiz.title);
+            
+            // Load the quiz
+            await this.quizManager.loadQuiz(targetQuiz.filename);
             
             // Wait for quiz to load, then start the game
             setTimeout(() => {
-                console.log('🐛 DEBUG: Auto-starting width comparison quiz...');
-                this.startHosting();
+                try {
+                    console.log('🐛 DEBUG: Auto-starting quiz...');
+                    this.startHosting();
+                    
+                    // Add debugging after game starts
+                    setTimeout(() => {
+                        try {
+                            this.debugQuestionWidths();
+                        } catch (debugError) {
+                            console.error('Debug analysis failed:', debugError);
+                        }
+                    }, 5000); // Wait for game to fully start
+                    
+                } catch (startError) {
+                    console.error('Failed to start game:', startError);
+                }
             }, 2000);
             
-            console.log('🐛 DEBUG: Loading "Debug Quiz - Width Comparison" and starting game...');
-            
-            // Add debugging after game starts
-            setTimeout(() => {
-                this.debugQuestionWidths();
-            }, 5000); // Wait for game to fully start
-            
         } catch (error) {
-            console.error('🐛 DEBUG: Error loading debug quiz:', error);
+            console.error('🐛 DEBUG: Error in loadLastQuiz:', error);
             
-            // Fallback to original behavior
-            try {
-                const response = await fetch('/api/quizzes');
-                const data = await response.json();
-                
-                if (data.quizzes && data.quizzes.length > 0) {
-                    let targetQuiz = data.quizzes[0];
-                    console.log('Fallback: loading quiz for debug:', targetQuiz.title);
-                    this.quizManager.loadQuiz(targetQuiz.filename);
-                    
-                    setTimeout(() => {
-                        console.log('Auto-starting fallback quiz...');
-                        this.startHosting();
-                    }, 2000);
+            // Show user-friendly error
+            const errorModal = document.getElementById('error-modal');
+            if (errorModal) {
+                const errorMessage = document.getElementById('error-message');
+                if (errorMessage) {
+                    errorMessage.textContent = `Debug function failed: ${error.message}. Please check the console for details.`;
                 }
-            } catch (fallbackError) {
-                console.error('Failed to load any quiz for debugging:', fallbackError);
+                errorModal.style.display = 'flex';
+            } else {
+                alert(`Debug function failed: ${error.message}`);
             }
         }
     }
