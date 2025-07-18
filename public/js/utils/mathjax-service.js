@@ -7,7 +7,17 @@ export class MathJaxService {
     constructor() {
         this.isReady = false;
         this.pendingRenders = new Set();
+        this.isWindows = this.detectWindows();
         this.initializeMathJax();
+    }
+
+    /**
+     * Detect if running on Windows
+     * @returns {boolean}
+     */
+    detectWindows() {
+        return navigator.platform.toLowerCase().includes('win') || 
+               navigator.userAgent.toLowerCase().includes('windows');
     }
 
     /**
@@ -50,22 +60,43 @@ export class MathJaxService {
             const attemptRender = (attempt = 1) => {
                 setTimeout(() => {
                     if (window.MathJax?.typesetPromise) {
+                        // Windows-specific: Clear existing MathJax elements before re-rendering
+                        if (this.isWindows) {
+                            const existingMath = element.querySelectorAll('mjx-container');
+                            existingMath.forEach(mjx => mjx.remove());
+                        }
+                        
                         window.MathJax.typesetPromise([element])
                             .then(() => {
                                 this.pendingRenders.delete(element);
-                                resolve();
+                                
+                                // Windows-specific: Force repaint to fix rendering issues
+                                if (this.isWindows) {
+                                    setTimeout(() => {
+                                        element.style.transform = 'translateZ(0)';
+                                        element.offsetHeight; // Force reflow
+                                        element.style.transform = '';
+                                        resolve();
+                                    }, 10);
+                                } else {
+                                    resolve();
+                                }
                             })
                             .catch(error => {
                                 console.error(`MathJax render error (attempt ${attempt}):`, error);
                                 if (attempt < maxRetries) {
-                                    attemptRender(attempt + 1);
+                                    // Windows-specific: Increase timeout for retries
+                                    const retryTimeout = this.isWindows ? timeout * 1.5 : timeout;
+                                    setTimeout(() => attemptRender(attempt + 1), retryTimeout);
                                 } else {
                                     this.pendingRenders.delete(element);
                                     reject(error);
                                 }
                             });
                     } else if (attempt < maxRetries) {
-                        attemptRender(attempt + 1);
+                        // Windows-specific: Increase timeout for MathJax loading
+                        const retryTimeout = this.isWindows ? timeout * 1.5 : timeout;
+                        setTimeout(() => attemptRender(attempt + 1), retryTimeout);
                     } else {
                         this.pendingRenders.delete(element);
                         resolve(); // Resolve anyway to prevent hanging
@@ -169,7 +200,10 @@ export class MathJaxService {
             pendingRenders: this.pendingRenders.size,
             startupExists: !!window.MathJax?.startup,
             tex2jaxExists: !!window.MathJax?.tex2jax,
-            hubExists: !!window.MathJax?.Hub
+            hubExists: !!window.MathJax?.Hub,
+            isWindows: this.isWindows,
+            platform: navigator.platform,
+            userAgent: navigator.userAgent.substring(0, 100) + '...' // Truncated for readability
         };
     }
 

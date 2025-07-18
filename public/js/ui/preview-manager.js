@@ -136,10 +136,16 @@ export class PreviewManager {
             // Force MathJax rendering on initialization
             setTimeout(() => {
                 const previewElement = document.getElementById('preview-content-split');
-                if (previewElement && window.MathJax && window.MathJax.typesetPromise) {
+                if (previewElement) {
                     console.log('🧮 Force rendering MathJax on preview initialization');
-                    window.MathJax.typesetPromise([previewElement]).catch(err => {
-                        console.warn('Initial MathJax rendering failed:', err);
+                    this.mathJaxService.renderElement(previewElement, 200).catch(err => {
+                        console.warn('Initial MathJax rendering failed, falling back to legacy method:', err);
+                        // Fallback to original method
+                        if (window.MathJax && window.MathJax.typesetPromise) {
+                            window.MathJax.typesetPromise([previewElement]).catch(err2 => {
+                                console.warn('Fallback MathJax rendering also failed:', err2);
+                            });
+                        }
                     });
                 }
             }, 300);
@@ -598,7 +604,17 @@ export class PreviewManager {
         // Render LaTeX in split preview with proper targeting and retry mechanism
         // Use setTimeout to ensure DOM updates are complete before MathJax
         setTimeout(() => {
-            this.renderMathJaxWithRetry();
+            const previewElement = document.getElementById('preview-content-split');
+            if (previewElement) {
+                // Use centralized MathJax service for Windows-specific optimizations
+                this.mathJaxService.renderElement(previewElement, 150).catch(err => {
+                    console.warn('MathJax rendering failed, falling back to legacy method:', err);
+                    // Fallback to original method
+                    this.renderMathJaxWithRetry();
+                });
+            } else {
+                this.renderMathJaxWithRetry();
+            }
         }, 100);
     }
 
