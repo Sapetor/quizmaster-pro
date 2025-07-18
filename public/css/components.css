@@ -537,6 +537,11 @@ input::placeholder, textarea::placeholder {
     display: inline-block;
     width: 20px;
     text-align: center;
+    line-height: 1;
+    vertical-align: middle;
+    overflow: hidden;
+    white-space: nowrap;
+    font-family: "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", sans-serif;
 }
 
 .header-controls .language-name {
