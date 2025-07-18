@@ -6,11 +6,13 @@
 
 import { getTranslation, getOptionLetter } from '../utils/translations.js';
 import { MathRenderer } from '../utils/math-renderer.js';
+import { MathJaxService } from '../utils/mathjax-service.js';
 import { logger } from '../core/config.js';
 
 export class PreviewManager {
     constructor(mathRenderer) {
         this.mathRenderer = mathRenderer || new MathRenderer();
+        this.mathJaxService = new MathJaxService();
         this.currentPreviewQuestion = 0;
         this.previewListenersSet = false;
         this.splitPreviewListenersSet = false;
@@ -131,12 +133,12 @@ export class PreviewManager {
         // Force update and MathJax rendering on a short delay to ensure DOM is ready
         setTimeout(() => {
             this.updateSplitPreview();
-            // Force MathJax rendering on initialization
+            // Force MathJax rendering on initialization using centralized service
             setTimeout(() => {
                 const previewElement = document.getElementById('preview-content-split');
-                if (previewElement && window.MathJax && window.MathJax.typesetPromise) {
+                if (previewElement) {
                     console.log('🧮 Force rendering MathJax on preview initialization');
-                    window.MathJax.typesetPromise([previewElement]).catch(err => {
+                    this.mathJaxService.renderElement(previewElement, 200).catch(err => {
                         console.warn('Initial MathJax rendering failed:', err);
                     });
                 }
@@ -596,7 +598,12 @@ export class PreviewManager {
         // Render LaTeX in split preview with proper targeting and retry mechanism
         // Use setTimeout to ensure DOM updates are complete before MathJax
         setTimeout(() => {
-            this.renderMathJaxWithRetry();
+            const previewElement = document.getElementById('preview-content-split');
+            if (previewElement) {
+                this.mathJaxService.renderElement(previewElement, 150).catch(err => {
+                    console.warn('MathJax rendering failed in split preview:', err);
+                });
+            }
         }, 100);
     }
 
