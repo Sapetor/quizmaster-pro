@@ -1192,3 +1192,68 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('');
   }
 });
+
+// Graceful shutdown handling
+const gracefulShutdown = (signal) => {
+  console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
+  
+  // Stop accepting new connections
+  server.close(() => {
+    console.log('✅ HTTP server closed');
+    
+    // Close all socket connections
+    io.close(() => {
+      console.log('✅ Socket.IO server closed');
+      
+      // Clear all game timers
+      games.forEach(game => {
+        if (game.timer) {
+          clearTimeout(game.timer);
+        }
+        if (game.leaderboardTimer) {
+          clearTimeout(game.leaderboardTimer);
+        }
+      });
+      
+      console.log('✅ All timers cleared');
+      console.log('👋 Server shutdown complete');
+      process.exit(0);
+    });
+  });
+  
+  // Force close after 10 seconds
+  setTimeout(() => {
+    console.log('⚠️  Forcing server shutdown after 10 seconds...');
+    process.exit(1);
+  }, 10000);
+};
+
+// Handle different termination signals
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));   // Ctrl+C
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM')); // Termination signal
+process.on('SIGQUIT', () => gracefulShutdown('SIGQUIT')); // Quit signal
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  gracefulShutdown('uncaughtException');
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown('unhandledRejection');
+});
+
+// Handle Windows-specific signals
+if (process.platform === 'win32') {
+  const readline = require('readline');
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  
+  rl.on('SIGINT', () => {
+    gracefulShutdown('SIGINT');
+  });
+}
