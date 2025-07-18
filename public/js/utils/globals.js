@@ -12,6 +12,52 @@ import { changeLanguage } from './translations.js';
 
 // Global functions that need to be accessible from HTML
 
+// Language dropdown functions
+export function toggleLanguageDropdown() {
+    const dropdown = document.getElementById('language-selector');
+    if (dropdown) {
+        dropdown.classList.toggle('open');
+    }
+}
+
+export function selectLanguage(langCode, event) {
+    event.stopPropagation();
+    
+    // Close dropdown
+    const dropdown = document.getElementById('language-selector');
+    if (dropdown) {
+        dropdown.classList.remove('open');
+    }
+    
+    // Update selected language display
+    const selectedFlag = dropdown.querySelector('.language-dropdown-selected .language-flag');
+    const selectedName = dropdown.querySelector('.language-dropdown-selected .language-name');
+    const selectedOption = dropdown.querySelector(`[data-value="${langCode}"]`);
+    
+    if (selectedFlag && selectedName && selectedOption) {
+        selectedFlag.textContent = selectedOption.querySelector('.language-flag').textContent;
+        selectedName.textContent = selectedOption.querySelector('.language-name').textContent;
+        selectedName.setAttribute('data-translate', selectedOption.querySelector('.language-name').getAttribute('data-translate'));
+    }
+    
+    // Update selected state
+    dropdown.querySelectorAll('.language-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    selectedOption.classList.add('selected');
+    
+    // Call the language change function
+    changeLanguage(langCode);
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (event) => {
+    const dropdown = document.getElementById('language-selector');
+    if (dropdown && !dropdown.contains(event.target)) {
+        dropdown.classList.remove('open');
+    }
+});
+
 export function togglePreviewMode() {
     console.log('Preview mode toggle function called');
     if (window.game && window.game.togglePreviewMode) {
@@ -340,6 +386,8 @@ if (document.readyState === 'loading') {
 }
 
 // Make all functions globally accessible for HTML handlers
+window.toggleLanguageDropdown = toggleLanguageDropdown;
+window.selectLanguage = selectLanguage;
 window.togglePreviewMode = togglePreviewMode;
 window.openAIGeneratorModal = openAIGeneratorModal;
 window.toggleToolbar = toggleToolbar;
