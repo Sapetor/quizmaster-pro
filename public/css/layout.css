@@ -75,6 +75,16 @@
     padding: 0;
     margin: 0;
     overflow: hidden;
+    position: relative;
+}
+
+/* Ensure only editor and preview participate in the grid */
+.host-container.split-screen > .quiz-editor-section {
+    grid-column: 1;
+}
+
+.host-container.split-screen > .quiz-preview-section {
+    grid-column: 2;
 }
 
 /* Adjust split-screen positioning when toolbar is active */
@@ -130,19 +140,22 @@
 
 /* Resizable Split Divider */
 .split-resize-handle {
-    position: relative;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--split-left, 50%) * 1% + 6px); /* Position at split boundary with gap offset */
     width: 8px;
     cursor: col-resize;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;
-    margin: 0 2px;
-    transition: all 0.2s ease;
+    transition: left 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    z-index: 10;
 }
 
 .split-resize-handle:hover {
