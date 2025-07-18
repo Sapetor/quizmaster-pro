@@ -21,6 +21,12 @@ export class PreviewManager {
         this.mathJaxRenderingInProgress = false; // Prevent multiple simultaneous renders
         this.updatePreviewDebounced = this.debounce(() => this.updateSplitPreview(), 300);
         
+        // Drag functionality state
+        this.isDragging = false;
+        this.dragStartX = 0;
+        this.initialSplitRatio = 50;
+        this.dragTooltip = null;
+        
         // Store listener references for proper cleanup
         this.listeners = {
             prevBtn: null,
@@ -31,7 +37,12 @@ export class PreviewManager {
             radioHandler: null,
             checkboxHandler: null,
             trueFalseHandler: null,
-            imageHandler: null
+            imageHandler: null,
+            // Drag handlers
+            dragStart: null,
+            dragMove: null,
+            dragEnd: null,
+            sliderChange: null
         };
     }
 
@@ -55,6 +66,12 @@ export class PreviewManager {
             previewSection.style.display = 'block';
             hostContainer.classList.add('split-screen');
             
+            // Show resize handle
+            const resizeHandle = document.getElementById('split-resize-handle');
+            if (resizeHandle) {
+                resizeHandle.style.display = 'flex';
+            }
+            
             // FORCE PROPER 50/50 SPLIT RATIO
             hostContainer.style.setProperty('--split-left', '50fr');
             hostContainer.style.setProperty('--split-right', '50fr');
@@ -71,9 +88,13 @@ export class PreviewManager {
             // Initialize preview
             this.initializeSplitPreview();
             // initializeSplitPreview() already calls updateSplitPreview() which calls renderMathJaxForPreview()
+            
+            // Initialize drag functionality
+            this.initializeDragFunctionality();
         } else {
             // Clean up listeners first
             this.cleanupPreviewListeners();
+            this.cleanupDragFunctionality();
             
             // Clear any pending timeouts to prevent glitchy behavior
             clearTimeout(this.autoScrollTimeout);
@@ -94,6 +115,12 @@ export class PreviewManager {
             // Hide preview and remove split-screen class simultaneously
             previewSection.style.display = 'none';
             hostContainer.classList.remove('split-screen');
+            
+            // Hide resize handle
+            const resizeHandle = document.getElementById('split-resize-handle');
+            if (resizeHandle) {
+                resizeHandle.style.display = 'none';
+            }
             
             // Update button styling and text
             if (toggleBtn) {
@@ -1000,7 +1027,12 @@ export class PreviewManager {
             radioHandler: null,
             checkboxHandler: null,
             trueFalseHandler: null,
-            imageHandler: null
+            imageHandler: null,
+            // Drag handlers
+            dragStart: null,
+            dragMove: null,
+            dragEnd: null,
+            sliderChange: null
         };
         
         // Reset flags
@@ -1031,6 +1063,260 @@ export class PreviewManager {
     renderMathJaxWithRetry(attempt = 0) {
         logger.debug('Legacy renderMathJaxWithRetry called, using new centralized method');
         this.renderMathJaxForPreview();
+    }
+
+    /**
+     * Initialize drag functionality for the split divider
+     */
+    initializeDragFunctionality() {
+        const resizeHandle = document.getElementById('split-resize-handle');
+        if (!resizeHandle) {
+            logger.warn('Resize handle not found, drag functionality not initialized');
+            return;
+        }
+
+        // Mouse down on resize handle
+        this.listeners.dragStart = (e) => {
+            e.preventDefault();
+            this.isDragging = true;
+            this.dragStartX = e.clientX;
+            
+            // Get current split ratio
+            const hostContainer = document.querySelector('.host-container');
+            const computedStyle = getComputedStyle(hostContainer);
+            const leftValue = computedStyle.getPropertyValue('--split-left').trim();
+            
+            // Parse current ratio (handle both 'fr' and '%' units)
+            if (leftValue.endsWith('fr')) {
+                this.initialSplitRatio = parseFloat(leftValue);
+            } else if (leftValue.endsWith('%')) {
+                this.initialSplitRatio = parseFloat(leftValue);
+            } else {
+                this.initialSplitRatio = 50; // Default fallback
+            }
+            
+            resizeHandle.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            
+            // Create and show tooltip
+            this.createDragTooltip();
+            
+            logger.debug('Drag started', { initialRatio: this.initialSplitRatio, startX: this.dragStartX });
+        };
+
+        // Mouse move during drag
+        this.listeners.dragMove = (e) => {
+            if (!this.isDragging) return;
+            
+            e.preventDefault();
+            const hostContainer = document.querySelector('.host-container');
+            const containerRect = hostContainer.getBoundingClientRect();
+            const containerWidth = containerRect.width;
+            
+            // Calculate new ratio based on mouse position
+            const mouseX = e.clientX - containerRect.left;
+            const newRatio = Math.max(25, Math.min(75, (mouseX / containerWidth) * 100));
+            
+            // Update CSS custom properties
+            hostContainer.style.setProperty('--split-left', `${newRatio}fr`);
+            hostContainer.style.setProperty('--split-right', `${100 - newRatio}fr`);
+            
+            // Update existing slider if it exists
+            this.updateSplitRatioSlider(newRatio);
+            
+            // Update the display using the existing global function
+            if (window.updateSplitRatio) {
+                // Call the existing function to update the display
+                const display = document.getElementById('split-ratio-display');
+                if (display) {
+                    display.textContent = `${Math.round(newRatio)}/${Math.round(100 - newRatio)}`;
+                }
+            }
+            
+            // Update tooltip position and content
+            this.updateDragTooltip(e.clientX, newRatio);
+            
+            logger.debug('Dragging', { newRatio, mouseX, containerWidth });
+        };
+
+        // Mouse up - end drag
+        this.listeners.dragEnd = (e) => {
+            if (!this.isDragging) return;
+            
+            this.isDragging = false;
+            resizeHandle.classList.remove('dragging');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            
+            // Hide and remove tooltip
+            this.hideDragTooltip();
+            
+            // Save the new ratio to localStorage
+            const hostContainer = document.querySelector('.host-container');
+            const leftValue = getComputedStyle(hostContainer).getPropertyValue('--split-left').trim();
+            const ratio = parseFloat(leftValue);
+            
+            if (!isNaN(ratio)) {
+                localStorage.setItem('splitRatio', ratio.toString());
+                logger.debug('Saved split ratio to localStorage', { ratio });
+            }
+            
+            logger.debug('Drag ended');
+        };
+
+        // Add event listeners
+        resizeHandle.addEventListener('mousedown', this.listeners.dragStart);
+        document.addEventListener('mousemove', this.listeners.dragMove);
+        document.addEventListener('mouseup', this.listeners.dragEnd);
+        
+        // Load saved ratio from localStorage
+        this.loadSavedSplitRatio();
+        
+        // Integrate with existing slider
+        this.integrateWithSlider();
+    }
+
+    /**
+     * Update the split ratio slider to match the current drag position
+     */
+    updateSplitRatioSlider(ratio) {
+        const slider = document.getElementById('split-ratio-slider');
+        const valueDisplay = document.getElementById('split-ratio-value');
+        
+        if (slider) {
+            slider.value = ratio;
+        }
+        
+        if (valueDisplay) {
+            valueDisplay.textContent = `${Math.round(ratio)}% / ${Math.round(100 - ratio)}%`;
+        }
+    }
+
+    /**
+     * Load saved split ratio from localStorage
+     */
+    loadSavedSplitRatio() {
+        const savedRatio = localStorage.getItem('splitRatio');
+        if (savedRatio) {
+            const ratio = parseFloat(savedRatio);
+            if (!isNaN(ratio) && ratio >= 25 && ratio <= 75) {
+                const hostContainer = document.querySelector('.host-container');
+                if (hostContainer) {
+                    hostContainer.style.setProperty('--split-left', `${ratio}fr`);
+                    hostContainer.style.setProperty('--split-right', `${100 - ratio}fr`);
+                    this.updateSplitRatioSlider(ratio);
+                    logger.debug('Loaded saved split ratio', { ratio });
+                }
+            }
+        }
+    }
+
+    /**
+     * Integrate with existing slider functionality
+     */
+    integrateWithSlider() {
+        const slider = document.getElementById('split-ratio-slider');
+        if (slider) {
+            // Store reference for cleanup
+            this.listeners.sliderChange = (e) => {
+                if (!this.isDragging) { // Only update if not currently dragging
+                    const ratio = parseFloat(e.target.value);
+                    const hostContainer = document.querySelector('.host-container');
+                    if (hostContainer) {
+                        hostContainer.style.setProperty('--split-left', `${ratio}fr`);
+                        hostContainer.style.setProperty('--split-right', `${100 - ratio}fr`);
+                        
+                        // Save to localStorage
+                        localStorage.setItem('splitRatio', ratio.toString());
+                        
+                        logger.debug('Slider changed split ratio', { ratio });
+                    }
+                }
+            };
+            
+            slider.addEventListener('input', this.listeners.sliderChange);
+        }
+    }
+
+    /**
+     * Create drag tooltip
+     */
+    createDragTooltip() {
+        if (this.dragTooltip) {
+            this.dragTooltip.remove();
+        }
+        
+        this.dragTooltip = document.createElement('div');
+        this.dragTooltip.className = 'drag-tooltip';
+        this.dragTooltip.textContent = '50% / 50%';
+        document.body.appendChild(this.dragTooltip);
+        
+        // Show tooltip after a brief delay
+        setTimeout(() => {
+            if (this.dragTooltip) {
+                this.dragTooltip.classList.add('visible');
+            }
+        }, 100);
+    }
+
+    /**
+     * Update drag tooltip position and content
+     */
+    updateDragTooltip(mouseX, ratio) {
+        if (!this.dragTooltip) return;
+        
+        this.dragTooltip.style.left = `${mouseX}px`;
+        this.dragTooltip.style.top = `${window.scrollY + 100}px`;
+        this.dragTooltip.textContent = `${Math.round(ratio)}% / ${Math.round(100 - ratio)}%`;
+    }
+
+    /**
+     * Hide and remove drag tooltip
+     */
+    hideDragTooltip() {
+        if (this.dragTooltip) {
+            this.dragTooltip.classList.remove('visible');
+            setTimeout(() => {
+                if (this.dragTooltip) {
+                    this.dragTooltip.remove();
+                    this.dragTooltip = null;
+                }
+            }, 200);
+        }
+    }
+
+    /**
+     * Clean up drag functionality
+     */
+    cleanupDragFunctionality() {
+        const resizeHandle = document.getElementById('split-resize-handle');
+        
+        if (resizeHandle && this.listeners.dragStart) {
+            resizeHandle.removeEventListener('mousedown', this.listeners.dragStart);
+        }
+        
+        if (this.listeners.dragMove) {
+            document.removeEventListener('mousemove', this.listeners.dragMove);
+        }
+        
+        if (this.listeners.dragEnd) {
+            document.removeEventListener('mouseup', this.listeners.dragEnd);
+        }
+        
+        // Remove slider listener
+        const slider = document.getElementById('split-ratio-slider');
+        if (slider && this.listeners.sliderChange) {
+            slider.removeEventListener('input', this.listeners.sliderChange);
+        }
+        
+        // Reset drag state
+        this.isDragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        
+        // Clean up tooltip
+        this.hideDragTooltip();
     }
 
     /**
