@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/main.css?v=modular-9.15-windows-mathjax-fix">
+    <link rel="stylesheet" href="css/main.css?v=modular-9.16-mathjax-revert">
     <!-- Removed problematic polyfill.io CDN - MathJax handles ES6 polyfills automatically -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -31,10 +31,7 @@
                 matchFontHeight: false,
                 displayAlign: 'center',
                 displayIndent: '0em',
-                fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2',
-                adaptiveCSS: true,
-                mathmlSpacing: false,
-                skipAttributes: {}
+                fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2'
             },
             startup: {
                 ready: () => {
@@ -44,11 +41,8 @@
                     // Mark as ready for our application
                     window.mathJaxReady = true;
                     
-                    // Windows-specific: Add small delay for font loading
-                    setTimeout(() => {
-                        // Dispatch custom event for modules that need to know
-                        document.dispatchEvent(new CustomEvent('mathjax-ready'));
-                    }, 100);
+                    // Dispatch custom event for modules that need to know
+                    document.dispatchEvent(new CustomEvent('mathjax-ready'));
                 }
             },
             options: {

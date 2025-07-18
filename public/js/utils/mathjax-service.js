@@ -50,35 +50,22 @@ export class MathJaxService {
             const attemptRender = (attempt = 1) => {
                 setTimeout(() => {
                     if (window.MathJax?.typesetPromise) {
-                        // Windows-specific: Clear any existing MathJax elements first
-                        const existingMath = element.querySelectorAll('mjx-container');
-                        existingMath.forEach(mjx => mjx.remove());
-                        
                         window.MathJax.typesetPromise([element])
                             .then(() => {
                                 this.pendingRenders.delete(element);
-                                
-                                // Windows-specific: Force a repaint after rendering
-                                setTimeout(() => {
-                                    element.style.visibility = 'hidden';
-                                    element.offsetHeight; // Force reflow
-                                    element.style.visibility = '';
-                                    resolve();
-                                }, 10);
+                                resolve();
                             })
                             .catch(error => {
                                 console.error(`MathJax render error (attempt ${attempt}):`, error);
                                 if (attempt < maxRetries) {
-                                    // Increase timeout for Windows
-                                    setTimeout(() => attemptRender(attempt + 1), timeout * 2);
+                                    attemptRender(attempt + 1);
                                 } else {
                                     this.pendingRenders.delete(element);
                                     reject(error);
                                 }
                             });
                     } else if (attempt < maxRetries) {
-                        // Increase timeout for Windows
-                        setTimeout(() => attemptRender(attempt + 1), timeout * 2);
+                        attemptRender(attempt + 1);
                     } else {
                         this.pendingRenders.delete(element);
                         resolve(); // Resolve anyway to prevent hanging

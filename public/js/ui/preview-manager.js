@@ -133,12 +133,12 @@ export class PreviewManager {
         // Force update and MathJax rendering on a short delay to ensure DOM is ready
         setTimeout(() => {
             this.updateSplitPreview();
-            // Force MathJax rendering on initialization using centralized service
+            // Force MathJax rendering on initialization
             setTimeout(() => {
                 const previewElement = document.getElementById('preview-content-split');
-                if (previewElement) {
+                if (previewElement && window.MathJax && window.MathJax.typesetPromise) {
                     console.log('🧮 Force rendering MathJax on preview initialization');
-                    this.mathJaxService.renderElement(previewElement, 200).catch(err => {
+                    window.MathJax.typesetPromise([previewElement]).catch(err => {
                         console.warn('Initial MathJax rendering failed:', err);
                     });
                 }
@@ -598,12 +598,7 @@ export class PreviewManager {
         // Render LaTeX in split preview with proper targeting and retry mechanism
         // Use setTimeout to ensure DOM updates are complete before MathJax
         setTimeout(() => {
-            const previewElement = document.getElementById('preview-content-split');
-            if (previewElement) {
-                this.mathJaxService.renderElement(previewElement, 150).catch(err => {
-                    console.warn('MathJax rendering failed in split preview:', err);
-                });
-            }
+            this.renderMathJaxWithRetry();
         }, 100);
     }
 
