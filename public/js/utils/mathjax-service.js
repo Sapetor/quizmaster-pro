@@ -71,7 +71,15 @@ export class MathJaxService {
                 setTimeout(() => {
                     console.log(`🔍 MathJax render attempt ${attempt}/${maxRetries} - Platform: ${this.isWindows ? 'Windows' : 'Other'}`);
                     console.log(`🔍 MathJax available: ${!!window.MathJax}, typesetPromise: ${!!window.MathJax?.typesetPromise}`);
-                    console.log(`🔍 Element has LaTeX content: ${element.innerHTML.includes('$$') || element.innerHTML.includes('\\(')}`);
+                    const hasLatexContent = element.innerHTML.includes('$$') || 
+                                        element.innerHTML.includes('\\(') ||
+                                        element.innerHTML.includes('\\[') ||
+                                        element.innerHTML.includes('$') ||  // Single dollar delimiters
+                                        element.innerHTML.includes('\\frac') ||  // Common LaTeX commands
+                                        element.innerHTML.includes('\\sqrt') ||
+                                        element.innerHTML.includes('\\sum') ||
+                                        element.innerHTML.includes('\\int');
+                    console.log(`🔍 Element has LaTeX content: ${hasLatexContent}`);
                     
                     if (window.MathJax?.typesetPromise) {
                         // Windows-specific: Clear existing MathJax elements before re-rendering

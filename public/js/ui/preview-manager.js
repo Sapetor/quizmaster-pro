@@ -639,17 +639,41 @@ export class PreviewManager {
                 if (hasLatexContent && this.mathJaxService) {
                     logger.debug('🧮 Rendering MathJax for preview content');
                     
-                    // Platform-specific timing
-                    const renderTimeout = this.mathJaxService.isWindows ? 200 : 100;
+                    // Platform-specific timing - Windows needs extra time for DOM stabilization
+                    const renderTimeout = this.mathJaxService.isWindows ? 400 : 100;
                     
-                    this.mathJaxService.renderElement(previewElement, renderTimeout, 3)
-                        .then(() => {
-                            logger.debug('✅ Preview MathJax rendering completed successfully');
-                        })
-                        .catch(err => {
-                            logger.warn('🔍 Preview MathJax rendering failed, trying fallback:', err);
-                            this.fallbackMathJaxRender(previewElement);
-                        });
+                    // Windows-specific: Additional content stability check
+                    if (this.mathJaxService.isWindows) {
+                        // Wait for content to be stable before rendering
+                        setTimeout(() => {
+                            const contentStillHasLatex = previewElement.innerHTML.includes('$') || 
+                                                       previewElement.innerHTML.includes('\\frac') ||
+                                                       previewElement.innerHTML.includes('\\sqrt');
+                            
+                            if (contentStillHasLatex) {
+                                this.mathJaxService.renderElement(previewElement, renderTimeout, 3)
+                                    .then(() => {
+                                        logger.debug('✅ Preview MathJax rendering completed successfully (Windows delayed)');
+                                    })
+                                    .catch(err => {
+                                        logger.warn('🔍 Preview MathJax rendering failed, trying fallback:', err);
+                                        this.fallbackMathJaxRender(previewElement);
+                                    });
+                            } else {
+                                logger.debug('📝 LaTeX content disappeared during Windows delay, skipping render');
+                            }
+                        }, 100); // Additional 100ms delay for Windows content stability
+                    } else {
+                        // macOS and other platforms use immediate rendering
+                        this.mathJaxService.renderElement(previewElement, renderTimeout, 3)
+                            .then(() => {
+                                logger.debug('✅ Preview MathJax rendering completed successfully');
+                            })
+                            .catch(err => {
+                                logger.warn('🔍 Preview MathJax rendering failed, trying fallback:', err);
+                                this.fallbackMathJaxRender(previewElement);
+                            });
+                    }
                 } else if (!hasLatexContent) {
                     logger.debug('📝 No LaTeX content found in preview, skipping MathJax rendering');
                 } else {
