@@ -483,6 +483,50 @@ input::placeholder, textarea::placeholder {
     border-top-color: var(--text-primary);
 }
 
+/* Language dropdown options styling */
+.header-controls .language-dropdown option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    font-size: 14px;
+    border: none;
+}
+
+/* Light theme - ensure good contrast for dropdown options */
+[data-theme="light"] .header-controls .language-dropdown option {
+    background: #ffffff;
+    color: #1e293b;
+}
+
+/* Dark theme - ensure good contrast for dropdown options */
+[data-theme="dark"] .header-controls .language-dropdown option {
+    background: #1e293b;
+    color: #f0f6fc;
+}
+
+/* Default theme (no theme set) - ensure good contrast */
+.header-controls .language-dropdown option {
+    background: #ffffff;
+    color: #1e293b;
+}
+
+/* Improve light mode dropdown contrast */
+[data-theme="light"] .header-controls .language-dropdown {
+    background: rgba(255, 255, 255, 0.95);
+    color: #1e293b;
+    border: 1px solid rgba(30, 41, 59, 0.2);
+}
+
+[data-theme="light"] .header-controls .language-dropdown:hover {
+    background: rgba(255, 255, 255, 0.98);
+    border-color: var(--color-primary-400);
+}
+
+[data-theme="light"] .header-controls .language-dropdown:focus {
+    background: rgba(255, 255, 255, 0.98);
+    border-color: var(--color-primary-500);
+}
+
 /* Header start game button improvements */
 .header-controls .start-game-header {
     padding: 10px 16px;
