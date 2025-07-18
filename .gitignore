@@ -12,4 +12,12 @@ quizzes/*
 !quizzes/quiz_example_1.json
 !quizzes/quiz_example_2.json
 !quizzes/quiz_example_3.json
+!quizzes/advanced_quiz_with_latex_images.json
+!quizzes/python_programming_fundamentals.json
+!quizzes/test_quiz_1749524103258.json
+!quizzes/advanced_quiz_-_latex___images_demo_1751555109746.json
+!quizzes/advanced_quiz_-_latex___images_demo_1751555126303.json
+!quizzes/asd_1752138052480.json
+!quizzes/debug-width-quiz.json
+!quizzes/test_quiz_1751705363539.json
 results/

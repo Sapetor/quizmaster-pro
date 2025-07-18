@@ -1,0 +1,21 @@
+{
+  "title": "asd",
+  "questions": [
+    {
+      "question": "a",
+      "type": "multiple-choice",
+      "difficulty": "medium",
+      "timeLimit": 20,
+      "image": "",
+      "options": [
+        "a",
+        "a",
+        "aa",
+        "aaa"
+      ],
+      "correctAnswer": 0
+    }
+  ],
+  "created": "2025-07-10T09:00:52.480Z",
+  "id": "75509f8a-477d-4f9c-999d-cea17469d44a"
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Test Quiz",
+  "questions": [
+    {
+      "question": "Test question",
+      "type": "multiple-choice",
+      "options": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "correctAnswer": 0
+    }
+  ],
+  "created": "2025-07-05T08:49:23.539Z",
+  "id": "0f29a42e-d07e-4ba7-9566-bb4f36ecc6af"
+}

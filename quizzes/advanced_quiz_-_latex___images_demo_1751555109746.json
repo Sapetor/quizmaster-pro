@@ -1,0 +1,101 @@
+{
+  "title": "Advanced Quiz - LaTeX & Images Demo",
+  "questions": [
+    {
+      "question": "What is the solution to the quadratic equation $ax^2 + bx + c = 0$?",
+      "type": "multiple-choice",
+      "difficulty": "medium",
+      "timeLimit": 20,
+      "image": "",
+      "options": [
+        "$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$",
+        "$x = \\frac{b \\pm \\sqrt{b^2 + 4ac}}{2a}$",
+        "$x = \\frac{-b \\pm \\sqrt{b^2 + 4ac}}{a}$",
+        "$x = \\frac{b \\pm \\sqrt{b^2 - 4ac}}{a}$"
+      ],
+      "correctAnswer": 0
+    },
+    {
+      "question": "Which of the following mathematical expressions are equivalent to $e^{i\\pi}$? (Select all that apply)",
+      "type": "multiple-correct",
+      "difficulty": "medium",
+      "timeLimit": 20,
+      "image": "",
+      "options": [
+        "$-1$",
+        "$\\cos(\\pi) + i\\sin(\\pi)$",
+        "$0$",
+        "$\\sqrt{-1}^{\\sqrt{-1}^{\\sqrt{-1}^{\\cdots}}}$"
+      ],
+      "correctAnswers": [
+        0,
+        1
+      ]
+    },
+    {
+      "question": "The integral $\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$ is known as the Gaussian integral.",
+      "type": "true-false",
+      "difficulty": "medium",
+      "timeLimit": 20,
+      "image": "",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correctAnswer": "true"
+    },
+    {
+      "question": "What is the value of $\\lim_{n \\to \\infty} \\left(1 + \\frac{1}{n}\\right)^n$? (Answer to 3 decimal places)",
+      "type": "numeric",
+      "difficulty": "medium",
+      "timeLimit": 20,
+      "image": "",
+      "correctAnswer": 2.718,
+      "tolerance": 0.001
+    },
+    {
+      "question": "In the context of matrices, what is $\\det\\begin{pmatrix} 2 & 1 \\\\ 3 & 4 \\end{pmatrix}$?",
+      "type": "multiple-choice",
+      "difficulty": "medium",
+      "timeLimit": 20,
+      "image": "",
+      "options": [
+        "$5$",
+        "$8$",
+        "$11$",
+        "$2$"
+      ],
+      "correctAnswer": 0
+    },
+    {
+      "question": "Which of these represents the Pythagorean theorem?",
+      "type": "multiple-choice",
+      "difficulty": "medium",
+      "timeLimit": 20,
+      "image": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjhmOGY4Ii8+CiAgPCEtLSBSaWdodCB0cmlhbmdsZSAtLT4KICA8cG9seWdvbiBwb2ludHM9IjUwLDEyMCAxNTAsNTAgMTUwLDEyMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDA3Y2ZmIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8IS0tIExhYmVscyAtLT4KICA8dGV4dCB4PSI5MCIgeT0iMTQwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPmE8L3RleHQ+CiAgPHRleHQgeD0iMTcwIiB5PSI4NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjMzMzIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5iPC90ZXh0PgogIDx0ZXh0IHg9Ijk1IiB5PSI4MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjMzMzIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5jPC90ZXh0Pgo8L3N2Zz4=",
+      "options": [
+        "$a^2 + b^2 = c^2$",
+        "$a + b = c$",
+        "$a^2 - b^2 = c^2$",
+        "$\\sqrt{a} + \\sqrt{b} = \\sqrt{c}$"
+      ],
+      "correctAnswer": 0
+    },
+    {
+      "question": "Calculate the derivative: $\\frac{d}{dx}[\\sin(x) \\cdot \\cos(x)]$",
+      "type": "multiple-choice",
+      "difficulty": "medium",
+      "timeLimit": 20,
+      "image": "",
+      "options": [
+        "$\\cos^2(x) - \\sin^2(x)$",
+        "$\\sin(x) + \\cos(x)$",
+        "$\\cos(x) - \\sin(x)$",
+        "$\\sin^2(x) + \\cos^2(x)$"
+      ],
+      "correctAnswer": 0
+    }
+  ],
+  "created": "2025-07-03T15:05:09.746Z",
+  "id": "8ebfc492-b1a4-4aed-9aa5-b941b1640901"
+}
