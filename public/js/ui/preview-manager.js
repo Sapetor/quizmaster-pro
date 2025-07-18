@@ -608,16 +608,12 @@ export class PreviewManager {
      * Render MathJax for preview content with enhanced navigation support
      */
     renderMathJaxForPreview() {
-        console.log('🔍 MATHJAX DEBUG: renderMathJaxForPreview called');
         const previewElement = document.getElementById('preview-content-split');
         
         if (!previewElement) {
-            console.log('❌ MATHJAX DEBUG: Preview content element not found!');
             logger.warn('Preview content element not found for MathJax rendering');
             return;
         }
-
-        console.log('✅ MATHJAX DEBUG: Preview element found:', previewElement);
 
         // Use requestAnimationFrame to ensure content is populated before rendering
         requestAnimationFrame(() => {
@@ -632,23 +628,6 @@ export class PreviewManager {
                                        previewElement.innerHTML.includes('\\sum') ||
                                        previewElement.innerHTML.includes('\\int');
                 
-                console.log('🔍 MATHJAX DEBUG: Content analysis:', {
-                    elementFound: !!previewElement,
-                    hasLatexContent: hasLatexContent,
-                    contentLength: previewElement.innerHTML.length,
-                    mathJaxService: !!this.mathJaxService,
-                    mathJaxReady: !!window.MathJax,
-                    innerHTML: previewElement.innerHTML.substring(0, 500) + '...',
-                    mathJaxServiceType: this.mathJaxService?.constructor?.name || 'unknown',
-                    // Detailed LaTeX detection
-                    containsDollarSigns: previewElement.innerHTML.includes('$'),
-                    containsDoubleDollar: previewElement.innerHTML.includes('$$'),
-                    containsParenDelimiters: previewElement.innerHTML.includes('\\('),
-                    containsBracketDelimiters: previewElement.innerHTML.includes('\\['),
-                    containsFrac: previewElement.innerHTML.includes('\\frac'),
-                    containsSqrt: previewElement.innerHTML.includes('\\sqrt')
-                });
-                
                 logger.debug('🔍 Preview MathJax render check:', {
                     elementFound: !!previewElement,
                     hasLatexContent: hasLatexContent,
@@ -658,7 +637,6 @@ export class PreviewManager {
                 });
 
                 if (hasLatexContent && this.mathJaxService) {
-                    console.log('🧮 MATHJAX DEBUG: Starting MathJax rendering...');
                     logger.debug('🧮 Rendering MathJax for preview content');
                     
                     // Platform-specific timing
@@ -666,24 +644,19 @@ export class PreviewManager {
                     
                     this.mathJaxService.renderElement(previewElement, renderTimeout, 3)
                         .then(() => {
-                            console.log('✅ MATHJAX DEBUG: MathJax rendering completed successfully');
                             logger.debug('✅ Preview MathJax rendering completed successfully');
                         })
                         .catch(err => {
-                            console.log('❌ MATHJAX DEBUG: MathJax rendering failed:', err);
                             logger.warn('🔍 Preview MathJax rendering failed, trying fallback:', err);
                             this.fallbackMathJaxRender(previewElement);
                         });
                 } else if (!hasLatexContent) {
-                    console.log('📝 MATHJAX DEBUG: No LaTeX content found, skipping rendering');
                     logger.debug('📝 No LaTeX content found in preview, skipping MathJax rendering');
                 } else {
-                    console.log('🚫 MATHJAX DEBUG: MathJax service not available');
                     logger.warn('🔍 MathJax service not available for preview rendering');
                     
                     // Try direct MathJax rendering as fallback
                     if (hasLatexContent && window.MathJax) {
-                        console.log('🔄 MATHJAX DEBUG: Trying direct MathJax fallback');
                         this.fallbackMathJaxRender(previewElement);
                     }
                 }
@@ -695,29 +668,17 @@ export class PreviewManager {
      * Fallback MathJax rendering for preview
      */
     fallbackMathJaxRender(element) {
-        console.log('🔄 MATHJAX DEBUG: fallbackMathJaxRender called for element:', element);
-        console.log('🔄 MATHJAX DEBUG: MathJax availability check:', {
-            windowMathJax: !!window.MathJax,
-            typesetPromise: !!window.MathJax?.typesetPromise,
-            mathJaxStartup: !!window.MathJax?.startup,
-            mathJaxVersion: window.MathJax?.version || 'unknown'
-        });
-        
         if (window.MathJax && window.MathJax.typesetPromise) {
-            console.log('✅ MATHJAX DEBUG: Using MathJax.typesetPromise fallback');
             logger.debug('🔄 Using fallback MathJax rendering for preview');
             
             window.MathJax.typesetPromise([element])
                 .then(() => {
-                    console.log('✅ MATHJAX DEBUG: Fallback rendering completed successfully');
                     logger.debug('✅ Fallback MathJax rendering completed');
                 })
                 .catch(err => {
-                    console.log('❌ MATHJAX DEBUG: Fallback rendering failed:', err);
                     logger.warn('❌ Fallback MathJax rendering also failed:', err);
                 });
         } else {
-            console.log('🚫 MATHJAX DEBUG: No MathJax rendering methods available');
             logger.warn('🚫 No MathJax rendering methods available');
         }
     }
