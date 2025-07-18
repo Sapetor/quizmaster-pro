@@ -50,7 +50,7 @@ public/js/
 │   ├── app.js (900+ lines) - Main QuizGame coordination class
 │   └── config.js - Configuration constants and logger system
 ├── game/
-│   └── game-manager.js (1,300+ lines) - Game flow and state management
+│   └── game-manager.js (1,300+ lines) - Game flow and state management with refactored functions
 ├── quiz/
 │   └── quiz-manager.js (700+ lines) - Quiz CRUD operations
 ├── socket/
@@ -62,8 +62,11 @@ public/js/
 │   └── preview-manager.js (900+ lines) - Live preview functionality
 ├── utils/
 │   ├── translations.js (2,000+ lines) - 9-language translation system (EN/ES/FR/DE/IT/PT/PL/JA/ZH)
-│   ├── globals.js - Global functions for HTML handlers
+│   ├── globals.js (400+ lines) - Global functions for HTML handlers with custom dropdown support
 │   ├── math-renderer.js - MathJax rendering with retry mechanisms
+│   ├── mathjax-service.js - Centralized MathJax service with consistency and retry logic
+│   ├── dom-manager.js - DOM caching and management utility with performance optimization
+│   ├── error-handler.js - Centralized error logging and handling system
 │   └── question-utils.js - Question creation and validation
 ├── ai/
 │   └── generator.js - AI question generation (Ollama, OpenAI, Claude)
@@ -140,6 +143,117 @@ public/css/
 - **Translation Coverage**: All user-visible text must use the translation system
 - **MathJax Integration**: Always call rendering methods after DOM updates
 - **CSS Consistency**: Use CSS custom properties from `variables.css` for colors and design tokens
+
+### JavaScript Development Best Practices
+
+#### MathJax Integration Patterns
+```javascript
+// ✅ Correct: Use centralized MathJax service
+import { MathJaxService } from './utils/mathjax-service.js';
+const mathJaxService = new MathJaxService();
+
+// Render single element with retry logic
+await mathJaxService.renderElement(questionElement);
+
+// Render multiple elements efficiently
+await mathJaxService.renderElements([element1, element2]);
+```
+
+#### DOM Management Patterns
+```javascript
+// ✅ Correct: Use DOM Manager for caching
+import { DOMManager } from './utils/dom-manager.js';
+const domManager = new DOMManager();
+
+// Cached element retrieval
+const element = domManager.get('quiz-container');
+
+// Set content with cache management
+domManager.setContent('question-text', questionHtml);
+```
+
+#### Function Size Guidelines
+- **Target**: Keep functions under 50 lines when possible
+- **Refactor Trigger**: Functions over 100 lines should be evaluated for splitting
+- **Method Extraction**: Extract logical groups into focused methods
+- **Single Responsibility**: Each function should do one thing well
+
+#### Error Handling Patterns
+```javascript
+// ✅ Correct: Use centralized error handler
+import { ErrorHandler } from './utils/error-handler.js';
+const errorHandler = new ErrorHandler();
+
+try {
+    await someAsyncOperation();
+} catch (error) {
+    errorHandler.log(error, { context: 'quiz-loading' }, 'error');
+}
+```
+
+#### Translation Integration
+```javascript
+// ✅ Correct: Use translation system consistently
+import { getTranslation } from './utils/translations.js';
+
+// Dynamic content updates
+const message = getTranslation('game_starting', [playerCount]);
+domManager.setContent('status-message', message);
+```
+
+#### Custom Dropdown Implementation
+```javascript
+// ✅ Correct: Event handling with proper cleanup
+export function toggleLanguageDropdown() {
+    const dropdown = document.getElementById('language-selector');
+    if (dropdown) {
+        dropdown.classList.toggle('open');
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (event) => {
+    const dropdown = document.getElementById('language-selector');
+    if (dropdown && !dropdown.contains(event.target)) {
+        dropdown.classList.remove('open');
+    }
+});
+```
+
+### Performance Optimization Patterns
+
+#### DOM Query Optimization
+```javascript
+// ❌ Avoid: Repeated DOM queries
+document.getElementById('element').style.display = 'block';
+document.getElementById('element').innerHTML = content;
+document.getElementById('element').classList.add('active');
+
+// ✅ Correct: Cache DOM references
+const element = domManager.get('element');
+element.style.display = 'block';
+element.innerHTML = content;
+element.classList.add('active');
+```
+
+#### MathJax Performance
+```javascript
+// ❌ Avoid: Multiple individual render calls
+elements.forEach(el => MathJax.typesetPromise([el]));
+
+// ✅ Correct: Batch rendering
+await mathJaxService.renderElements(elements);
+```
+
+#### Memory Management
+```javascript
+// ✅ Correct: Cleanup timers and event listeners
+const cleanup = () => {
+    if (gameTimer) clearTimeout(gameTimer);
+    if (leaderboardTimer) clearTimeout(leaderboardTimer);
+    document.removeEventListener('click', outsideClickHandler);
+};
+```
 
 ### Testing Checklist
 - [ ] Host can create and start games
@@ -245,9 +359,129 @@ All colors are defined as CSS custom properties in `variables.css` and used cons
 - **Consistent Styling**: Unified appearance across host and client interfaces
 - **Answer System**: Fixed True/False color styling and Multiple Correct checkbox options
 
+### JavaScript Architecture Improvements (2024-2025) ✅
+
+#### MathJax Consolidation
+- **Centralized Service**: Created `mathjax-service.js` to eliminate ~40 lines of duplicate MathJax rendering code
+- **Consistent Retry Logic**: Unified retry mechanism with configurable timeout and max attempts
+- **Code Block Support**: Maintained `formatCodeBlocks()` integration for markdown code snippet visualization
+- **Performance**: Reduced redundant MathJax calls and improved rendering reliability
+
+**Key Implementation**:
+```javascript
+// mathjax-service.js
+export class MathJaxService {
+    async renderElement(element, timeout = 100, maxRetries = 3) {
+        // Centralized rendering with retry logic
+    }
+    async renderElements(elements, timeout = 100) {
+        // Batch rendering for multiple elements
+    }
+}
+```
+
+#### DOM Performance Optimization
+- **DOM Manager**: Created `dom-manager.js` with caching system to reduce redundant DOM queries
+- **Singleton Pattern**: Centralized DOM operations with cache invalidation for dynamic elements
+- **Performance Boost**: Cached frequently accessed elements improve gameplay performance
+- **Memory Management**: Automatic cache cleanup for removed elements
+
+**Key Implementation**:
+```javascript
+// dom-manager.js
+export class DOMManager {
+    get(id) {
+        // Cached DOM element retrieval with validation
+    }
+    setContent(id, content) {
+        // Set content with cache management
+    }
+}
+```
+
+#### Function Refactoring
+- **Monolithic Function Breakdown**: Refactored 314-line `displayQuestion()` function into 13 focused methods
+- **Separation of Concerns**: Split host display, player display, and finalization logic
+- **Improved Maintainability**: Each method has single responsibility and clear purpose
+- **Better Testing**: Smaller functions are easier to test and debug
+
+**Refactored Structure**:
+```javascript
+// Before: 314-line monolithic function
+displayQuestion(question, questionNumber, isCurrentQuestion) { /* 314 lines */ }
+
+// After: 13 focused methods
+initializeQuestionDisplay(question, questionNumber, isCurrentQuestion)
+updateHostDisplay(question, questionNumber, isCurrentQuestion)
+updatePlayerDisplay(question, questionNumber, isCurrentQuestion)
+finalizeQuestionDisplay(question, questionNumber, isCurrentQuestion)
+// ... and 9 more focused methods
+```
+
+#### Error Handling Enhancement
+- **Centralized Error Handler**: Created `error-handler.js` for consistent error logging
+- **Structured Logging**: Error context, severity levels, and timestamp tracking
+- **Non-Breaking Integration**: Conservative approach to avoid disrupting existing functionality
+- **Debug Integration**: Works with existing logger system for development/production control
+
+**Key Implementation**:
+```javascript
+// error-handler.js
+export class ErrorHandler {
+    log(error, context = {}, severity = 'error') {
+        // Structured error logging with context
+    }
+}
+```
+
+#### Server Infrastructure Improvements
+- **Graceful Shutdown**: Added comprehensive shutdown handling for cross-platform compatibility
+- **Signal Handling**: Supports SIGINT, SIGTERM, SIGQUIT for proper cleanup
+- **Game Cleanup**: Automatic timer cleanup and resource management on shutdown
+- **Windows Compatibility**: Proper shutdown behavior on Windows development environments
+
+**Key Implementation**:
+```javascript
+// server.js
+const gracefulShutdown = (signal) => {
+    console.log(`Received ${signal}. Shutting down gracefully...`);
+    // Cleanup games, timers, connections
+    process.exit(0);
+};
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+```
+
+#### Custom Dropdown System
+- **Cross-Platform Consistency**: Replaced native select with custom dropdown for better contrast
+- **Theme Support**: Perfect contrast ratios in both light and dark modes
+- **Accessibility**: Keyboard navigation and proper ARIA attributes
+- **Custom Styling**: Full control over appearance with glass morphism design
+
+**Key Implementation**:
+```javascript
+// globals.js
+export function toggleLanguageDropdown() {
+    const dropdown = document.getElementById('language-selector');
+    dropdown.classList.toggle('open');
+}
+export function selectLanguage(langCode, event) {
+    // Custom language selection with visual feedback
+}
+```
+
+#### Code Quality Metrics
+- **Duplicate Code Reduction**: Eliminated ~40 lines of duplicate MathJax code
+- **Function Complexity**: Reduced largest function from 314 lines to 13 focused methods
+- **Performance Improvement**: DOM caching reduces query overhead during gameplay
+- **Error Recovery**: Better error handling prevents crashes and improves stability
+- **Cross-Platform Support**: Improved compatibility across Windows, macOS, and Linux
+
 ### Current State
 - **Production Ready**: All core features optimized with modern UI and resolved layout issues
 - **Code Health**: Excellent codebase health (8.2/10) with proper debugging configuration
 - **Mobile Responsive**: Works seamlessly across desktop, tablet, and mobile devices
 - **Internationalized**: Complete 9-language support with real-time dynamic translation
 - **Performance Optimized**: Debug output properly suppressed for production use
+- **Modular JavaScript**: Clean separation of concerns with centralized utilities
+- **Robust Error Handling**: Comprehensive error management and graceful degradation
