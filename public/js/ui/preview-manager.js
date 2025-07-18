@@ -136,14 +136,22 @@ export class PreviewManager {
             // Force MathJax rendering on initialization
             setTimeout(() => {
                 const previewElement = document.getElementById('preview-content-split');
+                console.log('🔍 Preview Manager Initialization:', {
+                    elementFound: !!previewElement,
+                    mathJaxService: !!this.mathJaxService,
+                    mathJaxServiceWindows: this.mathJaxService?.isWindows,
+                    mathJaxReady: !!window.MathJax,
+                    content: previewElement ? previewElement.innerHTML.substring(0, 100) + '...' : 'No element'
+                });
+                
                 if (previewElement) {
                     console.log('🧮 Force rendering MathJax on preview initialization');
                     this.mathJaxService.renderElement(previewElement, 200).catch(err => {
-                        console.warn('Initial MathJax rendering failed, falling back to legacy method:', err);
+                        console.warn('🔍 Initial MathJax rendering failed, falling back to legacy method:', err);
                         // Fallback to original method
                         if (window.MathJax && window.MathJax.typesetPromise) {
                             window.MathJax.typesetPromise([previewElement]).catch(err2 => {
-                                console.warn('Fallback MathJax rendering also failed:', err2);
+                                console.warn('🔍 Fallback MathJax rendering also failed:', err2);
                             });
                         }
                     });
@@ -605,14 +613,22 @@ export class PreviewManager {
         // Use setTimeout to ensure DOM updates are complete before MathJax
         setTimeout(() => {
             const previewElement = document.getElementById('preview-content-split');
+            console.log(`🔍 Preview Manager: Rendering MathJax for preview element`, {
+                elementFound: !!previewElement,
+                hasContent: previewElement ? previewElement.innerHTML.length > 0 : false,
+                hasLaTeX: previewElement ? (previewElement.innerHTML.includes('$$') || previewElement.innerHTML.includes('\\(')) : false,
+                content: previewElement ? previewElement.innerHTML.substring(0, 200) + '...' : 'No element'
+            });
+            
             if (previewElement) {
                 // Use centralized MathJax service for Windows-specific optimizations
                 this.mathJaxService.renderElement(previewElement, 150).catch(err => {
-                    console.warn('MathJax rendering failed, falling back to legacy method:', err);
+                    console.warn('🔍 MathJax rendering failed, falling back to legacy method:', err);
                     // Fallback to original method
                     this.renderMathJaxWithRetry();
                 });
             } else {
+                console.warn('🔍 Preview element not found, using fallback method');
                 this.renderMathJaxWithRetry();
             }
         }, 100);
