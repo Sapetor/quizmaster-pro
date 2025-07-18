@@ -578,19 +578,19 @@ export class QuizGame {
             }
             
             const data = await response.json();
-            console.log('Available quizzes:', data.quizzes?.length || 0);
+            console.log('Available quizzes:', data?.length || 0);
             
             // Look for debug quiz first
             const debugQuizFilename = 'debug-width-quiz.json';
-            const debugQuiz = data.quizzes?.find(q => q.filename === debugQuizFilename);
+            const debugQuiz = data?.find(q => q.filename === debugQuizFilename);
             
             let targetQuiz = null;
             if (debugQuiz) {
                 console.log('Found debug quiz:', debugQuiz.title);
                 targetQuiz = debugQuiz;
-            } else if (data.quizzes && data.quizzes.length > 0) {
+            } else if (data && data.length > 0) {
                 console.log('Debug quiz not found, using first available quiz');
-                targetQuiz = data.quizzes[0];
+                targetQuiz = data[0];
             } else {
                 throw new Error('No quizzes available');
             }
