@@ -625,7 +625,12 @@ export class PreviewManager {
             setTimeout(() => {
                 const hasLatexContent = previewElement.innerHTML.includes('$$') || 
                                        previewElement.innerHTML.includes('\\(') ||
-                                       previewElement.innerHTML.includes('\\[');
+                                       previewElement.innerHTML.includes('\\[') ||
+                                       previewElement.innerHTML.includes('$') ||  // Single dollar delimiters
+                                       previewElement.innerHTML.includes('\\frac') ||  // Common LaTeX commands
+                                       previewElement.innerHTML.includes('\\sqrt') ||
+                                       previewElement.innerHTML.includes('\\sum') ||
+                                       previewElement.innerHTML.includes('\\int');
                 
                 console.log('🔍 MATHJAX DEBUG: Content analysis:', {
                     elementFound: !!previewElement,
@@ -633,8 +638,15 @@ export class PreviewManager {
                     contentLength: previewElement.innerHTML.length,
                     mathJaxService: !!this.mathJaxService,
                     mathJaxReady: !!window.MathJax,
-                    innerHTML: previewElement.innerHTML.substring(0, 200) + '...',
-                    mathJaxServiceType: this.mathJaxService?.constructor?.name || 'unknown'
+                    innerHTML: previewElement.innerHTML.substring(0, 500) + '...',
+                    mathJaxServiceType: this.mathJaxService?.constructor?.name || 'unknown',
+                    // Detailed LaTeX detection
+                    containsDollarSigns: previewElement.innerHTML.includes('$'),
+                    containsDoubleDollar: previewElement.innerHTML.includes('$$'),
+                    containsParenDelimiters: previewElement.innerHTML.includes('\\('),
+                    containsBracketDelimiters: previewElement.innerHTML.includes('\\['),
+                    containsFrac: previewElement.innerHTML.includes('\\frac'),
+                    containsSqrt: previewElement.innerHTML.includes('\\sqrt')
                 });
                 
                 logger.debug('🔍 Preview MathJax render check:', {
