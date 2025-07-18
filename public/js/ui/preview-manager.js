@@ -69,6 +69,11 @@ export class PreviewManager {
             
             // Initialize preview
             this.initializeSplitPreview();
+            
+            // Ensure MathJax renders when preview is opened
+            setTimeout(() => {
+                this.renderMathJaxForPreview();
+            }, 200);
         } else {
             // Clean up listeners first
             this.cleanupPreviewListeners();
@@ -133,30 +138,6 @@ export class PreviewManager {
         // Force update and MathJax rendering on a short delay to ensure DOM is ready
         setTimeout(() => {
             this.updateSplitPreview();
-            // Force MathJax rendering on initialization
-            setTimeout(() => {
-                const previewElement = document.getElementById('preview-content-split');
-                console.log('🔍 Preview Manager Initialization:', {
-                    elementFound: !!previewElement,
-                    mathJaxService: !!this.mathJaxService,
-                    mathJaxServiceWindows: this.mathJaxService?.isWindows,
-                    mathJaxReady: !!window.MathJax,
-                    content: previewElement ? previewElement.innerHTML.substring(0, 100) + '...' : 'No element'
-                });
-                
-                if (previewElement) {
-                    console.log('🧮 Force rendering MathJax on preview initialization');
-                    this.mathJaxService.renderElement(previewElement, 200).catch(err => {
-                        console.warn('🔍 Initial MathJax rendering failed, falling back to legacy method:', err);
-                        // Fallback to original method
-                        if (window.MathJax && window.MathJax.typesetPromise) {
-                            window.MathJax.typesetPromise([previewElement]).catch(err2 => {
-                                console.warn('🔍 Fallback MathJax rendering also failed:', err2);
-                            });
-                        }
-                    });
-                }
-            }, 300);
         }, 100);
     }
 
@@ -189,6 +170,11 @@ export class PreviewManager {
                 this.currentPreviewQuestion--;
                 logger.debug(`Moving to previous question: ${this.currentPreviewQuestion}`);
                 this.updateSplitPreview();
+                
+                // Force MathJax re-rendering after navigation
+                setTimeout(() => {
+                    this.renderMathJaxForPreview();
+                }, 100);
             } else {
                 logger.debug('Already at first question, not going back');
             }
@@ -211,6 +197,11 @@ export class PreviewManager {
                 this.currentPreviewQuestion++;
                 logger.debug(`Moving to next question: ${this.currentPreviewQuestion}`);
                 this.updateSplitPreview();
+                
+                // Force MathJax re-rendering after navigation
+                setTimeout(() => {
+                    this.renderMathJaxForPreview();
+                }, 100);
             } else {
                 logger.debug('Already at last question, not advancing');
             }
@@ -610,42 +601,76 @@ export class PreviewManager {
         }
         
         // Render LaTeX in split preview with proper targeting and retry mechanism
-        // Use multiple approaches to ensure DOM updates are complete before MathJax
-        const isWindows = navigator.platform.toLowerCase().includes('win') || 
-                         navigator.userAgent.toLowerCase().includes('windows');
+        this.renderMathJaxForPreview();
+    }
+
+    /**
+     * Render MathJax for preview content with enhanced navigation support
+     */
+    renderMathJaxForPreview() {
+        const previewElement = document.getElementById('preview-content-split');
         
-        // Method 1: Use requestAnimationFrame to ensure DOM is painted
+        if (!previewElement) {
+            logger.warn('Preview content element not found for MathJax rendering');
+            return;
+        }
+
+        // Use requestAnimationFrame to ensure content is populated before rendering
         requestAnimationFrame(() => {
-            // Method 2: Use setTimeout with Windows-specific timeout
-            const renderTimeout = isWindows ? 300 : 100;
+            // Additional timeout to ensure content is fully populated
             setTimeout(() => {
-                const previewElement = document.getElementById('preview-content-split');
-                console.log(`🔍 Preview Manager: Rendering MathJax for preview element (timeout: ${renderTimeout}ms)`, {
-                    elementFound: !!previewElement,
-                    hasContent: previewElement ? previewElement.innerHTML.length > 0 : false,
-                    hasLaTeX: previewElement ? (previewElement.innerHTML.includes('$$') || previewElement.innerHTML.includes('\\(')) : false,
-                    content: previewElement ? previewElement.innerHTML.substring(0, 200) + '...' : 'No element'
-                });
+                const hasLatexContent = previewElement.innerHTML.includes('$$') || 
+                                       previewElement.innerHTML.includes('\\(') ||
+                                       previewElement.innerHTML.includes('\\[');
                 
-                if (previewElement && previewElement.innerHTML.length > 0) {
-                    // Only render if content is actually populated
-                    if (previewElement.innerHTML.includes('$$') || previewElement.innerHTML.includes('\\(')) {
-                        console.log('🔍 LaTeX content detected, proceeding with MathJax rendering');
-                        // Use centralized MathJax service for Windows-specific optimizations
-                        this.mathJaxService.renderElement(previewElement, 150).catch(err => {
-                            console.warn('🔍 MathJax rendering failed, falling back to legacy method:', err);
-                            // Fallback to original method
-                            this.renderMathJaxWithRetry();
+                logger.debug('🔍 Preview MathJax render check:', {
+                    elementFound: !!previewElement,
+                    hasLatexContent: hasLatexContent,
+                    contentLength: previewElement.innerHTML.length,
+                    mathJaxService: !!this.mathJaxService,
+                    mathJaxReady: !!window.MathJax
+                });
+
+                if (hasLatexContent && this.mathJaxService) {
+                    logger.debug('🧮 Rendering MathJax for preview content');
+                    
+                    // Platform-specific timing
+                    const renderTimeout = this.mathJaxService.isWindows ? 200 : 100;
+                    
+                    this.mathJaxService.renderElement(previewElement, renderTimeout, 3)
+                        .then(() => {
+                            logger.debug('✅ Preview MathJax rendering completed successfully');
+                        })
+                        .catch(err => {
+                            logger.warn('🔍 Preview MathJax rendering failed, trying fallback:', err);
+                            this.fallbackMathJaxRender(previewElement);
                         });
-                    } else {
-                        console.log('🔍 No LaTeX content detected, skipping MathJax rendering');
-                    }
+                } else if (!hasLatexContent) {
+                    logger.debug('📝 No LaTeX content found in preview, skipping MathJax rendering');
                 } else {
-                    console.warn('🔍 Preview element not found or empty, using fallback method');
-                    this.renderMathJaxWithRetry();
+                    logger.warn('🔍 MathJax service not available for preview rendering');
                 }
-            }, renderTimeout);
+            }, 50); // Small delay to ensure content is populated
         });
+    }
+
+    /**
+     * Fallback MathJax rendering for preview
+     */
+    fallbackMathJaxRender(element) {
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            logger.debug('🔄 Using fallback MathJax rendering for preview');
+            
+            window.MathJax.typesetPromise([element])
+                .then(() => {
+                    logger.debug('✅ Fallback MathJax rendering completed');
+                })
+                .catch(err => {
+                    logger.warn('❌ Fallback MathJax rendering also failed:', err);
+                });
+        } else {
+            logger.warn('🚫 No MathJax rendering methods available');
+        }
     }
 
     /**
@@ -873,6 +898,11 @@ export class PreviewManager {
                 console.log(`🎯 Auto-scrolling preview from question ${this.currentPreviewQuestion + 1} to ${questionIndex + 1}`);
                 this.currentPreviewQuestion = questionIndex;
                 this.updateSplitPreview();
+                
+                // Force MathJax re-rendering after auto-scroll navigation
+                setTimeout(() => {
+                    this.renderMathJaxForPreview();
+                }, 150);
             } else {
                 console.log(`❌ Invalid questionIndex: ${questionIndex}, not updating preview`);
             }
@@ -956,60 +986,11 @@ export class PreviewManager {
     }
 
     /**
-     * Render MathJax with retry mechanism
+     * Legacy method for backward compatibility - now uses centralized rendering
      */
     renderMathJaxWithRetry(attempt = 0) {
-        const maxAttempts = 3;
-        const previewElement = document.getElementById('preview-content-split');
-        
-        if (!previewElement) {
-            logger.warn(`Preview element not found, attempt ${attempt + 1}/${maxAttempts + 1}`);
-            if (attempt < maxAttempts) {
-                setTimeout(() => this.renderMathJaxWithRetry(attempt + 1), 100);
-            }
-            return;
-        }
-
-        logger.debug(`MathJax attempt ${attempt + 1}/${maxAttempts + 1}`);
-        
-        // Check if MathJax is ready
-        if (!window.MathJax) {
-            logger.warn('MathJax not loaded yet, retrying...');
-            if (attempt < maxAttempts) {
-                setTimeout(() => this.renderMathJaxWithRetry(attempt + 1), 200);
-            }
-            return;
-        }
-        
-        try {
-            if (this.mathRenderer && this.mathRenderer.renderMathJax) {
-                logger.debug('Using MathRenderer.renderMathJax with preview element');
-                this.mathRenderer.renderMathJax(previewElement);
-            } else if (window.MathJax.typesetPromise) {
-                logger.debug('Using global MathJax.typesetPromise on preview element');
-                window.MathJax.typesetPromise([previewElement]).then(() => {
-                    logger.debug('MathJax rendering completed for preview');
-                }).catch((err) => {
-                    logger.warn('MathJax rendering error in preview:', err);
-                    if (attempt < maxAttempts) {
-                        setTimeout(() => this.renderMathJaxWithRetry(attempt + 1), 300);
-                    }
-                });
-            } else if (window.MathJax.Hub) {
-                logger.debug('Using MathJax v2 Hub.Queue');
-                window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, previewElement]);
-            } else {
-                logger.warn('MathJax loaded but no rendering method available');
-                if (attempt < maxAttempts) {
-                    setTimeout(() => this.renderMathJaxWithRetry(attempt + 1), 200);
-                }
-            }
-        } catch (err) {
-            logger.error('MathJax rendering exception:', err);
-            if (attempt < maxAttempts) {
-                setTimeout(() => this.renderMathJaxWithRetry(attempt + 1), 300);
-            }
-        }
+        logger.debug('Legacy renderMathJaxWithRetry called, using new centralized method');
+        this.renderMathJaxForPreview();
     }
 
     /**
