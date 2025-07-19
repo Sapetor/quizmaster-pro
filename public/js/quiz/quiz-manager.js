@@ -103,6 +103,18 @@ export class QuizManager {
             questionData.tolerance = tolerance;
         }
         
+        // Extract image data
+        const imageElement = questionElement.querySelector('.question-image');
+        if (imageElement && imageElement.src) {
+            // Extract the relative path from the src URL
+            const imageSrc = imageElement.src;
+            if (imageSrc.includes('/uploads/')) {
+                questionData.image = imageSrc.substring(imageSrc.indexOf('/uploads/') + 1); // Remove leading /
+            } else if (imageSrc.startsWith('uploads/')) {
+                questionData.image = imageSrc;
+            }
+        }
+        
         return questionData;
     }
 
@@ -407,6 +419,25 @@ export class QuizManager {
         const questionDifficulty = questionElement.querySelector('.question-difficulty');
         if (questionDifficulty) {
             questionDifficulty.value = questionData.difficulty || 'medium';
+        }
+        
+        // Handle image data
+        if (questionData.image) {
+            console.log('Populating image for question:', questionData.image);
+            const imageElement = questionElement.querySelector('.question-image');
+            const imagePreview = questionElement.querySelector('.image-preview');
+            
+            if (imageElement && imagePreview) {
+                // Set the image source
+                imageElement.src = questionData.image.startsWith('http') ? questionData.image : `/${questionData.image}`;
+                imageElement.dataset.url = questionData.image;
+                
+                // Show the image preview
+                imagePreview.style.display = 'block';
+                console.log('Image populated:', imageElement.src);
+            } else {
+                console.log('Image elements not found in question DOM');
+            }
         }
         
         // Handle type-specific data

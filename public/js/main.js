@@ -50,6 +50,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 100);
         
+        // Initialize global font size after DOM is ready
+        setTimeout(() => {
+            try {
+                const savedFontSize = localStorage.getItem('globalFontSize') || 'medium';
+                console.log('Setting global font size to:', savedFontSize);
+                if (window.setGlobalFontSize) {
+                    window.setGlobalFontSize(savedFontSize);
+                    console.log('Global font size initialized successfully');
+                } else {
+                    console.warn('setGlobalFontSize function not available yet');
+                }
+            } catch (error) {
+                console.error('Error setting global font size:', error);
+            }
+        }, 200);
+        
         console.log('QuizMaster Pro - Application initialized successfully');
     } catch (error) {
         console.error('Error initializing QuizMaster Pro:', error);

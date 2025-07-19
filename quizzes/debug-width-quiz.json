@@ -6,29 +6,31 @@
       "question": "What is the result of this Python code?\n\n```python\ndef calculate(x, y):\n    return x * y + 2\n\nresult = calculate(5, 3)\nprint(result)\n```",
       "type": "multiple-choice",
       "options": ["15", "17", "13", "20"],
-      "correct": 1,
-      "points": 10
+      "correctAnswer": 1,
+      "points": 10,
+      "image": "uploads/1751365738196-114392663.jpeg"
     },
     {
       "question": "Solve this mathematical equation: $$\\int_{0}^{1} x^2 dx = ?$$",
       "type": "multiple-choice", 
       "options": ["$$\\frac{1}{2}$$", "$$\\frac{1}{3}$$", "$$\\frac{1}{4}$$", "$$1$$"],
-      "correct": 1,
+      "correctAnswer": 1,
       "points": 10
     },
     {
       "question": "What does this JavaScript function return?\n\n```javascript\nfunction mystery(arr) {\n    return arr.filter(x => x > 0)\n              .map(x => x * 2)\n              .reduce((a, b) => a + b, 0);\n}\n\nmystery([-1, 2, -3, 4, 5]);\n```",
       "type": "multiple-choice",
       "options": ["22", "14", "18", "20"],
-      "correct": 0,
+      "correctAnswer": 0,
       "points": 10
     },
     {
-      "question": "What is the value of this expression? $$\\lim_{x \\to 0} \\frac{\\sin(x)}{x} = ?$$",
+      "question": "What is the value of this expression? $$\\lim_{x \\to 0} \\frac{\\sin(x)}{x} = ?$$\n\nThis is a fundamental limit in calculus often illustrated with graphs.",
       "type": "multiple-choice",
       "options": ["$$0$$", "$$1$$", "$$\\infty$$", "undefined"],
-      "correct": 1,
-      "points": 10
+      "correctAnswer": 1,
+      "points": 10,
+      "image": "uploads/1751365738196-114392663.jpeg"
     }
   ]
 }

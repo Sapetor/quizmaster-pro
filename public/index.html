@@ -120,6 +120,14 @@
                     </div>
                 </div>
                 <button id="start-hosting-header-small" class="btn primary small start-game-header" style="display: none;" data-translate-title="start_quiz_tooltip">🚀 <span data-translate="start_game">Start Game</span></button>
+                
+                <!-- Global Font Size Control -->
+                <div class="font-size-control">
+                    <button id="font-size-toggle" class="theme-toggle" data-translate-title="adjust_font_size" onclick="toggleGlobalFontSize();" title="Font Size">
+                        <span id="font-size-icon">A</span>
+                    </button>
+                </div>
+                
                 <button id="fullscreen-toggle" class="theme-toggle" data-translate-title="toggle_fullscreen_tooltip">⛶</button>
                 <button id="theme-toggle" class="theme-toggle" data-translate-title="toggle_dark_mode_tooltip" onclick="console.log('Theme button clicked directly!'); window.toggleTheme();">☀️</button>
             </div>
@@ -434,16 +442,6 @@
                 </div>
                 <div class="settings-popup-content">
                     <div class="settings-row">
-                        <label for="preview-split-ratio" data-translate="split_ratio">Split Ratio</label>
-                        <input type="range" id="preview-split-ratio" min="20" max="80" value="50" oninput="updateSplitRatio(this.value)">
-                        <span id="split-ratio-display">50/50</span>
-                    </div>
-                    <div class="settings-row">
-                        <label for="preview-font-size" data-translate="font_size">Font Size</label>
-                        <input type="range" id="preview-font-size" min="12" max="20" value="16" oninput="updatePreviewFontSize(this.value)">
-                        <span id="font-size-display">16px</span>
-                    </div>
-                    <div class="settings-row">
                         <label for="preview-spacing" data-translate="spacing">Spacing</label>
                         <input type="range" id="preview-spacing" min="8" max="20" value="12" oninput="updatePreviewSpacing(this.value)">
                         <span id="spacing-display">12px</span>
@@ -548,6 +546,7 @@
                     </div>
                     <p id="game-url" class="game-url"></p>
                 </div>
+                
                 
                 <h3 data-translate="players_joined">Players Joined</h3>
                 <div id="players-list" class="players-grid"></div>
@@ -807,19 +806,7 @@
                     <button id="start-hosting-top" class="btn primary start-game-top">🚀 <span data-translate="start_game">Start Game</span></button>
                 </div>
                 
-                <div class="settings-group">
-                    <label><span data-translate="split_ratio">Split Ratio</span>: <span id="split-ratio-value">50% / 50%</span></label>
-                    <div class="slider-container">
-                        <input type="range" id="split-ratio-slider" min="30" max="80" value="50" class="custom-slider">
-                    </div>
-                </div>
                 
-                <div class="settings-group">
-                    <label><span data-translate="font_size">Font Size</span>: <span id="font-size-value">1.0x</span></label>
-                    <div class="slider-container">
-                        <input type="range" id="font-size-slider" min="0.7" max="1.8" step="0.1" value="1.0" class="custom-slider">
-                    </div>
-                </div>
                 
                 <div class="settings-group">
                     <label><span data-translate="spacing">Spacing</span>: <span id="spacing-value" data-translate="normal">Normal</span></label>

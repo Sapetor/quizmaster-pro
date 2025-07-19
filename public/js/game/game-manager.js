@@ -182,6 +182,9 @@ export class GameManager {
         hostQuestionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
         logger.debug('Host question HTML set:', data.question);
         
+        // Handle question image for host
+        this.updateQuestionImage(data, 'question-image-display');
+        
         // Debug MathJax status
         logger.debug('MathJax debug:', {
             exists: !!window.MathJax,
@@ -302,6 +305,9 @@ export class GameManager {
         if (!questionElement) return;
         
         questionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
+        
+        // Handle question image for player
+        this.updateQuestionImage(data, 'player-question-image');
         
         // Render MathJax for player question
         mathJaxService.renderElement(questionElement, 100).then(() => {
@@ -1290,6 +1296,51 @@ export class GameManager {
             
             leaderboardContainer.appendChild(item);
         });
+    }
+
+    /**
+     * Update question image display for host or player
+     */
+    updateQuestionImage(data, containerId) {
+        console.log(`updateQuestionImage called with containerId: ${containerId}, image: ${data.image}`);
+        const imageContainer = document.getElementById(containerId);
+        if (!imageContainer) {
+            console.log(`Image container ${containerId} not found`);
+            logger.debug(`Image container ${containerId} not found`);
+            return;
+        }
+        
+        if (data.image && data.image.trim()) {
+            console.log(`Displaying image for question: ${data.image}`);
+            logger.debug(`Displaying image for question: ${data.image}`);
+            
+            // Create or update image element
+            let img = imageContainer.querySelector('img');
+            if (!img) {
+                img = document.createElement('img');
+                img.className = 'question-image';
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '300px';
+                img.style.height = 'auto';
+                img.style.borderRadius = '8px';
+                img.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+                img.style.margin = '15px 0';
+                imageContainer.appendChild(img);
+            }
+            
+            // Set image source and alt text
+            img.src = data.image.startsWith('http') ? data.image : `/${data.image}`;
+            img.alt = 'Question Image';
+            
+            // Show the container
+            imageContainer.style.display = 'block';
+            logger.debug(`Image container ${containerId} shown with image: ${img.src}`);
+        } else {
+            // Hide the container if no image
+            console.log(`No image for question, hiding container ${containerId}`);
+            imageContainer.style.display = 'none';
+            logger.debug(`No image for question, hiding container ${containerId}`);
+        }
     }
 
     /**

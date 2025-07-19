@@ -41,8 +41,7 @@ export class PreviewManager {
             // Drag handlers
             dragStart: null,
             dragMove: null,
-            dragEnd: null,
-            sliderChange: null
+            dragEnd: null
         };
     }
 
@@ -72,10 +71,13 @@ export class PreviewManager {
                 resizeHandle.style.display = 'flex';
             }
             
-            // FORCE PROPER 50/50 SPLIT RATIO
-            hostContainer.style.setProperty('--split-left', '50fr');
-            hostContainer.style.setProperty('--split-right', '50fr');
-            logger.debug('Forced 50/50 split ratio on preview activation');
+            // SET DEFAULT 70/30 SPLIT RATIO (EDITOR/PREVIEW)
+            hostContainer.style.setProperty('--split-left', '70fr');
+            hostContainer.style.setProperty('--split-right', '30fr');
+            logger.debug('Set default 70/30 split ratio on preview activation');
+            
+            // Position the drag handle at 70%
+            this.updateDragHandlePosition(70);
             
             // Update button styling and text
             if (toggleBtn) {
@@ -91,6 +93,9 @@ export class PreviewManager {
             
             // Initialize drag functionality
             this.initializeDragFunctionality();
+            
+            // Load saved font size preference
+            this.loadSavedFontSize();
         } else {
             // Clean up listeners first
             this.cleanupPreviewListeners();
@@ -1092,7 +1097,7 @@ export class PreviewManager {
             } else if (leftValue.endsWith('%')) {
                 this.initialSplitRatio = parseFloat(leftValue);
             } else {
-                this.initialSplitRatio = 50; // Default fallback
+                this.initialSplitRatio = 70; // Default fallback to 70/30 split
             }
             
             resizeHandle.classList.add('dragging');
@@ -1122,17 +1127,9 @@ export class PreviewManager {
             hostContainer.style.setProperty('--split-left', `${newRatio}fr`);
             hostContainer.style.setProperty('--split-right', `${100 - newRatio}fr`);
             
-            // Update existing slider if it exists
-            this.updateSplitRatioSlider(newRatio);
+            // Update drag handle position
+            this.updateDragHandlePosition(newRatio);
             
-            // Update the display using the existing global function
-            if (window.updateSplitRatio) {
-                // Call the existing function to update the display
-                const display = document.getElementById('split-ratio-display');
-                if (display) {
-                    display.textContent = `${Math.round(newRatio)}/${Math.round(100 - newRatio)}`;
-                }
-            }
             
             // Update tooltip position and content
             this.updateDragTooltip(e.clientX, newRatio);
@@ -1172,25 +1169,20 @@ export class PreviewManager {
         
         // Load saved ratio from localStorage
         this.loadSavedSplitRatio();
-        
-        // Integrate with existing slider
-        this.integrateWithSlider();
     }
 
+
     /**
-     * Update the split ratio slider to match the current drag position
+     * Update the drag handle position based on the split ratio
      */
-    updateSplitRatioSlider(ratio) {
-        const slider = document.getElementById('split-ratio-slider');
-        const valueDisplay = document.getElementById('split-ratio-value');
+    updateDragHandlePosition(ratio) {
+        const resizeHandle = document.getElementById('split-resize-handle');
+        if (!resizeHandle) return;
         
-        if (slider) {
-            slider.value = ratio;
-        }
+        // Position the handle at the split ratio percentage
+        resizeHandle.style.left = `${ratio}%`;
         
-        if (valueDisplay) {
-            valueDisplay.textContent = `${Math.round(ratio)}% / ${Math.round(100 - ratio)}%`;
-        }
+        logger.debug('Updated drag handle position', { ratio });
     }
 
     /**
@@ -1205,39 +1197,13 @@ export class PreviewManager {
                 if (hostContainer) {
                     hostContainer.style.setProperty('--split-left', `${ratio}fr`);
                     hostContainer.style.setProperty('--split-right', `${100 - ratio}fr`);
-                    this.updateSplitRatioSlider(ratio);
+                    this.updateDragHandlePosition(ratio);
                     logger.debug('Loaded saved split ratio', { ratio });
                 }
             }
         }
     }
 
-    /**
-     * Integrate with existing slider functionality
-     */
-    integrateWithSlider() {
-        const slider = document.getElementById('split-ratio-slider');
-        if (slider) {
-            // Store reference for cleanup
-            this.listeners.sliderChange = (e) => {
-                if (!this.isDragging) { // Only update if not currently dragging
-                    const ratio = parseFloat(e.target.value);
-                    const hostContainer = document.querySelector('.host-container');
-                    if (hostContainer) {
-                        hostContainer.style.setProperty('--split-left', `${ratio}fr`);
-                        hostContainer.style.setProperty('--split-right', `${100 - ratio}fr`);
-                        
-                        // Save to localStorage
-                        localStorage.setItem('splitRatio', ratio.toString());
-                        
-                        logger.debug('Slider changed split ratio', { ratio });
-                    }
-                }
-            };
-            
-            slider.addEventListener('input', this.listeners.sliderChange);
-        }
-    }
 
     /**
      * Create drag tooltip
@@ -1304,11 +1270,6 @@ export class PreviewManager {
             document.removeEventListener('mouseup', this.listeners.dragEnd);
         }
         
-        // Remove slider listener
-        const slider = document.getElementById('split-ratio-slider');
-        if (slider && this.listeners.sliderChange) {
-            slider.removeEventListener('input', this.listeners.sliderChange);
-        }
         
         // Reset drag state
         this.isDragging = false;
@@ -1317,6 +1278,27 @@ export class PreviewManager {
         
         // Clean up tooltip
         this.hideDragTooltip();
+    }
+
+    /**
+     * Load saved font size preference - much simpler now!
+     */
+    loadSavedFontSize() {
+        const savedSize = localStorage.getItem('globalFontSize');
+        if (savedSize && ['small', 'medium', 'large', 'xlarge'].includes(savedSize)) {
+            setTimeout(() => {
+                if (window.setGlobalFontSize) {
+                    window.setGlobalFontSize(savedSize);
+                }
+            }, 100);
+        } else {
+            // Set default to medium
+            setTimeout(() => {
+                if (window.setGlobalFontSize) {
+                    window.setGlobalFontSize('medium');
+                }
+            }, 100);
+        }
     }
 
     /**

@@ -182,6 +182,7 @@ app.get('/api/quiz/:filename', (req, res) => {
     }
     
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    console.log('Loaded quiz data:', JSON.stringify(data, null, 2));
     res.json(data);
   } catch (error) {
     console.error('Load quiz error:', error);
@@ -759,6 +760,9 @@ function startQuestion(game, io) {
     timeLimit: timeLimit
   };
   
+  console.log('Question data being sent:', JSON.stringify(questionData, null, 2));
+  console.log('Raw question object:', JSON.stringify(question, null, 2));
+  
   io.to(`game-${game.pin}`).emit('question-start', questionData);
 
   game.questionTimer = setTimeout(() => {
@@ -871,10 +875,12 @@ io.on('connection', (socket) => {
       games.delete(existingGame.pin);
     }
     
+    console.log('Creating game with quiz data:', JSON.stringify(quiz, null, 2));
     const game = new Game(socket.id, quiz);
     games.set(game.pin, game);
     
     console.log(`Game created with PIN: ${game.pin}, Manual Advancement: ${game.manualAdvancement}`);
+    console.log('Game quiz questions:', JSON.stringify(game.quiz.questions, null, 2));
     
     socket.join(`game-${game.pin}`);
     socket.emit('game-created', {

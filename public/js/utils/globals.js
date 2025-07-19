@@ -9,6 +9,7 @@
  */
 
 import { changeLanguage } from './translations.js';
+import { logger } from '../core/config.js';
 
 // Global functions that need to be accessible from HTML
 
@@ -235,37 +236,99 @@ export function togglePreviewSettings() {
     }
 }
 
-export function updateSplitRatio(value) {
-    console.log('Update split ratio called:', value);
-    const leftPercent = parseInt(value);
-    const rightPercent = 100 - leftPercent;
+
+// Global font size control - much simpler!
+let currentFontScale = 'medium';
+
+export function toggleGlobalFontSize() {
+    const scales = ['small', 'medium', 'large', 'xlarge'];
+    const currentIndex = scales.indexOf(currentFontScale);
+    const nextIndex = (currentIndex + 1) % scales.length;
+    currentFontScale = scales[nextIndex];
     
-    // Update CSS custom properties
-    const hostContainer = document.querySelector('.host-container.split-screen');
-    if (hostContainer) {
-        hostContainer.style.setProperty('--split-left', `${leftPercent}fr`);
-        hostContainer.style.setProperty('--split-right', `${rightPercent}fr`);
-    }
-    
-    // Update display
-    const display = document.getElementById('split-ratio-display');
-    if (display) {
-        display.textContent = `${leftPercent}/${rightPercent}`;
-    }
+    setGlobalFontSize(currentFontScale);
 }
 
-export function updatePreviewFontSize(value) {
-    console.log('Update preview font size called:', value);
-    const previewContent = document.getElementById('preview-content-split');
-    if (previewContent) {
-        previewContent.style.fontSize = `${value}px`;
+export function setGlobalFontSize(scale) {
+    console.log('Setting global font size:', scale);
+    
+    // Define scale multipliers - increased range with much bigger game text
+    const scaleValues = {
+        small: 0.9,
+        medium: 1.0,
+        large: 1.3,
+        xlarge: 1.6
+    };
+    
+    const scaleValue = scaleValues[scale] || 1.0;
+    
+    // Update CSS custom property for global scaling
+    document.documentElement.style.setProperty('--global-font-scale', scaleValue);
+    
+    // Force immediate update on visible elements
+    const elementsToUpdate = [
+        // Editor elements
+        '.quiz-editor-section input',
+        '.quiz-editor-section textarea', 
+        '.question-text',
+        '.option',
+        '#quiz-title',
+        
+        // Game elements  
+        '#current-question',
+        '#player-question-text',
+        '#question-counter',
+        '#player-question-counter',
+        '.player-option',
+        '.tf-option',
+        '.checkbox-option',
+        
+        // Preview elements
+        '#preview-question-text',
+        '#preview-question-text-split'
+    ];
+    
+    elementsToUpdate.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(element => {
+            // Force recalculation by briefly removing and re-adding the style
+            const currentFontSize = window.getComputedStyle(element).fontSize;
+            element.style.fontSize = `calc(${currentFontSize} * ${scaleValue} / var(--global-font-scale, 1))`;
+            
+            // Small delay to ensure the change takes effect
+            setTimeout(() => {
+                element.style.fontSize = `calc(1rem * ${scaleValue})`;
+            }, 10);
+        });
+    });
+    
+    // Update the icon in the header
+    const fontIcon = document.getElementById('font-size-icon');
+    if (fontIcon) {
+        const icons = {
+            small: 'A⁻',
+            medium: 'A', 
+            large: 'A⁺',
+            xlarge: 'A⁺⁺'
+        };
+        fontIcon.textContent = icons[scale] || 'A';
     }
     
-    // Update display
-    const display = document.getElementById('font-size-display');
-    if (display) {
-        display.textContent = `${value}px`;
-    }
+    // Save preference
+    localStorage.setItem('globalFontSize', scale);
+    currentFontScale = scale;
+    
+    // Debug logging
+    console.log('Global font size updated:', { 
+        scale, 
+        scaleValue, 
+        elementsFound: elementsToUpdate.map(sel => ({
+            selector: sel,
+            count: document.querySelectorAll(sel).length
+        }))
+    });
+    
+    logger.debug('Global font size updated', { scale, scaleValue });
 }
 
 export function updatePreviewSpacing(value) {
@@ -399,8 +462,8 @@ window.removeImage = removeImage;
 window.scrollToCurrentQuestion = scrollToCurrentQuestion;
 window.scrollToTop = scrollToTop;
 window.togglePreviewSettings = togglePreviewSettings;
-window.updateSplitRatio = updateSplitRatio;
-window.updatePreviewFontSize = updatePreviewFontSize;
+window.toggleGlobalFontSize = toggleGlobalFontSize;
+window.setGlobalFontSize = setGlobalFontSize;
 window.updatePreviewSpacing = updatePreviewSpacing;
 window.toggleTheme = toggleTheme;
 window.changeLanguage = changeLanguage; // Re-export from translations

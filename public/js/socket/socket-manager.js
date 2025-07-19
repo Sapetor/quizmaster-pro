@@ -79,6 +79,8 @@ export class SocketManager {
         this.socket.on('question-start', (data) => {
             console.log('Question started:', data);
             console.log('Question timeLimit value:', data.timeLimit, 'Type:', typeof data.timeLimit);
+            console.log('Question image data:', JSON.stringify(data.image), 'Has image:', !!data.image);
+            console.log('Full question data received:', JSON.stringify(data, null, 2));
             this.gameManager.displayQuestion(data);
             
             // Ensure timer has valid duration

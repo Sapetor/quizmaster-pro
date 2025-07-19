@@ -162,6 +162,9 @@
     --preview-header-padding: 3px 4px;
     --preview-button-spacing: 6px 0;
     --preview-option-margin: 4px 0;
+    
+    /* Global Font Scale */
+    --global-font-scale: 1.0;
 }
 
 /* === DARK THEME SUPPORT === */
@@ -242,7 +245,115 @@ body {
     font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* Global Font Scaling - Comprehensive and effective! */
+
+/* Editor Elements - Consistent with improved scaling */
+.quiz-editor-section input,
+.quiz-editor-section textarea,
+.quiz-editor-section label,
+.question-text,
+.option,
+#quiz-title {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+.quiz-editor-section h2,
+.quiz-editor-section h3 {
+    font-size: calc(1.4rem * var(--global-font-scale)) !important;
+}
+
+/* Preview Elements - Better scaling to match game elements */
+.preview-content *,
+.preview-content-split *,
+#preview-question-text,
+#preview-question-text-split {
+    font-size: calc(1.2rem * var(--global-font-scale)) !important;
+}
+.preview-content .player-option,
+.preview-content .checkbox-option,
+.preview-content .tf-option,
+.preview-content-split .player-option,
+.preview-content-split .checkbox-option,
+.preview-content-split .tf-option {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+#preview-question-counter-display,
+#preview-question-counter-display-split {
+    font-size: calc(1rem * var(--global-font-scale)) !important;
+}
+
+/* Game Elements - Host View - BIGGER for better readability */
+#current-question {
+    font-size: calc(1.5rem * var(--global-font-scale)) !important;
+}
+#question-counter,
+.game-container .player-option,
+.game-container .tf-option {
+    font-size: calc(1.3rem * var(--global-font-scale)) !important;
+}
+.answer-stats *,
+.live-stats * {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+
+/* Game Elements - Player View - MUCH BIGGER for better readability */
+#player-question-text {
+    font-size: calc(1.6rem * var(--global-font-scale)) !important;
+}
+#player-question-counter {
+    font-size: calc(1.2rem * var(--global-font-scale)) !important;
+}
+.player-question-area .player-option,
+.player-question-area .tf-option,
+.player-question-area .checkbox-option {
+    font-size: calc(1.4rem * var(--global-font-scale)) !important;
+}
+#numeric-answer-input {
+    font-size: calc(1.3rem * var(--global-font-scale)) !important;
+}
+
+/* Lobby and Join */
+.lobby-container h2,
+.lobby-container h3,
+.join-container h2,
+.join-container input,
+.pin-display,
+#game-pin {
+    font-size: calc(1.2rem * var(--global-font-scale)) !important;
+}
+
+/* Question Titles - Make them larger */
+.game-container h2,
+.game-container h3 {
+    font-size: calc(1.5rem * var(--global-font-scale)) !important;
+}
+
 /* Monospace Font Stack for Code */
 code, pre, .code {
     font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+}
+
+/* LaTeX and MathJax Content - Larger default sizes for better readability */
+.player-option .MathJax,
+.checkbox-option .MathJax,
+.tf-option .MathJax,
+.preview-option .MathJax,
+.game-container .MathJax {
+    font-size: calc(1.2em * var(--global-font-scale)) !important;
+}
+
+/* Alternative boxes with LaTeX - bigger default font */
+.player-option,
+.checkbox-option, 
+.tf-option,
+.preview-option {
+    min-height: 2.5rem !important;
+    line-height: 1.4 !important;
+}
+
+/* Ensure MathJax in options is properly sized */
+.player-option mjx-container,
+.checkbox-option mjx-container,
+.tf-option mjx-container,
+.preview-option mjx-container {
+    font-size: 1.1em !important;
 }
