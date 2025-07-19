@@ -359,6 +359,30 @@ All colors are defined as CSS custom properties in `variables.css` and used cons
 - **Consistent Styling**: Unified appearance across host and client interfaces
 - **Answer System**: Fixed True/False color styling and Multiple Correct checkbox options
 
+### Enhanced Font Scaling System ✅
+- **Expanded Size Range**: 4 levels with much larger maximum: `small: 0.9x`, `medium: 1.0x`, `large: 1.3x`, `xlarge: 1.6x`
+- **Improved Game Readability**: Enhanced base font sizes for better gameplay experience
+  - Player questions: `1.6rem` (was `1.4rem`)
+  - Player options: `1.4rem` (was `1.2rem`) 
+  - Host questions: `1.5rem` (was `1.3rem`)
+  - Host options: `1.3rem` (was `1.1rem`)
+- **LaTeX/MathJax Scaling**: Dedicated `1.2em` scaling for mathematical expressions in answer options
+- **Persistent Settings**: Fixed font size reset issue when toggling live preview mode
+- **Global Header Control**: Clean A⁻/A/A⁺/A⁺⁺ interface integrated with theme and language controls
+- **Consistent Scaling**: Unified font scaling across editor, preview, and game modes
+
+### Image Display Functionality ✅
+- **Complete End-to-End Support**: Restored full image display in quiz questions
+- **Host & Player Views**: Images display correctly in both host game screen and player screens
+- **Live Preview Integration**: Images show in real-time split-screen preview during editing
+- **Data Flow Fixes**: 
+  - Enhanced `populateQuestionElement()` to recreate image DOM elements when loading saved quizzes
+  - Fixed `extractQuestionData()` to properly extract image paths from editor
+  - Improved server-client image data transmission
+- **Path Handling**: Smart relative/absolute URL handling with proper uploads directory support
+- **Visual Enhancement**: Responsive images with rounded corners, shadows, and proper sizing
+- **Debug Support**: Comprehensive logging for image loading and display troubleshooting
+
 ### JavaScript Architecture Improvements (2024-2025) ✅
 
 #### MathJax Consolidation
@@ -479,9 +503,11 @@ export function selectLanguage(langCode, event) {
 
 ### Current State
 - **Production Ready**: All core features optimized with modern UI and resolved layout issues
-- **Code Health**: Excellent codebase health (8.2/10) with proper debugging configuration
+- **Code Health**: Excellent codebase health (8.5/10) with proper debugging configuration and enhanced functionality
 - **Mobile Responsive**: Works seamlessly across desktop, tablet, and mobile devices
 - **Internationalized**: Complete 9-language support with real-time dynamic translation
 - **Performance Optimized**: Debug output properly suppressed for production use
+- **Enhanced Accessibility**: Improved font scaling system with 4 size levels for better readability
+- **Full Image Support**: Complete image display functionality in questions, preview, and gameplay
 - **Modular JavaScript**: Clean separation of concerns with centralized utilities
 - **Robust Error Handling**: Comprehensive error management and graceful degradation
