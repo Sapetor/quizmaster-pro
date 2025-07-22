@@ -210,6 +210,13 @@ export class GameManager {
         
         // Handle question image for host
         this.updateQuestionImage(data, 'question-image-display');
+        
+        // Render MathJax for host question
+        mathJaxService.renderElement(hostQuestionElement, 100).then(() => {
+            logger.debug('MathJax question rendering completed');
+        }).catch(err => {
+            logger.error('MathJax question render error:', err);
+        });
     }
 
     /**
@@ -232,7 +239,12 @@ export class GameManager {
         // Translate any dynamic content in the options container
         translationManager.translateContainer(hostOptionsContainer);
         
-        // LaTeX rendering is now handled individually for each option to prevent blinking
+        // Render MathJax for host options
+        mathJaxService.renderElement(hostOptionsContainer, 150).then(() => {
+            logger.debug('MathJax options rendering completed');
+        }).catch(err => {
+            logger.error('MathJax options render error:', err);
+        });
     }
 
     /**
@@ -316,6 +328,13 @@ export class GameManager {
         
         // Handle question image for player
         this.updateQuestionImage(data, 'player-question-image');
+        
+        // Render MathJax for player question
+        mathJaxService.renderElement(questionElement, 100).then(() => {
+            logger.debug('MathJax rendering completed for player question');
+        }).catch(err => {
+            logger.error('MathJax player question render error:', err);
+        });
     }
 
     /**
@@ -334,7 +353,12 @@ export class GameManager {
             this.setupPlayerNumericOptions(data, optionsContainer);
         }
         
-        // LaTeX rendering is now handled individually for each option to prevent blinking
+        // Render MathJax for player options
+        mathJaxService.renderElement(optionsContainer, 150).then(() => {
+            logger.debug('MathJax rendering completed for player options');
+        }).catch(err => {
+            logger.error('MathJax player options render error:', err);
+        });
     }
 
     /**
