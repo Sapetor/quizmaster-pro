@@ -203,31 +203,8 @@ export class GameManager {
     updateHostQuestionContent(data, hostQuestionElement) {
         if (!hostQuestionElement) return;
         
-        // FOUC Prevention: Detect LaTeX content
-        const hasLatex = data.question && (data.question.includes('$') || data.question.includes('\\(') || 
-                        data.question.includes('\\[') || data.question.includes('\\frac') ||
-                        data.question.includes('\\sqrt') || data.question.includes('\\sum'));
-        
-        const formattedContent = this.mathRenderer.formatCodeBlocks(data.question);
-        
-        if (hasLatex) {
-            // Hide content during LaTeX processing to prevent blinking
-            hostQuestionElement.style.opacity = '0';
-            hostQuestionElement.innerHTML = formattedContent;
-            
-            // Show content after MathJax processing completes
-            mathJaxService.renderElement(hostQuestionElement, 100).then(() => {
-                logger.debug('MathJax question rendering completed');
-                hostQuestionElement.style.opacity = '1';
-            }).catch(err => {
-                logger.error('MathJax question render error:', err);
-                hostQuestionElement.style.opacity = '1'; // Show even if MathJax fails
-            });
-        } else {
-            // No LaTeX, show immediately
-            hostQuestionElement.style.opacity = '1';
-            hostQuestionElement.innerHTML = formattedContent;
-        }
+        // Simple content update - no FOUC prevention needed in game view
+        hostQuestionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
         
         logger.debug('Host question HTML set:', data.question);
         
@@ -290,40 +267,8 @@ export class GameManager {
         if (data.type === 'multiple-choice' || data.type === 'multiple-correct') {
             data.options.forEach((option, index) => {
                 if (options[index]) {
-                    // FOUC Prevention: Detect LaTeX content in option
-                    const hasLatex = option && (option.includes('$') || option.includes('\\(') || 
-                                    option.includes('\\[') || option.includes('\\frac') ||
-                                    option.includes('\\sqrt') || option.includes('\\sum'));
-                    
-                    const formattedContent = `${translationManager.getOptionLetter(index)}: ${this.mathRenderer.formatCodeBlocks(option)}`;
-                    
-                    if (hasLatex) {
-                        // Hide option during LaTeX processing
-                        options[index].style.opacity = '0';
-                        options[index].innerHTML = formattedContent;
-                        options[index].style.display = 'block';
-                        
-                        // Show option after MathJax processing
-                        setTimeout(() => {
-                            if (window.MathJax?.typesetPromise) {
-                                window.MathJax.typesetPromise([options[index]])
-                                    .then(() => {
-                                        options[index].style.opacity = '1';
-                                    })
-                                    .catch(() => {
-                                        options[index].style.opacity = '1';
-                                    });
-                            } else {
-                                options[index].style.opacity = '1';
-                            }
-                        }, 50);
-                    } else {
-                        // No LaTeX, show immediately
-                        options[index].style.opacity = '1';
-                        options[index].innerHTML = formattedContent;
-                        options[index].style.display = 'block';
-                    }
-                    
+                    options[index].innerHTML = `${translationManager.getOptionLetter(index)}: ${this.mathRenderer.formatCodeBlocks(option)}`;
+                    options[index].style.display = 'block';
                     // Add data-multiple attribute for multiple-correct questions to get special styling
                     if (data.type === 'multiple-correct') {
                         options[index].setAttribute('data-multiple', 'true');
@@ -366,31 +311,8 @@ export class GameManager {
     updatePlayerQuestionContent(data, questionElement) {
         if (!questionElement) return;
         
-        // FOUC Prevention: Detect LaTeX content
-        const hasLatex = data.question && (data.question.includes('$') || data.question.includes('\\(') || 
-                        data.question.includes('\\[') || data.question.includes('\\frac') ||
-                        data.question.includes('\\sqrt') || data.question.includes('\\sum'));
-        
-        const formattedContent = this.mathRenderer.formatCodeBlocks(data.question);
-        
-        if (hasLatex) {
-            // Hide content during LaTeX processing to prevent blinking
-            questionElement.style.opacity = '0';
-            questionElement.innerHTML = formattedContent;
-            
-            // Show content after MathJax processing completes
-            mathJaxService.renderElement(questionElement, 100).then(() => {
-                logger.debug('MathJax rendering completed for player question');
-                questionElement.style.opacity = '1';
-            }).catch(err => {
-                logger.error('MathJax player question render error:', err);
-                questionElement.style.opacity = '1'; // Show even if MathJax fails
-            });
-        } else {
-            // No LaTeX, show immediately
-            questionElement.style.opacity = '1';
-            questionElement.innerHTML = formattedContent;
-        }
+        // Simple content update - no FOUC prevention needed in game view  
+        questionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
         
         // Handle question image for player
         this.updateQuestionImage(data, 'player-question-image');
@@ -422,42 +344,10 @@ export class GameManager {
         const existingButtons = optionsContainer.querySelectorAll('.player-option');
         existingButtons.forEach((button, index) => {
             if (index < data.options.length) {
-                // FOUC Prevention: Detect LaTeX content in option
-                const option = data.options[index];
-                const hasLatex = option && (option.includes('$') || option.includes('\\(') || 
-                                option.includes('\\[') || option.includes('\\frac') ||
-                                option.includes('\\sqrt') || option.includes('\\sum'));
-                
-                const formattedContent = `<span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${this.mathRenderer.formatCodeBlocks(option)}`;
-                
+                button.innerHTML = `<span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${this.mathRenderer.formatCodeBlocks(data.options[index])}`;
                 button.setAttribute('data-answer', index.toString());
                 button.classList.remove('selected', 'disabled');
                 button.style.display = 'block';
-                
-                if (hasLatex) {
-                    // Hide option during LaTeX processing
-                    button.style.opacity = '0';
-                    button.innerHTML = formattedContent;
-                    
-                    // Show option after MathJax processing
-                    setTimeout(() => {
-                        if (window.MathJax?.typesetPromise) {
-                            window.MathJax.typesetPromise([button])
-                                .then(() => {
-                                    button.style.opacity = '1';
-                                })
-                                .catch(() => {
-                                    button.style.opacity = '1';
-                                });
-                        } else {
-                            button.style.opacity = '1';
-                        }
-                    }, 50);
-                } else {
-                    // No LaTeX, show immediately
-                    button.style.opacity = '1';
-                    button.innerHTML = formattedContent;
-                }
                 
                 // Use tracked event listeners instead of cloning
                 this.addEventListenerTracked(button, 'click', () => {
@@ -480,40 +370,9 @@ export class GameManager {
         checkboxes.forEach(cb => cb.checked = false);
         checkboxLabels.forEach((label, index) => {
             if (data.options && data.options[index]) {
-                // FOUC Prevention: Detect LaTeX content in option
-                const option = data.options[index];
-                const hasLatex = option && (option.includes('$') || option.includes('\\(') || 
-                                option.includes('\\[') || option.includes('\\frac') ||
-                                option.includes('\\sqrt') || option.includes('\\sum'));
-                
-                const formattedContent = `<input type="checkbox" class="option-checkbox"> ${translationManager.getOptionLetter(index)}: ${this.mathRenderer.formatCodeBlocks(option)}`;
-                
+                const formattedOption = this.mathRenderer.formatCodeBlocks(data.options[index]);
+                label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${translationManager.getOptionLetter(index)}: ${formattedOption}`;
                 label.setAttribute('data-option', index);
-                
-                if (hasLatex) {
-                    // Hide option during LaTeX processing
-                    label.style.opacity = '0';
-                    label.innerHTML = formattedContent;
-                    
-                    // Show option after MathJax processing
-                    setTimeout(() => {
-                        if (window.MathJax?.typesetPromise) {
-                            window.MathJax.typesetPromise([label])
-                                .then(() => {
-                                    label.style.opacity = '1';
-                                })
-                                .catch(() => {
-                                    label.style.opacity = '1';
-                                });
-                        } else {
-                            label.style.opacity = '1';
-                        }
-                    }, 50);
-                } else {
-                    // No LaTeX, show immediately
-                    label.style.opacity = '1';
-                    label.innerHTML = formattedContent;
-                }
             } else {
                 label.style.display = 'none';
             }
