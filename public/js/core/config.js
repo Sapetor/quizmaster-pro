@@ -5,14 +5,14 @@
 // Development/Production Configuration
 export const DEBUG = {
     // Set to false for production builds
-    ENABLED: false,
+    ENABLED: true,
     LEVELS: {
         ERROR: 1,
         WARN: 2, 
         INFO: 3,
         DEBUG: 4
     },
-    CURRENT_LEVEL: 4 // Show all logs in development (1=errors, 2=warnings, 3=info, 4=debug)
+    CURRENT_LEVEL: 2 // Show errors and warnings only (1=errors, 2=warnings, 3=info, 4=debug)
 };
 
 // Debug utility functions
@@ -45,6 +45,16 @@ export const TIMING = {
     LEADERBOARD_DISPLAY_TIME: 3000,
     QUESTION_START_DURATION: 0.3,
     RESULT_DISPLAY_DURATION: 4000, // 4 seconds for result feedback
+    AUTO_SAVE_DELAY: 5000, // Auto-save delay after input changes
+    DOM_UPDATE_DELAY: 100, // Standard delay for DOM updates
+    DEBOUNCE_DELAY: 1000, // Standard debounce delay for user actions
+    GAME_START_DELAY: 2000, // Delay before starting game
+    DEBUG_ANALYSIS_DELAY: 5000, // Delay for debug analysis
+    ANIMATION_FADE_DURATION: 300, // Standard fade animation duration
+    SCROLL_THRESHOLD: 300, // Scroll threshold for back-to-top button
+    MATHJAX_TIMEOUT: 100, // Standard MathJax rendering timeout
+    MATHJAX_RETRY_TIMEOUT: 200, // MathJax retry timeout
+    SHORT_DELAY: 10, // Very short delay for style updates
 };
 
 export const SCORING = {
@@ -54,6 +64,9 @@ export const SCORING = {
 
 export const LIMITS = {
     MAX_PLAYER_NAME_LENGTH: 20,
+    MIN_TIME_LIMIT: 5, // Minimum time limit for questions (seconds)
+    MAX_TIME_LIMIT: 300, // Maximum time limit for questions (seconds)
+    MAX_PLAYER_NUMBER: 999, // Maximum player number for auto-generated names
 };
 
 export const AUDIO = {

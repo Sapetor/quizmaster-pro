@@ -6,10 +6,12 @@
  * - Extracted from script.js lines 1761-1855, 1913-1981, 3223-3270, 5382-5474
  * - Includes question HTML generation, validation, and randomization
  * - Manages LaTeX validation and delimiter checking
- * - Dependencies: translations.js for getTranslation()
+ * - Dependencies: translation-manager.js for translationManager.getTranslationSync()
  */
 
-import { getTranslation } from './translations.js';
+import { logger } from '../core/config.js';
+
+import { translationManager } from './translation-manager.js';
 
 export class QuestionUtils {
     constructor() {
@@ -48,46 +50,46 @@ export class QuestionUtils {
             </div>
             
             <div class="question-content">
-                <textarea class="question-text" placeholder="${getTranslation('enter_question_with_latex')}" data-translate-placeholder="enter_question_with_latex"></textarea>
+                <textarea class="question-text" placeholder="Enter your question (supports LaTeX)" data-translate-placeholder="enter_question_with_latex"></textarea>
                 
                 <div class="image-upload">
-                    <label data-translate="add_image">${getTranslation('add_image')}</label>
+                    <label data-translate="add_image">Add Image</label>
                     <input type="file" class="image-input" accept="image/*" onchange="uploadImage(this)">
                     <div class="image-preview" style="display: none;">
                         <img class="question-image" src="" alt="Question Image" style="max-width: 200px; max-height: 150px;">
-                        <button type="button" class="remove-image" onclick="removeImage(this)" data-translate="remove_image">${getTranslation('remove_image')}</button>
+                        <button type="button" class="remove-image" onclick="removeImage(this)" data-translate="remove_image">Remove Image</button>
                     </div>
                 </div>
             </div>
             
             <div class="answer-options multiple-choice-options">
                 <div class="options">
-                    <input type="text" class="option" data-option="0" placeholder="${getTranslation('option_a')}" data-translate-placeholder="option_a">
-                    <input type="text" class="option" data-option="1" placeholder="${getTranslation('option_b')}" data-translate-placeholder="option_b">
-                    <input type="text" class="option" data-option="2" placeholder="${getTranslation('option_c')}" data-translate-placeholder="option_c">
-                    <input type="text" class="option" data-option="3" placeholder="${getTranslation('option_d')}" data-translate-placeholder="option_d">
+                    <input type="text" class="option" data-option="0" placeholder="Option A" data-translate-placeholder="option_a">
+                    <input type="text" class="option" data-option="1" placeholder="Option B" data-translate-placeholder="option_b">
+                    <input type="text" class="option" data-option="2" placeholder="Option C" data-translate-placeholder="option_c">
+                    <input type="text" class="option" data-option="3" placeholder="Option D" data-translate-placeholder="option_d">
                 </div>
                 <select class="correct-answer">
-                    <option value="0" data-translate="a_is_correct">${getTranslation('a_is_correct')}</option>
-                    <option value="1" data-translate="b_is_correct">${getTranslation('b_is_correct')}</option>
-                    <option value="2" data-translate="c_is_correct">${getTranslation('c_is_correct')}</option>
-                    <option value="3" data-translate="d_is_correct">${getTranslation('d_is_correct')}</option>
+                    <option value="0" data-translate="a_is_correct">A is correct</option>
+                    <option value="1" data-translate="b_is_correct">B is correct</option>
+                    <option value="2" data-translate="c_is_correct">C is correct</option>
+                    <option value="3" data-translate="d_is_correct">D is correct</option>
                 </select>
             </div>
             
             <div class="answer-options multiple-correct-options" style="display: none;">
                 <div class="options-checkboxes">
-                    <label><input type="checkbox" class="correct-option" data-option="0"> <input type="text" class="option" placeholder="${getTranslation('option_a')}" data-translate-placeholder="option_a"></label>
-                    <label><input type="checkbox" class="correct-option" data-option="1"> <input type="text" class="option" placeholder="${getTranslation('option_b')}" data-translate-placeholder="option_b"></label>
-                    <label><input type="checkbox" class="correct-option" data-option="2"> <input type="text" class="option" placeholder="${getTranslation('option_c')}" data-translate-placeholder="option_c"></label>
-                    <label><input type="checkbox" class="correct-option" data-option="3"> <input type="text" class="option" placeholder="${getTranslation('option_d')}" data-translate-placeholder="option_d"></label>
+                    <label><input type="checkbox" class="correct-option" data-option="0"> <input type="text" class="option" placeholder="Option A" data-translate-placeholder="option_a"></label>
+                    <label><input type="checkbox" class="correct-option" data-option="1"> <input type="text" class="option" placeholder="Option B" data-translate-placeholder="option_b"></label>
+                    <label><input type="checkbox" class="correct-option" data-option="2"> <input type="text" class="option" placeholder="Option C" data-translate-placeholder="option_c"></label>
+                    <label><input type="checkbox" class="correct-option" data-option="3"> <input type="text" class="option" placeholder="Option D" data-translate-placeholder="option_d"></label>
                 </div>
             </div>
             
             <div class="answer-options true-false-options" style="display: none;">
                 <select class="correct-answer">
-                    <option value="true" data-translate="true">${getTranslation('true')}</option>
-                    <option value="false" data-translate="false">${getTranslation('false')}</option>
+                    <option value="true" data-translate="true">True</option>
+                    <option value="false" data-translate="false">False</option>
                 </select>
             </div>
             
@@ -156,7 +158,7 @@ export class QuestionUtils {
                     
                 case 'true-false':
                     const tfCorrect = item.querySelector('.true-false-options .correct-answer').value;
-                    question.options = [getTranslation('true_display'), getTranslation('false_display')]; // Display names
+                    question.options = [translationManager.getTranslationSync('true_display'), translationManager.getTranslationSync('false_display')]; // Display names
                     question.correctAnswer = tfCorrect; // Will be "true" or "false" (lowercase)
                     questions.push(question);
                     break;
@@ -183,22 +185,22 @@ export class QuestionUtils {
      */
     validateQuestions(questions) {
         const validQuestions = [];
-        console.log('Validating questions, count:', questions.length);
+        logger.debug('Validating questions, count:', questions.length);
         
         for (let i = 0; i < questions.length; i++) {
             const q = questions[i];
-            console.log(`Validating question ${i}:`, q);
+            logger.debug(`Validating question ${i}:`, q);
             
             if (q.question && q.type && q.correctAnswer !== undefined) {
-                console.log('Basic validation passed for question', i);
+                logger.debug('Basic validation passed for question', i);
                 
                 // Basic LaTeX validation
                 const hasErrors = this.hasLatexErrors(q.question);
                 if (hasErrors) {
-                    console.warn('LaTeX validation would skip:', q.question);
-                    console.warn('But allowing it through for now...');
+                    logger.warn('LaTeX validation would skip:', q.question);
+                    logger.warn('But allowing it through for now...');
                 }
-                console.log('LaTeX validation passed for question', i);
+                logger.debug('LaTeX validation passed for question', i);
                 
                 // Set default values for missing fields
                 q.difficulty = q.difficulty || 'medium';
@@ -206,13 +208,13 @@ export class QuestionUtils {
                 
                 // Validate question type
                 if (['multiple-choice', 'true-false', 'multiple-correct', 'numeric'].includes(q.type)) {
-                    console.log('Question type validation passed for question', i);
+                    logger.debug('Question type validation passed for question', i);
                     validQuestions.push(q);
                 } else {
-                    console.warn('Invalid question type:', q.type);
+                    logger.warn('Invalid question type:', q.type);
                 }
             } else {
-                console.warn('Question failed basic validation:', {
+                logger.warn('Question failed basic validation:', {
                     hasQuestion: !!q.question,
                     hasType: !!q.type,
                     hasCorrectAnswer: q.correctAnswer !== undefined
@@ -220,7 +222,7 @@ export class QuestionUtils {
             }
         }
         
-        console.log('Validation complete. Valid questions:', validQuestions.length);
+        logger.debug('Validation complete. Valid questions:', validQuestions.length);
         return validQuestions;
     }
 
@@ -475,10 +477,10 @@ const questionUtils = new QuestionUtils();
  * Add a new question to the quiz builder
  */
 export function addQuestion() {
-    console.log('addQuestion called');
+    logger.debug('addQuestion called');
     const questionsContainer = document.getElementById('questions-container');
     if (!questionsContainer) {
-        console.error('Questions container not found');
+        logger.error('Questions container not found');
         return;
     }
     
@@ -490,6 +492,9 @@ export function addQuestion() {
     
     questionDiv.innerHTML = questionUtils.generateQuestionHTML(questionCount);
     questionsContainer.appendChild(questionDiv);
+    
+    // Translate the newly added question element
+    translationManager.translateContainer(questionDiv);
     
     return questionDiv;
 }
@@ -506,6 +511,8 @@ export function createQuestionElement(questionData) {
     
     questionDiv.innerHTML = questionUtils.generateQuestionHTML(questionCount);
     
+    // Note: Translation is handled by the caller to ensure proper timing
+    
     return questionDiv;
 }
 
@@ -513,7 +520,7 @@ export function createQuestionElement(questionData) {
  * Validate LaTeX in questions - simple implementation
  */
 export function validateLatexInQuestions(questions) {
-    console.log('validateLatexInQuestions called with', questions.length, 'questions');
+    logger.debug('validateLatexInQuestions called with', questions.length, 'questions');
     // For now, just return empty array to skip LaTeX validation
     // This prevents the blocking error
     return [];

@@ -3,11 +3,12 @@
  * Handles game flow, question display, player results, and game state management
  */
 
-import { getTranslation, getOptionLetter } from '../utils/translations.js';
+import { translationManager } from '../utils/translation-manager.js';
 import { TIMING, logger } from '../core/config.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { mathJaxService } from '../utils/mathjax-service.js';
 import { domManager } from '../utils/dom-manager.js';
+import { errorBoundary } from '../utils/error-boundary.js';
 
 export class GameManager {
     constructor(socket, uiManager, soundManager, socketManager = null) {
@@ -30,40 +31,63 @@ export class GameManager {
         this.playerAnswers = new Map();
         this.gameEnded = false;
         this.resultShown = false;
+        
+        // Memory management tracking
+        this.eventListeners = new Map(); // Track all event listeners for cleanup
+        this.timers = new Set(); // Track all timers for cleanup
+        this.domReferences = new Set(); // Track DOM element references
+        
+        // Bind cleanup methods
+        this.cleanup = this.cleanup.bind(this);
+        this.addEventListenerTracked = this.addEventListenerTracked.bind(this);
+        this.createTimerTracked = this.createTimerTracked.bind(this);
+        
+        // Auto-cleanup on page unload
+        if (typeof window !== 'undefined') {
+            window.addEventListener('beforeunload', this.cleanup);
+            window.addEventListener('unload', this.cleanup);
+        }
     }
 
     /**
      * Display a question to the player or host
      */
     displayQuestion(data) {
-        logger.debug('Displaying question:', data);
-        
-        // Initialize display state
-        this.initializeQuestionDisplay(data);
-        
-        // Get DOM elements and containers
-        const elements = this.getQuestionElements();
-        const optionsContainer = this.setupQuestionContainers(data);
-        
-        // Update content based on host/player mode
-        if (this.isHost) {
-            this.updateHostDisplay(data, elements);
-        } else {
-            this.updatePlayerDisplay(data, elements, optionsContainer);
-        }
-        
-        // Finalize display
-        this.finalizeQuestionDisplay(data);
+        return errorBoundary.safeExecute(() => {
+            logger.debug('Displaying question:', data);
+            
+            // Initialize display state
+            this.initializeQuestionDisplay(data);
+            
+            // Get DOM elements and containers
+            const elements = this.getQuestionElements();
+            const optionsContainer = this.setupQuestionContainers(data);
+            
+            // Update content based on host/player mode
+            if (this.isHost) {
+                this.updateHostDisplay(data, elements);
+            } else {
+                this.updatePlayerDisplay(data, elements, optionsContainer);
+            }
+            
+            // Finalize display
+            this.finalizeQuestionDisplay(data);
+        }, {
+            type: 'game_logic',
+            operation: 'question_display',
+            questionId: data.questionId
+        }, () => {
+            // Fallback: show error message
+            logger.error('Failed to display question, showing error state');
+            this.showQuestionErrorState();
+        });
     }
 
     /**
      * Initialize question display state and reset for new question
      */
     initializeQuestionDisplay(data) {
-        logger.debug('Question options:', data.options);
-        logger.debug('Question type:', data.type);
-        logger.debug('CRITICAL: this.isHost =', this.isHost);
-        logger.debug('CRITICAL: this.playerName =', this.playerName);
+        logger.debug('QuestionInit', { type: data.type, options: data.options?.length, isHost: this.isHost });
         
         // Reset result flag for new question
         this.resultShown = false;
@@ -179,28 +203,36 @@ export class GameManager {
     updateHostQuestionContent(data, hostQuestionElement) {
         if (!hostQuestionElement) return;
         
-        hostQuestionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
+        // FOUC Prevention: Detect LaTeX content
+        const hasLatex = data.question && (data.question.includes('$') || data.question.includes('\\(') || 
+                        data.question.includes('\\[') || data.question.includes('\\frac') ||
+                        data.question.includes('\\sqrt') || data.question.includes('\\sum'));
+        
+        const formattedContent = this.mathRenderer.formatCodeBlocks(data.question);
+        
+        if (hasLatex) {
+            // Hide content during LaTeX processing to prevent blinking
+            hostQuestionElement.style.opacity = '0';
+            hostQuestionElement.innerHTML = formattedContent;
+            
+            // Show content after MathJax processing completes
+            mathJaxService.renderElement(hostQuestionElement, 100).then(() => {
+                logger.debug('MathJax question rendering completed');
+                hostQuestionElement.style.opacity = '1';
+            }).catch(err => {
+                logger.error('MathJax question render error:', err);
+                hostQuestionElement.style.opacity = '1'; // Show even if MathJax fails
+            });
+        } else {
+            // No LaTeX, show immediately
+            hostQuestionElement.style.opacity = '1';
+            hostQuestionElement.innerHTML = formattedContent;
+        }
+        
         logger.debug('Host question HTML set:', data.question);
         
         // Handle question image for host
         this.updateQuestionImage(data, 'question-image-display');
-        
-        // Debug MathJax status
-        logger.debug('MathJax debug:', {
-            exists: !!window.MathJax,
-            typesetPromise: !!window.MathJax?.typesetPromise,
-            startup: !!window.MathJax?.startup,
-            tex2jax: !!window.MathJax?.tex2jax,
-            Hub: !!window.MathJax?.Hub,
-            keys: window.MathJax ? Object.keys(window.MathJax) : 'none'
-        });
-        
-        // Render MathJax for host question
-        mathJaxService.renderElement(hostQuestionElement, 100).then(() => {
-            logger.debug('MathJax question rendering completed');
-        }).catch(err => {
-            logger.error('MathJax question render error:', err);
-        });
     }
 
     /**
@@ -220,12 +252,10 @@ export class GameManager {
             this.setupHostMultipleChoiceOptions(data, hostOptionsContainer);
         }
         
-        // Render MathJax for host options
-        mathJaxService.renderElement(hostOptionsContainer, 150).then(() => {
-            logger.debug('MathJax options rendering completed');
-        }).catch(err => {
-            logger.error('MathJax options render error:', err);
-        });
+        // Translate any dynamic content in the options container
+        translationManager.translateContainer(hostOptionsContainer);
+        
+        // LaTeX rendering is now handled individually for each option to prevent blinking
     }
 
     /**
@@ -234,8 +264,8 @@ export class GameManager {
     setupHostTrueFalseOptions(hostOptionsContainer) {
         hostOptionsContainer.innerHTML = `
             <div class="true-false-options">
-                <div class="tf-option true-btn" data-answer="true">${getTranslation('true')}</div>
-                <div class="tf-option false-btn" data-answer="false">${getTranslation('false')}</div>
+                <div class="tf-option true-btn" data-answer="true">${translationManager.getTranslationSync('true')}</div>
+                <div class="tf-option false-btn" data-answer="false">${translationManager.getTranslationSync('false')}</div>
             </div>
         `;
         hostOptionsContainer.style.display = 'block';
@@ -260,8 +290,40 @@ export class GameManager {
         if (data.type === 'multiple-choice' || data.type === 'multiple-correct') {
             data.options.forEach((option, index) => {
                 if (options[index]) {
-                    options[index].innerHTML = `${getOptionLetter(index)}: ${this.mathRenderer.formatCodeBlocks(option)}`;
-                    options[index].style.display = 'block';
+                    // FOUC Prevention: Detect LaTeX content in option
+                    const hasLatex = option && (option.includes('$') || option.includes('\\(') || 
+                                    option.includes('\\[') || option.includes('\\frac') ||
+                                    option.includes('\\sqrt') || option.includes('\\sum'));
+                    
+                    const formattedContent = `${translationManager.getOptionLetter(index)}: ${this.mathRenderer.formatCodeBlocks(option)}`;
+                    
+                    if (hasLatex) {
+                        // Hide option during LaTeX processing
+                        options[index].style.opacity = '0';
+                        options[index].innerHTML = formattedContent;
+                        options[index].style.display = 'block';
+                        
+                        // Show option after MathJax processing
+                        setTimeout(() => {
+                            if (window.MathJax?.typesetPromise) {
+                                window.MathJax.typesetPromise([options[index]])
+                                    .then(() => {
+                                        options[index].style.opacity = '1';
+                                    })
+                                    .catch(() => {
+                                        options[index].style.opacity = '1';
+                                    });
+                            } else {
+                                options[index].style.opacity = '1';
+                            }
+                        }, 50);
+                    } else {
+                        // No LaTeX, show immediately
+                        options[index].style.opacity = '1';
+                        options[index].innerHTML = formattedContent;
+                        options[index].style.display = 'block';
+                    }
+                    
                     // Add data-multiple attribute for multiple-correct questions to get special styling
                     if (data.type === 'multiple-correct') {
                         options[index].setAttribute('data-multiple', 'true');
@@ -304,17 +366,34 @@ export class GameManager {
     updatePlayerQuestionContent(data, questionElement) {
         if (!questionElement) return;
         
-        questionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
+        // FOUC Prevention: Detect LaTeX content
+        const hasLatex = data.question && (data.question.includes('$') || data.question.includes('\\(') || 
+                        data.question.includes('\\[') || data.question.includes('\\frac') ||
+                        data.question.includes('\\sqrt') || data.question.includes('\\sum'));
+        
+        const formattedContent = this.mathRenderer.formatCodeBlocks(data.question);
+        
+        if (hasLatex) {
+            // Hide content during LaTeX processing to prevent blinking
+            questionElement.style.opacity = '0';
+            questionElement.innerHTML = formattedContent;
+            
+            // Show content after MathJax processing completes
+            mathJaxService.renderElement(questionElement, 100).then(() => {
+                logger.debug('MathJax rendering completed for player question');
+                questionElement.style.opacity = '1';
+            }).catch(err => {
+                logger.error('MathJax player question render error:', err);
+                questionElement.style.opacity = '1'; // Show even if MathJax fails
+            });
+        } else {
+            // No LaTeX, show immediately
+            questionElement.style.opacity = '1';
+            questionElement.innerHTML = formattedContent;
+        }
         
         // Handle question image for player
         this.updateQuestionImage(data, 'player-question-image');
-        
-        // Render MathJax for player question
-        mathJaxService.renderElement(questionElement, 100).then(() => {
-            logger.debug('MathJax rendering completed for player question');
-        }).catch(err => {
-            logger.error('MathJax player question render error:', err);
-        });
     }
 
     /**
@@ -333,31 +412,55 @@ export class GameManager {
             this.setupPlayerNumericOptions(data, optionsContainer);
         }
         
-        // Render MathJax for player options
-        mathJaxService.renderElement(optionsContainer, 150).then(() => {
-            logger.debug('MathJax rendering completed for player options');
-        }).catch(err => {
-            logger.error('MathJax player options render error:', err);
-        });
+        // LaTeX rendering is now handled individually for each option to prevent blinking
     }
 
     /**
      * Setup player multiple choice options
      */
     setupPlayerMultipleChoiceOptions(data, optionsContainer) {
-        logger.debug('Setting up player multiple choice options');
         const existingButtons = optionsContainer.querySelectorAll('.player-option');
         existingButtons.forEach((button, index) => {
             if (index < data.options.length) {
-                button.innerHTML = `<span class="option-letter">${getOptionLetter(index)}:</span> ${this.mathRenderer.formatCodeBlocks(data.options[index])}`;
+                // FOUC Prevention: Detect LaTeX content in option
+                const option = data.options[index];
+                const hasLatex = option && (option.includes('$') || option.includes('\\(') || 
+                                option.includes('\\[') || option.includes('\\frac') ||
+                                option.includes('\\sqrt') || option.includes('\\sum'));
+                
+                const formattedContent = `<span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${this.mathRenderer.formatCodeBlocks(option)}`;
+                
                 button.setAttribute('data-answer', index.toString());
                 button.classList.remove('selected', 'disabled');
                 button.style.display = 'block';
                 
-                // Remove old listeners and add new ones
-                button.replaceWith(button.cloneNode(true));
-                const newButton = optionsContainer.children[index];
-                newButton.addEventListener('click', () => {
+                if (hasLatex) {
+                    // Hide option during LaTeX processing
+                    button.style.opacity = '0';
+                    button.innerHTML = formattedContent;
+                    
+                    // Show option after MathJax processing
+                    setTimeout(() => {
+                        if (window.MathJax?.typesetPromise) {
+                            window.MathJax.typesetPromise([button])
+                                .then(() => {
+                                    button.style.opacity = '1';
+                                })
+                                .catch(() => {
+                                    button.style.opacity = '1';
+                                });
+                        } else {
+                            button.style.opacity = '1';
+                        }
+                    }, 50);
+                } else {
+                    // No LaTeX, show immediately
+                    button.style.opacity = '1';
+                    button.innerHTML = formattedContent;
+                }
+                
+                // Use tracked event listeners instead of cloning
+                this.addEventListenerTracked(button, 'click', () => {
                     logger.debug('Button clicked:', index);
                     this.selectAnswer(index);
                 });
@@ -371,16 +474,46 @@ export class GameManager {
      * Setup player multiple correct options
      */
     setupPlayerMultipleCorrectOptions(data, optionsContainer) {
-        logger.debug('Setting up player multiple correct options');
         const checkboxes = optionsContainer.querySelectorAll('.option-checkbox');
         const checkboxLabels = optionsContainer.querySelectorAll('.checkbox-option');
         
         checkboxes.forEach(cb => cb.checked = false);
         checkboxLabels.forEach((label, index) => {
             if (data.options && data.options[index]) {
-                const formattedOption = this.mathRenderer.formatCodeBlocks(data.options[index]);
-                label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${getOptionLetter(index)}: ${formattedOption}`;
+                // FOUC Prevention: Detect LaTeX content in option
+                const option = data.options[index];
+                const hasLatex = option && (option.includes('$') || option.includes('\\(') || 
+                                option.includes('\\[') || option.includes('\\frac') ||
+                                option.includes('\\sqrt') || option.includes('\\sum'));
+                
+                const formattedContent = `<input type="checkbox" class="option-checkbox"> ${translationManager.getOptionLetter(index)}: ${this.mathRenderer.formatCodeBlocks(option)}`;
+                
                 label.setAttribute('data-option', index);
+                
+                if (hasLatex) {
+                    // Hide option during LaTeX processing
+                    label.style.opacity = '0';
+                    label.innerHTML = formattedContent;
+                    
+                    // Show option after MathJax processing
+                    setTimeout(() => {
+                        if (window.MathJax?.typesetPromise) {
+                            window.MathJax.typesetPromise([label])
+                                .then(() => {
+                                    label.style.opacity = '1';
+                                })
+                                .catch(() => {
+                                    label.style.opacity = '1';
+                                });
+                        } else {
+                            label.style.opacity = '1';
+                        }
+                    }, 50);
+                } else {
+                    // No LaTeX, show immediately
+                    label.style.opacity = '1';
+                    label.innerHTML = formattedContent;
+                }
             } else {
                 label.style.display = 'none';
             }
@@ -391,16 +524,13 @@ export class GameManager {
      * Setup player true/false options
      */
     setupPlayerTrueFalseOptions(data, optionsContainer) {
-        logger.debug('Setting up player true/false options');
         const buttons = optionsContainer.querySelectorAll('.tf-option');
         buttons.forEach((button, index) => {
             button.classList.remove('selected', 'disabled');
             button.setAttribute('data-answer', index.toString());
             
-            // Remove old listeners and add new ones
-            button.replaceWith(button.cloneNode(true));
-            const newButton = optionsContainer.children[index];
-            newButton.addEventListener('click', () => {
+            // Use tracked event listeners instead of cloning
+            this.addEventListenerTracked(button, 'click', () => {
                 logger.debug('True/False button clicked:', index);
                 // Convert index to boolean: 0 = true, 1 = false
                 const booleanAnswer = index === 0;
@@ -414,14 +544,13 @@ export class GameManager {
      * Setup player numeric options
      */
     setupPlayerNumericOptions(data, optionsContainer) {
-        logger.debug('Setting up player numeric options');
         const input = optionsContainer.querySelector('#numeric-answer-input');
         const submitButton = optionsContainer.querySelector('#submit-numeric');
         
         if (input) {
             input.value = '';
             input.disabled = false;
-            input.placeholder = getTranslation('enter_numeric_answer');
+            input.placeholder = translationManager.getTranslationSync('enter_numeric_answer');
             
             // Remove old listeners and add new ones
             input.replaceWith(input.cloneNode(true));
@@ -435,12 +564,10 @@ export class GameManager {
         
         if (submitButton) {
             submitButton.disabled = false;
-            submitButton.textContent = getTranslation('submit');
+            submitButton.textContent = translationManager.getTranslationSync('submit');
             
-            // Remove old listeners and add new ones
-            submitButton.replaceWith(submitButton.cloneNode(true));
-            const newSubmitButton = optionsContainer.querySelector('#submit-numeric');
-            newSubmitButton.addEventListener('click', () => {
+            // Use tracked event listeners instead of cloning
+            this.addEventListenerTracked(submitButton, 'click', () => {
                 this.submitNumericAnswer();
             });
         }
@@ -467,7 +594,7 @@ export class GameManager {
     updateQuestionCounter(current, total) {
         const counterElement = domManager.get('question-counter');
         if (counterElement) {
-            counterElement.textContent = `${getTranslation('question')} ${current} ${getTranslation('of')} ${total}`;
+            counterElement.textContent = `${translationManager.getTranslationSync('question')} ${current} ${translationManager.getTranslationSync('of')} ${total}`;
         }
     }
 
@@ -477,7 +604,7 @@ export class GameManager {
     updatePlayerQuestionCounter(current, total) {
         const counterElement = domManager.get('player-question-counter');
         if (counterElement) {
-            counterElement.textContent = `${getTranslation('question')} ${current} ${getTranslation('of')} ${total}`;
+            counterElement.textContent = `${translationManager.getTranslationSync('question')} ${current} ${translationManager.getTranslationSync('of')} ${total}`;
         }
     }
 
@@ -490,7 +617,7 @@ export class GameManager {
         // Immediately disable button and provide visual feedback
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.textContent = getTranslation('submitting');
+            submitBtn.textContent = translationManager.getTranslationSync('submitting');
         }
         
         const checkboxes = document.querySelectorAll('#player-multiple-correct .option-checkbox:checked');
@@ -498,6 +625,14 @@ export class GameManager {
             const closest = cb.closest('.checkbox-option');
             return closest ? parseInt(closest.dataset.option) : null;
         }).filter(option => option !== null);
+        
+        // Play answer submission sound
+        if (this.soundManager.isEnabled()) {
+            this.soundManager.playAnswerSubmissionSound();
+        }
+        
+        // Show answer submitted feedback
+        this.showAnswerSubmitted(answers);
         
         this.socket.emit('submit-answer', { answer: answers, type: 'multiple-correct' });
     }
@@ -617,7 +752,7 @@ export class GameManager {
         const submitButton = document.getElementById('submit-numeric');
         if (submitButton) {
             submitButton.disabled = true;
-            submitButton.textContent = getTranslation('submitted');
+            submitButton.textContent = translationManager.getTranslationSync('submitted');
         }
     }
 
@@ -629,10 +764,10 @@ export class GameManager {
         if (feedback) {
             let answerText = answer;
             if (typeof answer === 'number' && answer < 10) {
-                answerText = getOptionLetter(answer);
+                answerText = translationManager.getOptionLetter(answer);
             }
             
-            feedback.innerHTML = `${getTranslation('answer_submitted')}: ${answerText}`;
+            feedback.innerHTML = `${translationManager.getTranslationSync('answer_submitted')}: ${answerText}`;
             feedback.classList.add('show');
             
             // Hide after delay
@@ -646,15 +781,16 @@ export class GameManager {
      * Show player result (correct/incorrect)
      */
     showPlayerResult(data) {
-        logger.debug('showPlayerResult called with:', data);
-        logger.debug('resultShown flag:', this.resultShown);
-        
-        // Prevent multiple displays of same result
-        if (this.resultShown) {
-            logger.debug('Result already shown, skipping');
-            return;
-        }
-        this.resultShown = true;
+        return errorBoundary.safeExecute(() => {
+            logger.debug('showPlayerResult called with:', data);
+            logger.debug('resultShown flag:', this.resultShown);
+            
+            // Prevent multiple displays of same result
+            if (this.resultShown) {
+                logger.debug('Result already shown, skipping');
+                return;
+            }
+            this.resultShown = true;
         logger.debug('Processing player result...');
         
         const resultElement = document.getElementById('answer-feedback');
@@ -680,15 +816,15 @@ export class GameManager {
         if (messageElement) {
             if (isCorrect) {
                 resultElement.style.backgroundColor = '#2ecc71';
-                messageElement.textContent = '🎉 ' + getTranslation('correct_answer_msg');
+                messageElement.textContent = '🎉 ' + translationManager.getTranslationSync('correct_answer_msg');
             } else {
                 resultElement.style.backgroundColor = '#e74c3c';
-                messageElement.textContent = '❌ ' + getTranslation('incorrect_answer_msg');
+                messageElement.textContent = '❌ ' + translationManager.getTranslationSync('incorrect_answer_msg');
             }
         }
         
         if (scoreElement && earnedPoints > 0) {
-            scoreElement.textContent = `+${earnedPoints} ${getTranslation('points')} (${getTranslation('total')}: ${data.totalScore})`;
+            scoreElement.textContent = `+${earnedPoints} ${translationManager.getTranslationSync('points')} (${translationManager.getTranslationSync('total')}: ${data.totalScore})`;
         }
         
         // Show correct answer if player was wrong (from monolithic version)
@@ -716,10 +852,19 @@ export class GameManager {
             }
         }
         
-        // Hide after delay
-        setTimeout(() => {
-            resultElement.classList.add('hidden');
-        }, TIMING.RESULT_DISPLAY_DURATION);
+            // Hide after delay
+            setTimeout(() => {
+                resultElement.classList.add('hidden');
+            }, TIMING.RESULT_DISPLAY_DURATION);
+        }, {
+            type: 'game_logic',
+            operation: 'player_result',
+            playerId: data.playerId
+        }, () => {
+            // Fallback: show basic result message
+            logger.error('Failed to show player result, using fallback');
+            this.showResultErrorState();
+        });
     }
 
     /**
@@ -763,7 +908,7 @@ export class GameManager {
         
         message.textContent = displayText;
         if (scoreDisplay) {
-            scoreDisplay.textContent = getTranslation('waiting_for_results');
+            scoreDisplay.textContent = translationManager.getTranslationSync('waiting_for_results');
         }
         
         logger.debug('Answer submission feedback shown:', displayText);
@@ -850,7 +995,7 @@ export class GameManager {
         const submitButton = document.getElementById('submit-numeric');
         if (submitButton) {
             submitButton.disabled = false;
-            submitButton.textContent = getTranslation('submit_answer');
+            submitButton.textContent = translationManager.getTranslationSync('submit_answer');
         }
         
         // Reset multiple correct submit button
@@ -951,7 +1096,7 @@ export class GameManager {
         const optionsContainer = document.getElementById('answer-options');
         if (optionsContainer) {
             optionsContainer.style.display = 'block';
-            let answerText = `✅ ${getTranslation('correct_answer')}: ${correctAnswer}`;
+            let answerText = `✅ ${translationManager.getTranslationSync('correct_answer')}: ${correctAnswer}`;
             if (tolerance) {
                 answerText += ` (±${tolerance})`;
             }
@@ -1040,7 +1185,7 @@ export class GameManager {
             if (statItem && optionLabel) {
                 if (i < optionCount) {
                     statItem.style.display = 'flex';
-                    optionLabel.textContent = getOptionLetter(i);
+                    optionLabel.textContent = translationManager.getOptionLetter(i);
                     // Reset values
                     const statCount = statItem.querySelector('.stat-count');
                     const statFill = statItem.querySelector('.stat-fill');
@@ -1069,7 +1214,7 @@ export class GameManager {
                 if (i === 0) {
                     // True option
                     statItem.style.display = 'flex';
-                    optionLabel.textContent = getTranslation('true');
+                    optionLabel.textContent = translationManager.getTranslationSync('true');
                     // Reset values
                     const statCount = statItem.querySelector('.stat-count');
                     const statFill = statItem.querySelector('.stat-fill');
@@ -1078,7 +1223,7 @@ export class GameManager {
                 } else if (i === 1) {
                     // False option
                     statItem.style.display = 'flex';
-                    optionLabel.textContent = getTranslation('false');
+                    optionLabel.textContent = translationManager.getTranslationSync('false');
                     // Reset values
                     const statCount = statItem.querySelector('.stat-count');
                     const statFill = statItem.querySelector('.stat-fill');
@@ -1255,7 +1400,7 @@ export class GameManager {
         }
         
         if (finalScore) {
-            finalScore.textContent = `${playerScore} ${getTranslation('points')}`;
+            finalScore.textContent = `${playerScore} ${translationManager.getTranslationSync('points')}`;
         }
         
         // Update top 3 players display
@@ -1302,16 +1447,16 @@ export class GameManager {
      * Update question image display for host or player
      */
     updateQuestionImage(data, containerId) {
-        console.log(`updateQuestionImage called with containerId: ${containerId}, image: ${data.image}`);
+        logger.debug(`updateQuestionImage called with containerId: ${containerId}, image: ${data.image}`);
         const imageContainer = document.getElementById(containerId);
         if (!imageContainer) {
-            console.log(`Image container ${containerId} not found`);
+            logger.debug(`Image container ${containerId} not found`);
             logger.debug(`Image container ${containerId} not found`);
             return;
         }
         
         if (data.image && data.image.trim()) {
-            console.log(`Displaying image for question: ${data.image}`);
+            logger.debug(`Displaying image for question: ${data.image}`);
             logger.debug(`Displaying image for question: ${data.image}`);
             
             // Create or update image element
@@ -1337,7 +1482,7 @@ export class GameManager {
             logger.debug(`Image container ${containerId} shown with image: ${img.src}`);
         } else {
             // Hide the container if no image
-            console.log(`No image for question, hiding container ${containerId}`);
+            logger.debug(`No image for question, hiding container ${containerId}`);
             imageContainer.style.display = 'none';
             logger.debug(`No image for question, hiding container ${containerId}`);
         }
@@ -1475,32 +1620,42 @@ export class GameManager {
      * Start game timer
      */
     startTimer(duration) {
-        logger.debug('Starting timer with duration:', duration, 'ms');
-        
-        // Validate duration
-        if (!duration || isNaN(duration) || duration <= 0) {
-            logger.error('Invalid timer duration:', duration, '- using 30 second default');
-            duration = 30000; // Default to 30 seconds
-        }
-        
-        if (this.timer) {
-            clearInterval(this.timer);
-        }
-        
-        let timeRemaining = duration;
-        this.updateTimerDisplay(timeRemaining);
-        
-        this.timer = setInterval(() => {
-            timeRemaining -= 1000;
-            logger.debug('Timer tick - timeRemaining:', timeRemaining);
+        return errorBoundary.safeExecute(() => {
+            logger.debug('Starting timer with duration:', duration, 'ms');
+            
+            // Validate duration
+            if (!duration || isNaN(duration) || duration <= 0) {
+                logger.error('Invalid timer duration:', duration, '- using 30 second default');
+                duration = 30000; // Default to 30 seconds
+            }
+            
+            if (this.timer) {
+                this.clearTimerTracked(this.timer);
+            }
+            
+            let timeRemaining = duration;
             this.updateTimerDisplay(timeRemaining);
             
-            if (timeRemaining <= 0) {
-                logger.debug('Timer finished');
-                clearInterval(this.timer);
-                this.timer = null;
-            }
-        }, 1000);
+            this.timer = this.createTimerTracked(() => {
+                timeRemaining -= 1000;
+                logger.debug('Timer tick - timeRemaining:', timeRemaining);
+                this.updateTimerDisplay(timeRemaining);
+                
+                if (timeRemaining <= 0) {
+                    logger.debug('Timer finished');
+                    this.clearTimerTracked(this.timer);
+                    this.timer = null;
+                }
+            }, 1000, true); // true indicates this is an interval, not a timeout
+        }, {
+            type: 'game_logic',
+            operation: 'timer',
+            duration: duration
+        }, () => {
+            // Fallback: set static timer display
+            logger.error('Failed to start timer, using static display');
+            this.setStaticTimerDisplay(Math.ceil(duration / 1000));
+        });
     }
 
     /**
@@ -1532,16 +1687,18 @@ export class GameManager {
         this.gameEnded = false;
         this.resultShown = false;
         this.stopTimer();
+        
+        // Clean up event listeners and timers when resetting game
+        this.cleanup();
     }
 
     /**
      * Set player info
      */
     setPlayerInfo(name, isHost = false) {
-        logger.debug('CRITICAL: setPlayerInfo called with:', name, isHost);
         this.playerName = name;
         this.isHost = isHost;
-        logger.debug('CRITICAL: setPlayerInfo result - this.isHost =', this.isHost, 'this.playerName =', this.playerName);
+        logger.debug('PlayerInfo', { name, isHost });
     }
 
     /**
@@ -1549,5 +1706,256 @@ export class GameManager {
      */
     setGamePin(pin) {
         this.gamePin = pin;
+    }
+
+    // ==================== MEMORY MANAGEMENT METHODS ====================
+
+    /**
+     * Add event listener with automatic tracking for cleanup
+     */
+    addEventListenerTracked(element, event, handler, options = {}) {
+        if (!element || typeof element.addEventListener !== 'function') {
+            logger.warn('Invalid element passed to addEventListenerTracked:', element);
+            return;
+        }
+
+        // Add the event listener
+        element.addEventListener(event, handler, options);
+        
+        // Track for cleanup
+        if (!this.eventListeners.has(element)) {
+            this.eventListeners.set(element, []);
+        }
+        this.eventListeners.get(element).push({ event, handler, options });
+        
+        logger.debug(`Tracked event listener: ${event} on`, element);
+    }
+
+    /**
+     * Create timer with automatic tracking for cleanup
+     */
+    createTimerTracked(callback, interval, isInterval = false) {
+        const timer = isInterval ? setInterval(callback, interval) : setTimeout(callback, interval);
+        this.timers.add(timer);
+        
+        logger.debug(`Tracked ${isInterval ? 'interval' : 'timeout'}:`, timer);
+        return timer;
+    }
+
+    /**
+     * Track DOM element reference for cleanup
+     */
+    trackDOMReference(element) {
+        if (element && element.nodeType === Node.ELEMENT_NODE) {
+            this.domReferences.add(element);
+        }
+    }
+
+    /**
+     * Remove tracked event listener
+     */
+    removeEventListenerTracked(element, event, handler) {
+        if (!element) return;
+
+        element.removeEventListener(event, handler);
+        
+        const listeners = this.eventListeners.get(element);
+        if (listeners) {
+            const index = listeners.findIndex(l => l.event === event && l.handler === handler);
+            if (index !== -1) {
+                listeners.splice(index, 1);
+                if (listeners.length === 0) {
+                    this.eventListeners.delete(element);
+                }
+            }
+        }
+    }
+
+    /**
+     * Clear specific timer
+     */
+    clearTimerTracked(timer) {
+        if (this.timers.has(timer)) {
+            clearTimeout(timer); // Works for both setTimeout and setInterval
+            clearInterval(timer);
+            this.timers.delete(timer);
+            logger.debug('Cleared tracked timer:', timer);
+        }
+    }
+
+    /**
+     * Comprehensive cleanup method - removes all tracked event listeners, timers, and references
+     */
+    cleanup() {
+        logger.debug('GameManager cleanup started');
+        
+        try {
+            // Clear all tracked event listeners
+            let listenerCount = 0;
+            this.eventListeners.forEach((listeners, element) => {
+                listeners.forEach(({ event, handler }) => {
+                    try {
+                        element.removeEventListener(event, handler);
+                        listenerCount++;
+                    } catch (error) {
+                        logger.warn('Error removing event listener:', error);
+                    }
+                });
+            });
+            this.eventListeners.clear();
+            logger.debug(`Cleaned up ${listenerCount} event listeners`);
+
+            // Clear all tracked timers
+            let timerCount = 0;
+            this.timers.forEach(timer => {
+                try {
+                    clearTimeout(timer);
+                    clearInterval(timer);
+                    timerCount++;
+                } catch (error) {
+                    logger.warn('Error clearing timer:', error);
+                }
+            });
+            this.timers.clear();
+            logger.debug(`Cleaned up ${timerCount} timers`);
+
+            // Clear DOM references
+            this.domReferences.clear();
+
+            // Clear game state
+            this.playerAnswers.clear();
+            this.currentQuestion = null;
+            this.selectedAnswer = null;
+
+            // Clear main timer if it exists
+            if (this.timer) {
+                clearInterval(this.timer);
+                this.timer = null;
+            }
+
+            // Remove page unload listeners
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('beforeunload', this.cleanup);
+                window.removeEventListener('unload', this.cleanup);
+            }
+
+            logger.debug('GameManager cleanup completed successfully');
+        } catch (error) {
+            logger.error('Error during GameManager cleanup:', error);
+        }
+    }
+
+    /**
+     * Safe DOM manipulation that doesn't destroy event listeners
+     */
+    safeSetContent(element, content) {
+        if (!element) return;
+
+        // Clear existing content while preserving structure
+        while (element.firstChild) {
+            element.removeChild(element.firstChild);
+        }
+
+        // Set new content
+        if (typeof content === 'string') {
+            element.innerHTML = content;
+        } else if (content && content.nodeType) {
+            element.appendChild(content);
+        }
+    }
+
+    /**
+     * Create element with tracked event listeners
+     */
+    createElementWithEvents(tagName, attributes = {}, events = {}) {
+        const element = document.createElement(tagName);
+        
+        // Set attributes
+        Object.entries(attributes).forEach(([key, value]) => {
+            if (key === 'className') {
+                element.className = value;
+            } else if (key === 'textContent') {
+                element.textContent = value;
+            } else {
+                element.setAttribute(key, value);
+            }
+        });
+
+        // Add tracked event listeners
+        Object.entries(events).forEach(([event, handler]) => {
+            this.addEventListenerTracked(element, event, handler);
+        });
+
+        this.trackDOMReference(element);
+        return element;
+    }
+
+    // ==================== ERROR STATE METHODS ====================
+
+    /**
+     * Show error state when question display fails
+     */
+    showQuestionErrorState() {
+        try {
+            const containers = ['current-question', 'player-question-text'];
+            containers.forEach(containerId => {
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.innerHTML = `
+                        <div class="error-state">
+                            <p>⚠️ ${translationManager.getTranslationSync('question_load_error')}</p>
+                            <p>Please wait for the next question...</p>
+                        </div>
+                    `;
+                }
+            });
+
+            // Hide all option containers
+            document.querySelectorAll('.player-options, .answer-options').forEach(container => {
+                container.style.display = 'none';
+            });
+        } catch (error) {
+            logger.error('Failed to show question error state:', error);
+        }
+    }
+
+    /**
+     * Show error state when player result display fails
+     */
+    showResultErrorState() {
+        try {
+            const resultElement = document.getElementById('answer-feedback');
+            if (resultElement) {
+                resultElement.classList.remove('hidden');
+                resultElement.style.backgroundColor = '#f39c12'; // Orange for error
+                
+                const messageElement = document.getElementById('feedback-message');
+                if (messageElement) {
+                    messageElement.textContent = '⚠️ Result display error';
+                }
+                
+                // Hide after delay
+                setTimeout(() => {
+                    resultElement.classList.add('hidden');
+                }, 3000);
+            }
+        } catch (error) {
+            logger.error('Failed to show result error state:', error);
+        }
+    }
+
+    /**
+     * Set static timer display when timer fails
+     */
+    setStaticTimerDisplay(seconds) {
+        try {
+            const timerElement = document.getElementById('timer');
+            if (timerElement) {
+                timerElement.textContent = seconds.toString();
+                timerElement.classList.add('error-state');
+            }
+        } catch (error) {
+            logger.error('Failed to set static timer display:', error);
+        }
     }
 }

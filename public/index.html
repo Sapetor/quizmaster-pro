@@ -7,11 +7,85 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/main.css?v=modular-9.19-timing-fix">
+    <link rel="stylesheet" href="css/main.css?v=modular-9.31-game-card-scaling">
     <!-- Removed problematic polyfill.io CDN - MathJax handles ES6 polyfills automatically -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script>
+        // FOUC Prevention: Set font scale immediately from localStorage
+        (function() {
+            const savedFontSize = localStorage.getItem('globalFontSize') || 'medium';
+            const scaleValues = { small: 0.9, medium: 1.0, large: 1.3, xlarge: 1.6 };
+            document.documentElement.style.setProperty('--global-font-scale', scaleValues[savedFontSize]);
+            
+            // Set theme and update icons when DOM is ready
+            document.addEventListener('DOMContentLoaded', () => {
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                if (document.body) {
+                    document.body.setAttribute('data-theme', savedTheme);
+                }
+                
+                // Quick fix: Prevent data URIs from being fetched as URLs
+                const originalFetch = window.fetch;
+                window.fetch = function(...args) {
+                    const url = args[0];
+                    if (typeof url === 'string' && url.startsWith('data:')) {
+                        console.warn('🚫 Blocked fetch attempt on data URI:', url.substring(0, 50) + '...');
+                        return Promise.reject(new Error('Cannot fetch data URI'));
+                    }
+                    return originalFetch.apply(this, args);
+                };
+                
+                const themeToggle = document.getElementById('theme-toggle');
+                const fontIcon = document.getElementById('font-size-icon');
+                
+                if (themeToggle) {
+                    themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+                }
+                
+                if (fontIcon) {
+                    const icons = { small: 'A⁻', medium: 'A', large: 'A⁺', xlarge: 'A⁺⁺' };
+                    fontIcon.textContent = icons[savedFontSize] || 'A';
+                }
+            });
+        })();
+        
+        // Fallback theme toggle function for immediate use
+        window.toggleTheme = function() {
+            const body = document.body;
+            if (!body) return; // Safety check
+            
+            const themeToggle = document.getElementById('theme-toggle');
+            
+            const currentTheme = body.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            body.setAttribute('data-theme', newTheme);
+            if (themeToggle) {
+                themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+            }
+            localStorage.setItem('theme', newTheme);
+        };
+        
+        // Fallback font size toggle
+        window.toggleGlobalFontSize = function() {
+            const scales = ['small', 'medium', 'large', 'xlarge'];
+            const currentScale = localStorage.getItem('globalFontSize') || 'medium';
+            const currentIndex = scales.indexOf(currentScale);
+            const nextIndex = (currentIndex + 1) % scales.length;
+            const newScale = scales[nextIndex];
+            
+            const scaleValues = { small: 0.9, medium: 1.0, large: 1.3, xlarge: 1.6 };
+            document.documentElement.style.setProperty('--global-font-scale', scaleValues[newScale]);
+            localStorage.setItem('globalFontSize', newScale);
+            
+            const fontIcon = document.getElementById('font-size-icon');
+            if (fontIcon) {
+                const icons = { small: 'A⁻', medium: 'A', large: 'A⁺', xlarge: 'A⁺⁺' };
+                fontIcon.textContent = icons[newScale] || 'A';
+            }
+        };
+        
         window.MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
@@ -47,6 +121,10 @@
                     const delay = isWindows ? 150 : 0;
                     
                     setTimeout(() => {
+                        // FOUC Prevention: Add ready class and remove loading
+                        document.body.classList.remove('loading');
+                        document.body.classList.add('mathjax-ready');
+                        
                         // Dispatch custom event for modules that need to know
                         document.dispatchEvent(new CustomEvent('mathjax-ready'));
                     }, delay);
@@ -66,8 +144,31 @@
             }
         };
     </script>
+    <style>
+        /* FOUC Prevention Styles */
+        .mathjax-loading {
+            visibility: hidden !important;
+        }
+        
+        /* Hide LaTeX source until rendered */
+        .tex2jax_process {
+            visibility: hidden;
+        }
+        
+        /* Smooth reveal after MathJax ready */
+        .mathjax-ready .tex2jax_process,
+        .mathjax-ready .mathjax-loading {
+            visibility: visible;
+            transition: opacity 0.2s ease-in;
+        }
+        
+        /* Simple background flash prevention - just eliminate the initial white */
+        html {
+            background: #667eea !important;
+        }
+    </style>
 </head>
-<body>
+<body class="loading">
     <div class="container">
         <header>
             <h1 data-translate="app_title">QuizMaster Pro</h1>
@@ -228,8 +329,7 @@
                         </div>
                         <div class="advanced-options">
                             <label class="manual-advancement-option" style="border: 2px solid #4299e1; border-radius: 8px; padding: 8px; background: rgba(66, 153, 225, 0.1);">
-                                <input type="checkbox" id="manual-advancement"> <strong>🎮 <span data-translate="manual_advancement">Manual question advancement (host control)</span></strong>
-                                <small style="display: block; margin-top: 4px; opacity: 0.8;" data-translate="manual_advancement_desc">When enabled, you control when to advance to the next question</small>
+                                <input type="checkbox" id="manual-advancement" data-translate-title="manual_advancement_desc" title="When enabled, you control when to advance to the next question"> <strong>🎮 <span data-translate="manual_advancement">Manual question advancement (host control)</span></strong>
                             </label>
                         </div>
                         

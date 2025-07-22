@@ -3,8 +3,8 @@
  * Handles all user interface operations, screen management, and visual updates
  */
 
-import { getTranslation, translatePage } from '../utils/translations.js';
-import { TIMING } from '../core/config.js';
+import { translationManager } from '../utils/translation-manager.js';
+import { TIMING, logger } from '../core/config.js';
 import { errorHandler } from '../utils/error-handler.js';
 
 export class UIManager {
@@ -14,7 +14,7 @@ export class UIManager {
     }
 
     showScreen(screenId) {
-        console.log('Switching to screen:', screenId);
+        logger.debug('Switching to screen:', screenId);
         
         // Hide all screens
         document.querySelectorAll('.screen').forEach(screen => {
@@ -26,7 +26,7 @@ export class UIManager {
         if (targetScreen) {
             targetScreen.classList.add('active');
             this.currentScreen = screenId;
-            console.log('Successfully switched to screen:', screenId);
+            logger.debug('Successfully switched to screen:', screenId);
             
             // Show/hide header start button based on screen
             const headerStartBtn = document.getElementById('start-hosting-header-small');
@@ -40,13 +40,13 @@ export class UIManager {
             
             // Translate the new screen
             setTimeout(() => {
-                translatePage();
+                translationManager.translatePage();
             }, TIMING.TRANSLATION_DELAY);
         } else {
-            console.error('Screen not found:', screenId);
+            logger.error('Screen not found:', screenId);
             // List available screens for debugging
             const availableScreens = Array.from(document.querySelectorAll('.screen')).map(s => s.id);
-            console.log('Available screens:', availableScreens);
+            logger.debug('Available screens:', availableScreens);
         }
     }
 
@@ -75,10 +75,10 @@ export class UIManager {
                 if (gameUrl) gameUrl.textContent = data.gameUrl;
             }
         } catch (error) {
-            console.error('Failed to load QR code:', error);
+            logger.error('Failed to load QR code:', error);
             const qrLoading = document.querySelector('.qr-loading');
             if (qrLoading) {
-                qrLoading.textContent = getTranslation('failed_generate_qr_code');
+                qrLoading.textContent = translationManager.getTranslationSync('failed_generate_qr_code');
             }
         }
     }
@@ -93,7 +93,7 @@ export class UIManager {
         const gamesContainer = document.getElementById('games-list');
         if (!gamesContainer) return;
         
-        gamesContainer.innerHTML = `<div class="loading-games">${getTranslation('loading_games')}</div>`;
+        gamesContainer.innerHTML = `<div class="loading-games">${translationManager.getTranslationSync('loading_games')}</div>`;
 
         try {
             const response = await fetch('/api/active-games');
@@ -105,17 +105,17 @@ export class UIManager {
             } else {
                 gamesContainer.innerHTML = `
                     <div class="no-games">
-                        <h3>${getTranslation('no_games_found')}</h3>
-                        <p>${getTranslation('ask_someone_host')}</p>
+                        <h3>${translationManager.getTranslationSync('no_games_found')}</h3>
+                        <p>${translationManager.getTranslationSync('ask_someone_host')}</p>
                     </div>
                 `;
             }
         } catch (error) {
-            console.error('Failed to fetch active games:', error);
+            logger.error('Failed to fetch active games:', error);
             gamesContainer.innerHTML = `
                 <div class="no-games">
-                    <h3>${getTranslation('failed_load_games')}</h3>
-                    <p>${getTranslation('check_connection')}</p>
+                    <h3>${translationManager.getTranslationSync('failed_load_games')}</h3>
+                    <p>${translationManager.getTranslationSync('check_connection')}</p>
                 </div>
             `;
         }
@@ -143,15 +143,15 @@ export class UIManager {
                 </div>
                 <div class="game-detail">
                     <span class="game-detail-icon">👥</span>
-                    <span class="game-players-count">${game.playerCount}</span> ${getTranslation('players')}
+                    <span class="game-players-count">${game.playerCount}</span> ${translationManager.getTranslationSync('players')}
                 </div>
                 <div class="game-detail">
                     <span class="game-detail-icon">❓</span>
-                    <span>${game.questionCount}</span> ${getTranslation('questions')}
+                    <span>${game.questionCount}</span> ${translationManager.getTranslationSync('questions')}
                 </div>
                 <div class="game-detail">
                     <span class="game-detail-icon">🟢</span>
-                    <span class="game-status waiting">${getTranslation('waiting_for_players') || 'Waiting'}</span>
+                    <span class="game-status waiting">${translationManager.getTranslationSync('waiting_for_players') || 'Waiting'}</span>
                 </div>
             </div>
             <div class="game-pin-display">${game.pin}</div>
@@ -176,7 +176,7 @@ export class UIManager {
             
             // If player name is already entered, auto-join the game
             if (nameInput && nameInput.value.trim()) {
-                console.log('Auto-joining game with existing player name');
+                logger.debug('Auto-joining game with existing player name');
                 // Small delay to ensure screen transition completes
                 setTimeout(() => {
                     window.game.joinGame();

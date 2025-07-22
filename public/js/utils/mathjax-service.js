@@ -3,6 +3,8 @@
  * Consolidates duplicate MathJax logic from game-manager.js, quiz-manager.js, preview-manager.js
  */
 
+import { TIMING, logger } from '../core/config.js';
+
 export class MathJaxService {
     constructor() {
         this.isReady = false;
@@ -26,15 +28,15 @@ export class MathJaxService {
     initializeMathJax() {
         if (window.MathJax) {
             this.isReady = true;
-            console.log('🔍 MathJax service: MathJax already available');
+            logger.debug('🔍 MathJax service: MathJax already available');
             return;
         }
 
-        console.log('🔍 MathJax service: Waiting for MathJax to load...');
+        logger.debug('🔍 MathJax service: Waiting for MathJax to load...');
 
         // Listen for MathJax ready event
         document.addEventListener('mathjax-ready', () => {
-            console.log('🔍 MathJax service: Received mathjax-ready event');
+            logger.debug('🔍 MathJax service: Received mathjax-ready event');
             this.isReady = true;
             this.processPendingRenders();
         });
@@ -42,7 +44,7 @@ export class MathJaxService {
         // Fallback: check periodically for MathJax
         const checkInterval = setInterval(() => {
             if (window.MathJax) {
-                console.log('🔍 MathJax service: MathJax detected via polling');
+                logger.debug('🔍 MathJax service: MathJax detected via polling');
                 this.isReady = true;
                 clearInterval(checkInterval);
                 this.processPendingRenders();
@@ -50,11 +52,11 @@ export class MathJaxService {
         }, 100);
 
         // Clear interval after 10 seconds to prevent memory leak
-        setTimeout(() => clearInterval(checkInterval), 10000);
+        setTimeout(() => clearInterval(checkInterval), 10000); // Keep 10s for MathJax loading timeout
         
         // Make status available globally for debugging
         window.debugMathJax = () => {
-            console.log('🔍 MathJax Debug Status:', this.getStatus());
+            logger.debug('🔍 MathJax Debug Status:', this.getStatus());
         };
     }
 
@@ -65,12 +67,12 @@ export class MathJaxService {
      * @param {number} maxRetries - Maximum retry attempts (default: 3)
      * @returns {Promise<void>}
      */
-    async renderElement(element, timeout = 100, maxRetries = 3) {
+    async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 3) {
         return new Promise((resolve, reject) => {
             const attemptRender = (attempt = 1) => {
                 setTimeout(() => {
-                    console.log(`🔍 MathJax render attempt ${attempt}/${maxRetries} - Platform: ${this.isWindows ? 'Windows' : 'Other'}`);
-                    console.log(`🔍 MathJax available: ${!!window.MathJax}, typesetPromise: ${!!window.MathJax?.typesetPromise}`);
+                    logger.debug(`🔍 MathJax render attempt ${attempt}/${maxRetries} - Platform: ${this.isWindows ? 'Windows' : 'Other'}`);
+                    logger.debug(`🔍 MathJax available: ${!!window.MathJax}, typesetPromise: ${!!window.MathJax?.typesetPromise}`);
                     const hasLatexContent = element.innerHTML.includes('$$') || 
                                         element.innerHTML.includes('\\(') ||
                                         element.innerHTML.includes('\\[') ||
@@ -79,21 +81,21 @@ export class MathJaxService {
                                         element.innerHTML.includes('\\sqrt') ||
                                         element.innerHTML.includes('\\sum') ||
                                         element.innerHTML.includes('\\int');
-                    console.log(`🔍 Element has LaTeX content: ${hasLatexContent}`);
+                    logger.debug(`🔍 Element has LaTeX content: ${hasLatexContent}`);
                     
                     if (window.MathJax?.typesetPromise) {
                         // Windows-specific: Clear existing MathJax elements before re-rendering
                         if (this.isWindows) {
                             const existingMath = element.querySelectorAll('mjx-container');
-                            console.log(`🔍 Windows: Clearing ${existingMath.length} existing MathJax elements`);
+                            logger.debug(`🔍 Windows: Clearing ${existingMath.length} existing MathJax elements`);
                             existingMath.forEach(mjx => mjx.remove());
                         }
                         
-                        console.log(`🔍 Calling MathJax.typesetPromise on element with content: ${element.innerHTML.substring(0, 200)}...`);
+                        logger.debug(`🔍 Calling MathJax.typesetPromise on element with content: ${element.innerHTML.substring(0, 200)}...`);
                         
                         window.MathJax.typesetPromise([element])
                             .then(() => {
-                                console.log(`✅ MathJax render successful on attempt ${attempt}`);
+                                logger.debug(`✅ MathJax render successful on attempt ${attempt}`);
                                 this.pendingRenders.delete(element);
                                 
                                 // Windows-specific: Force repaint to fix rendering issues
@@ -102,7 +104,7 @@ export class MathJaxService {
                                         element.style.transform = 'translateZ(0)';
                                         element.offsetHeight; // Force reflow
                                         element.style.transform = '';
-                                        console.log(`🔍 Windows: Applied transform reflow`);
+                                        logger.debug(`🔍 Windows: Applied transform reflow`);
                                         resolve();
                                     }, 10);
                                 } else {
@@ -110,24 +112,24 @@ export class MathJaxService {
                                 }
                             })
                             .catch(error => {
-                                console.error(`❌ MathJax render error (attempt ${attempt}):`, error);
+                                logger.error(`❌ MathJax render error (attempt ${attempt}):`, error);
                                 if (attempt < maxRetries) {
                                     // Windows-specific: Increase timeout for retries
                                     const retryTimeout = this.isWindows ? timeout * 1.5 : timeout;
-                                    console.log(`🔍 Retrying in ${retryTimeout}ms...`);
-                                    setTimeout(() => attemptRender(attempt + 1), retryTimeout);
+                                    logger.debug(`🔍 Retrying in ${retryTimeout}ms...`);
+                                    setTimeout(() => attemptRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
                                 } else {
                                     this.pendingRenders.delete(element);
                                     reject(error);
                                 }
                             });
                     } else if (attempt < maxRetries) {
-                        console.log(`⏳ MathJax not ready, retrying in ${timeout}ms...`);
+                        logger.debug(`⏳ MathJax not ready, retrying in ${timeout}ms...`);
                         // Windows-specific: Increase timeout for MathJax loading
                         const retryTimeout = this.isWindows ? timeout * 1.5 : timeout;
-                        setTimeout(() => attemptRender(attempt + 1), retryTimeout);
+                        setTimeout(() => attemptRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
                     } else {
-                        console.log(`❌ MathJax not available after ${maxRetries} attempts`);
+                        logger.debug(`❌ MathJax not available after ${maxRetries} attempts`);
                         this.pendingRenders.delete(element);
                         resolve(); // Resolve anyway to prevent hanging
                     }
@@ -145,7 +147,7 @@ export class MathJaxService {
      * @param {number} timeout - Delay before rendering
      * @returns {Promise<void[]>}
      */
-    async renderElements(elements, timeout = 100) {
+    async renderElements(elements, timeout = TIMING.MATHJAX_TIMEOUT) {
         const renderPromises = elements.map(element => 
             this.renderElement(element, timeout)
         );
@@ -159,7 +161,7 @@ export class MathJaxService {
      * @param {number} timeout - Delay before rendering
      * @returns {Promise<void[]>}
      */
-    async renderSelector(selector, container = document, timeout = 100) {
+    async renderSelector(selector, container = document, timeout = TIMING.MATHJAX_TIMEOUT) {
         const elements = Array.from(container.querySelectorAll(selector));
         return this.renderElements(elements, timeout);
     }
@@ -181,16 +183,16 @@ export class MathJaxService {
                 return; // Success
             } catch (error) {
                 lastError = error;
-                console.warn(`MathJax render attempt ${attempt} failed:`, error);
+                logger.warn(`MathJax render attempt ${attempt} failed:`, error);
                 
                 if (attempt < maxRetries) {
                     // Wait before retry
-                    await new Promise(resolve => setTimeout(resolve, timeout * 2));
+                    await new Promise(resolve => setTimeout(resolve, TIMING.MATHJAX_RETRY_TIMEOUT));
                 }
             }
         }
         
-        console.error(`MathJax rendering failed after ${maxRetries} attempts:`, lastError);
+        logger.error(`MathJax rendering failed after ${maxRetries} attempts:`, lastError);
         throw lastError;
     }
 
@@ -205,7 +207,7 @@ export class MathJaxService {
 
         elements.forEach(element => {
             this.renderElement(element).catch(error => {
-                console.error('Failed to process pending MathJax render:', error);
+                logger.error('Failed to process pending MathJax render:', error);
             });
         });
     }
@@ -243,7 +245,7 @@ export class MathJaxService {
      * @param {number} timeout - Delay before rendering
      * @returns {Promise<void>}
      */
-    async renderMathJax(element, timeout = 100) {
+    async renderMathJax(element, timeout = TIMING.MATHJAX_TIMEOUT) {
         return this.renderElement(element, timeout);
     }
 }

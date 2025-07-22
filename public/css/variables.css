@@ -311,13 +311,142 @@ body {
     font-size: calc(1.3rem * var(--global-font-scale)) !important;
 }
 
-/* Lobby and Join */
-.lobby-container h2,
-.lobby-container h3,
+/* Header Elements */
+header h1 {
+    font-size: calc(1.8rem * var(--global-font-scale)) !important;
+}
+.language-name,
+.language-option {
+    font-size: calc(1rem * var(--global-font-scale)) !important;
+}
+
+/* Main Menu Elements */
+.menu-options .btn {
+    font-size: calc(1.3rem * var(--global-font-scale)) !important;
+}
+
+/* Join Screen Elements */
 .join-container h2,
-.join-container input,
+.browser-container h2 {
+    font-size: calc(1.8rem * var(--global-font-scale)) !important;
+}
+.input-field,
+#game-pin-input,
+#player-name {
+    font-size: calc(1.2rem * var(--global-font-scale)) !important;
+}
+#join-game,
+#browse-games,
+#refresh-games,
+#back-to-join {
+    font-size: calc(1.2rem * var(--global-font-scale)) !important;
+}
+.join-divider span {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+.loading-games {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+
+/* Game Lobby (Host) Elements */
+.lobby-container h2,
+.lobby-container h3 {
+    font-size: calc(1.8rem * var(--global-font-scale)) !important;
+}
 .pin-display,
 #game-pin {
+    font-size: calc(2.5rem * var(--global-font-scale)) !important;
+}
+#start-game,
+.large-start-btn {
+    font-size: calc(1.4rem * var(--global-font-scale)) !important;
+}
+.qr-section h3 {
+    font-size: calc(1.3rem * var(--global-font-scale)) !important;
+}
+.qr-loading,
+#game-url,
+.game-url {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+
+/* Player Lobby Elements */
+.player-lobby-container h2 {
+    font-size: calc(1.8rem * var(--global-font-scale)) !important;
+}
+#player-info {
+    font-size: calc(1.3rem * var(--global-font-scale)) !important;
+}
+.lobby-detail-label,
+.lobby-detail-value {
+    font-size: calc(1.2rem * var(--global-font-scale)) !important;
+}
+.lobby-status,
+.lobby-status span {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+
+/* Games Grid (Available Games List) - Complete font scaling */
+.games-grid .game-card,
+.games-grid .game-item {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+.games-grid .game-title,
+.game-card .game-title {
+    font-size: calc(1.2rem * var(--global-font-scale)) !important;
+}
+.games-grid .game-info,
+.game-card .game-info {
+    font-size: calc(1rem * var(--global-font-scale)) !important;
+}
+
+/* Game Card Detail Elements */
+.game-card .game-detail,
+.game-detail {
+    font-size: calc(0.95rem * var(--global-font-scale)) !important;
+}
+.game-card .game-detail-icon,
+.game-detail-icon {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+.game-card .game-players-count,
+.game-players-count {
+    font-size: calc(0.95rem * var(--global-font-scale)) !important;
+}
+.game-card .game-status,
+.game-status {
+    font-size: calc(0.9rem * var(--global-font-scale)) !important;
+}
+.game-card .game-pin-display,
+.game-pin-display {
+    font-size: calc(1.4rem * var(--global-font-scale)) !important;
+}
+
+/* Toolbar Elements */
+.toolbar-section h5 {
+    font-size: calc(0.7rem * var(--global-font-scale)) !important;
+}
+.toolbar-icon {
+    font-size: calc(1.4rem * var(--global-font-scale)) !important;
+}
+.toolbar-label {
+    font-size: calc(0.7rem * var(--global-font-scale)) !important;
+}
+
+/* Quiz Action Buttons (Bottom of Editor) */
+.quiz-actions .btn,
+#add-question,
+#save-quiz,
+#load-quiz,
+#import-quiz,
+#preview-quiz,
+#start-hosting {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+
+/* Back to Top Button */
+.back-to-top-btn,
+#back-to-top {
     font-size: calc(1.2rem * var(--global-font-scale)) !important;
 }
 
@@ -325,6 +454,231 @@ body {
 .game-container h2,
 .game-container h3 {
     font-size: calc(1.5rem * var(--global-font-scale)) !important;
+}
+
+/* Timer and Host Game Elements */
+#timer {
+    font-size: calc(1.8rem * var(--global-font-scale)) !important;
+}
+
+/* Answer Statistics and Options */
+.answer-stats h3 {
+    font-size: calc(1.3rem * var(--global-font-scale)) !important;
+}
+.option-label,
+.answer-option-label {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+.answer-feedback-text {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+
+/* Leaderboard Elements */
+.leaderboard-container h2,
+.player-final-container h2 {
+    font-size: calc(2.5rem * var(--global-font-scale)) !important;
+}
+.final-results h3 {
+    font-size: calc(2.2rem * var(--global-font-scale)) !important;
+}
+.player-rank h3 {
+    font-size: calc(1.2rem * var(--global-font-scale)) !important;
+}
+.final-score {
+    font-size: calc(1.8rem * var(--global-font-scale)) !important;
+}
+.top-players h3 {
+    font-size: calc(1.8rem * var(--global-font-scale)) !important;
+}
+.result-text {
+    font-size: calc(2.5rem * var(--global-font-scale)) !important;
+}
+
+/* Result and Feedback Messages */
+#feedback-message {
+    font-size: calc(1.5rem * var(--global-font-scale)) !important;
+}
+#score-display {
+    font-size: calc(1.2rem * var(--global-font-scale)) !important;
+}
+
+/* Host Screen Elements */
+.screen-title {
+    font-size: calc(1.2rem * var(--global-font-scale)) !important;
+}
+
+/* Numeric Input Elements */
+#preview-numeric-input,
+#preview-numeric-input-split {
+    font-size: calc(1.5rem * var(--global-font-scale)) !important;
+}
+
+/* Button Elements */
+.submit-button,
+.game-button {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+
+/* Editor Control Buttons (Live Preview, AI Generator, Toolbar) */
+#toggle-preview,
+#ai-generator-btn,
+#toggle-toolbar {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+
+/* Header Controls (Fullscreen, Theme Toggle, Font Size) */
+#fullscreen-toggle,
+#theme-toggle,
+#font-size-toggle {
+    font-size: calc(1.2rem * var(--global-font-scale)) !important;
+}
+
+/* Toolbar Button Container Adjustments */
+.toolbar-btn {
+    height: calc(48px * var(--global-font-scale)) !important;
+    width: calc(65px * var(--global-font-scale)) !important;
+    padding: calc(6px * var(--global-font-scale)) calc(4px * var(--global-font-scale)) !important;
+}
+
+/* Toolbar Container Width - Scales with font size */
+.left-toolbar {
+    width: calc(85px * var(--global-font-scale)) !important;
+}
+
+/* Host container adjustment for scaled toolbar */
+.host-container.with-toolbar {
+    margin-left: calc(85px * var(--global-font-scale)) !important;
+    max-width: calc(100vw - 85px * var(--global-font-scale)) !important;
+}
+
+/* Modal and Dialog Elements */
+.modal-content h3,
+.modal-content h4,
+.api-key-section small,
+.content-type-indicator,
+.file-upload-section small,
+.generation-status span,
+.modal-header h3,
+.modal-body p,
+.modal-body label,
+.load-quiz-modal h3,
+.preview-quiz-modal h3 {
+    font-size: calc(1.2rem * var(--global-font-scale)) !important;
+}
+
+.api-key-section small,
+.file-upload-section small {
+    font-size: calc(0.85rem * var(--global-font-scale)) !important;
+}
+
+.content-type-indicator {
+    font-size: calc(0.9rem * var(--global-font-scale)) !important;
+}
+
+/* AI Generator Modal Elements */
+.ai-section label,
+.ai-section select,
+.ai-section input,
+.ai-section textarea,
+#ai-model-select,
+#ai-topic,
+#ai-difficulty,
+#ai-num-questions,
+#generation-progress,
+.generation-log {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+
+/* Large Display Elements - PIN, Final Position */
+.game-pin {
+    font-size: calc(48px * var(--global-font-scale)) !important;
+}
+.pin-display {
+    font-size: calc(4rem * var(--global-font-scale)) !important;
+}
+.final-position {
+    font-size: calc(4rem * var(--global-font-scale)) !important;
+}
+
+/* Small Component Elements */
+.btn.small {
+    font-size: calc(0.85rem * var(--global-font-scale)) !important;
+}
+.language-flag {
+    font-size: calc(16px * var(--global-font-scale)) !important;
+}
+.time-input-label {
+    font-size: calc(0.9rem * var(--global-font-scale)) !important;
+}
+.game-title {
+    font-size: calc(1.25rem * var(--global-font-scale)) !important;
+}
+.game-info {
+    font-size: calc(0.9rem * var(--global-font-scale)) !important;
+}
+
+/* Responsive Mobile Elements */
+.device-btn {
+    font-size: calc(0.8rem * var(--global-font-scale)) !important;
+}
+.option-label {
+    font-size: calc(0.9rem * var(--global-font-scale)) !important;
+}
+.option-count {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
+}
+.option-percentage {
+    font-size: calc(0.8rem * var(--global-font-scale)) !important;
+}
+
+/* Base Typography Elements */
+code, pre, .code {
+    font-size: calc(0.85em * var(--global-font-scale)) !important;
+}
+small, .small-text {
+    font-size: calc(0.875em * var(--global-font-scale)) !important;
+}
+
+/* Error Messages and Notifications */
+.error-message,
+.success-message,
+.warning-message,
+.info-message,
+.toast-message,
+.alert-message,
+.notification {
+    font-size: calc(1rem * var(--global-font-scale)) !important;
+}
+
+/* Loading States */
+.loading-text,
+.progress-text,
+.status-text {
+    font-size: calc(1rem * var(--global-font-scale)) !important;
+}
+
+/* Form Elements */
+.form-group label,
+.form-control,
+select,
+option,
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+textarea {
+    font-size: calc(1rem * var(--global-font-scale)) !important;
+}
+
+/* Placeholder text */
+input::placeholder,
+textarea::placeholder {
+    font-size: calc(1rem * var(--global-font-scale)) !important;
+}
+
+/* Option Display Elements */
+.option-display {
+    font-size: calc(1.1rem * var(--global-font-scale)) !important;
 }
 
 /* Monospace Font Stack for Code */

@@ -3,7 +3,9 @@
  * Handles all socket.io event listeners and socket communication
  */
 
-import { showAlert } from '../utils/translations.js';
+import { translationManager } from '../utils/translation-manager.js';
+import { errorBoundary } from '../utils/error-boundary.js';
+import { logger } from '../core/config.js';
 
 export class SocketManager {
     constructor(socket, gameManager, uiManager, soundManager) {
@@ -21,16 +23,16 @@ export class SocketManager {
     initializeSocketListeners() {
         // Connection events
         this.socket.on('connect', () => {
-            console.log('Connected to server');
+            logger.debug('Connected to server');
         });
 
         this.socket.on('disconnect', () => {
-            console.log('Disconnected from server');
+            logger.debug('Disconnected from server');
         });
 
         // Game creation and joining
         this.socket.on('game-created', (data) => {
-            console.log('Game created:', data);
+            logger.debug('Game created:', data);
             this.gameManager.setGamePin(data.pin);
             this.gameManager.setPlayerInfo('Host', true);
             this.uiManager.updateGamePin(data.pin);
@@ -39,36 +41,28 @@ export class SocketManager {
         });
 
         this.socket.on('player-joined', (data) => {
-            console.log('Player joined:', data);
-            console.log('data.players:', data.players);
-            console.log('data keys:', Object.keys(data));
+            logger.debug('Player joined:', data);
+            logger.debug('data.players:', data.players);
+            logger.debug('data keys:', Object.keys(data));
             
             // Set player info correctly - player is NOT a host
-            console.log('🔥🔥🔥 PLAYER-JOINED EVENT RECEIVED 🔥🔥🔥');
-            console.log('🔥 data.playerName:', data.playerName);
-            console.log('🔥 data.gamePin:', data.gamePin);
+            logger.debug('PlayerJoined', { playerName: data.playerName, gamePin: data.gamePin });
             if (data.playerName && data.gamePin) {
-                console.log('🔥 CRITICAL: Setting player info:', data.playerName, 'isHost: false');
                 this.gameManager.setPlayerInfo(data.playerName, false);
                 this.gameManager.setGamePin(data.gamePin);
-                console.log('🔥 CRITICAL: After setPlayerInfo, isHost =', this.gameManager.isHost);
                 
                 // Update lobby display with game information
                 this.updatePlayerLobbyDisplay(data.gamePin, data.players);
             } else {
-                console.log('🔥 CRITICAL: playerName or gamePin missing:', {
-                    playerName: data.playerName,
-                    gamePin: data.gamePin
-                });
+                logger.warn('PlayerJoin failed', { playerName: data.playerName, gamePin: data.gamePin });
             }
-            console.log('🔥🔥🔥 END PLAYER-JOINED PROCESSING 🔥🔥🔥');
             this.gameManager.updatePlayersList(data.players);
             this.uiManager.showScreen('player-lobby');
         });
 
         // Game flow events
         this.socket.on('game-started', (data) => {
-            console.log('Game started:', data);
+            logger.debug('Game started:', data);
             if (this.gameManager.isHost) {
                 this.uiManager.showScreen('host-game-screen');
             } else {
@@ -76,25 +70,25 @@ export class SocketManager {
             }
         });
 
-        this.socket.on('question-start', (data) => {
-            console.log('Question started:', data);
-            console.log('Question timeLimit value:', data.timeLimit, 'Type:', typeof data.timeLimit);
-            console.log('Question image data:', JSON.stringify(data.image), 'Has image:', !!data.image);
-            console.log('Full question data received:', JSON.stringify(data, null, 2));
+        this.socket.on('question-start', errorBoundary.safeSocketHandler((data) => {
+            logger.debug('Question started:', data);
+            logger.debug('Question timeLimit value:', data.timeLimit, 'Type:', typeof data.timeLimit);
+            logger.debug('Question image data:', JSON.stringify(data.image), 'Has image:', !!data.image);
+            logger.debug('Full question data received:', JSON.stringify(data, null, 2));
             this.gameManager.displayQuestion(data);
             
             // Ensure timer has valid duration
             const timerDuration = data.timeLimit && !isNaN(data.timeLimit) ? data.timeLimit * 1000 : 30000; // Default 30 seconds
-            console.log('Timer duration calculated:', timerDuration);
+            logger.debug('Timer duration calculated:', timerDuration);
             this.gameManager.startTimer(timerDuration);
             
             if (this.soundManager.isEnabled()) {
                 this.soundManager.playQuestionStartSound();
             }
-        });
+        }, 'question-start'));
 
         this.socket.on('question-end', (data) => {
-            console.log('Question ended:', data);
+            logger.debug('Question ended:', data);
             this.gameManager.stopTimer();
             
             if (data && data.leaderboard) {
@@ -103,7 +97,7 @@ export class SocketManager {
         });
 
         this.socket.on('question-timeout', (data) => {
-            console.log('Question timed out:', data);
+            logger.debug('Question timed out:', data);
             this.gameManager.stopTimer();
             
             if (this.gameManager.timer) {
@@ -118,7 +112,7 @@ export class SocketManager {
         });
 
         this.socket.on('show-next-button', () => {
-            console.log('Showing next question button');
+            logger.debug('Showing next question button');
             const nextButton = document.getElementById('next-question');
             if (nextButton) {
                 nextButton.style.display = 'block';
@@ -139,7 +133,7 @@ export class SocketManager {
         });
 
         this.socket.on('hide-next-button', () => {
-            console.log('Hiding next question button');
+            logger.debug('Hiding next question button');
             const nextButton = document.getElementById('next-question');
             if (nextButton) {
                 nextButton.style.display = 'none';
@@ -148,7 +142,7 @@ export class SocketManager {
         });
 
         this.socket.on('game-end', (data) => {
-            console.log('Game ended:', data);
+            logger.debug('Game ended:', data);
             
             // Hide manual advancement button
             const nextButton = document.getElementById('next-question');
@@ -162,48 +156,48 @@ export class SocketManager {
             
             // Delay showing final results to ensure proper state
             setTimeout(() => {
-                console.log('Calling showFinalResults with leaderboard:', data.finalLeaderboard);
+                logger.debug('Calling showFinalResults with leaderboard:', data.finalLeaderboard);
                 this.gameManager.showFinalResults(data.finalLeaderboard);
             }, 1000);
         });
 
         // Player-specific events
-        this.socket.on('player-result', (data) => {
-            console.log('🎯 Player result event received:', data);
-            console.log('🎯 Calling gameManager.showPlayerResult...');
+        this.socket.on('player-result', errorBoundary.safeSocketHandler((data) => {
+            logger.debug('🎯 Player result event received:', data);
+            logger.debug('🎯 Calling gameManager.showPlayerResult...');
             this.gameManager.showPlayerResult(data);
-        });
+        }, 'player-result'));
 
         this.socket.on('answer-submitted', (data) => {
-            console.log('Answer submitted feedback:', data);
+            logger.debug('Answer submitted feedback:', data);
             this.gameManager.showAnswerSubmitted(data.answer);
         });
 
         // Statistics and updates
         this.socket.on('statistics-update', (data) => {
-            console.log('Statistics updated:', data);
+            logger.debug('Statistics updated:', data);
             this.updateStatistics(data);
         });
 
         this.socket.on('leaderboard-update', (data) => {
-            console.log('Leaderboard updated:', data);
+            logger.debug('Leaderboard updated:', data);
             this.gameManager.showLeaderboard(data.leaderboard);
             // Note: Removed fanfare from here - it should only play at final game end
         });
 
         // Answer statistics updates
         this.socket.on('answer-statistics', (data) => {
-            console.log('Answer statistics received:', data);
+            logger.debug('Answer statistics received:', data);
             this.gameManager.updateAnswerStatistics(data);
         });
 
         this.socket.on('players-update', (data) => {
-            console.log('Players updated:', data);
+            logger.debug('Players updated:', data);
             this.gameManager.updatePlayersList(data.players);
         });
 
         this.socket.on('player-list-update', (data) => {
-            console.log('Player list updated:', data);
+            logger.debug('Player list updated:', data);
             this.gameManager.updatePlayersList(data.players);
             
             // Update player count in lobby if we're in player lobby
@@ -217,64 +211,64 @@ export class SocketManager {
 
         // Error handling
         this.socket.on('error', (data) => {
-            console.error('Socket error:', data);
-            showAlert('error', data.message || 'An error occurred');
+            logger.error('Socket error:', data);
+            translationManager.showAlert('error', data.message || 'An error occurred');
         });
 
         this.socket.on('game-not-found', (data) => {
-            console.error('Game not found:', data);
-            showAlert('error', data.message || 'Game not found');
+            logger.error('Game not found:', data);
+            translationManager.showAlert('error', data.message || 'Game not found');
         });
 
         this.socket.on('player-limit-reached', (data) => {
-            console.error('Player limit reached:', data);
-            showAlert('error', data.message || 'Player limit reached');
+            logger.error('Player limit reached:', data);
+            translationManager.showAlert('error', data.message || 'Player limit reached');
         });
 
         this.socket.on('invalid-pin', (data) => {
-            console.error('Invalid PIN:', data);
-            showAlert('error', data.message || 'Invalid game PIN');
+            logger.error('Invalid PIN:', data);
+            translationManager.showAlert('error', data.message || 'Invalid game PIN');
         });
 
         this.socket.on('name-taken', (data) => {
-            console.error('Name taken:', data);
-            showAlert('error', data.message || 'Name is already taken');
+            logger.error('Name taken:', data);
+            translationManager.showAlert('error', data.message || 'Name is already taken');
         });
 
         // Host-specific events
         this.socket.on('host-statistics', (data) => {
-            console.log('Host statistics:', data);
+            logger.debug('Host statistics:', data);
             this.updateHostStatistics(data);
         });
 
         this.socket.on('player-disconnected', (data) => {
-            console.log('Player disconnected:', data);
+            logger.debug('Player disconnected:', data);
             this.gameManager.updatePlayersList(data.players);
         });
 
         this.socket.on('all-players-answered', (data) => {
-            console.log('All players answered:', data);
+            logger.debug('All players answered:', data);
             // Could show visual feedback that all players have answered
         });
 
         // Special events
         this.socket.on('force-disconnect', (data) => {
-            console.log('Force disconnect:', data);
-            showAlert('info', data.message || 'You have been disconnected');
+            logger.debug('Force disconnect:', data);
+            translationManager.showAlert('info', data.message || 'You have been disconnected');
             this.uiManager.showScreen('main-menu');
         });
 
         this.socket.on('reconnect', (attemptNumber) => {
-            console.log('Reconnecting attempt:', attemptNumber);
+            logger.debug('Reconnecting attempt:', attemptNumber);
         });
 
         this.socket.on('reconnect_error', (error) => {
-            console.error('Reconnection error:', error);
+            logger.error('Reconnection error:', error);
         });
 
         this.socket.on('reconnect_failed', () => {
-            console.error('Reconnection failed');
-            showAlert('error', 'Failed to reconnect to server');
+            logger.error('Reconnection failed');
+            translationManager.showAlert('error', 'Failed to reconnect to server');
         });
     }
 
@@ -366,12 +360,12 @@ export class SocketManager {
      * Join game by PIN
      */
     joinGame(pin, playerName) {
-        console.log('Attempting to join game with PIN:', pin, 'Name:', playerName);
+        logger.debug('Attempting to join game with PIN:', pin, 'Name:', playerName);
         this.socket.emit('player-join', {
             pin: pin,
             name: playerName
         });
-        console.log('Emitted player-join event');
+        logger.debug('Emitted player-join event');
     }
 
     /**
@@ -396,20 +390,20 @@ export class SocketManager {
             lobbyInfo.style.display = 'flex';
         }
 
-        console.log('Updated player lobby display:', { gamePin, playerCount: players?.length });
+        logger.debug('Updated player lobby display:', { gamePin, playerCount: players?.length });
     }
 
     /**
      * Create game
      */
     createGame(quizData) {
-        console.log('SocketManager.createGame called with:', quizData);
-        console.log('Socket connected:', this.socket.connected);
+        logger.debug('SocketManager.createGame called with:', quizData);
+        logger.debug('Socket connected:', this.socket.connected);
         try {
             this.socket.emit('host-join', quizData);
-            console.log('Emitted host-join event successfully');
+            logger.debug('Emitted host-join event successfully');
         } catch (error) {
-            console.error('Error emitting host-join:', error);
+            logger.error('Error emitting host-join:', error);
         }
     }
 
@@ -417,13 +411,13 @@ export class SocketManager {
      * Start game
      */
     startGame() {
-        console.log('Attempting to start game...');
-        console.log('Socket connected:', this.socket.connected);
+        logger.debug('Attempting to start game...');
+        logger.debug('Socket connected:', this.socket.connected);
         try {
             this.socket.emit('start-game');
-            console.log('Emitted start-game event successfully');
+            logger.debug('Emitted start-game event successfully');
         } catch (error) {
-            console.error('Error starting game:', error);
+            logger.error('Error starting game:', error);
         }
     }
 

@@ -14,7 +14,7 @@ import { SoundManager } from '../audio/sound-manager.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { AIQuestionGenerator } from '../ai/generator.js';
 import { addQuestion, createQuestionElement, randomizeAnswers, shuffleArray } from '../utils/question-utils.js';
-import { getTranslation, showAlert, translatePage, setLanguage } from '../utils/translations.js';
+import { translationManager } from '../utils/translation-manager.js';
 
 export class QuizGame {
     constructor() {
@@ -35,7 +35,7 @@ export class QuizGame {
                     logger.debug('Fallback theme toggle from SettingsManager');
                     this.toggleTheme();
                 },
-                toggleFullscreen: () => console.log('Fullscreen toggle not available'),
+                toggleFullscreen: () => logger.debug('Fullscreen toggle not available'),
                 initializeEventListeners: () => {},
                 getSetting: () => null
             };
@@ -111,7 +111,7 @@ export class QuizGame {
         // Language selection
         document.querySelectorAll('[data-lang]').forEach(btn => {
             btn.addEventListener('click', () => {
-                setLanguage(btn.getAttribute('data-lang'));
+                translationManager.setLanguage(btn.getAttribute('data-lang'));
             });
         });
 
@@ -144,7 +144,7 @@ export class QuizGame {
             clearTimeout(this.quizManager.autoSaveTimeout);
             this.quizManager.autoSaveTimeout = setTimeout(() => {
                 this.quizManager.autoSaveQuiz();
-            }, 5000);
+            }, TIMING.AUTO_SAVE_DELAY);
         });
 
         // Global click handler for game interactions
@@ -239,7 +239,7 @@ export class QuizGame {
      */
     addQuestion() {
         addQuestion();
-        translatePage();
+        translationManager.translatePage();
     }
 
     /**
@@ -268,7 +268,7 @@ export class QuizGame {
                     lastQuestion.style.transform = '';
                 }, 1500);
             }
-        }, 100);
+        }, TIMING.DOM_UPDATE_DELAY);
     }
 
     /**
@@ -277,37 +277,37 @@ export class QuizGame {
     startHosting() {
         // Debounce to prevent multiple rapid calls
         if (this.startHostingCalled) {
-            console.log('startHosting already in progress, ignoring');
+            logger.debug('startHosting already in progress, ignoring');
             return;
         }
         this.startHostingCalled = true;
         
-        // Reset the flag after 3 seconds
+        // Reset the flag after debounce delay
         setTimeout(() => {
             this.startHostingCalled = false;
-        }, 3000);
+        }, TIMING.LEADERBOARD_DISPLAY_TIME);
         
         logger.info('startHosting called');
         const title = document.getElementById('quiz-title')?.value?.trim();
         logger.debug('Quiz title:', title);
         if (!title) {
-            showAlert('error', getTranslation('please_enter_quiz_title'));
+            translationManager.showAlert('error', translationManager.getTranslationSync('please_enter_quiz_title'));
             return;
         }
 
         const questions = this.quizManager.collectQuestions();
         logger.debug('Collected questions:', questions);
         if (questions.length === 0) {
-            showAlert('error', getTranslation('please_add_one_question'));
+            translationManager.showAlert('error', translationManager.getTranslationSync('please_add_one_question'));
             return;
         }
 
         // Skip validation temporarily to get game working
         logger.warn('Skipping question validation to allow game start');
         // const validationErrors = this.quizManager.validateQuestions(questions);
-        // console.log('Validation errors:', validationErrors);
+        // logger.debug('Validation errors:', validationErrors);
         // if (validationErrors.length > 0) {
-        //     showAlert('error', validationErrors.join('\n'));
+        //     translationManager.showAlert('error', validationErrors.join('\n'));
         //     return;
         // }
 
@@ -366,22 +366,22 @@ export class QuizGame {
         const name = document.getElementById('player-name')?.value?.trim();
 
         if (!pin || !name) {
-            showAlert('error', getTranslation('please_enter_pin_and_name'));
+            translationManager.showAlert('error', translationManager.getTranslationSync('please_enter_pin_and_name'));
             return;
         }
 
         if (pin.length !== 6 || !/^\d+$/.test(pin)) {
-            showAlert('error', getTranslation('pin_must_be_six_digits'));
+            translationManager.showAlert('error', translationManager.getTranslationSync('pin_must_be_six_digits'));
             return;
         }
 
         if (name.length > LIMITS.MAX_PLAYER_NAME_LENGTH) {
-            showAlert('error', getTranslation('name_max_twenty_chars'));
+            translationManager.showAlert('error', translationManager.getTranslationSync('name_max_twenty_chars'));
             return;
         }
 
         if (!this.socketManager.isConnected()) {
-            showAlert('error', getTranslation('not_connected_refresh'));
+            translationManager.showAlert('error', translationManager.getTranslationSync('not_connected_refresh'));
             return;
         }
 
@@ -412,7 +412,7 @@ export class QuizGame {
         
         setTimeout(() => {
             this.nextQuestionCalled = false;
-        }, 1000);
+        }, TIMING.DEBOUNCE_DELAY);
         
         this.socketManager.nextQuestion();
     }
@@ -440,7 +440,7 @@ export class QuizGame {
     showQuizPreview() {
         const questions = this.quizManager.collectQuestions();
         if (questions.length === 0) {
-            showAlert('error', getTranslation('please_add_one_question'));
+            translationManager.showAlert('error', translationManager.getTranslationSync('please_add_one_question'));
             return;
         }
 
@@ -456,11 +456,11 @@ export class QuizGame {
             questionDiv.className = 'preview-question';
             
             let questionHTML = `
-                <h3>${getTranslation('question')} ${index + 1}</h3>
+                <h3>${translationManager.getTranslationSync('question')} ${index + 1}</h3>
                 <div class="preview-question-text">${this.mathRenderer.formatCodeBlocks(question.question)}</div>
                 <div class="preview-question-meta">
-                    <span>${getTranslation('type')}: ${getTranslation(question.type)}</span>
-                    <span>${getTranslation('time')}: ${question.time}s</span>
+                    <span>${translationManager.getTranslationSync('type')}: ${translationManager.getTranslationSync(question.type)}</span>
+                    <span>${translationManager.getTranslationSync('time')}: ${question.time}s</span>
                 </div>
             `;
             
@@ -481,14 +481,14 @@ export class QuizGame {
             } else if (question.type === 'true-false') {
                 questionHTML += `
                     <div class="preview-options">
-                        <div class="preview-option ${question.correctAnswer === true ? 'correct' : ''}">A. ${getTranslation('true')}</div>
-                        <div class="preview-option ${question.correctAnswer === false ? 'correct' : ''}">B. ${getTranslation('false')}</div>
+                        <div class="preview-option ${question.correctAnswer === true ? 'correct' : ''}">A. ${translationManager.getTranslationSync('true')}</div>
+                        <div class="preview-option ${question.correctAnswer === false ? 'correct' : ''}">B. ${translationManager.getTranslationSync('false')}</div>
                     </div>
                 `;
             } else if (question.type === 'numeric') {
                 questionHTML += `
                     <div class="preview-answer">
-                        ${getTranslation('correct_answer')}: ${question.correctAnswer}
+                        ${translationManager.getTranslationSync('correct_answer')}: ${question.correctAnswer}
                         ${question.tolerance ? ` (±${question.tolerance})` : ''}
                     </div>
                 `;
@@ -569,7 +569,7 @@ export class QuizGame {
      */
     async loadLastQuiz() {
         try {
-            console.log('🐛 DEBUG: Loading width comparison quiz...');
+            logger.debug('🐛 DEBUG: Loading width comparison quiz...');
             
             // First check if we can fetch the quiz list
             const response = await fetch('/api/quizzes');
@@ -578,7 +578,7 @@ export class QuizGame {
             }
             
             const data = await response.json();
-            console.log('Available quizzes:', data?.length || 0);
+            logger.debug('Available quizzes:', data?.length || 0);
             
             // Look for debug quiz first
             const debugQuizFilename = 'debug-width-quiz.json';
@@ -586,16 +586,16 @@ export class QuizGame {
             
             let targetQuiz = null;
             if (debugQuiz) {
-                console.log('Found debug quiz:', debugQuiz.title);
+                logger.debug('Found debug quiz:', debugQuiz.title);
                 targetQuiz = debugQuiz;
             } else if (data && data.length > 0) {
-                console.log('Debug quiz not found, using first available quiz');
+                logger.debug('Debug quiz not found, using first available quiz');
                 targetQuiz = data[0];
             } else {
                 throw new Error('No quizzes available');
             }
             
-            console.log('Loading quiz for debug:', targetQuiz.title);
+            logger.debug('Loading quiz for debug:', targetQuiz.title);
             
             // Load the quiz
             await this.quizManager.loadQuiz(targetQuiz.filename);
@@ -603,7 +603,7 @@ export class QuizGame {
             // Wait for quiz to load, then start the game
             setTimeout(() => {
                 try {
-                    console.log('🐛 DEBUG: Auto-starting quiz...');
+                    logger.debug('🐛 DEBUG: Auto-starting quiz...');
                     this.startHosting();
                     
                     // Add debugging after game starts
@@ -611,17 +611,17 @@ export class QuizGame {
                         try {
                             this.debugQuestionWidths();
                         } catch (debugError) {
-                            console.error('Debug analysis failed:', debugError);
+                            logger.error('Debug analysis failed:', debugError);
                         }
-                    }, 5000); // Wait for game to fully start
+                    }, TIMING.DEBUG_ANALYSIS_DELAY); // Wait for game to fully start
                     
                 } catch (startError) {
-                    console.error('Failed to start game:', startError);
+                    logger.error('Failed to start game:', startError);
                 }
-            }, 2000);
+            }, TIMING.GAME_START_DELAY);
             
         } catch (error) {
-            console.error('🐛 DEBUG: Error in loadLastQuiz:', error);
+            logger.error('🐛 DEBUG: Error in loadLastQuiz:', error);
             
             // Show user-friendly error
             const errorModal = document.getElementById('error-modal');
@@ -641,7 +641,7 @@ export class QuizGame {
      * Debug function to analyze question width styles
      */
     debugQuestionWidths() {
-        console.log('🔎 WIDTH DEBUG: Analyzing question display styles...');
+        logger.debug('🔎 WIDTH DEBUG: Analyzing question display styles...');
         
         const questionDisplay = document.querySelector('.question-display');
         const gameContainer = document.querySelector('.game-container');
@@ -649,7 +649,7 @@ export class QuizGame {
         
         if (questionDisplay) {
             const styles = window.getComputedStyle(questionDisplay);
-            console.log('📏 .question-display styles:', {
+            logger.debug('📏 .question-display styles:', {
                 'max-width': styles.maxWidth,
                 'width': styles.width,
                 'margin-left': styles.marginLeft,
@@ -661,7 +661,7 @@ export class QuizGame {
             // Check for :has(pre) detection
             const hasPreElements = questionDisplay.querySelectorAll('pre').length > 0;
             const hasCodeClass = questionDisplay.classList.contains('has-code');
-            console.log('📝 Code detection:', {
+            logger.debug('📝 Code detection:', {
                 'has <pre> elements': hasPreElements,
                 'has .has-code class': hasCodeClass,
                 'classes': Array.from(questionDisplay.classList)
@@ -670,7 +670,7 @@ export class QuizGame {
         
         if (gameContainer) {
             const styles = window.getComputedStyle(gameContainer);
-            console.log('📏 .game-container styles:', {
+            logger.debug('📏 .game-container styles:', {
                 'max-width': styles.maxWidth,
                 'width': styles.width,
                 'margin': styles.margin
@@ -680,7 +680,7 @@ export class QuizGame {
         if (currentQuestion) {
             const hasCode = currentQuestion.innerHTML.includes('<pre>');
             const questionText = currentQuestion.textContent.substring(0, 50) + '...';
-            console.log('📄 Current question:', {
+            logger.debug('📄 Current question:', {
                 'text': questionText,
                 'contains code': hasCode,
                 'innerHTML length': currentQuestion.innerHTML.length
@@ -688,7 +688,7 @@ export class QuizGame {
         }
         
         // Log all CSS rules that might affect width
-        console.log('📋 CSS Debug: Check browser DevTools > Elements > Computed styles for detailed CSS rules');
+        logger.debug('📋 CSS Debug: Check browser DevTools > Elements > Computed styles for detailed CSS rules');
     }
 
     /**
@@ -696,19 +696,19 @@ export class QuizGame {
      */
     async loadQuizDirectly() {
         try {
-            console.log('Using direct quiz loading fallback');
+            logger.debug('Using direct quiz loading fallback');
             const filename = 'advanced_quiz_with_latex_images.json';
             this.quizManager.loadQuiz(filename);
             
-            showAlert('success', 'Debug: Loading LaTeX quiz - starting in 2 seconds...');
+            translationManager.showAlert('success', 'Debug: Loading LaTeX quiz - starting in 2 seconds...');
             
             setTimeout(() => {
-                console.log('Auto-starting quiz via fallback method...');
+                logger.debug('Auto-starting quiz via fallback method...');
                 this.startHosting();
-            }, 2000);
+            }, TIMING.GAME_START_DELAY);
         } catch (error) {
-            console.error('Fallback quiz loading failed:', error);
-            showAlert('error', 'Debug function failed');
+            logger.error('Fallback quiz loading failed:', error);
+            translationManager.showAlert('error', 'Debug function failed');
         }
     }
 
@@ -717,11 +717,11 @@ export class QuizGame {
      */
     async loadDefaultLatexQuiz() {
         try {
-            console.log('Loading default LaTeX quiz for debugging');
+            logger.debug('Loading default LaTeX quiz for debugging');
             
             // Try to load the advanced LaTeX quiz file directly
             const filename = 'advanced_quiz_with_latex_images.json';
-            console.log('Attempting to load:', filename);
+            logger.debug('Attempting to load:', filename);
             
             const response = await fetch(`/api/quiz/${filename}`);
             if (!response.ok) {
@@ -729,25 +729,25 @@ export class QuizGame {
             }
             
             const quizData = await response.json();
-            console.log('Loaded quiz data:', quizData);
+            logger.debug('Loaded quiz data:', quizData);
             
             if (quizData && quizData.quiz) {
                 // Use the quiz manager to populate the form
                 this.quizManager.populateQuizForm(quizData.quiz);
                 
-                showAlert('success', `Debug: Loaded "${quizData.quiz.title}" - starting game...`);
+                translationManager.showAlert('success', `Debug: Loaded "${quizData.quiz.title}" - starting game...`);
                 
                 // Wait for form to populate, then start game
                 setTimeout(() => {
-                    console.log('Auto-starting loaded LaTeX quiz...');
+                    logger.debug('Auto-starting loaded LaTeX quiz...');
                     this.startHosting();
                 }, 1500);
             } else {
                 throw new Error('Invalid quiz data format');
             }
         } catch (error) {
-            console.error('Failed to load default LaTeX quiz:', error);
-            showAlert('error', 'Failed to load LaTeX quiz for debugging');
+            logger.error('Failed to load default LaTeX quiz:', error);
+            translationManager.showAlert('error', 'Failed to load LaTeX quiz for debugging');
         }
     }
 
@@ -809,7 +809,7 @@ export class QuizGame {
             if (match) {
                 const currentQ = match[1];
                 const totalQ = match[2];
-                questionCounter.textContent = `${getTranslation('question')} ${currentQ} ${getTranslation('of')} ${totalQ}`;
+                questionCounter.textContent = `${translationManager.getTranslationSync('question')} ${currentQ} ${translationManager.getTranslationSync('of')} ${totalQ}`;
             }
         }
         
@@ -821,7 +821,7 @@ export class QuizGame {
             if (match) {
                 const currentQ = match[1];
                 const totalQ = match[2];
-                playerQuestionCounter.textContent = `${getTranslation('question')} ${currentQ} ${getTranslation('of')} ${totalQ}`;
+                playerQuestionCounter.textContent = `${translationManager.getTranslationSync('question')} ${currentQ} ${translationManager.getTranslationSync('of')} ${totalQ}`;
             }
         }
         
@@ -832,7 +832,7 @@ export class QuizGame {
             if (match) {
                 const currentQ = match[1];
                 const totalQ = match[2];
-                previewCounter.textContent = `${getTranslation('question')} ${currentQ} ${getTranslation('of')} ${totalQ}`;
+                previewCounter.textContent = `${translationManager.getTranslationSync('question')} ${currentQ} ${translationManager.getTranslationSync('of')} ${totalQ}`;
             }
         }
         
@@ -843,14 +843,14 @@ export class QuizGame {
             if (match) {
                 const currentQ = match[1];
                 const totalQ = match[2];
-                previewCounterDisplay.textContent = `${getTranslation('question')} ${currentQ} ${getTranslation('of')} ${totalQ}`;
+                previewCounterDisplay.textContent = `${translationManager.getTranslationSync('question')} ${currentQ} ${translationManager.getTranslationSync('of')} ${totalQ}`;
             }
         }
         
         // Update other game-specific elements that need translation
         const playerInfo = document.getElementById('player-info');
         if (playerInfo && this.gameManager.playerName) {
-            playerInfo.textContent = `${getTranslation('welcome')}, ${this.gameManager.playerName}!`;
+            playerInfo.textContent = `${translationManager.getTranslationSync('welcome')}, ${this.gameManager.playerName}!`;
         }
     }
 
@@ -858,11 +858,11 @@ export class QuizGame {
      * Toggle preview mode (connected to PreviewManager)
      */
     togglePreviewMode() {
-        console.log('Toggle preview mode called');
+        logger.debug('Toggle preview mode called');
         if (this.previewManager) {
             this.previewManager.togglePreviewMode();
         } else {
-            console.log('PreviewManager not available');
+            logger.debug('PreviewManager not available');
         }
     }
 
@@ -955,7 +955,7 @@ export class QuizGame {
         logger.info('🧪 LOGGER TEST: Info level message (level 3)');
         logger.warn('🧪 LOGGER TEST: Warning level message (level 2)');
         logger.error('🧪 LOGGER TEST: Error level message (level 1)');
-        console.log('🧪 LOGGER TEST: Raw console.log (should be avoided in production code)');
+        logger.debug('🧪 LOGGER TEST: Raw console.log (should be avoided in production code)');
     }
 
     /**
@@ -965,7 +965,7 @@ export class QuizGame {
         const playerNameInput = document.getElementById('player-name');
         if (playerNameInput && !playerNameInput.value) {
             // Generate a random player number between 1-999
-            const playerNumber = Math.floor(Math.random() * 999) + 1;
+            const playerNumber = Math.floor(Math.random() * LIMITS.MAX_PLAYER_NUMBER) + 1;
             const defaultName = `Player${playerNumber}`;
             playerNameInput.value = defaultName;
         }

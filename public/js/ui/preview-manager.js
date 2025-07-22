@@ -4,7 +4,7 @@
  * Restored to match original monolithic functionality
  */
 
-import { getTranslation, getOptionLetter } from '../utils/translations.js';
+import { translationManager } from '../utils/translation-manager.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { MathJaxService } from '../utils/mathjax-service.js';
 import { logger } from '../core/config.js';
@@ -19,7 +19,7 @@ export class PreviewManager {
         this.previewMode = false;
         this.manualNavigationInProgress = false;
         this.mathJaxRenderingInProgress = false; // Prevent multiple simultaneous renders
-        this.updatePreviewDebounced = this.debounce(() => this.updateSplitPreview(), 300);
+        this.updatePreviewDebounced = this.debounce(() => this.updateSplitPreview(), 150);
         
         // Drag functionality state
         this.isDragging = false;
@@ -83,7 +83,7 @@ export class PreviewManager {
             if (toggleBtn) {
                 toggleBtn.classList.remove('secondary');
                 toggleBtn.classList.add('danger');
-                toggleBtn.textContent = getTranslation('close_live_preview') || 'Close Live Preview';
+                toggleBtn.textContent = translationManager.getTranslationSync('close_live_preview') || 'Close Live Preview';
                 toggleBtn.setAttribute('data-translate', 'close_live_preview');
             }
             
@@ -131,7 +131,7 @@ export class PreviewManager {
             if (toggleBtn) {
                 toggleBtn.classList.remove('danger');
                 toggleBtn.classList.add('secondary');
-                toggleBtn.textContent = getTranslation('toggle_live_preview') || 'Live Preview';
+                toggleBtn.textContent = translationManager.getTranslationSync('toggle_live_preview') || 'Live Preview';
                 toggleBtn.setAttribute('data-translate', 'toggle_live_preview');
             }
             
@@ -180,12 +180,17 @@ export class PreviewManager {
             return;
         }
         this.splitPreviewListenersSet = true;
-        logger.debug('Setting up split preview event listeners');
 
         // Navigation buttons for split screen
         const prevBtn = document.getElementById('preview-prev-split');
         const nextBtn = document.getElementById('preview-next-split');
         const scrollBtn = document.getElementById('scroll-to-question');
+        
+        logger.debug('🔘 Preview navigation buttons found:', {
+            prevBtn: !!prevBtn,
+            nextBtn: !!nextBtn,
+            scrollBtn: !!scrollBtn
+        });
         
         // Store listener references for cleanup
         this.listeners.prevBtn = () => {
@@ -197,11 +202,7 @@ export class PreviewManager {
             
             if (this.currentPreviewQuestion > 0) {
                 this.currentPreviewQuestion--;
-                logger.debug(`Moving to previous question: ${this.currentPreviewQuestion}`);
                 this.updateSplitPreview();
-                // updateSplitPreview() already calls renderMathJaxForPreview()
-            } else {
-                logger.debug('Already at first question, not going back');
             }
             
             // Clear flag after a short delay
@@ -220,11 +221,7 @@ export class PreviewManager {
             
             if (this.currentPreviewQuestion < maxIndex) {
                 this.currentPreviewQuestion++;
-                logger.debug(`Moving to next question: ${this.currentPreviewQuestion}`);
                 this.updateSplitPreview();
-                // updateSplitPreview() already calls renderMathJaxForPreview()
-            } else {
-                logger.debug('Already at last question, not advancing');
             }
             
             // Clear flag after a short delay
@@ -239,14 +236,21 @@ export class PreviewManager {
 
         if (prevBtn) {
             prevBtn.addEventListener('click', this.listeners.prevBtn);
+            logger.debug('✅ Prev button listener attached');
+        } else {
+            logger.warn('⚠️ Prev button not found - navigation may not work');
         }
 
         if (nextBtn) {
             nextBtn.addEventListener('click', this.listeners.nextBtn);
+            logger.debug('✅ Next button listener attached');
+        } else {
+            logger.warn('⚠️ Next button not found - navigation may not work');
         }
 
         if (scrollBtn) {
             scrollBtn.addEventListener('click', this.listeners.scrollBtn);
+            logger.debug('✅ Scroll button listener attached');
         }
 
         // Real-time updates for split screen
@@ -309,6 +313,12 @@ export class PreviewManager {
      * Update split preview
      */
     updateSplitPreview() {
+        // Only update if preview mode is active
+        if (!this.previewMode) {
+            logger.debug('Preview mode not active, skipping updateSplitPreview');
+            return;
+        }
+        
         const questionItems = document.querySelectorAll('.question-item');
         const totalQuestions = questionItems.length;
         
@@ -344,17 +354,25 @@ export class PreviewManager {
         
         // Get current question data
         const currentQuestion = questionItems[this.currentPreviewQuestion];
+        
+        logger.debug(`🔍 QUESTION RETRIEVAL:`, {
+            requestedIndex: this.currentPreviewQuestion,
+            totalItems: questionItems.length,
+            foundQuestion: !!currentQuestion,
+            className: currentQuestion?.className || 'none'
+        });
+        
         if (!currentQuestion) {
-            logger.error(`Current question not found at index ${this.currentPreviewQuestion}, total questions: ${totalQuestions}`);
-            logger.debug('Available question items:', questionItems.length, 'DOM nodes found');
+            logger.error(`❌ Current question not found at index ${this.currentPreviewQuestion}, total questions: ${totalQuestions}`);
+            logger.debug('📋 Available question items:', questionItems.length, 'DOM nodes found');
             
             // Only reset to 0 if we have questions and current index is invalid
             if (totalQuestions > 0 && questionItems.length > 0) {
-                logger.debug('Resetting to question 0');
+                logger.debug('🔄 Resetting to question 0');
                 this.currentPreviewQuestion = 0;
                 const firstQuestion = questionItems[0];
                 if (!firstQuestion) {
-                    logger.error('First question also not found, aborting preview update');
+                    logger.error('❌ First question also not found, aborting preview update');
                     return;
                 }
                 
@@ -363,7 +381,7 @@ export class PreviewManager {
                 questionData.totalQuestions = totalQuestions;
                 this.renderSplitQuestionPreview(questionData);
             } else {
-                logger.warn('No questions available for preview');
+                logger.warn('📭 No questions available for preview');
                 this.showEmptySplitPreview();
             }
             return;
@@ -372,6 +390,15 @@ export class PreviewManager {
         const questionData = this.extractQuestionDataForPreview(currentQuestion);
         questionData.questionNumber = this.currentPreviewQuestion + 1;
         questionData.totalQuestions = totalQuestions;
+        
+        logger.debug(`📊 EXTRACTED DATA FOR Q${questionData.questionNumber}:`, {
+            hasQuestion: !!questionData.question,
+            questionLength: questionData.question?.length || 0,
+            questionPreview: questionData.question?.substring(0, 50) + '...' || 'empty',
+            type: questionData.type,
+            hasOptions: !!questionData.options,
+            optionsCount: questionData.options?.length || 0
+        });
         this.renderSplitQuestionPreview(questionData);
     }
 
@@ -384,7 +411,7 @@ export class PreviewManager {
         const nextBtn = document.getElementById('preview-next-split');
         
         if (counterSplit) {
-            counterSplit.textContent = `${getTranslation('question')} ${this.currentPreviewQuestion + 1} ${getTranslation('of')} ${totalQuestions}`;
+            counterSplit.textContent = `${translationManager.getTranslationSync('question')} ${this.currentPreviewQuestion + 1} ${translationManager.getTranslationSync('of')} ${totalQuestions}`;
         }
         
         if (prevBtn) {
@@ -404,13 +431,13 @@ export class PreviewManager {
         const counterSplit = document.getElementById('preview-question-counter-split');
         
         if (previewText) {
-            previewText.textContent = getTranslation('no_questions_to_preview') || 'No questions to preview';
+            previewText.textContent = translationManager.getTranslationSync('no_questions_to_preview') || 'No questions to preview';
         }
         if (counterDisplay) {
-            counterDisplay.textContent = `${getTranslation('question')} 0 ${getTranslation('of')} 0`;
+            counterDisplay.textContent = `${translationManager.getTranslationSync('question')} 0 ${translationManager.getTranslationSync('of')} 0`;
         }
         if (counterSplit) {
-            counterSplit.textContent = `${getTranslation('question')} 0 ${getTranslation('of')} 0`;
+            counterSplit.textContent = `${translationManager.getTranslationSync('question')} 0 ${translationManager.getTranslationSync('of')} 0`;
         }
         
         // Hide all answer areas
@@ -425,13 +452,14 @@ export class PreviewManager {
     extractQuestionDataForPreview(questionItem) {
         logger.debug('Extracting data from question item:', questionItem);
         
-        const questionText = questionItem.querySelector('.question-text')?.value?.trim() || getTranslation('enter_question_preview') || 'Enter question text...';
+        const questionText = questionItem.querySelector('.question-text')?.value?.trim() || translationManager.getTranslationSync('enter_question_preview') || 'Enter question text...';
         const questionType = questionItem.querySelector('.question-type')?.value || 'multiple-choice';
         const imageElement = questionItem.querySelector('.question-image');
         const imageUrl = imageElement ? imageElement.dataset.url || '' : '';
         
         logger.debug('Question text:', questionText);
         logger.debug('Question type:', questionType);
+        logger.debug('Image URL:', imageUrl);
         
         let options = [];
         let correctAnswer = null;
@@ -512,22 +540,72 @@ export class PreviewManager {
         // Update question counter and text
         const counterDisplay = document.getElementById('preview-question-counter-display-split');
         if (counterDisplay) {
-            counterDisplay.textContent = `${getTranslation('question')} ${data.questionNumber} ${getTranslation('of')} ${data.totalQuestions}`;
+            counterDisplay.textContent = `${translationManager.getTranslationSync('question')} ${data.questionNumber} ${translationManager.getTranslationSync('of')} ${data.totalQuestions}`;
         }
         
         const previewElement = document.getElementById('preview-question-text-split');
-        if (previewElement) {
-            previewElement.innerHTML = this.formatCodeBlocks(data.question);
-            previewElement.dataset.hasContent = 'true'; // Mark as having dynamic content
-            logger.debug('Updated preview question text:', data.question);
+        logger.debug('🔍 Preview element found:', !!previewElement, 'Question data:', !!data.question);
+        
+        if (previewElement && data.question) {
+            // FOUC Prevention: Detect LaTeX content
+            const hasLatex = data.question && (data.question.includes('$') || data.question.includes('\\(') || 
+                            data.question.includes('\\[') || data.question.includes('\\frac') ||
+                            data.question.includes('\\sqrt') || data.question.includes('\\sum'));
+            
+            const formattedContent = this.formatCodeBlocks(data.question);
+            
+            if (hasLatex) {
+                // Hide content during LaTeX processing to prevent blinking
+                previewElement.style.opacity = '0';
+                previewElement.classList.add('tex2jax_process');
+                previewElement.innerHTML = formattedContent;
+                
+                // Show content after MathJax processing completes
+                setTimeout(() => {
+                    if (window.MathJax?.typesetPromise) {
+                        window.MathJax.typesetPromise([previewElement])
+                            .then(() => {
+                                previewElement.style.opacity = '1';
+                            })
+                            .catch(() => {
+                                previewElement.style.opacity = '1'; // Show even if MathJax fails
+                            });
+                    } else {
+                        previewElement.style.opacity = '1'; // Show if no MathJax
+                    }
+                }, 50);
+            } else {
+                // No LaTeX, show immediately
+                previewElement.style.opacity = '1';
+                previewElement.innerHTML = formattedContent;
+            }
+            
+            previewElement.dataset.hasContent = 'true';
         }
         
-        // Handle image
+        // Handle image with data URI fix
         const imageDisplay = document.getElementById('preview-question-image-split');
         const img = document.getElementById('preview-question-img-split');
         if (data.image && imageDisplay && img) {
-            img.src = data.image;
+            // Check if it's a data URI (starts with data:)
+            if (data.image.startsWith('data:')) {
+                img.src = data.image;
+                logger.debug('📸 Set preview image: data URI (length:', data.image.length, ')');
+            } else {
+                // Regular URL - ensure it has proper path
+                const imageSrc = data.image.startsWith('/') ? data.image : `/${data.image}`;
+                img.src = imageSrc;
+                logger.debug('📸 Set preview image: URL', imageSrc);
+            }
             imageDisplay.style.display = 'block';
+        } else if (data.image) {
+            // Image data exists but elements not found
+            logger.warn('⚠️ Image data exists but preview elements not found:', {
+                hasImage: !!data.image,
+                imageType: data.image?.startsWith?.('data:') ? 'data-uri' : 'url',
+                hasDisplay: !!imageDisplay,
+                hasImg: !!img
+            });
         } else if (imageDisplay) {
             imageDisplay.style.display = 'none';
         }
@@ -621,112 +699,23 @@ export class PreviewManager {
                 logger.warn('Unknown question type:', data.type);
         }
         
-        // Render LaTeX in split preview with proper targeting and retry mechanism
-        this.renderMathJaxForPreview();
+        // LaTeX rendering is now handled individually for each element to prevent blinking
     }
 
     /**
      * Render MathJax for preview content with enhanced navigation support
      */
     renderMathJaxForPreview() {
-        // Prevent multiple simultaneous renders
-        if (this.mathJaxRenderingInProgress) {
-            logger.debug('🔒 MathJax rendering already in progress, skipping');
-            return;
-        }
-
         const previewElement = document.getElementById('preview-content-split');
         
-        if (!previewElement) {
-            logger.warn('Preview content element not found for MathJax rendering');
-            return;
-        }
+        if (!previewElement) return;
 
-        // Set rendering lock
-        this.mathJaxRenderingInProgress = true;
-
-        // Use requestAnimationFrame to ensure content is populated before rendering
-        requestAnimationFrame(() => {
-            // Additional timeout to ensure content is fully populated
-            setTimeout(() => {
-                const hasLatexContent = previewElement.innerHTML.includes('$$') || 
-                                       previewElement.innerHTML.includes('\\(') ||
-                                       previewElement.innerHTML.includes('\\[') ||
-                                       previewElement.innerHTML.includes('$') ||  // Single dollar delimiters
-                                       previewElement.innerHTML.includes('\\frac') ||  // Common LaTeX commands
-                                       previewElement.innerHTML.includes('\\sqrt') ||
-                                       previewElement.innerHTML.includes('\\sum') ||
-                                       previewElement.innerHTML.includes('\\int');
-                
-                logger.debug('🔍 Preview MathJax render check:', {
-                    elementFound: !!previewElement,
-                    hasLatexContent: hasLatexContent,
-                    contentLength: previewElement.innerHTML.length,
-                    mathJaxService: !!this.mathJaxService,
-                    mathJaxReady: !!window.MathJax
-                });
-
-                if (hasLatexContent && this.mathJaxService) {
-                    logger.debug('🧮 Rendering MathJax for preview content');
-                    
-                    // Platform-specific timing - Windows needs extra time for DOM stabilization
-                    const renderTimeout = this.mathJaxService.isWindows ? 400 : 100;
-                    
-                    // Windows-specific: Additional content stability check
-                    if (this.mathJaxService.isWindows) {
-                        // Wait for content to be stable before rendering
-                        setTimeout(() => {
-                            const contentStillHasLatex = previewElement.innerHTML.includes('$') || 
-                                                       previewElement.innerHTML.includes('\\frac') ||
-                                                       previewElement.innerHTML.includes('\\sqrt');
-                            
-                            if (contentStillHasLatex) {
-                                this.mathJaxService.renderElement(previewElement, renderTimeout, 3)
-                                    .then(() => {
-                                        logger.debug('✅ Preview MathJax rendering completed successfully (Windows delayed)');
-                                        this.mathJaxRenderingInProgress = false; // Clear rendering lock
-                                    })
-                                    .catch(err => {
-                                        logger.warn('🔍 Preview MathJax rendering failed, trying fallback:', err);
-                                        this.fallbackMathJaxRender(previewElement)
-                                            .finally(() => {
-                                                this.mathJaxRenderingInProgress = false; // Clear rendering lock
-                                            });
-                                    });
-                            } else {
-                                logger.debug('📝 LaTeX content disappeared during Windows delay, skipping render');
-                                this.mathJaxRenderingInProgress = false; // Clear rendering lock
-                            }
-                        }, 100); // Additional 100ms delay for Windows content stability
-                    } else {
-                        // macOS and other platforms use immediate rendering
-                        this.mathJaxService.renderElement(previewElement, renderTimeout, 3)
-                            .then(() => {
-                                logger.debug('✅ Preview MathJax rendering completed successfully');
-                                this.mathJaxRenderingInProgress = false; // Clear rendering lock
-                            })
-                            .catch(err => {
-                                logger.warn('🔍 Preview MathJax rendering failed, trying fallback:', err);
-                                this.fallbackMathJaxRender(previewElement)
-                                    .finally(() => {
-                                        this.mathJaxRenderingInProgress = false; // Clear rendering lock
-                                    });
-                            });
-                    }
-                } else if (!hasLatexContent) {
-                    logger.debug('📝 No LaTeX content found in preview, skipping MathJax rendering');
-                    this.mathJaxRenderingInProgress = false; // Clear rendering lock
-                } else {
-                    logger.warn('🔍 MathJax service not available for preview rendering');
-                    this.mathJaxRenderingInProgress = false; // Clear rendering lock
-                    
-                    // Try direct MathJax rendering as fallback
-                    if (hasLatexContent && window.MathJax) {
-                        this.fallbackMathJaxRender(previewElement);
-                    }
-                }
-            }, 50); // Small delay to ensure content is populated
-        });
+        // Simple MathJax rendering without excessive logging
+        setTimeout(() => {
+            if (window.MathJax?.typesetPromise) {
+                window.MathJax.typesetPromise([previewElement]).catch(() => {});
+            }
+        }, 100);
     }
 
     /**
@@ -739,6 +728,18 @@ export class PreviewManager {
             return window.MathJax.typesetPromise([element])
                 .then(() => {
                     logger.debug('✅ Fallback MathJax rendering completed');
+                    
+                    // FOUC Prevention: Mark as processed
+                    const processedElements = element.querySelectorAll('.tex2jax_process');
+                    processedElements.forEach(el => {
+                        el.classList.add('MathJax_Processed');
+                    });
+                    
+                    // Also mark question text specifically
+                    const questionElement = document.getElementById('preview-question-text-split');
+                    if (questionElement && questionElement.classList.contains('tex2jax_process')) {
+                        questionElement.classList.add('MathJax_Processed');
+                    }
                 })
                 .catch(err => {
                     logger.warn('❌ Fallback MathJax rendering also failed:', err);
@@ -788,10 +789,43 @@ export class PreviewManager {
             const optionDiv = document.createElement('div');
             optionDiv.className = `player-option preview-option ${isCorrect ? 'correct-preview' : ''}`;
             optionDiv.setAttribute('data-option', index);
-            optionDiv.innerHTML = `${getOptionLetter(index)}: ${this.formatCodeBlocks(option)}`;
-            optionsContainer.appendChild(optionDiv);
             
-            logger.debug(`Added option ${index}: ${option} (${isCorrect ? 'correct' : 'incorrect'})`);
+            // Check if option contains LaTeX and apply FOUC prevention
+            const hasLatex = option && (option.includes('$') || option.includes('\\(') || 
+                            option.includes('\\[') || option.includes('\\frac') ||
+                            option.includes('\\sqrt') || option.includes('\\sum'));
+            
+            const formattedContent = `${translationManager.getOptionLetter(index)}: ${this.formatCodeBlocks(option)}`;
+            
+            if (hasLatex) {
+                // Hide option during LaTeX processing to prevent blinking
+                optionDiv.style.opacity = '0';
+                optionDiv.classList.add('tex2jax_process');
+                optionDiv.innerHTML = formattedContent;
+                optionsContainer.appendChild(optionDiv);
+                
+                // Show option after MathJax processing
+                setTimeout(() => {
+                    if (window.MathJax?.typesetPromise) {
+                        window.MathJax.typesetPromise([optionDiv])
+                            .then(() => {
+                                optionDiv.style.opacity = '1';
+                            })
+                            .catch(() => {
+                                optionDiv.style.opacity = '1';
+                            });
+                    } else {
+                        optionDiv.style.opacity = '1';
+                    }
+                }, 50);
+            } else {
+                // No LaTeX, show immediately
+                optionDiv.style.opacity = '1';
+                optionDiv.innerHTML = formattedContent;
+                optionsContainer.appendChild(optionDiv);
+            }
+            
+            logger.debug(`Added option ${index}: ${option} (${isCorrect ? 'correct' : 'incorrect'}) - LaTeX: ${hasLatex}`);
         });
     }
 
@@ -818,8 +852,43 @@ export class PreviewManager {
             const optionDiv = document.createElement('div');
             optionDiv.className = `checkbox-option preview-checkbox ${isCorrect ? 'correct-preview' : ''}`;
             optionDiv.setAttribute('data-option', index);
-            optionDiv.innerHTML = `<input type="checkbox" ${isCorrect ? 'checked' : ''} disabled> ${getOptionLetter(index)}: ${this.formatCodeBlocks(option)}`;
-            optionsContainer.appendChild(optionDiv);
+            
+            // Check if option contains LaTeX and apply FOUC prevention
+            const hasLatex = option && (option.includes('$') || option.includes('\\(') || 
+                            option.includes('\\[') || option.includes('\\frac') ||
+                            option.includes('\\sqrt') || option.includes('\\sum'));
+            
+            const formattedContent = `<input type="checkbox" ${isCorrect ? 'checked' : ''} disabled> ${translationManager.getOptionLetter(index)}: ${this.formatCodeBlocks(option)}`;
+            
+            if (hasLatex) {
+                // Hide option during LaTeX processing to prevent blinking
+                optionDiv.style.opacity = '0';
+                optionDiv.classList.add('tex2jax_process');
+                optionDiv.innerHTML = formattedContent;
+                optionsContainer.appendChild(optionDiv);
+                
+                // Show option after MathJax processing
+                setTimeout(() => {
+                    if (window.MathJax?.typesetPromise) {
+                        window.MathJax.typesetPromise([optionDiv])
+                            .then(() => {
+                                optionDiv.style.opacity = '1';
+                            })
+                            .catch(() => {
+                                optionDiv.style.opacity = '1';
+                            });
+                    } else {
+                        optionDiv.style.opacity = '1';
+                    }
+                }, 50);
+            } else {
+                // No LaTeX, show immediately
+                optionDiv.style.opacity = '1';
+                optionDiv.innerHTML = formattedContent;
+                optionsContainer.appendChild(optionDiv);
+            }
+            
+            logger.debug(`Added multiple correct option ${index}: ${option} (${isCorrect ? 'correct' : 'incorrect'}) - LaTeX: ${hasLatex}`);
         });
     }
 
@@ -860,12 +929,12 @@ export class PreviewManager {
                 falseOption.classList.add('correct-preview');
             }
             
-            trueOption.textContent = `${getOptionLetter(0)}: ${getTranslation('true')}`;
-            falseOption.textContent = `${getOptionLetter(1)}: ${getTranslation('false')}`;
+            trueOption.textContent = `${translationManager.getOptionLetter(0)}: ${translationManager.getTranslationSync('true')}`;
+            falseOption.textContent = `${translationManager.getOptionLetter(1)}: ${translationManager.getTranslationSync('false')}`;
             
-            console.log('✅ True/False buttons updated successfully');
+            logger.debug('✅ True/False buttons updated successfully');
         } else {
-            console.error('❌ True/False option buttons not found!');
+            logger.error('❌ True/False option buttons not found!');
         }
     }
 
@@ -873,7 +942,7 @@ export class PreviewManager {
      * Render split numeric preview
      */
     renderSplitNumericPreview() {
-        console.log('🔢 Rendering numeric preview');
+        logger.debug('🔢 Rendering numeric preview');
         
         // Ensure other containers are hidden
         document.getElementById('preview-true-false-split').style.display = 'none';
@@ -884,7 +953,7 @@ export class PreviewManager {
         
         const input = document.getElementById('preview-numeric-input-split');
         if (input) {
-            input.placeholder = getTranslation('enter_answer') || 'Enter your answer';
+            input.placeholder = translationManager.getTranslationSync('enter_answer') || 'Enter your answer';
         }
     }
 
@@ -966,17 +1035,17 @@ export class PreviewManager {
         const questionItems = Array.from(document.querySelectorAll('.question-item'));
         const questionIndex = questionItems.indexOf(questionItem);
         
-        console.log(`📝 Auto-scroll triggered: questionIndex=${questionIndex}, current=${this.currentPreviewQuestion}, total=${questionItems.length}`);
+        logger.debug(`📝 Auto-scroll triggered: questionIndex=${questionIndex}, current=${this.currentPreviewQuestion}, total=${questionItems.length}`);
         
         if (questionIndex !== -1 && questionIndex !== this.currentPreviewQuestion) {
             // Validate the index before updating
             if (questionIndex >= 0 && questionIndex < questionItems.length) {
-                console.log(`🎯 Auto-scrolling preview from question ${this.currentPreviewQuestion + 1} to ${questionIndex + 1}`);
+                logger.debug(`🎯 Auto-scrolling preview from question ${this.currentPreviewQuestion + 1} to ${questionIndex + 1}`);
                 this.currentPreviewQuestion = questionIndex;
                 this.updateSplitPreview();
                 // updateSplitPreview() already calls renderMathJaxForPreview()
             } else {
-                console.log(`❌ Invalid questionIndex: ${questionIndex}, not updating preview`);
+                logger.debug(`❌ Invalid questionIndex: ${questionIndex}, not updating preview`);
             }
         }
     }

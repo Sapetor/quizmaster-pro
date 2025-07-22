@@ -1,6 +1,18 @@
 /**
  * Live Preview System - Split-screen preview functionality
  */
+
+/* LaTeX FOUC Prevention */
+.preview-question-text,
+#preview-question-text-split,
+.player-option,
+.checkbox-option {
+    transition: opacity 0.2s ease-in-out;
+}
+
+.tex2jax_process {
+    transition: opacity 0.2s ease-in-out;
+}
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -133,6 +145,28 @@
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
+/* Question counter in navigation bar */
+#preview-question-counter-split {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 8px 16px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    min-width: 140px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+#preview-question-counter-split:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
 .nav-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
@@ -181,7 +215,6 @@
     background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary-gradient) 100%);
     border-radius: var(--border-radius-medium);
     padding: 40px;
-    overflow-y: auto;
     color: white;
     position: relative;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
@@ -201,7 +234,6 @@
     border-radius: var(--preview-border-radius);
     padding: var(--preview-question-padding);
     margin-bottom: var(--preview-section-gap);
-    backdrop-filter: blur(10px);
     line-height: var(--preview-line-height);
     border: 1px solid var(--border-color);
 }
@@ -1465,4 +1497,28 @@ pre code {
     border-color: rgba(34, 197, 94, 0.6);
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
+
+/* Disable FOUC prevention that was causing invisible content */
+
+.preview-content .MathJax_Processed,
+.preview-content-split .MathJax_Processed,
+#preview-content-split .MathJax_Processed,
+#preview-question-text-split.MathJax_Processed {
+    visibility: visible !important;
+    animation: previewMathFadeIn 0.2s ease-in;
+}
+
+/* Smooth LaTeX reveal animation for preview */
+@keyframes previewMathFadeIn {
+    from { 
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to { 
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Removed opacity fade that was causing transparency issues */
 

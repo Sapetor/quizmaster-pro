@@ -2,6 +2,17 @@
  * Game Styles - Lobby, gameplay screens, leaderboards, results
  */
 
+/* LaTeX FOUC Prevention for Game Elements */
+.player-question-text,
+.host-question-text,
+#current-question,
+#player-question-text,
+.player-option,
+.option-display,
+.checkbox-option {
+    transition: opacity 0.2s ease-in-out;
+}
+
 /* Lobby Styles */
 .lobby-info {
     text-align: center;

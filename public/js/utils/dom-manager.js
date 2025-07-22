@@ -117,6 +117,41 @@ export class DOMManager {
     }
 
     /**
+     * Common pattern: set content if element exists, with optional fallback
+     * @param {string} id - Element ID
+     * @param {string} content - Primary content
+     * @param {string} fallback - Fallback content if primary is empty
+     */
+    safeSetContent(id, content, fallback = '') {
+        const finalContent = content || fallback;
+        if (finalContent) {
+            this.setContent(id, finalContent);
+        }
+    }
+
+    /**
+     * Batch update multiple elements efficiently  
+     * @param {Object<string, string>} updates - Object mapping element IDs to content
+     */
+    batchUpdate(updates) {
+        for (const [id, content] of Object.entries(updates)) {
+            this.setContent(id, content);
+        }
+    }
+
+    /**
+     * Common pattern: update element disabled state
+     * @param {string} id - Element ID
+     * @param {boolean} disabled - Whether element should be disabled
+     */
+    setDisabled(id, disabled) {
+        const element = this.get(id);
+        if (element) {
+            element.disabled = disabled;
+        }
+    }
+
+    /**
      * Add event listener with automatic cleanup
      * @param {string} id - Element ID
      * @param {string} event - Event type

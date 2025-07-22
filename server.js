@@ -182,7 +182,6 @@ app.get('/api/quiz/:filename', (req, res) => {
     }
     
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    console.log('Loaded quiz data:', JSON.stringify(data, null, 2));
     res.json(data);
   } catch (error) {
     console.error('Load quiz error:', error);
@@ -230,9 +229,7 @@ app.get('/api/active-games', (req, res) => {
     
     const activeGames = allGames.filter(game => game.gameState === 'lobby');
     
-    console.log(`Active games request: Found ${allGames.length} total games, ${activeGames.length} in lobby state`);
     allGames.forEach(game => {
-      console.log(`  Game ${game.pin}: ${game.title} (${game.gameState}) - ${game.playerCount} players`);
     });
     
     res.json({ 
@@ -465,7 +462,6 @@ class Game {
       // Save to file via internal API call
       const filename = `results_${this.pin}_${Date.now()}.json`;
       fs.writeFileSync(path.join('results', filename), JSON.stringify(results, null, 2));
-      console.log(`Game results saved: ${filename}`);
     } catch (error) {
       console.error('Error saving game results:', error);
     }
@@ -530,7 +526,6 @@ class Game {
     const scaledTimeBonus = Math.floor(timeBonus * difficultyMultiplier / 10);
     const points = isCorrect ? basePoints + scaledTimeBonus : 0;
     
-    console.log(`Scoring Debug - Player: ${this.players.get(playerId)?.name || playerId}, Time: ${timeTaken}ms, TimeBonus: ${timeBonus}, ScaledBonus: ${scaledTimeBonus}, BasePoints: ${basePoints}, FinalPoints: ${points}`);
 
     player.answers[this.currentQuestion] = {
       answer,
@@ -617,11 +612,9 @@ class Game {
 }
 
 function advanceToNextQuestion(game, io) {
-  console.log(`advanceToNextQuestion: Called for game ${game.pin}, currentQuestion=${game.currentQuestion}, total=${game.quiz.questions.length}`);
   
   // Prevent advancement if game is already finished or advancing
   if (game.gameState === 'finished' || game.isAdvancing) {
-    console.log(`advanceToNextQuestion: Game ${game.pin} already finished/advancing, skipping`);
     return;
   }
   
@@ -637,7 +630,6 @@ function advanceToNextQuestion(game, io) {
   game.advanceTimer = setTimeout(() => {
     // Double-check game state before proceeding
     if (game.gameState === 'finished') {
-      console.log(`advanceToNextQuestion: Game ${game.pin} finished during timer, skipping`);
       game.isAdvancing = false;
       return;
     }
@@ -649,34 +641,27 @@ function advanceToNextQuestion(game, io) {
     
     // Check if manual advancement is enabled AND there are more questions
     const hasMoreQuestions = (game.currentQuestion + 1) < game.quiz.questions.length;
-    console.log(`Checking advancement for game ${game.pin}: Manual = ${game.manualAdvancement}, currentQuestion=${game.currentQuestion}, hasMore=${hasMoreQuestions}`);
     
     if (game.manualAdvancement && hasMoreQuestions) {
       // Show next question button for host and wait for manual trigger
-      console.log(`Showing next button for manual advancement in game ${game.pin} to host ${game.hostId}`);
       io.to(game.hostId).emit('show-next-button');
       game.isAdvancing = false; // Reset for manual mode
     } else if (game.manualAdvancement && !hasMoreQuestions) {
       // Manual mode but no more questions - end the game
-      console.log(`Manual mode: No more questions for game ${game.pin}, ending`);
       game.isAdvancing = false;
       endGame(game, io);
     } else {
       // Auto-advance to next question
-      console.log(`Auto-advancing game ${game.pin} in ${CONFIG.TIMING.AUTO_ADVANCE_DELAY}ms`);
       game.advanceTimer = setTimeout(() => {
         if (game.gameState === 'finished') {
-          console.log(`Auto-advance: Game ${game.pin} finished during auto-advance timer, skipping`);
           game.isAdvancing = false;
           return;
         }
         
-        console.log(`Auto-advance: Calling nextQuestion() for game ${game.pin}`);
         if (game.nextQuestion()) {
           startQuestion(game, io);
         } else {
           // No more questions - end the game
-          console.log(`Auto-advance: No more questions for game ${game.pin}, ending`);
           endGame(game, io);
         }
         game.isAdvancing = false; // Reset after auto-advance
@@ -688,11 +673,9 @@ function advanceToNextQuestion(game, io) {
 function endGame(game, io) {
   // Prevent multiple game endings
   if (game.gameState === 'finished') {
-    console.log(`endGame: Game ${game.pin} already finished, skipping`);
     return;
   }
   
-  console.log(`Ending game ${game.pin}`);
   game.gameState = 'finished';
   game.endTime = new Date().toISOString();
   
@@ -713,7 +696,6 @@ function endGame(game, io) {
   io.to(game.hostId).emit('hide-next-button');
   
   // Debug: Log player scores before final leaderboard generation
-  console.log('Final player scores before leaderboard update:');
   game.players.forEach((player, playerId) => {
     console.log(`  Player ${player.name} (${playerId}): ${player.score} points`);
   });

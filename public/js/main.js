@@ -4,25 +4,55 @@
  */
 
 import { QuizGame } from './core/app.js';
-import { setLanguage } from './utils/translations.js';
+import { translationManager } from './utils/translation-manager.js';
+import { errorBoundary } from './utils/error-boundary.js';
+import { TIMING, logger } from './core/config.js';
 import './utils/globals.js'; // Import globals to make them available
 
 // Initialize the application when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('QuizMaster Pro - Initializing modular application...');
+document.addEventListener('DOMContentLoaded', async () => {
+    logger.debug('QuizMaster Pro - Initializing modular application...');
     
-    try {
+    // FOUC Prevention: Apply saved font size immediately (should already be done in HTML head)
+    const savedFontSize = localStorage.getItem('globalFontSize') || 'medium';
+    if (window.setGlobalFontSize) {
+        window.setGlobalFontSize(savedFontSize);
+    }
+    
+    await errorBoundary.safeNetworkOperation(async () => {
+        // Initialize translation manager first
+        const savedLanguage = localStorage.getItem('language') || 'en';
+        logger.debug('Initializing translation manager with language:', savedLanguage);
+        
+        const success = await translationManager.initialize(savedLanguage);
+        if (success) {
+            logger.debug('Translation manager initialized successfully');
+            
+            // Translate the page after initialization
+            translationManager.translatePage();
+            logger.debug('Page translated with language:', savedLanguage);
+            
+            // Log memory savings
+            const memoryInfo = translationManager.getMemoryInfo();
+            logger.debug('Translation memory info:', memoryInfo);
+        } else {
+            logger.error('Failed to initialize translation manager');
+        }
+        
         // Initialize the main application
         window.game = new QuizGame();
-        console.log('QuizGame instance created successfully');
+        logger.debug('QuizGame instance created successfully');
+        
+        // FOUC Prevention: Remove loading class from body after initialization
+        document.body.classList.remove('loading');
         
         // Make sure theme toggle is available globally
         window.toggleTheme = () => {
-            console.log('Global theme toggle called');
+            logger.debug('Global theme toggle called');
             if (window.game && window.game.toggleTheme) {
                 window.game.toggleTheme();
             } else {
-                console.log('window.game.toggleTheme not available');
+                logger.debug('window.game.toggleTheme not available');
             }
         };
         
@@ -36,38 +66,61 @@ document.addEventListener('DOMContentLoaded', () => {
             themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️'; // Moon for dark, sun for light
         }
         
-        console.log('Applied theme:', savedTheme);
-        
-        // Wait a bit for initialization to complete, then set language
-        setTimeout(() => {
-            try {
-                const savedLanguage = localStorage.getItem('language') || 'en';
-                console.log('Setting language to:', savedLanguage);
-                setLanguage(savedLanguage);
-                console.log('Language initialized successfully');
-            } catch (error) {
-                console.error('Error setting language:', error);
-            }
-        }, 100);
+        logger.debug('Applied theme:', savedTheme);
         
         // Initialize global font size after DOM is ready
         setTimeout(() => {
-            try {
+            errorBoundary.safeDOMOperation(() => {
                 const savedFontSize = localStorage.getItem('globalFontSize') || 'medium';
-                console.log('Setting global font size to:', savedFontSize);
+                logger.debug('Setting global font size to:', savedFontSize);
                 if (window.setGlobalFontSize) {
                     window.setGlobalFontSize(savedFontSize);
-                    console.log('Global font size initialized successfully');
+                    logger.debug('Global font size initialized successfully');
                 } else {
-                    console.warn('setGlobalFontSize function not available yet');
+                    logger.warn('setGlobalFontSize function not available yet');
                 }
-            } catch (error) {
-                console.error('Error setting global font size:', error);
-            }
-        }, 200);
+            }, 'font-size-init');
+        }, TIMING.MATHJAX_RETRY_TIMEOUT);
         
-        console.log('QuizMaster Pro - Application initialized successfully');
+        logger.debug('QuizMaster Pro - Application initialized successfully');
+    }, 'app_initialization', () => {
+        logger.error('Failed to initialize application');
+        document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h2>Application Error</h2><p>Failed to initialize QuizMaster Pro. Please refresh the page.</p></div>';
+    });
+});
+
+// Global cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    logger.debug('Page unloading - performing cleanup...');
+    try {
+        if (window.game && typeof window.game.cleanup === 'function') {
+            window.game.cleanup();
+        }
+        if (window.game?.gameManager && typeof window.game.gameManager.cleanup === 'function') {
+            window.game.gameManager.cleanup();
+        }
+        if (window.game?.quizManager && typeof window.game.quizManager.cleanup === 'function') {
+            window.game.quizManager.cleanup();
+        }
+        logger.debug('Global cleanup completed');
     } catch (error) {
-        console.error('Error initializing QuizMaster Pro:', error);
+        logger.error('Error during global cleanup:', error);
+    }
+});
+
+// Also handle visibility change (tab switching, minimizing)
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        logger.debug('Page hidden - performing partial cleanup...');
+        try {
+            if (window.game?.gameManager && typeof window.game.gameManager.clearTimerTracked === 'function' && window.game.gameManager.timer) {
+                // Clear main game timer to prevent unnecessary ticking when page is hidden
+                window.game.gameManager.clearTimerTracked(window.game.gameManager.timer);
+                window.game.gameManager.timer = null;
+                logger.debug('Main game timer cleared while page hidden');
+            }
+        } catch (error) {
+            logger.error('Error during partial cleanup:', error);
+        }
     }
 });

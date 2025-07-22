@@ -7,10 +7,12 @@
  * - Includes all AI provider integrations: Ollama, OpenAI, Claude, HuggingFace
  * - Handles file uploads and content parsing
  * - Manages API keys and model selection
- * - Dependencies: translations.js for getTranslation()
+ * - Dependencies: translation-manager.js for translationManager.getTranslationSync()
  */
 
-import { getTranslation } from '../utils/translations.js';
+import { logger } from '../core/config.js';
+
+import { translationManager } from '../utils/translation-manager.js';
 
 export class AIQuestionGenerator {
     constructor() {
@@ -103,7 +105,7 @@ export class AIQuestionGenerator {
         const difficulty = document.getElementById('difficulty-level')?.value || 'medium';
         
         if (!content) {
-            alert(getTranslation('please_provide_source_material'));
+            alert(translationManager.getTranslationSync('please_provide_source_material'));
             return;
         }
 
@@ -112,7 +114,7 @@ export class AIQuestionGenerator {
         if (needsApiKey) {
             const apiKey = localStorage.getItem(`ai_api_key_${provider}`);
             if (!apiKey) {
-                alert(getTranslation('please_enter_api_key'));
+                alert(translationManager.getTranslationSync('please_enter_api_key'));
                 return;
             }
         }
@@ -147,14 +149,14 @@ export class AIQuestionGenerator {
             if (questions && questions.length > 0) {
                 this.processGeneratedQuestions(questions);
                 this.closeModal();
-                alert(getTranslation('successfully_generated_questions', questions.length));
+                alert(translationManager.getTranslationSync('successfully_generated_questions', questions.length));
             } else {
-                alert(getTranslation('error_generating'));
+                alert(translationManager.getTranslationSync('error_generating'));
             }
 
         } catch (error) {
-            console.error('Generation error:', error);
-            alert(getTranslation('error_generating_questions_detail', error.message));
+            logger.error('Generation error:', error);
+            alert(translationManager.getTranslationSync('error_generating_questions_detail', error.message));
         } finally {
             // Reset UI
             if (generateBtn) generateBtn.disabled = false;
@@ -210,7 +212,7 @@ export class AIQuestionGenerator {
             const data = await response.json();
             return this.parseAIResponse(data.response);
         } catch (error) {
-            console.error('Ollama generation error:', error);
+            logger.error('Ollama generation error:', error);
             throw error;
         }
     }
@@ -244,7 +246,7 @@ export class AIQuestionGenerator {
 
     async generateWithHuggingFace() {
         // Placeholder for Hugging Face implementation
-        throw new Error(getTranslation('huggingface_integration_coming'));
+        throw new Error(translationManager.getTranslationSync('huggingface_integration_coming'));
     }
 
     async generateWithClaude(prompt) {
@@ -269,7 +271,7 @@ export class AIQuestionGenerator {
             const data = await response.json();
             return this.parseAIResponse(data.content);
         } catch (error) {
-            console.error('Claude generation error:', error);
+            logger.error('Claude generation error:', error);
             throw error;
         }
     }
@@ -292,8 +294,8 @@ export class AIQuestionGenerator {
             return Array.isArray(parsed) ? parsed : [parsed];
             
         } catch (error) {
-            console.error('Error parsing AI response:', error);
-            console.log('Raw response:', responseText);
+            logger.error('Error parsing AI response:', error);
+            logger.debug('Raw response:', responseText);
             throw new Error('Invalid JSON response from AI provider');
         }
     }
@@ -378,7 +380,7 @@ export class AIQuestionGenerator {
                 }
             }
         } catch (error) {
-            console.error('Error loading Ollama models:', error);
+            logger.error('Error loading Ollama models:', error);
             modelSelect.innerHTML = '<option value="">Error loading models</option>';
         }
     }

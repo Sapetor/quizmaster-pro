@@ -10,6 +10,8 @@
  * - Dependencies: MathJax (loaded externally)
  */
 
+import { TIMING, logger } from '../core/config.js';
+
 export class MathRenderer {
     constructor() {
         this.mathJaxRenderTimeout = null;
@@ -20,7 +22,7 @@ export class MathRenderer {
         if (!this.mathJaxReady) {
             document.addEventListener('mathjax-ready', () => {
                 this.mathJaxReady = true;
-                console.log('MathRenderer: MathJax is now ready');
+                logger.debug('MathRenderer: MathJax is now ready');
             });
         }
     }
@@ -60,7 +62,7 @@ export class MathRenderer {
                     element.classList.add('math-ready');
                     this.processingElements.delete(element);
                 }).catch(err => {
-                    console.warn('MathJax rendering failed:', err);
+                    logger.warn('MathJax rendering failed:', err);
                     // Remove processing class even on error
                     element.classList.remove('processing-math');
                     element.classList.add('math-ready');
@@ -68,11 +70,11 @@ export class MathRenderer {
                     
                     // Fallback: try global typeset if element-specific fails
                     MathJax.typesetPromise().catch(globalErr => {
-                        console.warn('Global MathJax rendering also failed:', globalErr);
+                        logger.warn('Global MathJax rendering also failed:', globalErr);
                     });
                 });
             } else if (attempt < 3) {
-                setTimeout(() => tryRender(attempt + 1), 200);
+                setTimeout(() => tryRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
             } else {
                 // Silently fail after 3 attempts to reduce log spam
                 element.classList.remove('processing-math');
@@ -146,7 +148,7 @@ export class MathRenderer {
                             this.processingElements.delete(el);
                         });
                     }).catch(err => {
-                        console.warn('MathJax rendering failed:', err);
+                        logger.warn('MathJax rendering failed:', err);
                         // Remove processing classes even on error
                         elementsWithMath.forEach(el => {
                             el.classList.remove('processing-math');
@@ -156,7 +158,7 @@ export class MathRenderer {
                     });
                 });
             }
-        }, 100); // Debounce delay
+        }, TIMING.DOM_UPDATE_DELAY); // Debounce delay
     }
 
     /**
@@ -227,7 +229,7 @@ export class MathRenderer {
                 } else if (Date.now() - startTime > timeout) {
                     resolve(false);
                 } else {
-                    setTimeout(checkReady, 100);
+                    setTimeout(checkReady, TIMING.DOM_UPDATE_DELAY);
                 }
             };
             checkReady();

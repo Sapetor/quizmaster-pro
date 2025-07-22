@@ -10,6 +10,8 @@
  * - Dependencies: None (standalone module)
  */
 
+import { logger } from '../core/config.js';
+
 export class SoundManager {
     constructor() {
         this.audioContext = null;
@@ -34,7 +36,7 @@ export class SoundManager {
                 throw new Error('Web Audio API not supported');
             }
         } catch (e) {
-            console.log('Web Audio API not supported');
+            logger.debug('Web Audio API not supported');
             this.soundsEnabled = false;
         }
     }
@@ -45,11 +47,11 @@ export class SoundManager {
         try {
             // Validate parameters
             if (!isFinite(frequency) || frequency <= 0) {
-                console.log('Invalid frequency:', frequency);
+                logger.debug('Invalid frequency:', frequency);
                 return;
             }
             if (!isFinite(duration) || duration <= 0) {
-                console.log('Invalid duration:', duration);
+                logger.debug('Invalid duration:', duration);
                 return;
             }
             
@@ -68,7 +70,7 @@ export class SoundManager {
             oscillator.start(this.audioContext.currentTime);
             oscillator.stop(this.audioContext.currentTime + duration);
         } catch (e) {
-            console.log('Sound playback failed:', e);
+            logger.debug('Sound playback failed:', e);
         }
     }
 
@@ -92,7 +94,7 @@ export class SoundManager {
                 }, note.time * 1000);
             });
         } catch (e) {
-            console.log('Victory sound playback failed:', e);
+            logger.debug('Victory sound playback failed:', e);
         }
     }
 
@@ -135,7 +137,7 @@ export class SoundManager {
             }, 1500);
             
         } catch (e) {
-            console.log('Game ending fanfare playback failed:', e);
+            logger.debug('Game ending fanfare playback failed:', e);
         }
     }
 
@@ -149,7 +151,7 @@ export class SoundManager {
     }
 
     playCorrectAnswerSound() {
-        console.log('🔊 Playing correct answer sound (original ascending notes: C-E-G)');
+        logger.debug('🔊 Playing correct answer sound (original ascending notes: C-E-G)');
         // Original correct answer chord progression (ascending notes)
         setTimeout(() => this.playSound(523, 0.15), 0);   // C
         setTimeout(() => this.playSound(659, 0.15), 150); // E
@@ -157,7 +159,7 @@ export class SoundManager {
     }
 
     playIncorrectAnswerSound() {
-        console.log('🔊 Playing incorrect answer sound (original descending sawtooth)');
+        logger.debug('🔊 Playing incorrect answer sound (original descending sawtooth)');
         // Original incorrect answer descending tones
         this.playSound(400, 0.2, 'sawtooth');
         setTimeout(() => this.playSound(300, 0.3, 'sawtooth'), 200);
@@ -184,9 +186,9 @@ export class SoundManager {
         if (this.audioContext && this.audioContext.state === 'suspended') {
             try {
                 await this.audioContext.resume();
-                console.log('Audio context resumed');
+                logger.debug('Audio context resumed');
             } catch (e) {
-                console.log('Failed to resume audio context:', e);
+                logger.debug('Failed to resume audio context:', e);
             }
         }
     }

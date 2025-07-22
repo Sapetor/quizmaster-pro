@@ -3,7 +3,8 @@
  * Handles theme management, settings persistence, and application preferences
  */
 
-import { getTranslation } from '../utils/translations.js';
+import { translationManager } from '../utils/translation-manager.js';
+import { logger } from '../core/config.js';
 
 export class SettingsManager {
     constructor() {
@@ -29,7 +30,7 @@ export class SettingsManager {
                 this.settings = { ...this.settings, ...JSON.parse(savedSettings) };
             }
         } catch (error) {
-            console.error('Failed to load settings:', error);
+            logger.error('Failed to load settings:', error);
         }
         
         // Apply loaded settings
@@ -43,7 +44,7 @@ export class SettingsManager {
         try {
             localStorage.setItem('quizSettings', JSON.stringify(this.settings));
         } catch (error) {
-            console.error('Failed to save settings:', error);
+            logger.error('Failed to save settings:', error);
         }
     }
 
@@ -75,7 +76,7 @@ export class SettingsManager {
             body.setAttribute('data-theme', 'dark');
             if (themeToggle) {
                 themeToggle.textContent = '🌙'; // Moon represents dark mode
-                themeToggle.title = getTranslation('switch_light_mode');
+                themeToggle.title = translationManager.getTranslationSync('switch_light_mode');
             }
         } else {
             body.classList.add('light-theme');
@@ -83,7 +84,7 @@ export class SettingsManager {
             body.setAttribute('data-theme', 'light');
             if (themeToggle) {
                 themeToggle.textContent = '☀️'; // Sun represents light mode
-                themeToggle.title = getTranslation('switch_dark_mode');
+                themeToggle.title = translationManager.getTranslationSync('switch_dark_mode');
             }
         }
         
@@ -97,15 +98,15 @@ export class SettingsManager {
         // Get current theme from DOM to ensure accuracy
         const body = document.body;
         const currentTheme = body.getAttribute('data-theme') || this.settings.theme || 'light';
-        console.log('Current theme from DOM:', currentTheme);
-        console.log('Current theme from settings:', this.settings.theme);
+        logger.debug('Current theme from DOM:', currentTheme);
+        logger.debug('Current theme from settings:', this.settings.theme);
         
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        console.log('New theme will be:', newTheme);
+        logger.debug('New theme will be:', newTheme);
         
         this.applyTheme(newTheme);
         this.saveSettings();
-        console.log('Theme after toggle:', this.settings.theme);
+        logger.debug('Theme after toggle:', this.settings.theme);
     }
 
     /**
@@ -184,7 +185,7 @@ export class SettingsManager {
                         this.saveSettings();
                     })
                     .catch((err) => {
-                        console.warn('Fullscreen request failed:', err.message);
+                        logger.warn('Fullscreen request failed:', err.message);
                         this.settings.fullscreenMode = false;
                         this.updateFullscreenButton();
                     });
@@ -195,7 +196,7 @@ export class SettingsManager {
                 this.saveSettings();
             }
         } catch (err) {
-            console.warn('Fullscreen not supported or blocked:', err.message);
+            logger.warn('Fullscreen not supported or blocked:', err.message);
             this.settings.fullscreenMode = false;
             this.updateFullscreenButton();
         }
@@ -219,7 +220,7 @@ export class SettingsManager {
                     document.msExitFullscreen();
                 }
             } catch (error) {
-                console.warn('Failed to exit fullscreen:', error);
+                logger.warn('Failed to exit fullscreen:', error);
             }
         }
         
@@ -235,10 +236,10 @@ export class SettingsManager {
         if (fullscreenToggle) {
             if (this.settings.fullscreenMode) {
                 fullscreenToggle.textContent = '🔲';
-                fullscreenToggle.title = getTranslation('exit_fullscreen');
+                fullscreenToggle.title = translationManager.getTranslationSync('exit_fullscreen');
             } else {
                 fullscreenToggle.textContent = '⛶';
-                fullscreenToggle.title = getTranslation('enter_fullscreen');
+                fullscreenToggle.title = translationManager.getTranslationSync('enter_fullscreen');
             }
         }
     }
@@ -333,10 +334,10 @@ export class SettingsManager {
         if (themeToggle) {
             if (this.settings.theme === 'dark') {
                 themeToggle.textContent = '🌙'; // Moon represents dark mode
-                themeToggle.title = getTranslation('switch_light_mode');
+                themeToggle.title = translationManager.getTranslationSync('switch_light_mode');
             } else {
                 themeToggle.textContent = '☀️'; // Sun represents light mode
-                themeToggle.title = getTranslation('switch_dark_mode');
+                themeToggle.title = translationManager.getTranslationSync('switch_dark_mode');
             }
         }
         
@@ -345,7 +346,7 @@ export class SettingsManager {
         if (soundToggle) {
             soundToggle.textContent = this.settings.soundEnabled ? '🔊' : '🔇';
             soundToggle.title = this.settings.soundEnabled ? 
-                getTranslation('disable_sound') : getTranslation('enable_sound');
+                translationManager.getTranslationSync('disable_sound') : translationManager.getTranslationSync('enable_sound');
         }
         
         // Update fullscreen toggle
@@ -432,7 +433,7 @@ export class SettingsManager {
         
         // Handle fullscreen errors
         document.addEventListener('fullscreenerror', (e) => {
-            console.error('Fullscreen error:', e);
+            logger.error('Fullscreen error:', e);
             this.settings.fullscreenMode = false;
             this.updateFullscreenButton();
             this.saveSettings();
@@ -474,7 +475,7 @@ export class SettingsManager {
             
             return false;
         } catch (error) {
-            console.error('Failed to import settings:', error);
+            logger.error('Failed to import settings:', error);
             return false;
         }
     }
