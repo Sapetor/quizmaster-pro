@@ -2,13 +2,13 @@
  * Toolbar Styles - Left navigation toolbar and tools
  */
 
-/* Left Toolbar */
+/* Left Toolbar - Scales proportionally with font size */
 .left-toolbar {
     position: fixed;
     left: 0;
     top: 0;
     height: 100vh;
-    width: 85px; /* Fixed width - NOT scaled with font size */
+    width: calc(85px * var(--global-font-scale));
     background: var(--glass-medium);
     backdrop-filter: var(--blur-strong);
     -webkit-backdrop-filter: var(--blur-strong);
@@ -17,15 +17,15 @@
     transition: var(--transition-smooth);
     display: flex;
     flex-direction: column;
-    padding: 20px 8px;
-    gap: 10px;
+    padding: calc(20px * var(--global-font-scale)) calc(8px * var(--global-font-scale));
+    gap: calc(10px * var(--global-font-scale));
     overflow-y: auto;
     box-shadow: var(--shadow-lg);
 }
 
 .left-toolbar.collapsed {
-    width: 32px;
-    padding: 20px 4px;
+    width: calc(32px * var(--global-font-scale));
+    padding: calc(20px * var(--global-font-scale)) calc(4px * var(--global-font-scale));
 }
 
 .left-toolbar:hover {
@@ -51,10 +51,10 @@
     padding: 0 4px;
 }
 
-/* Toolbar Buttons */
+/* Toolbar Buttons - Scale proportionally */
 .toolbar-btn {
-    width: 65px;
-    height: 48px;
+    width: calc(65px * var(--global-font-scale));
+    height: calc(48px * var(--global-font-scale));
     border: none;
     background: var(--glass-light);
     border: 1px solid var(--glass-border);
@@ -66,7 +66,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 6px 4px;
+    padding: calc(6px * var(--global-font-scale)) calc(4px * var(--global-font-scale));
     backdrop-filter: var(--blur-medium);
     -webkit-backdrop-filter: var(--blur-medium);
     position: relative;
@@ -93,15 +93,15 @@
     box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
 }
 
-/* Toolbar Icons - Fixed sizes, NO font scaling */
+/* Toolbar Icons - Scale with global font setting */
 .toolbar-icon {
-    font-size: 22px !important;
+    font-size: calc(22px * var(--global-font-scale));
     line-height: 1;
-    margin-bottom: 4px;
+    margin-bottom: calc(4px * var(--global-font-scale));
 }
 
 .toolbar-label {
-    font-size: 10px !important;
+    font-size: calc(10px * var(--global-font-scale));
     font-weight: 500;
     text-align: center;
     line-height: 1.1;
