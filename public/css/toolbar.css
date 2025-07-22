@@ -8,7 +8,7 @@
     left: 0;
     top: 0;
     height: 100vh;
-    width: 85px; /* Back to working width */
+    width: 85px; /* Fixed width - NOT scaled with font size */
     background: var(--glass-medium);
     backdrop-filter: var(--blur-strong);
     -webkit-backdrop-filter: var(--blur-strong);
@@ -93,7 +93,7 @@
     box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
 }
 
-/* Toolbar Icons - Fixed sizing, no scaling */
+/* Toolbar Icons - Fixed sizes, NO font scaling */
 .toolbar-icon {
     font-size: 22px !important;
     line-height: 1;
@@ -110,26 +110,6 @@
     white-space: normal;
     word-break: break-word;
     hyphens: auto;
-}
-
-/* Prevent any global font scaling from affecting toolbar */
-.left-toolbar,
-.left-toolbar *,
-.toolbar-btn,
-.toolbar-btn *,
-.toolbar-icon,
-.toolbar-label {
-    /* Override any global font scaling that might be inherited */
-    font-size: inherit !important;
-}
-
-/* Restore specific toolbar sizes after the override */
-.left-toolbar .toolbar-icon {
-    font-size: 22px !important;
-}
-
-.left-toolbar .toolbar-label {
-    font-size: 10px !important;
 }
 
 /* Toolbar Divider */
@@ -198,4 +178,3 @@
         max-width: calc(100vw - 40px);
     }
 }
-
