@@ -14,7 +14,7 @@ import { SoundManager } from '../audio/sound-manager.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { AIQuestionGenerator } from '../ai/generator.js';
 import { addQuestion, createQuestionElement, randomizeAnswers, shuffleArray } from '../utils/question-utils.js';
-import { translationManager } from '../utils/translation-manager.js';
+import { translationManager, showErrorAlert, createQuestionCounter } from '../utils/translation-manager.js';
 
 export class QuizGame {
     constructor() {
@@ -97,10 +97,10 @@ export class QuizGame {
         // Screen navigation
         safeAddEventListener('host-btn', 'click', () => {
             this.uiManager.showScreen('host-screen');
-            // Always ensure toolbar is visible and layout is properly set
-            const hostContainer = document.querySelector('.host-container');
-            if (hostContainer) {
-                hostContainer.classList.add('with-toolbar');
+            // Show horizontal toolbar when entering host mode
+            const horizontalToolbar = document.getElementById('horizontal-toolbar');
+            if (horizontalToolbar) {
+                horizontalToolbar.style.display = 'flex';
             }
         });
         safeAddEventListener('join-btn', 'click', () => this.uiManager.showScreen('join-screen'));
@@ -291,14 +291,14 @@ export class QuizGame {
         const title = document.getElementById('quiz-title')?.value?.trim();
         logger.debug('Quiz title:', title);
         if (!title) {
-            translationManager.showAlert('error', translationManager.getTranslationSync('please_enter_quiz_title'));
+            showErrorAlert('please_enter_quiz_title');
             return;
         }
 
         const questions = this.quizManager.collectQuestions();
         logger.debug('Collected questions:', questions);
         if (questions.length === 0) {
-            translationManager.showAlert('error', translationManager.getTranslationSync('please_add_one_question'));
+            showErrorAlert('please_add_one_question');
             return;
         }
 
@@ -366,22 +366,22 @@ export class QuizGame {
         const name = document.getElementById('player-name')?.value?.trim();
 
         if (!pin || !name) {
-            translationManager.showAlert('error', translationManager.getTranslationSync('please_enter_pin_and_name'));
+            showErrorAlert('please_enter_pin_and_name');
             return;
         }
 
         if (pin.length !== 6 || !/^\d+$/.test(pin)) {
-            translationManager.showAlert('error', translationManager.getTranslationSync('pin_must_be_six_digits'));
+            showErrorAlert('pin_must_be_six_digits');
             return;
         }
 
         if (name.length > LIMITS.MAX_PLAYER_NAME_LENGTH) {
-            translationManager.showAlert('error', translationManager.getTranslationSync('name_max_twenty_chars'));
+            showErrorAlert('name_max_twenty_chars');
             return;
         }
 
         if (!this.socketManager.isConnected()) {
-            translationManager.showAlert('error', translationManager.getTranslationSync('not_connected_refresh'));
+            showErrorAlert('not_connected_refresh');
             return;
         }
 
@@ -440,7 +440,7 @@ export class QuizGame {
     showQuizPreview() {
         const questions = this.quizManager.collectQuestions();
         if (questions.length === 0) {
-            translationManager.showAlert('error', translationManager.getTranslationSync('please_add_one_question'));
+            showErrorAlert('please_add_one_question');
             return;
         }
 
@@ -809,7 +809,7 @@ export class QuizGame {
             if (match) {
                 const currentQ = match[1];
                 const totalQ = match[2];
-                questionCounter.textContent = `${translationManager.getTranslationSync('question')} ${currentQ} ${translationManager.getTranslationSync('of')} ${totalQ}`;
+                questionCounter.textContent = createQuestionCounter(currentQ, totalQ);
             }
         }
         
@@ -821,7 +821,7 @@ export class QuizGame {
             if (match) {
                 const currentQ = match[1];
                 const totalQ = match[2];
-                playerQuestionCounter.textContent = `${translationManager.getTranslationSync('question')} ${currentQ} ${translationManager.getTranslationSync('of')} ${totalQ}`;
+                playerQuestionCounter.textContent = createQuestionCounter(currentQ, totalQ);
             }
         }
         
@@ -832,7 +832,7 @@ export class QuizGame {
             if (match) {
                 const currentQ = match[1];
                 const totalQ = match[2];
-                previewCounter.textContent = `${translationManager.getTranslationSync('question')} ${currentQ} ${translationManager.getTranslationSync('of')} ${totalQ}`;
+                previewCounter.textContent = createQuestionCounter(currentQ, totalQ);
             }
         }
         
@@ -843,7 +843,7 @@ export class QuizGame {
             if (match) {
                 const currentQ = match[1];
                 const totalQ = match[2];
-                previewCounterDisplay.textContent = `${translationManager.getTranslationSync('question')} ${currentQ} ${translationManager.getTranslationSync('of')} ${totalQ}`;
+                previewCounterDisplay.textContent = createQuestionCounter(currentQ, totalQ);
             }
         }
         

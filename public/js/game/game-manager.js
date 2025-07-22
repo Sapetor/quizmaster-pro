@@ -3,7 +3,7 @@
  * Handles game flow, question display, player results, and game state management
  */
 
-import { translationManager } from '../utils/translation-manager.js';
+import { translationManager, createQuestionCounter, getTrueFalseText } from '../utils/translation-manager.js';
 import { TIMING, logger } from '../core/config.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { mathJaxService } from '../utils/mathjax-service.js';
@@ -253,8 +253,8 @@ export class GameManager {
     setupHostTrueFalseOptions(hostOptionsContainer) {
         hostOptionsContainer.innerHTML = `
             <div class="true-false-options">
-                <div class="tf-option true-btn" data-answer="true">${translationManager.getTranslationSync('true')}</div>
-                <div class="tf-option false-btn" data-answer="false">${translationManager.getTranslationSync('false')}</div>
+                <div class="tf-option true-btn" data-answer="true">${getTrueFalseText().true}</div>
+                <div class="tf-option false-btn" data-answer="false">${getTrueFalseText().false}</div>
             </div>
         `;
         hostOptionsContainer.style.display = 'block';
@@ -477,7 +477,7 @@ export class GameManager {
     updateQuestionCounter(current, total) {
         const counterElement = domManager.get('question-counter');
         if (counterElement) {
-            counterElement.textContent = `${translationManager.getTranslationSync('question')} ${current} ${translationManager.getTranslationSync('of')} ${total}`;
+            counterElement.textContent = createQuestionCounter(current, total);
         }
     }
 
@@ -487,7 +487,7 @@ export class GameManager {
     updatePlayerQuestionCounter(current, total) {
         const counterElement = domManager.get('player-question-counter');
         if (counterElement) {
-            counterElement.textContent = `${translationManager.getTranslationSync('question')} ${current} ${translationManager.getTranslationSync('of')} ${total}`;
+            counterElement.textContent = createQuestionCounter(current, total);
         }
     }
 
@@ -1097,7 +1097,7 @@ export class GameManager {
                 if (i === 0) {
                     // True option
                     statItem.style.display = 'flex';
-                    optionLabel.textContent = translationManager.getTranslationSync('true');
+                    optionLabel.textContent = getTrueFalseText().true;
                     // Reset values
                     const statCount = statItem.querySelector('.stat-count');
                     const statFill = statItem.querySelector('.stat-fill');
@@ -1106,7 +1106,7 @@ export class GameManager {
                 } else if (i === 1) {
                     // False option
                     statItem.style.display = 'flex';
-                    optionLabel.textContent = translationManager.getTranslationSync('false');
+                    optionLabel.textContent = getTrueFalseText().false;
                     // Reset values
                     const statCount = statItem.querySelector('.stat-count');
                     const statFill = statItem.querySelector('.stat-fill');

@@ -11,7 +11,7 @@
 
 import { logger } from '../core/config.js';
 
-import { translationManager } from './translation-manager.js';
+import { translationManager, getTrueFalseText } from './translation-manager.js';
 
 export class QuestionUtils {
     constructor() {
@@ -158,7 +158,7 @@ export class QuestionUtils {
                     
                 case 'true-false':
                     const tfCorrect = item.querySelector('.true-false-options .correct-answer').value;
-                    question.options = [translationManager.getTranslationSync('true_display'), translationManager.getTranslationSync('false_display')]; // Display names
+                    question.options = [getTrueFalseText().trueDisplay, getTrueFalseText().falseDisplay]; // Display names
                     question.correctAnswer = tfCorrect; // Will be "true" or "false" (lowercase)
                     questions.push(question);
                     break;

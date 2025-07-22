@@ -1,180 +1,169 @@
 /**
- * Toolbar Styles - Left navigation toolbar and tools
+ * Modern Horizontal Toolbar - Clean and Professional Design
+ * Replaces the old problematic vertical sidebar with a horizontal toolbar
  */
 
-/* Left Toolbar - Scales proportionally with font size */
-.left-toolbar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    height: 100vh;
-    width: calc(85px * var(--global-font-scale));
-    background: var(--glass-medium);
-    backdrop-filter: var(--blur-strong);
-    -webkit-backdrop-filter: var(--blur-strong);
-    border-right: 1px solid var(--glass-border);
-    z-index: 200;
-    transition: var(--transition-smooth);
+/* Horizontal Toolbar - Integrated into Header Controls */
+.horizontal-toolbar {
     display: flex;
-    flex-direction: column;
-    padding: calc(20px * var(--global-font-scale)) calc(8px * var(--global-font-scale));
-    gap: calc(10px * var(--global-font-scale));
-    overflow-y: auto;
-    box-shadow: var(--shadow-lg);
-}
-
-.left-toolbar.collapsed {
-    width: calc(32px * var(--global-font-scale));
-    padding: calc(20px * var(--global-font-scale)) calc(4px * var(--global-font-scale));
-}
-
-.left-toolbar:hover {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-/* Toolbar Sections */
-.toolbar-section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.toolbar-section h5 {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 0;
-    margin-top: 8px;
-    text-align: center;
-    padding: 0 4px;
-}
-
-/* Toolbar Buttons - Scale proportionally */
-.toolbar-btn {
-    width: calc(65px * var(--global-font-scale));
-    height: calc(48px * var(--global-font-scale));
+    align-items: center;
+    gap: 12px;
+    padding: 0;
+    background: transparent;
     border: none;
-    background: var(--glass-light);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius-small);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: var(--transition-smooth);
+    margin: 0;
+    position: relative;
+    z-index: 100;
+}
+
+/* Toolbar Groups - Subtle grouping that matches header controls */
+.toolbar-group {
     display: flex;
-    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    padding: 0 8px;
+    border-radius: var(--border-radius-small);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-right: 8px;
+}
+
+/* Toolbar Buttons - Match theme toggle button styling */
+.horizontal-toolbar .toolbar-btn {
+    background: var(--glass-medium);
+    backdrop-filter: var(--blur-medium);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--text-primary);
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
     align-items: center;
     justify-content: center;
-    padding: calc(6px * var(--global-font-scale)) calc(4px * var(--global-font-scale));
-    backdrop-filter: var(--blur-medium);
-    -webkit-backdrop-filter: var(--blur-medium);
     position: relative;
-    overflow: hidden;
-    margin: 0 auto;
 }
 
-.toolbar-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: var(--accent-primary);
-    transform: translateY(-1px);
-    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.2);
-}
-
-.toolbar-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.1);
-}
-
-.toolbar-btn.active {
+.horizontal-toolbar .toolbar-btn:hover {
     background: var(--accent-primary);
-    border-color: var(--accent-primary);
     color: white;
-    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-primary);
 }
 
-/* Toolbar Icons - Conservative scaling */
-.toolbar-icon {
-    font-size: calc(22px * (1 + (var(--global-font-scale) - 1) * 0.5));
+.horizontal-toolbar .toolbar-btn:active {
+    transform: translateY(0);
+    background: var(--accent-primary);
+    color: white;
+}
+
+.horizontal-toolbar .toolbar-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    opacity: 1;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Toolbar Icons - Proportional scaling */
+.horizontal-toolbar .toolbar-icon {
+    font-size: calc(1.2rem * var(--global-font-scale));
     line-height: 1;
-    margin-bottom: calc(4px * var(--global-font-scale));
+    display: block;
 }
 
-.toolbar-label {
-    font-size: calc(10px * (1 + (var(--global-font-scale) - 1) * 0.3));
-    font-weight: 500;
-    text-align: center;
-    line-height: 1.1;
-    opacity: 0.9;
-    max-width: 100%;
-    white-space: normal;
-    word-break: break-word;
-    hyphens: auto;
-}
-
-/* Toolbar Divider */
-.toolbar-divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.2);
-    margin: 8px 4px;
-}
-
-
-/* Back to Top Button */
-
-/* Toolbar Responsive Behavior */
-@media (max-width: 768px) {
-    .left-toolbar {
-        width: 50px;
-        padding: 15px 6px;
-    }
-    
-    .left-toolbar.collapsed {
-        width: 28px;
-        padding: 15px 3px;
-    }
-    
-    .toolbar-btn {
-        width: 38px;
-        height: 38px;
-    }
-    
-    .toolbar-icon {
-        font-size: 16px;
-    }
-    
-    .toolbar-label {
-        font-size: 7px;
-    }
-    
-    .host-container.with-toolbar {
-        margin-left: 50px;
-        max-width: calc(100vw - 50px);
+/* Hide on mobile (same as old toolbar) */
+@media (max-width: 1024px) {
+    .horizontal-toolbar {
+        display: none !important;
     }
 }
 
-/* Ultra-small screens */
-@media (max-width: 480px) {
-    .left-toolbar {
-        width: 40px;
-        padding: 10px 4px;
+/* Responsive adjustments for smaller screens */
+@media (max-width: 1200px) {
+    .horizontal-toolbar {
+        gap: 16px;
+        padding: 10px 16px;
     }
     
-    .toolbar-btn {
-        width: 32px;
-        height: 32px;
+    .toolbar-group {
+        gap: 6px;
+        padding: 0 8px;
     }
     
-    .toolbar-icon {
-        font-size: 14px;
+    .horizontal-toolbar .toolbar-btn {
+        width: 36px;
+        height: 36px;
     }
     
-    .toolbar-label {
-        display: none;
+    .horizontal-toolbar .toolbar-icon {
+        font-size: calc(1.1rem * var(--global-font-scale));
     }
-    
-    .host-container.with-toolbar {
-        margin-left: 40px;
-        max-width: calc(100vw - 40px);
+}
+
+/* Legacy support - Hide old vertical toolbar completely */
+.left-toolbar {
+    display: none !important;
+}
+
+/* Tooltip styling for better UX */
+.horizontal-toolbar .toolbar-btn[title] {
+    position: relative;
+}
+
+.horizontal-toolbar .toolbar-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 6px 8px;
+    border-radius: var(--border-radius-small);
+    font-size: calc(0.75rem * var(--global-font-scale));
+    white-space: nowrap;
+    z-index: 200;
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+}
+
+/* Header integration - show toolbar only in host editing mode */
+header .horizontal-toolbar {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
     }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Theme-specific adjustments */
+[data-theme="dark"] .horizontal-toolbar {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .toolbar-group {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] .horizontal-toolbar {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .toolbar-group {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.05);
 }

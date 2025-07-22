@@ -28,14 +28,18 @@ export class UIManager {
             this.currentScreen = screenId;
             logger.debug('Successfully switched to screen:', screenId);
             
-            // Show/hide header start button based on screen
+            // Show/hide header elements based on screen
             const headerStartBtn = document.getElementById('start-hosting-header-small');
-            if (headerStartBtn) {
-                if (screenId === 'host-screen') {
-                    headerStartBtn.style.display = 'block';
-                } else {
-                    headerStartBtn.style.display = 'none';
-                }
+            const horizontalToolbar = document.getElementById('horizontal-toolbar');
+            
+            if (screenId === 'host-screen') {
+                // Show toolbar and start button for host screen
+                if (headerStartBtn) headerStartBtn.style.display = 'block';
+                if (horizontalToolbar) horizontalToolbar.style.display = 'flex';
+            } else {
+                // Hide toolbar and start button for other screens
+                if (headerStartBtn) headerStartBtn.style.display = 'none';
+                if (horizontalToolbar) horizontalToolbar.style.display = 'none';
             }
             
             // Translate the new screen

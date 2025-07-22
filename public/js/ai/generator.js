@@ -12,7 +12,7 @@
 
 import { logger } from '../core/config.js';
 
-import { translationManager } from '../utils/translation-manager.js';
+import { translationManager, showAlert } from '../utils/translation-manager.js';
 
 export class AIQuestionGenerator {
     constructor() {
@@ -105,7 +105,7 @@ export class AIQuestionGenerator {
         const difficulty = document.getElementById('difficulty-level')?.value || 'medium';
         
         if (!content) {
-            alert(translationManager.getTranslationSync('please_provide_source_material'));
+            showAlert('please_provide_source_material');
             return;
         }
 
@@ -114,7 +114,7 @@ export class AIQuestionGenerator {
         if (needsApiKey) {
             const apiKey = localStorage.getItem(`ai_api_key_${provider}`);
             if (!apiKey) {
-                alert(translationManager.getTranslationSync('please_enter_api_key'));
+                showAlert('please_enter_api_key');
                 return;
             }
         }
@@ -149,14 +149,14 @@ export class AIQuestionGenerator {
             if (questions && questions.length > 0) {
                 this.processGeneratedQuestions(questions);
                 this.closeModal();
-                alert(translationManager.getTranslationSync('successfully_generated_questions', questions.length));
+                showAlert('successfully_generated_questions', [questions.length]);
             } else {
-                alert(translationManager.getTranslationSync('error_generating'));
+                showAlert('error_generating');
             }
 
         } catch (error) {
             logger.error('Generation error:', error);
-            alert(translationManager.getTranslationSync('error_generating_questions_detail', error.message));
+            showAlert('error_generating_questions_detail', [error.message]);
         } finally {
             // Reset UI
             if (generateBtn) generateBtn.disabled = false;

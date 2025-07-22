@@ -9,7 +9,7 @@
         max-width: min(1800px, 98vw);
     }
     
-    .host-container:not(.split-screen):not(.with-toolbar) .quiz-editor-section {
+    .host-container:not(.split-screen) .quiz-editor-section {
         max-width: 1600px;
     }
 }
@@ -24,10 +24,7 @@
         display: none !important;
     }
     
-    #host-screen.with-toolbar .host-container,
-    #host-screen.with-toolbar.collapsed .host-container {
-        margin-left: 0;
-    }
+    /* Toolbar is now in header - no margin adjustments needed */
     
     .host-container, 
     #host-screen .host-container {
@@ -75,12 +72,12 @@
     
     /* Header Adjustments */
     header h1 {
-        font-size: 2rem;
+        font-size: calc(2rem * var(--global-font-scale));
     }
     
     /* PIN Display */
     .pin-display {
-        font-size: 2.5rem;
+        font-size: calc(2.5rem * var(--global-font-scale));
         letter-spacing: 5px;
     }
     
@@ -201,11 +198,11 @@
     }
     
     header h1 {
-        font-size: 1.8rem;
+        font-size: calc(1.8rem * var(--global-font-scale));
     }
     
     .pin-display {
-        font-size: 2rem;
+        font-size: calc(2rem * var(--global-font-scale));
         letter-spacing: 3px;
     }
     
@@ -255,7 +252,7 @@
         max-width: min(2000px, 95vw);
     }
     
-    .host-container:not(.split-screen):not(.with-toolbar) .quiz-editor-section {
+    .host-container:not(.split-screen) .quiz-editor-section {
         max-width: 1800px;
     }
 }

@@ -20,7 +20,7 @@
 }
 
 .game-pin {
-    font-size: 48px;
+    font-size: calc(48px * var(--global-font-scale));
     font-weight: 700;
     color: var(--accent-primary);
     margin: 20px 0;
@@ -305,53 +305,12 @@
 /* === COLORFUL HOST OPTIONS SYSTEM === */
 /* Using CSS custom properties for DRY principle */
 
-.option-display[data-option="0"] {
-    background: linear-gradient(135deg, var(--option-0-start), var(--option-0-end));
-    border-color: var(--option-0-start);
-    box-shadow: 0 4px 20px var(--option-0-shadow);
-}
-
-.option-display[data-option="1"] {
-    background: linear-gradient(135deg, var(--option-1-start), var(--option-1-end));
-    border-color: var(--option-1-start);
-    box-shadow: 0 4px 20px var(--option-1-shadow);
-}
-
-.option-display[data-option="2"] {
-    background: linear-gradient(135deg, var(--option-2-start), var(--option-2-end));
-    border-color: var(--option-2-start);
-    box-shadow: 0 4px 20px var(--option-2-shadow);
-}
-
-.option-display[data-option="3"] {
-    background: linear-gradient(135deg, var(--option-3-start), var(--option-3-end));
-    border-color: var(--option-3-start);
-    box-shadow: 0 4px 20px var(--option-3-shadow);
-}
-
-.option-display[data-option="4"] {
-    background: linear-gradient(135deg, var(--option-4-start), var(--option-4-end));
-    border-color: var(--option-4-start);
-    box-shadow: 0 4px 20px var(--option-4-shadow);
-}
-
-.option-display[data-option="5"] {
-    background: linear-gradient(135deg, var(--option-5-start), var(--option-5-end));
-    border-color: var(--option-5-start);
-    box-shadow: 0 4px 20px var(--option-5-shadow);
-}
+/* Option colors now consolidated in variables.css */
 
 /* Hover effects using variables */
 .option-display:hover {
     transform: translateY(-3px);
 }
-
-.option-display[data-option="0"]:hover { box-shadow: 0 8px 32px var(--option-0-shadow-hover); }
-.option-display[data-option="1"]:hover { box-shadow: 0 8px 32px var(--option-1-shadow-hover); }
-.option-display[data-option="2"]:hover { box-shadow: 0 8px 32px var(--option-2-shadow-hover); }
-.option-display[data-option="3"]:hover { box-shadow: 0 8px 32px var(--option-3-shadow-hover); }
-.option-display[data-option="4"]:hover { box-shadow: 0 8px 32px var(--option-4-shadow-hover); }
-.option-display[data-option="5"]:hover { box-shadow: 0 8px 32px var(--option-5-shadow-hover); }
 
 /* Correct answer state - enhanced with pulsing */
 .option-display.correct {
@@ -611,35 +570,7 @@
 
 /* Colorful Player Options - Matching Live Preview and Host */
 /* === COLORFUL PLAYER OPTIONS === */
-.player-option[data-option="0"] {
-    background: linear-gradient(135deg, var(--option-0-start), var(--option-0-end));
-    box-shadow: 0 4px 20px var(--option-0-shadow);
-}
-
-.player-option[data-option="1"] {
-    background: linear-gradient(135deg, var(--option-1-start), var(--option-1-end));
-    box-shadow: 0 4px 20px var(--option-1-shadow);
-}
-
-.player-option[data-option="2"] {
-    background: linear-gradient(135deg, var(--option-2-start), var(--option-2-end));
-    box-shadow: 0 4px 20px var(--option-2-shadow);
-}
-
-.player-option[data-option="3"] {
-    background: linear-gradient(135deg, var(--option-3-start), var(--option-3-end));
-    box-shadow: 0 4px 20px var(--option-3-shadow);
-}
-
-.player-option[data-option="4"] {
-    background: linear-gradient(135deg, var(--option-4-start), var(--option-4-end));
-    box-shadow: 0 4px 20px var(--option-4-shadow);
-}
-
-.player-option[data-option="5"] {
-    background: linear-gradient(135deg, var(--option-5-start), var(--option-5-end));
-    box-shadow: 0 4px 20px var(--option-5-shadow);
-}
+/* Player option colors now consolidated in variables.css */
 
 .player-option::before {
     content: '';
@@ -660,12 +591,7 @@
     filter: brightness(1.1);
 }
 
-.player-option[data-option="0"]:hover { box-shadow: 0 8px 32px var(--option-0-shadow-hover); }
-.player-option[data-option="1"]:hover { box-shadow: 0 8px 32px var(--option-1-shadow-hover); }
-.player-option[data-option="2"]:hover { box-shadow: 0 8px 32px var(--option-2-shadow-hover); }
-.player-option[data-option="3"]:hover { box-shadow: 0 8px 32px var(--option-3-shadow-hover); }
-.player-option[data-option="4"]:hover { box-shadow: 0 8px 32px var(--option-4-shadow-hover); }
-.player-option[data-option="5"]:hover { box-shadow: 0 8px 32px var(--option-5-shadow-hover); }
+/* Player option hover colors now consolidated in variables.css */
 
 .player-option:active {
     transform: translateY(-1px) scale(1.01);
@@ -1082,78 +1008,7 @@
 }
 
 /* Colorful Multiple Correct Options - Client Display */
-#player-multiple-correct .checkbox-option[data-option="0"] {
-    background: linear-gradient(135deg, var(--option-0-start), var(--option-0-end)) !important;
-    border-color: var(--option-0-start) !important;
-    box-shadow: 0 4px 20px var(--option-0-shadow) !important;
-    color: white !important;
-}
-
-#player-multiple-correct .checkbox-option[data-option="1"] {
-    background: linear-gradient(135deg, var(--option-1-start), var(--option-1-end)) !important;
-    border-color: var(--option-1-start) !important;
-    box-shadow: 0 4px 20px var(--option-1-shadow) !important;
-    color: white !important;
-}
-
-#player-multiple-correct .checkbox-option[data-option="2"] {
-    background: linear-gradient(135deg, var(--option-2-start), var(--option-2-end)) !important;
-    border-color: var(--option-2-start) !important;
-    box-shadow: 0 4px 20px var(--option-2-shadow) !important;
-    color: white !important;
-}
-
-#player-multiple-correct .checkbox-option[data-option="3"] {
-    background: linear-gradient(135deg, var(--option-3-start), var(--option-3-end)) !important;
-    border-color: var(--option-3-start) !important;
-    box-shadow: 0 4px 20px var(--option-3-shadow) !important;
-    color: white !important;
-}
-
-#player-multiple-correct .checkbox-option[data-option="4"] {
-    background: linear-gradient(135deg, var(--option-4-start), var(--option-4-end)) !important;
-    border-color: var(--option-4-start) !important;
-    box-shadow: 0 4px 20px var(--option-4-shadow) !important;
-    color: white !important;
-}
-
-#player-multiple-correct .checkbox-option[data-option="5"] {
-    background: linear-gradient(135deg, var(--option-5-start), var(--option-5-end)) !important;
-    border-color: var(--option-5-start) !important;
-    box-shadow: 0 4px 20px var(--option-5-shadow) !important;
-    color: white !important;
-}
-
-/* Hover effects for multiple correct options */
-#player-multiple-correct .checkbox-option[data-option="0"]:hover {
-    box-shadow: 0 8px 32px var(--option-0-shadow-hover) !important;
-    transform: translateY(-2px) scale(1.02);
-}
-
-#player-multiple-correct .checkbox-option[data-option="1"]:hover {
-    box-shadow: 0 8px 32px var(--option-1-shadow-hover) !important;
-    transform: translateY(-2px) scale(1.02);
-}
-
-#player-multiple-correct .checkbox-option[data-option="2"]:hover {
-    box-shadow: 0 8px 32px var(--option-2-shadow-hover) !important;
-    transform: translateY(-2px) scale(1.02);
-}
-
-#player-multiple-correct .checkbox-option[data-option="3"]:hover {
-    box-shadow: 0 8px 32px var(--option-3-shadow-hover) !important;
-    transform: translateY(-2px) scale(1.02);
-}
-
-#player-multiple-correct .checkbox-option[data-option="4"]:hover {
-    box-shadow: 0 8px 32px var(--option-4-shadow-hover) !important;
-    transform: translateY(-2px) scale(1.02);
-}
-
-#player-multiple-correct .checkbox-option[data-option="5"]:hover {
-    box-shadow: 0 8px 32px var(--option-5-shadow-hover) !important;
-    transform: translateY(-2px) scale(1.02);
-}
+/* Multiple correct checkbox option colors now consolidated in variables.css */
 
 /* Base styling for multiple correct checkboxes */
 #player-multiple-correct .checkbox-option {
@@ -1203,41 +1058,7 @@
 }
 
 /* === HOST MULTIPLE CORRECT COLORFUL OPTIONS === */
-.option-display[data-multiple="true"][data-option="0"] {
-    background: linear-gradient(135deg, var(--option-0-start), var(--option-0-end));
-    border-color: var(--option-0-start);
-    box-shadow: 0 4px 20px var(--option-0-shadow);
-}
-
-.option-display[data-multiple="true"][data-option="1"] {
-    background: linear-gradient(135deg, var(--option-1-start), var(--option-1-end));
-    border-color: var(--option-1-start);
-    box-shadow: 0 4px 20px var(--option-1-shadow);
-}
-
-.option-display[data-multiple="true"][data-option="2"] {
-    background: linear-gradient(135deg, var(--option-2-start), var(--option-2-end));
-    border-color: var(--option-2-start);
-    box-shadow: 0 4px 20px var(--option-2-shadow);
-}
-
-.option-display[data-multiple="true"][data-option="3"] {
-    background: linear-gradient(135deg, var(--option-3-start), var(--option-3-end));
-    border-color: var(--option-3-start);
-    box-shadow: 0 4px 20px var(--option-3-shadow);
-}
-
-.option-display[data-multiple="true"][data-option="4"] {
-    background: linear-gradient(135deg, var(--option-4-start), var(--option-4-end));
-    border-color: var(--option-4-start);
-    box-shadow: 0 4px 20px var(--option-4-shadow);
-}
-
-.option-display[data-multiple="true"][data-option="5"] {
-    background: linear-gradient(135deg, var(--option-5-start), var(--option-5-end));
-    border-color: var(--option-5-start);
-    box-shadow: 0 4px 20px var(--option-5-shadow);
-}
+/* Host multiple correct option colors now consolidated in variables.css */
 
 /* Colorful Multiple Correct Player Options */
 .player-checkbox-option {
@@ -1264,47 +1085,14 @@
 }
 
 /* === COLORFUL MULTIPLE CORRECT OPTIONS === */
-.player-checkbox-option[data-option="0"] {
-    background: linear-gradient(135deg, var(--option-0-start), var(--option-0-end));
-    box-shadow: 0 4px 20px var(--option-0-shadow);
-}
-
-.player-checkbox-option[data-option="1"] {
-    background: linear-gradient(135deg, var(--option-1-start), var(--option-1-end));
-    box-shadow: 0 4px 20px var(--option-1-shadow);
-}
-
-.player-checkbox-option[data-option="2"] {
-    background: linear-gradient(135deg, var(--option-2-start), var(--option-2-end));
-    box-shadow: 0 4px 20px var(--option-2-shadow);
-}
-
-.player-checkbox-option[data-option="3"] {
-    background: linear-gradient(135deg, var(--option-3-start), var(--option-3-end));
-    box-shadow: 0 4px 20px var(--option-3-shadow);
-}
-
-.player-checkbox-option[data-option="4"] {
-    background: linear-gradient(135deg, var(--option-4-start), var(--option-4-end));
-    box-shadow: 0 4px 20px var(--option-4-shadow);
-}
-
-.player-checkbox-option[data-option="5"] {
-    background: linear-gradient(135deg, var(--option-5-start), var(--option-5-end));
-    box-shadow: 0 4px 20px var(--option-5-shadow);
-}
+/* Player checkbox option colors now consolidated in variables.css */
 
 .player-checkbox-option:hover {
     transform: translateY(-2px) scale(1.01);
     filter: brightness(1.1);
 }
 
-.player-checkbox-option[data-option="0"]:hover { box-shadow: 0 8px 32px var(--option-0-shadow-hover); }
-.player-checkbox-option[data-option="1"]:hover { box-shadow: 0 8px 32px var(--option-1-shadow-hover); }
-.player-checkbox-option[data-option="2"]:hover { box-shadow: 0 8px 32px var(--option-2-shadow-hover); }
-.player-checkbox-option[data-option="3"]:hover { box-shadow: 0 8px 32px var(--option-3-shadow-hover); }
-.player-checkbox-option[data-option="4"]:hover { box-shadow: 0 8px 32px var(--option-4-shadow-hover); }
-.player-checkbox-option[data-option="5"]:hover { box-shadow: 0 8px 32px var(--option-5-shadow-hover); }
+/* Player checkbox option hover colors now consolidated in variables.css */
 
 .player-checkbox-option.selected {
     transform: translateY(-3px) scale(1.02);

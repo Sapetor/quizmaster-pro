@@ -3,7 +3,7 @@
  * Handles quiz operations: save, load, import, export, and quiz management
  */
 
-import { translationManager } from '../utils/translation-manager.js';
+import { translationManager, showErrorAlert, showSuccessAlert } from '../utils/translation-manager.js';
 import { createQuestionElement } from '../utils/question-utils.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { errorHandler } from '../utils/error-handler.js';
@@ -174,13 +174,13 @@ export class QuizManager {
         return await errorBoundary.safeNetworkOperation(async () => {
             const title = document.getElementById('quiz-title')?.value?.trim();
             if (!title) {
-                translationManager.showAlert('error', translationManager.getTranslationSync('please_enter_quiz_title'));
+                showErrorAlert('please_enter_quiz_title');
                 return;
             }
             
             const questions = this.collectQuestions();
             if (questions.length === 0) {
-                translationManager.showAlert('error', translationManager.getTranslationSync('please_add_one_question'));
+                showErrorAlert('please_add_one_question');
                 return;
             }
             
@@ -205,7 +205,7 @@ export class QuizManager {
             const data = await response.json();
             
             if (response.ok) {
-                translationManager.showAlert('success', translationManager.getTranslationSync('quiz_saved_successfully'));
+                showSuccessAlert('quiz_saved_successfully');
                 
                 // Auto-save the current state
                 this.autoSaveQuiz();
@@ -299,7 +299,7 @@ export class QuizManager {
                 if (this.validateQuizData(data)) {
                     await this.populateQuizBuilder(data);
                     this.hideLoadQuizModal();
-                    translationManager.showAlert('success', translationManager.getTranslationSync('quiz_loaded_successfully'));
+                    showSuccessAlert('quiz_loaded_successfully');
                 } else {
                     logger.error('Quiz data appears corrupted:', filename);
                     translationManager.showAlert('error', 'Quiz data appears corrupted. Please try a different quiz.');
@@ -309,7 +309,7 @@ export class QuizManager {
             }
         } catch (error) {
             logger.error('Error loading quiz:', error);
-            translationManager.showAlert('error', translationManager.getTranslationSync('failed_load_quiz'));
+            showErrorAlert('failed_load_quiz');
         }
     }
 
@@ -745,7 +745,7 @@ export class QuizManager {
         if (!file) return;
         
         if (!file.name.endsWith('.json')) {
-            translationManager.showAlert('error', translationManager.getTranslationSync('invalid_file_format'));
+            showErrorAlert('invalid_file_format');
             return;
         }
         
@@ -755,7 +755,7 @@ export class QuizManager {
             
             // Validate quiz data structure
             if (!quizData.title || !quizData.questions || !Array.isArray(quizData.questions)) {
-                translationManager.showAlert('error', translationManager.getTranslationSync('invalid_quiz_format'));
+                showErrorAlert('invalid_quiz_format');
                 return;
             }
             
@@ -768,11 +768,11 @@ export class QuizManager {
             
             // Load the quiz
             await this.populateQuizBuilder(quizData);
-            translationManager.showAlert('success', translationManager.getTranslationSync('quiz_imported_successfully'));
+            showSuccessAlert('quiz_imported_successfully');
             
         } catch (error) {
             logger.error('Error importing quiz:', error);
-            translationManager.showAlert('error', translationManager.getTranslationSync('failed_import_quiz'));
+            showErrorAlert('failed_import_quiz');
         }
         
         // Clear file input
@@ -785,13 +785,13 @@ export class QuizManager {
     async exportQuiz() {
         const title = document.getElementById('quiz-title')?.value?.trim();
         if (!title) {
-            translationManager.showAlert('error', translationManager.getTranslationSync('please_enter_quiz_title'));
+            showErrorAlert('please_enter_quiz_title');
             return;
         }
         
         const questions = this.collectQuestions();
         if (questions.length === 0) {
-            translationManager.showAlert('error', translationManager.getTranslationSync('please_add_one_question'));
+            showErrorAlert('please_add_one_question');
             return;
         }
         
@@ -810,10 +810,10 @@ export class QuizManager {
             link.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
             link.click();
             
-            translationManager.showAlert('success', translationManager.getTranslationSync('quiz_exported_successfully'));
+            showSuccessAlert('quiz_exported_successfully');
         } catch (error) {
             logger.error('Error exporting quiz:', error);
-            translationManager.showAlert('error', translationManager.getTranslationSync('failed_export_quiz'));
+            showErrorAlert('failed_export_quiz');
         }
     }
 

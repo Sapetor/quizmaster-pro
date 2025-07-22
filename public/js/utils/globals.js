@@ -97,12 +97,12 @@ export function openAIGeneratorModal() {
 }
 
 export function toggleToolbar() {
-    logger.debug('Toolbar toggle function called');
-    // Implementation for toolbar toggle
-    const toolbar = document.getElementById('left-toolbar');
+    logger.debug('Horizontal toolbar toggle function called');
+    // Toggle horizontal toolbar visibility
+    const toolbar = document.getElementById('horizontal-toolbar');
     if (toolbar) {
-        const isVisible = toolbar.style.display !== 'none';
-        toolbar.style.display = isVisible ? 'none' : 'block';
+        const isVisible = toolbar.style.display !== 'none' && toolbar.style.display !== '';
+        toolbar.style.display = isVisible ? 'none' : 'flex';
     }
 }
 
@@ -275,236 +275,10 @@ export function setGlobalFontSize(scale) {
     
     const scaleValue = scaleValues[scale] || 1.0;
     
-    // Update CSS custom property for global scaling
+    // Update CSS custom property for global scaling - CSS utility classes handle the rest
     document.documentElement.style.setProperty('--global-font-scale', scaleValue);
     
-    // Force immediate update on visible elements
-    const elementsToUpdate = [
-        // Header elements
-        'header h1',
-        '.language-name',
-        '.language-option',
-        
-        // Editor elements
-        '.quiz-editor-section input',
-        '.quiz-editor-section textarea', 
-        '.question-text',
-        '.option',
-        '#quiz-title',
-        
-        // Main Menu elements
-        '.menu-options .btn',
-        '#host-btn',
-        '#join-btn',
-        
-        // Join Screen elements
-        '.join-container h2',
-        '.browser-container h2',
-        '.input-field',
-        '#game-pin-input',
-        '#player-name',
-        '#join-game',
-        '#browse-games',
-        '#refresh-games',
-        '#back-to-join',
-        '.join-divider span',
-        '.loading-games',
-        
-        // Game Lobby (Host) elements
-        '.lobby-container h2',
-        '.lobby-container h3',
-        '.pin-display',
-        '#game-pin',
-        '#start-game',
-        '.large-start-btn',
-        '.qr-section h3',
-        '.qr-loading',
-        '#game-url',
-        '.game-url',
-        
-        // Player Lobby elements
-        '.player-lobby-container h2',
-        '#player-info',
-        '.lobby-detail-label',
-        '.lobby-detail-value',
-        '.lobby-status',
-        '.lobby-status span',
-        
-        // Games Grid elements
-        '.games-grid .game-card',
-        '.games-grid .game-item',
-        '.games-grid .game-title',
-        '.games-grid .game-info',
-        '.game-card .game-title',
-        '.game-card .game-info',
-        '.game-card .game-detail',
-        '.game-detail',
-        '.game-card .game-detail-icon',
-        '.game-detail-icon',
-        '.game-card .game-players-count',
-        '.game-players-count',
-        '.game-card .game-status',
-        '.game-status',
-        '.game-card .game-pin-display',
-        '.game-pin-display',
-        
-        // Toolbar elements
-        '.toolbar-section h5',
-        '.toolbar-icon',
-        '.toolbar-label',
-        
-        // Quiz Action Buttons (Bottom of Editor)
-        '.quiz-actions .btn',
-        '#add-question',
-        '#save-quiz',
-        '#load-quiz',
-        '#import-quiz',
-        '#preview-quiz',
-        '#start-hosting',
-        
-        // Editor Control Buttons
-        '#toggle-preview',
-        '#ai-generator-btn', 
-        '#toggle-toolbar',
-        
-        // Header Controls
-        '#fullscreen-toggle',
-        '#theme-toggle',
-        '#font-size-toggle',
-        
-        // Toolbar Buttons
-        '.toolbar-btn',
-        
-        // Modal and Dialog Elements
-        '.modal-content h3',
-        '.modal-content h4', 
-        '.modal-header h3',
-        '.modal-body p',
-        '.modal-body label',
-        '.load-quiz-modal h3',
-        '.preview-quiz-modal h3',
-        '.api-key-section small',
-        '.content-type-indicator',
-        '.file-upload-section small',
-        '.generation-status span',
-        
-        // AI Generator Modal
-        '.ai-section label',
-        '.ai-section select', 
-        '.ai-section input',
-        '.ai-section textarea',
-        '#ai-model-select',
-        '#ai-topic',
-        '#ai-difficulty',
-        '#ai-num-questions',
-        '#generation-progress',
-        '.generation-log',
-        
-        // Large Display Elements
-        '.game-pin',
-        '.pin-display',
-        '.final-position',
-        
-        // Small Component Elements
-        '.btn.small',
-        '.language-flag',
-        '.time-input-label',
-        '.game-title',
-        '.game-info',
-        
-        // Responsive Mobile Elements
-        '.device-btn',
-        '.option-label',
-        '.option-count',
-        '.option-percentage',
-        
-        // Base Typography
-        'code',
-        'pre',
-        '.code',
-        'small',
-        '.small-text',
-        
-        // Messages and Notifications
-        '.error-message',
-        '.success-message',
-        '.warning-message',
-        '.info-message',
-        '.toast-message',
-        '.alert-message',
-        '.notification',
-        '.loading-text',
-        '.progress-text',
-        '.status-text',
-        
-        // Form Elements
-        '.form-group label',
-        '.form-control',
-        'select',
-        'option',
-        'input[type="text"]',
-        'input[type="number"]',
-        'input[type="email"]',
-        'input[type="password"]',
-        'textarea',
-        
-        // Back to Top Button
-        '.back-to-top-btn',
-        '#back-to-top',
-        
-        // Game elements  
-        '#current-question',
-        '#player-question-text',
-        '#question-counter',
-        '#player-question-counter',
-        '.player-option',
-        '.tf-option',
-        '.checkbox-option',
-        '#timer',
-        
-        // Preview elements
-        '#preview-question-text',
-        '#preview-question-text-split',
-        '#preview-numeric-input',
-        '#preview-numeric-input-split',
-        
-        // Host and Client specific elements
-        '.answer-stats h3',
-        '.option-label',
-        '.answer-option-label',
-        '.answer-feedback-text',
-        '.screen-title',
-        '.submit-button',
-        '.game-button',
-        '.option-display',
-        
-        // Leaderboard and Results
-        '.leaderboard-container h2',
-        '.player-final-container h2',
-        '.final-results h3',
-        '.player-rank h3',
-        '.final-score',
-        '.top-players h3',
-        '.result-text',
-        '#feedback-message',
-        '#score-display'
-    ];
-    
-    elementsToUpdate.forEach(selector => {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(element => {
-            // Force recalculation by briefly removing and re-adding the style
-            const currentFontSize = window.getComputedStyle(element).fontSize;
-            element.style.fontSize = `calc(${currentFontSize} * ${scaleValue} / var(--global-font-scale, 1))`;
-            
-            // Small delay to ensure the change takes effect
-            setTimeout(() => {
-                element.style.fontSize = `calc(1rem * ${scaleValue})`;
-            }, 10);
-        });
-    });
-    
-    // Update the icon in the header
+    // Update the font size icon in the header
     const fontIcon = document.getElementById('font-size-icon');
     if (fontIcon) {
         const icons = {
@@ -516,56 +290,11 @@ export function setGlobalFontSize(scale) {
         fontIcon.textContent = icons[scale] || 'A';
     }
     
-    // Force toolbar container adjustments
-    const toolbarButtons = document.querySelectorAll('.toolbar-btn');
-    toolbarButtons.forEach(button => {
-        // Adjust container dimensions to accommodate scaled text
-        button.style.height = `calc(48px * ${scaleValue})`;
-        button.style.width = `calc(65px * ${scaleValue})`;
-        button.style.padding = `calc(6px * ${scaleValue}) calc(4px * ${scaleValue})`;
-    });
-    
-    // Force toolbar width adjustment
-    const toolbar = document.querySelector('.left-toolbar');
-    if (toolbar) {
-        toolbar.style.width = `calc(85px * ${scaleValue})`;
-    }
-    
-    // Force host container margin adjustment
-    const hostContainer = document.querySelector('.host-container.with-toolbar');
-    if (hostContainer) {
-        hostContainer.style.marginLeft = `calc(85px * ${scaleValue})`;
-        hostContainer.style.maxWidth = `calc(100vw - 85px * ${scaleValue})`;
-    }
-    
-    // Force placeholder text scaling
-    const inputs = document.querySelectorAll('input, textarea');
-    inputs.forEach(input => {
-        // Update placeholder font size by temporarily clearing and resetting
-        if (input.placeholder) {
-            const placeholder = input.placeholder;
-            input.placeholder = '';
-            setTimeout(() => {
-                input.placeholder = placeholder;
-            }, 10);
-        }
-    });
-    
-    // Save preference
+    // Save preference to localStorage
     localStorage.setItem('globalFontSize', scale);
     currentFontScale = scale;
     
-    // Debug logging
-    logger.debug('Global font size updated:', { 
-        scale, 
-        scaleValue, 
-        elementsFound: elementsToUpdate.map(sel => ({
-            selector: sel,
-            count: document.querySelectorAll(sel).length
-        }))
-    });
-    
-    logger.debug('Global font size updated', { scale, scaleValue });
+    logger.debug('Global font size updated via CSS custom properties:', { scale, scaleValue });
 }
 
 export function updatePreviewSpacing(value) {

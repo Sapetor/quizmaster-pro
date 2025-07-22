@@ -172,6 +172,7 @@
     <div class="container">
         <header>
             <h1 data-translate="app_title">QuizMaster Pro</h1>
+            
             <div class="header-controls">
                 <div class="language-selector">
                     <div id="language-selector" class="language-dropdown" onclick="toggleLanguageDropdown()">
@@ -222,6 +223,48 @@
                 </div>
                 <button id="start-hosting-header-small" class="btn primary small start-game-header" style="display: none;" data-translate-title="start_quiz_tooltip">🚀 <span data-translate="start_game">Start Game</span></button>
                 
+                <!-- Horizontal Toolbar (shown only in host editing mode) -->
+                <div class="horizontal-toolbar" id="horizontal-toolbar" style="display: none;">
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" id="toolbar-add-question" data-translate-title="add_question_tooltip">
+                            <span class="toolbar-icon">➕</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-save" data-translate-title="save_quiz_tooltip">
+                            <span class="toolbar-icon">💾</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-load" data-translate-title="load_quiz_tooltip">
+                            <span class="toolbar-icon">📂</span>
+                        </button>
+                    </div>
+                    
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" id="toolbar-ai-gen" data-translate-title="ai_generator_tooltip">
+                            <span class="toolbar-icon">🤖</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-preview" data-translate-title="toggle_preview_tooltip">
+                            <span class="toolbar-icon">👁️</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-import" data-translate-title="import_quiz_tooltip">
+                            <span class="toolbar-icon">📥</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-export" data-translate-title="export_quiz_tooltip">
+                            <span class="toolbar-icon">📤</span>
+                        </button>
+                    </div>
+                    
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" id="toolbar-top" data-translate-title="back_to_top_tooltip">
+                            <span class="toolbar-icon">⬆️</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-bottom" data-translate-title="go_to_bottom_tooltip">
+                            <span class="toolbar-icon">⬇️</span>
+                        </button>
+                        <button class="toolbar-btn" id="toolbar-preview-settings" data-translate-title="preview_settings_tooltip">
+                            <span class="toolbar-icon">⚙️</span>
+                        </button>
+                    </div>
+                </div>
+                
                 <!-- Global Font Size Control -->
                 <div class="font-size-control">
                     <button id="font-size-toggle" class="theme-toggle" data-translate-title="adjust_font_size" onclick="toggleGlobalFontSize();" title="Font Size">
@@ -241,66 +284,8 @@
             </div>
         </div>
 
-        <div id="host-screen" class="screen with-toolbar">
-            <!-- Left Toolbar -->
-            <div class="left-toolbar" id="left-toolbar">
-                <div class="toolbar-section">
-                    <h5 data-translate="quick_actions">Quick Actions</h5>
-                    <button class="toolbar-btn" id="toolbar-add-question" data-translate-title="add_question_tooltip">
-                        <span class="toolbar-icon">➕</span>
-                        <span class="toolbar-label" data-translate="add_question">Add Q</span>
-                    </button>
-                    <button class="toolbar-btn" id="toolbar-save" data-translate-title="save_quiz_tooltip">
-                        <span class="toolbar-icon">💾</span>
-                        <span class="toolbar-label" data-translate="save_quiz">Save</span>
-                    </button>
-                    <button class="toolbar-btn" id="toolbar-load" data-translate-title="load_quiz_tooltip">
-                        <span class="toolbar-icon">📂</span>
-                        <span class="toolbar-label" data-translate="load_quiz">Load</span>
-                    </button>
-                    <button class="toolbar-btn" id="toolbar-load-last" title="Quick Debug: Load quiz and start game automatically">
-                        <span class="toolbar-icon">⚡</span>
-                        <span class="toolbar-label">Debug</span>
-                    </button>
-                </div>
-                
-                <div class="toolbar-section">
-                    <h5 data-translate="tools">Tools</h5>
-                    <button class="toolbar-btn" id="toolbar-ai-gen" data-translate-title="ai_generator_tooltip">
-                        <span class="toolbar-icon">🤖</span>
-                        <span class="toolbar-label" data-translate="ai_generator">AI Gen</span>
-                    </button>
-                    <button class="toolbar-btn" id="toolbar-preview" data-translate-title="toggle_preview_tooltip">
-                        <span class="toolbar-icon">📱</span>
-                        <span class="toolbar-label" data-translate="preview">Preview</span>
-                    </button>
-                    <button class="toolbar-btn" id="toolbar-import" data-translate-title="import_file_tooltip">
-                        <span class="toolbar-icon">📥</span>
-                        <span class="toolbar-label" data-translate="import_quiz">Import</span>
-                    </button>
-                </div>
-                
-                <div class="toolbar-section">
-                    <h5 data-translate="navigate">Navigate</h5>
-                    <button class="toolbar-btn" id="toolbar-top" data-translate-title="back_to_top_tooltip">
-                        <span class="toolbar-icon">⬆️</span>
-                        <span class="toolbar-label" data-translate="top">Top</span>
-                    </button>
-                    <button class="toolbar-btn" id="toolbar-bottom" data-translate-title="go_to_bottom_tooltip">
-                        <span class="toolbar-icon">⬇️</span>
-                        <span class="toolbar-label" data-translate="bottom">Bottom</span>
-                    </button>
-                </div>
-                
-                <div class="toolbar-section">
-                    <h5 data-translate="settings">Settings</h5>
-                    <button class="toolbar-btn" id="toolbar-preview-settings" data-translate-title="preview_settings_tooltip">
-                        <span class="toolbar-icon">⚙️</span>
-                        <span class="toolbar-label" data-translate="preview">Preview</span>
-                    </button>
-                </div>
-                
-            </div>
+        <div id="host-screen" class="screen">
+            <!-- Old vertical toolbar removed - now using horizontal toolbar in header -->
             
             <div class="host-container" id="host-container">
                 <div class="quiz-editor-section" id="quiz-editor-section">

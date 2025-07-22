@@ -4,7 +4,7 @@
  * Extracted from game-manager.js for better separation of concerns
  */
 
-import { translationManager } from '../../utils/translation-manager.js';
+import { translationManager, getTranslation, getTrueFalseText } from '../../utils/translation-manager.js';
 import { logger } from '../../core/config.js';
 
 export class PlayerInteractionManager {
@@ -82,7 +82,7 @@ export class PlayerInteractionManager {
         const selectedAnswers = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
         
         if (selectedAnswers.length === 0) {
-            this.showError(translationManager.getTranslationSync('please_select_at_least_one'));
+            this.showError(getTranslation('please_select_at_least_one'));
             return;
         }
         
@@ -102,7 +102,7 @@ export class PlayerInteractionManager {
         
         const answer = parseFloat(numericInput.value);
         if (isNaN(answer)) {
-            this.showError(translationManager.getTranslationSync('please_enter_valid_number'));
+            this.showError(getTranslation('please_enter_valid_number'));
             return;
         }
         
@@ -160,7 +160,7 @@ export class PlayerInteractionManager {
                 ? answer.map(a => `${translationManager.getOptionLetter(a)}: ${gameState.currentQuestion?.options?.[a] || a}`).join(', ')
                 : answer;
         } else if (questionType === 'true-false') {
-            return answer === true || answer === 'true' ? translationManager.getTranslationSync('true') : translationManager.getTranslationSync('false');
+            const tfText = getTrueFalseText(); return answer === true || answer === 'true' ? tfText.true : tfText.false;
         } else {
             return answer.toString();
         }

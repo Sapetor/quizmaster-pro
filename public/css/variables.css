@@ -84,14 +84,14 @@
     --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
     
     /* === TYPOGRAPHY SCALE === */
-    --text-xs: 0.75rem;
-    --text-sm: 0.875rem;
-    --text-base: 1rem;
-    --text-lg: 1.125rem;
-    --text-xl: 1.25rem;
-    --text-2xl: 1.5rem;
-    --text-3xl: 1.875rem;
-    --text-4xl: 2.25rem;
+    --text-xs: calc(0.75rem * var(--global-font-scale));
+    --text-sm: calc(0.875rem * var(--global-font-scale));
+    --text-base: calc(1rem * var(--global-font-scale));
+    --text-lg: calc(1.125rem * var(--global-font-scale));
+    --text-xl: calc(1.25rem * var(--global-font-scale));
+    --text-2xl: calc(1.5rem * var(--global-font-scale));
+    --text-3xl: calc(1.875rem * var(--global-font-scale));
+    --text-4xl: calc(2.25rem * var(--global-font-scale));
     
     /* Line Heights */
     --leading-tight: 1.25;
@@ -198,6 +198,22 @@
     --bg-glass: rgba(255, 255, 255, 0.8);
     --text-contrast: #1e293b;
     --bg-contrast: rgba(255, 255, 255, 0.95);
+    
+    /* Form Elements */
+    --input-bg: rgba(0, 0, 0, 0.03);
+    --input-border: rgba(0, 0, 0, 0.15);
+    --input-color: #1e293b;
+    --input-placeholder: rgba(0, 0, 0, 0.5);
+    
+    /* Checkbox Options */
+    --checkbox-bg: rgba(0, 0, 0, 0.03);
+    --checkbox-border: rgba(0, 0, 0, 0.15);
+    --checkbox-color: #1e293b;
+    
+    /* Language Dropdown */
+    --dropdown-bg: rgba(255, 255, 255, 0.95);
+    --dropdown-border: rgba(0, 0, 0, 0.1);
+    --dropdown-color: #1e293b;
 }
 
 [data-theme="dark"] {
@@ -230,6 +246,22 @@
     --bg-glass: rgba(255,255,255,0.08);
     --text-contrast: #f0f6fc;
     --bg-contrast: rgba(13,17,23,0.92);
+    
+    /* Form Elements */
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --input-border: rgba(255, 255, 255, 0.15);
+    --input-color: #f8fafc;
+    --input-placeholder: rgba(255, 255, 255, 0.6);
+    
+    /* Checkbox Options */
+    --checkbox-bg: rgba(255, 255, 255, 0.05);
+    --checkbox-border: rgba(255, 255, 255, 0.2);
+    --checkbox-color: #f8fafc;
+    
+    /* Language Dropdown */
+    --dropdown-bg: rgba(255, 255, 255, 0.08);
+    --dropdown-border: rgba(255, 255, 255, 0.15);
+    --dropdown-color: #f8fafc;
 }
 
 /* Desktop Preview Ratios */
@@ -398,6 +430,194 @@ body {
 .pixel-48 { 
     font-size: calc(48px * var(--global-font-scale)) !important; 
 }
+
+/* ===== OPTION COLOR SYSTEM ===== */
+/* Consolidated option styling using CSS custom properties for maintainability */
+
+/* Option A - Blue (nth-child(1), data-option="0") */
+.option-display[data-option="0"],
+.player-option[data-option="0"],
+.player-checkbox-option[data-option="0"],
+#player-multiple-correct .checkbox-option[data-option="0"],
+.option-display[data-multiple="true"][data-option="0"],
+.checkbox-option.preview-checkbox[data-option="0"] {
+    background: linear-gradient(135deg, var(--option-0-start), var(--option-0-end));
+    border-color: var(--option-0-start);
+    box-shadow: 0 4px 20px var(--option-0-shadow);
+    color: white;
+}
+
+.option-display[data-option="0"]:hover,
+.player-option[data-option="0"]:hover,
+.player-checkbox-option[data-option="0"]:hover,
+#player-multiple-correct .checkbox-option[data-option="0"]:hover,
+.checkbox-option.preview-checkbox[data-option="0"]:hover {
+    box-shadow: 0 8px 32px var(--option-0-shadow-hover);
+}
+
+/* Option B - Green (nth-child(2), data-option="1") */
+.option-display[data-option="1"],
+.player-option[data-option="1"],
+.player-checkbox-option[data-option="1"],
+#player-multiple-correct .checkbox-option[data-option="1"],
+.option-display[data-multiple="true"][data-option="1"],
+.checkbox-option.preview-checkbox[data-option="1"] {
+    background: linear-gradient(135deg, var(--option-1-start), var(--option-1-end));
+    border-color: var(--option-1-start);
+    box-shadow: 0 4px 20px var(--option-1-shadow);
+    color: white;
+}
+
+.option-display[data-option="1"]:hover,
+.player-option[data-option="1"]:hover,
+.player-checkbox-option[data-option="1"]:hover,
+#player-multiple-correct .checkbox-option[data-option="1"]:hover,
+.checkbox-option.preview-checkbox[data-option="1"]:hover {
+    box-shadow: 0 8px 32px var(--option-1-shadow-hover);
+}
+
+/* Option C - Orange (nth-child(3), data-option="2") */
+.option-display[data-option="2"],
+.player-option[data-option="2"],
+.player-checkbox-option[data-option="2"],
+#player-multiple-correct .checkbox-option[data-option="2"],
+.option-display[data-multiple="true"][data-option="2"],
+.checkbox-option.preview-checkbox[data-option="2"] {
+    background: linear-gradient(135deg, var(--option-2-start), var(--option-2-end));
+    border-color: var(--option-2-start);
+    box-shadow: 0 4px 20px var(--option-2-shadow);
+    color: white;
+}
+
+.option-display[data-option="2"]:hover,
+.player-option[data-option="2"]:hover,
+.player-checkbox-option[data-option="2"]:hover,
+#player-multiple-correct .checkbox-option[data-option="2"]:hover,
+.checkbox-option.preview-checkbox[data-option="2"]:hover {
+    box-shadow: 0 8px 32px var(--option-2-shadow-hover);
+}
+
+/* Option D - Red (nth-child(4), data-option="3") */
+.option-display[data-option="3"],
+.player-option[data-option="3"],
+.player-checkbox-option[data-option="3"],
+#player-multiple-correct .checkbox-option[data-option="3"],
+.option-display[data-multiple="true"][data-option="3"],
+.checkbox-option.preview-checkbox[data-option="3"] {
+    background: linear-gradient(135deg, var(--option-3-start), var(--option-3-end));
+    border-color: var(--option-3-start);
+    box-shadow: 0 4px 20px var(--option-3-shadow);
+    color: white;
+}
+
+.option-display[data-option="3"]:hover,
+.player-option[data-option="3"]:hover,
+.player-checkbox-option[data-option="3"]:hover,
+#player-multiple-correct .checkbox-option[data-option="3"]:hover,
+.checkbox-option.preview-checkbox[data-option="3"]:hover {
+    box-shadow: 0 8px 32px var(--option-3-shadow-hover);
+}
+
+/* Option E - Purple (nth-child(5), data-option="4") */
+.option-display[data-option="4"],
+.player-option[data-option="4"],
+.player-checkbox-option[data-option="4"],
+#player-multiple-correct .checkbox-option[data-option="4"],
+.option-display[data-multiple="true"][data-option="4"],
+.checkbox-option.preview-checkbox[data-option="4"] {
+    background: linear-gradient(135deg, var(--option-4-start), var(--option-4-end));
+    border-color: var(--option-4-start);
+    box-shadow: 0 4px 20px var(--option-4-shadow);
+    color: white;
+}
+
+.option-display[data-option="4"]:hover,
+.player-option[data-option="4"]:hover,
+.player-checkbox-option[data-option="4"]:hover,
+#player-multiple-correct .checkbox-option[data-option="4"]:hover,
+.checkbox-option.preview-checkbox[data-option="4"]:hover {
+    box-shadow: 0 8px 32px var(--option-4-shadow-hover);
+}
+
+/* Option F - Cyan (nth-child(6), data-option="5") */
+.option-display[data-option="5"],
+.player-option[data-option="5"],
+.player-checkbox-option[data-option="5"],
+#player-multiple-correct .checkbox-option[data-option="5"],
+.option-display[data-multiple="true"][data-option="5"],
+.checkbox-option.preview-checkbox[data-option="5"] {
+    background: linear-gradient(135deg, var(--option-5-start), var(--option-5-end));
+    border-color: var(--option-5-start);
+    box-shadow: 0 4px 20px var(--option-5-shadow);
+    color: white;
+}
+
+.option-display[data-option="5"]:hover,
+.player-option[data-option="5"]:hover,
+.player-checkbox-option[data-option="5"]:hover,
+#player-multiple-correct .checkbox-option[data-option="5"]:hover,
+.checkbox-option.preview-checkbox[data-option="5"]:hover {
+    box-shadow: 0 8px 32px var(--option-5-shadow-hover);
+}
+
+/* Special handling for multiple correct checkboxes with !important overrides */
+#player-multiple-correct .checkbox-option[data-option="0"] {
+    background: linear-gradient(135deg, var(--option-0-start), var(--option-0-end)) !important;
+    border-color: var(--option-0-start) !important;
+    box-shadow: 0 4px 20px var(--option-0-shadow) !important;
+    color: white !important;
+}
+
+#player-multiple-correct .checkbox-option[data-option="1"] {
+    background: linear-gradient(135deg, var(--option-1-start), var(--option-1-end)) !important;
+    border-color: var(--option-1-start) !important;
+    box-shadow: 0 4px 20px var(--option-1-shadow) !important;
+    color: white !important;
+}
+
+#player-multiple-correct .checkbox-option[data-option="2"] {
+    background: linear-gradient(135deg, var(--option-2-start), var(--option-2-end)) !important;
+    border-color: var(--option-2-start) !important;
+    box-shadow: 0 4px 20px var(--option-2-shadow) !important;
+    color: white !important;
+}
+
+#player-multiple-correct .checkbox-option[data-option="3"] {
+    background: linear-gradient(135deg, var(--option-3-start), var(--option-3-end)) !important;
+    border-color: var(--option-3-start) !important;
+    box-shadow: 0 4px 20px var(--option-3-shadow) !important;
+    color: white !important;
+}
+
+#player-multiple-correct .checkbox-option[data-option="4"] {
+    background: linear-gradient(135deg, var(--option-4-start), var(--option-4-end)) !important;
+    border-color: var(--option-4-start) !important;
+    box-shadow: 0 4px 20px var(--option-4-shadow) !important;
+    color: white !important;
+}
+
+#player-multiple-correct .checkbox-option[data-option="5"] {
+    background: linear-gradient(135deg, var(--option-5-start), var(--option-5-end)) !important;
+    border-color: var(--option-5-start) !important;
+    box-shadow: 0 4px 20px var(--option-5-shadow) !important;
+    color: white !important;
+}
+
+#player-multiple-correct .checkbox-option[data-option="0"]:hover,
+#player-multiple-correct .checkbox-option[data-option="1"]:hover,
+#player-multiple-correct .checkbox-option[data-option="2"]:hover,
+#player-multiple-correct .checkbox-option[data-option="3"]:hover,
+#player-multiple-correct .checkbox-option[data-option="4"]:hover,
+#player-multiple-correct .checkbox-option[data-option="5"]:hover {
+    transform: translateY(-2px) scale(1.02);
+}
+
+#player-multiple-correct .checkbox-option[data-option="0"]:hover { box-shadow: 0 8px 32px var(--option-0-shadow-hover) !important; }
+#player-multiple-correct .checkbox-option[data-option="1"]:hover { box-shadow: 0 8px 32px var(--option-1-shadow-hover) !important; }
+#player-multiple-correct .checkbox-option[data-option="2"]:hover { box-shadow: 0 8px 32px var(--option-2-shadow-hover) !important; }
+#player-multiple-correct .checkbox-option[data-option="3"]:hover { box-shadow: 0 8px 32px var(--option-3-shadow-hover) !important; }
+#player-multiple-correct .checkbox-option[data-option="4"]:hover { box-shadow: 0 8px 32px var(--option-4-shadow-hover) !important; }
+#player-multiple-correct .checkbox-option[data-option="5"]:hover { box-shadow: 0 8px 32px var(--option-5-shadow-hover) !important; }
 
 /* ===== OPTIMIZATION COMPLETE ===== */
 /* Font scaling system optimized from ~90 individual calc() declarations

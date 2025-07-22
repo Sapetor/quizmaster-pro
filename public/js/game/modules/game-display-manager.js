@@ -4,7 +4,7 @@
  * Extracted from game-manager.js for better separation of concerns
  */
 
-import { translationManager } from '../../utils/translation-manager.js';
+import { translationManager, getTranslation } from '../../utils/translation-manager.js';
 import { logger } from '../../core/config.js';
 import { MathRenderer } from '../../utils/math-renderer.js';
 import { mathJaxService } from '../../utils/mathjax-service.js';
@@ -32,7 +32,7 @@ export class GameDisplayManager {
     updateQuestionCounter(current, total) {
         const counterElement = document.getElementById('question-counter');
         if (counterElement) {
-            counterElement.textContent = translationManager.getTranslationSync('question_x_of_y', [current, total]);
+            counterElement.textContent = getTranslation('question_x_of_y', [current, total]);
             logger.debug('Question counter updated:', current, 'of', total);
         }
     }
@@ -43,7 +43,7 @@ export class GameDisplayManager {
     updatePlayerQuestionCounter(current, total) {
         const counterElement = document.getElementById('player-question-counter');
         if (counterElement) {
-            counterElement.textContent = translationManager.getTranslationSync('question_x_of_y', [current, total]);
+            counterElement.textContent = getTranslation('question_x_of_y', [current, total]);
             logger.debug('Player question counter updated:', current, 'of', total);
         }
     }
@@ -132,8 +132,8 @@ export class GameDisplayManager {
         feedback.innerHTML = `
             <div class="feedback-content">
                 <div class="feedback-icon">✓</div>
-                <div class="feedback-text">${translationManager.getTranslationSync('answer_submitted')}</div>
-                <div class="feedback-answer">${translationManager.getTranslationSync('your_answer')}: ${answer}</div>
+                <div class="feedback-text">${getTranslation('answer_submitted')}</div>
+                <div class="feedback-answer">${getTranslation('your_answer')}: ${answer}</div>
             </div>
         `;
         

@@ -3,7 +3,7 @@
  * Handles theme management, settings persistence, and application preferences
  */
 
-import { translationManager } from '../utils/translation-manager.js';
+import { translationManager, getThemeToggleTitles } from '../utils/translation-manager.js';
 import { logger } from '../core/config.js';
 
 export class SettingsManager {
@@ -76,7 +76,7 @@ export class SettingsManager {
             body.setAttribute('data-theme', 'dark');
             if (themeToggle) {
                 themeToggle.textContent = '🌙'; // Moon represents dark mode
-                themeToggle.title = translationManager.getTranslationSync('switch_light_mode');
+                themeToggle.title = getThemeToggleTitles().switchToLight;
             }
         } else {
             body.classList.add('light-theme');
@@ -84,7 +84,7 @@ export class SettingsManager {
             body.setAttribute('data-theme', 'light');
             if (themeToggle) {
                 themeToggle.textContent = '☀️'; // Sun represents light mode
-                themeToggle.title = translationManager.getTranslationSync('switch_dark_mode');
+                themeToggle.title = getThemeToggleTitles().switchToDark;
             }
         }
         
@@ -334,10 +334,10 @@ export class SettingsManager {
         if (themeToggle) {
             if (this.settings.theme === 'dark') {
                 themeToggle.textContent = '🌙'; // Moon represents dark mode
-                themeToggle.title = translationManager.getTranslationSync('switch_light_mode');
+                themeToggle.title = getThemeToggleTitles().switchToLight;
             } else {
                 themeToggle.textContent = '☀️'; // Sun represents light mode
-                themeToggle.title = translationManager.getTranslationSync('switch_dark_mode');
+                themeToggle.title = getThemeToggleTitles().switchToDark;
             }
         }
         

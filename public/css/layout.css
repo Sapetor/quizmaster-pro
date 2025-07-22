@@ -82,10 +82,11 @@ header {
     min-height: calc(100vh - 65px); /* Account for sticky header */
 }
 
-.host-container:not(.split-screen):not(.with-toolbar) .quiz-editor-section {
+.host-container:not(.split-screen) .quiz-editor-section {
     max-width: 1400px;
     width: 100%;
     padding: 0;
+    margin: 0 auto;
 }
 
 /* Split Screen Layout */
@@ -111,11 +112,11 @@ header {
     grid-column: 2;
 }
 
-/* Adjust split-screen positioning when toolbar is active */
-.host-container.split-screen.with-toolbar {
-    margin-left: 95px; /* Small gap from toolbar */
-    width: calc(100% - 95px); /* Use remaining space after toolbar */
-    max-width: calc(100vw - 105px); /* Prevent overflow */
+/* Split-screen mode now uses full width */
+.host-container.split-screen {
+    margin-left: 0;
+    width: 100%;
+    max-width: 100vw;
 }
 
 /* Quiz Editor Section */
@@ -250,66 +251,9 @@ header {
     opacity: 1;
 }
 
-/* Toolbar Layout Integration - Move content right when toolbar is visible (but not in split-screen) */
-.host-screen .host-container.with-toolbar:not(.split-screen) {
-    margin-left: calc(90px * (1 + (var(--global-font-scale) - 1) * 0.5)); /* Conservative scaling */
-    max-width: calc(100vw - 200px * (1 + (var(--global-font-scale) - 1) * 0.5)); /* Conservative scaling */
-    transition: all 0.3s ease;
-}
+/* Old toolbar layout calculations removed - now using horizontal toolbar */
 
-/* When toolbar is visible and not in split-screen, override centering */
-.host-container.with-toolbar:not(.split-screen) {
-    display: flex;
-    justify-content: center;
-    padding: 15px;
-    margin-left: calc(90px * (1 + (var(--global-font-scale) - 1) * 0.5)); /* Conservative scaling */
-    margin-right: auto;
-}
-
-.host-container.with-toolbar .quiz-editor-section {
-    padding-left: 10px;
-    transition: all 0.3s ease;
-}
-
-/* Specific rule for toolbar + non-split-screen mode */
-.host-container.with-toolbar:not(.split-screen) .quiz-editor-section {
-    max-width: calc(1400px - 90px * (1 + (var(--global-font-scale) - 1) * 0.5)); /* Conservative scaling */
-    width: 100%;
-    padding: 0;
-    padding-left: 10px;
-}
-
-/* Move header when toolbar is active - conservative scaling for visual balance */
-body:has(.host-container.with-toolbar) header {
-    margin-left: calc(90px * (1 + (var(--global-font-scale) - 1) * 0.5)) !important;
-    padding-left: 10px !important;
-    transition: all 0.3s ease;
-}
-
-.host-container.with-toolbar.collapsed {
-    margin-left: 32px;
-    max-width: calc(100vw - 32px);
-}
-
-/* Left Toolbar Layout */
-.left-toolbar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    height: 100vh;
-    width: 60px;
-    z-index: 200;
-    display: flex;
-    flex-direction: column;
-    padding: 20px 8px;
-    gap: 15px;
-    overflow-y: auto;
-}
-
-.left-toolbar.collapsed {
-    width: 32px;
-    padding: 20px 4px;
-}
+/* Legacy styles removed - using consolidated host container rules above */
 
 /* Menu and Navigation Layouts */
 .menu-options {
@@ -608,19 +552,7 @@ body:has(.host-container.with-toolbar) header {
     overflow: hidden;
 }
 
-/* When no toolbar is visible */
-#host-screen:not(.with-toolbar) {
-    grid-template-columns: 1fr;
-    grid-template-areas: "content";
-}
-
-#host-screen:not(.with-toolbar) .left-toolbar {
-    display: none;
-}
-
-#host-screen:not(.with-toolbar) .host-container {
-    margin-left: 0;
-}
+/* Toolbar is now in header - no need for grid layout adjustments */
 
 /* Split Screen Layout - Enhanced */
 .host-container.split-screen {
@@ -636,11 +568,4 @@ body:has(.host-container.with-toolbar) header {
     position: relative;
 }
 
-/* When not in split-screen, center the editor */
-.host-container:not(.split-screen):not(.with-toolbar) {
-    display: flex;
-    justify-content: center;
-    padding: 15px;
-    max-width: 1400px;
-    margin: 0 auto;
-}
+/* When not in split-screen, center the editor - simplified without toolbar logic */

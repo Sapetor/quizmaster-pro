@@ -243,16 +243,16 @@ class TranslationManager {
      * Get option letter translation
      */
     getOptionLetter(index) {
-        const letters = ['option_letter_a', 'option_letter_b', 'option_letter_c', 'option_letter_d'];
+        const letters = ['option_letter_a', 'option_letter_b', 'option_letter_c', 'option_letter_d', 'option_letter_e', 'option_letter_f'];
         const key = letters[index] || 'option_letter_a';
         const result = this.getTranslationSync(key);
         
         // Debug logging for option letters
         if (result === key) {
             logger.warn(`Option letter translation failed for ${key}, returning fallback`);
-            // Return simple fallback letters
-            const fallbackLetters = ['A', 'B', 'C', 'D'];
-            return fallbackLetters[index] || 'A';
+            // Return simple fallback letters for all 6 options
+            const fallbackLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
+            return fallbackLetters[index] || String.fromCharCode(65 + index);
         }
         
         return result;
@@ -500,6 +500,57 @@ export async function changeLanguage(languageCode) {
  */
 export function getOptionLetter(index) {
     return String.fromCharCode(65 + index); // A, B, C, D...
+}
+
+// Common utility functions for translation patterns
+/**
+ * Show translated alert with error styling
+ */
+export function showErrorAlert(key, params = []) {
+    translationManager.showAlert('error', translationManager.getTranslationSync(key, params));
+}
+
+/**
+ * Show translated alert with success styling
+ */
+export function showSuccessAlert(key, params = []) {
+    translationManager.showAlert('success', translationManager.getTranslationSync(key, params));
+}
+
+/**
+ * Create question counter text "Question X of Y"
+ */
+export function createQuestionCounter(current, total) {
+    return `${translationManager.getTranslationSync('question')} ${current} ${translationManager.getTranslationSync('of')} ${total}`;
+}
+
+/**
+ * Get True/False button text
+ */
+export function getTrueFalseText() {
+    return {
+        true: translationManager.getTranslationSync('true'),
+        false: translationManager.getTranslationSync('false'),
+        trueDisplay: translationManager.getTranslationSync('true_display'),
+        falseDisplay: translationManager.getTranslationSync('false_display')
+    };
+}
+
+/**
+ * Get theme toggle titles
+ */
+export function getThemeToggleTitles() {
+    return {
+        switchToLight: translationManager.getTranslationSync('switch_light_mode'),
+        switchToDark: translationManager.getTranslationSync('switch_dark_mode')
+    };
+}
+
+/**
+ * Show plain alert with translated text
+ */
+export function showAlert(key, params = []) {
+    alert(translationManager.getTranslationSync(key, params));
 }
 
 export default translationManager;
