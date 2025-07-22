@@ -87,8 +87,13 @@ export class PreviewManager {
                 toggleBtn.setAttribute('data-translate', 'close_live_preview');
             }
             
-            // Initialize preview
-            this.initializeSplitPreview();
+            // Initialize preview with async support
+            this.initializeSplitPreview().catch(error => {
+                logger.warn('Preview initialization error:', error);
+                // Fallback to synchronous initialization
+                this.setupSplitPreviewEventListeners();
+                this.updateSplitPreview();
+            });
             // initializeSplitPreview() already calls updateSplitPreview() which calls renderMathJaxForPreview()
             
             // Initialize drag functionality
@@ -148,7 +153,7 @@ export class PreviewManager {
     /**
      * Initialize split preview system
      */
-    initializeSplitPreview() {
+    async initializeSplitPreview() {
         logger.debug('Initializing split preview system');
         
         // Reset preview state completely
@@ -160,6 +165,17 @@ export class PreviewManager {
         clearTimeout(this.autoScrollTimeout);
         
         logger.debug('Preview state reset - currentPreviewQuestion:', this.currentPreviewQuestion);
+        
+        // Ensure translation manager is ready before setting up preview
+        if (translationManager && !translationManager.loadedTranslations.has(translationManager.currentLanguage)) {
+            logger.debug('Waiting for translation manager to be ready...');
+            try {
+                await translationManager.ensureLanguageLoaded(translationManager.currentLanguage);
+                logger.debug('Translation manager ready for preview');
+            } catch (error) {
+                logger.warn('Translation manager not ready, using fallbacks:', error);
+            }
+        }
         
         this.setupSplitPreviewEventListeners();
         this.updateSplitPreview();
@@ -546,7 +562,12 @@ export class PreviewManager {
         const previewElement = document.getElementById('preview-question-text-split');
         logger.debug('🔍 Preview element found:', !!previewElement, 'Question data:', !!data.question);
         
-        if (previewElement && data.question) {
+        if (!previewElement) {
+            logger.error('❌ Preview question text element not found! DOM structure may be incorrect.');
+            return;
+        }
+        
+        if (data.question) {
             // FOUC Prevention: Detect LaTeX content
             const hasLatex = data.question && (data.question.includes('$') || data.question.includes('\\(') || 
                             data.question.includes('\\[') || data.question.includes('\\frac') ||
@@ -581,6 +602,12 @@ export class PreviewManager {
             }
             
             previewElement.dataset.hasContent = 'true';
+        } else {
+            // Show fallback text when no question data
+            previewElement.style.opacity = '1';
+            previewElement.innerHTML = translationManager.getTranslationSync('enter_question_preview') || 'Enter question text to see preview...';
+            previewElement.dataset.hasContent = 'false';
+            logger.debug('🔤 Showing fallback text for empty question');
         }
         
         // Handle image with data URI fix
@@ -795,7 +822,8 @@ export class PreviewManager {
                             option.includes('\\[') || option.includes('\\frac') ||
                             option.includes('\\sqrt') || option.includes('\\sum'));
             
-            const formattedContent = `${translationManager.getOptionLetter(index)}: ${this.formatCodeBlocks(option)}`;
+            const optionLetter = translationManager.getOptionLetter(index) || String.fromCharCode(65 + index);
+            const formattedContent = `${optionLetter}: ${this.formatCodeBlocks(option)}`;
             
             if (hasLatex) {
                 // Hide option during LaTeX processing to prevent blinking
@@ -858,7 +886,8 @@ export class PreviewManager {
                             option.includes('\\[') || option.includes('\\frac') ||
                             option.includes('\\sqrt') || option.includes('\\sum'));
             
-            const formattedContent = `<input type="checkbox" ${isCorrect ? 'checked' : ''} disabled> ${translationManager.getOptionLetter(index)}: ${this.formatCodeBlocks(option)}`;
+            const optionLetter = translationManager.getOptionLetter(index) || String.fromCharCode(65 + index);
+            const formattedContent = `<input type="checkbox" ${isCorrect ? 'checked' : ''} disabled> ${optionLetter}: ${this.formatCodeBlocks(option)}`;
             
             if (hasLatex) {
                 // Hide option during LaTeX processing to prevent blinking
@@ -929,8 +958,13 @@ export class PreviewManager {
                 falseOption.classList.add('correct-preview');
             }
             
-            trueOption.textContent = `${translationManager.getOptionLetter(0)}: ${translationManager.getTranslationSync('true')}`;
-            falseOption.textContent = `${translationManager.getOptionLetter(1)}: ${translationManager.getTranslationSync('false')}`;
+            const trueOptionLetter = translationManager.getOptionLetter(0) || 'A';
+            const falseOptionLetter = translationManager.getOptionLetter(1) || 'B';
+            const trueText = translationManager.getTranslationSync('true') || 'True';
+            const falseText = translationManager.getTranslationSync('false') || 'False';
+            
+            trueOption.textContent = `${trueOptionLetter}: ${trueText}`;
+            falseOption.textContent = `${falseOptionLetter}: ${falseText}`;
             
             logger.debug('✅ True/False buttons updated successfully');
         } else {
