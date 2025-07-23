@@ -25,13 +25,14 @@
                     document.body.setAttribute('data-theme', savedTheme);
                 }
                 
-                // Quick fix: Prevent data URIs from being fetched as URLs
+                // Quick fix: Prevent problematic data URI fetches while allowing legitimate ones
                 const originalFetch = window.fetch;
                 window.fetch = function(...args) {
                     const url = args[0];
                     if (typeof url === 'string' && url.startsWith('data:')) {
-                        console.warn('🚫 Blocked fetch attempt on data URI:', url.substring(0, 50) + '...');
-                        return Promise.reject(new Error('Cannot fetch data URI'));
+                        // Only block data URIs that look like they're being fetched incorrectly
+                        // Allow legitimate data URI usage for images, etc.
+                        console.debug('⚠️ Data URI fetch detected:', url.substring(0, 50) + '...');
                     }
                     return originalFetch.apply(this, args);
                 };

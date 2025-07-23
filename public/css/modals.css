@@ -295,3 +295,45 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
 }
 
+/* Dark theme modal select dropdowns */
+[data-theme="dark"] .modal select {
+    background: #1c2128;
+    color: #f8fafc;
+    border: 1px solid #30363d;
+}
+
+[data-theme="dark"] .modal select option {
+    background: #1c2128;
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .modal select option:hover,
+[data-theme="dark"] .modal select option:focus,
+[data-theme="dark"] .modal select option:checked {
+    background: #2d333b;
+    color: #ffffff;
+}
+
+/* AI Generator specific styling */
+[data-theme="dark"] #ai-provider,
+[data-theme="dark"] #ollama-model,
+[data-theme="dark"] #difficulty-level {
+    background: #1c2128 !important;
+    color: #f8fafc !important;
+    border: 1px solid #30363d !important;
+}
+
+[data-theme="dark"] #ai-provider option,
+[data-theme="dark"] #ollama-model option,
+[data-theme="dark"] #difficulty-level option {
+    background: #1c2128 !important;
+    color: #f8fafc !important;
+}
+
+[data-theme="dark"] #ai-provider option:hover,
+[data-theme="dark"] #ollama-model option:hover,
+[data-theme="dark"] #difficulty-level option:hover {
+    background: #2d333b !important;
+    color: #ffffff !important;
+}
+

@@ -340,29 +340,33 @@ app.post('/api/claude/generate', async (req, res) => {
       return res.status(400).json({ error: 'Prompt and API key are required' });
     }
     
-    const { default: fetch } = await import('node-fetch');
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // Import node-fetch for HTTP requests
+    const { default: fetchFunction } = await import('node-fetch');
+    
+    const requestBody = {
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 1024,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    };
+    
+    const response = await fetchFunction('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 1024,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Claude API error:', response.status, errorText);
+      console.error('Claude API error:', response.status);
       
       let errorMessage = `Claude API error: ${response.status}`;
       if (response.status === 401) {
@@ -382,8 +386,11 @@ app.post('/api/claude/generate', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    console.error('Claude proxy error:', error);
-    res.status(500).json({ error: 'Failed to connect to Claude API' });
+    console.error('Claude proxy error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to connect to Claude API',
+      details: error.message
+    });
   }
 });
 
@@ -695,23 +702,13 @@ function endGame(game, io) {
   // CRITICAL: Hide manual advancement button immediately when game ends
   io.to(game.hostId).emit('hide-next-button');
   
-  // Debug: Log player scores before final leaderboard generation
-  game.players.forEach((player, playerId) => {
-    console.log(`  Player ${player.name} (${playerId}): ${player.score} points`);
-  });
-  
   game.updateLeaderboard();
-  
-  // Debug: Log final leaderboard
-  console.log('Final leaderboard:', game.leaderboard.map(p => ({ name: p.name, score: p.score })));
-  
   game.saveResults();
   
   // Add longer delay to ensure all previous events are processed completely
   setTimeout(() => {
     // Double-check game is still finished (race condition protection)
     if (game.gameState === 'finished') {
-      console.log('Sending final leaderboard to clients:', game.leaderboard.map(p => ({ name: p.name, score: p.score })));
       io.to(`game-${game.pin}`).emit('game-end', {
         finalLeaderboard: game.leaderboard
       });
@@ -741,10 +738,6 @@ function startQuestion(game, io) {
     image: question.image || '',
     timeLimit: timeLimit
   };
-  
-  console.log('Question data being sent:', JSON.stringify(questionData, null, 2));
-  console.log('Raw question object:', JSON.stringify(question, null, 2));
-  
   io.to(`game-${game.pin}`).emit('question-start', questionData);
 
   game.questionTimer = setTimeout(() => {
@@ -805,10 +798,8 @@ function startQuestion(game, io) {
 }
 
 function autoAdvanceGame(game, io) {
-  console.log(`Starting game ${game.pin} with ${game.quiz.questions.length} questions`);
   setTimeout(() => {
     if (game.gameState === 'finished') {
-      console.log(`Game ${game.pin} already finished, skipping`);
       return;
     }
     
@@ -821,7 +812,6 @@ function autoAdvanceGame(game, io) {
 }
 
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id, 'from:', socket.handshake.address);
 
   socket.on('host-join', (data) => {
     // Check if request is from local machine or local network (but allow all for now due to NAT/proxy issues)
@@ -857,38 +847,25 @@ io.on('connection', (socket) => {
       games.delete(existingGame.pin);
     }
     
-    console.log('Creating game with quiz data:', JSON.stringify(quiz, null, 2));
     const game = new Game(socket.id, quiz);
     games.set(game.pin, game);
-    
-    console.log(`Game created with PIN: ${game.pin}, Manual Advancement: ${game.manualAdvancement}`);
-    console.log('Game quiz questions:', JSON.stringify(game.quiz.questions, null, 2));
     
     socket.join(`game-${game.pin}`);
     socket.emit('game-created', {
       pin: game.pin,
       gameId: game.id
     });
-    
-    console.log(`Game created with PIN: ${game.pin} from IP: ${clientIP}`);
   });
 
   socket.on('player-join', (data) => {
-    console.log('Player join attempt received:', data);
-    console.log('Data type:', typeof data);
-    
     if (!data || typeof data !== 'object') {
-      console.log('Invalid request data - not object');
       socket.emit('error', { message: 'Invalid request data' });
       return;
     }
     
     const { pin, name } = data;
-    console.log('Extracted PIN:', pin, 'Name:', name);
-    console.log('PIN type:', typeof pin, 'Name type:', typeof name);
     
     if (!pin || !name || typeof pin !== 'string' || typeof name !== 'string') {
-      console.log('PIN and name validation failed');
       socket.emit('error', { message: 'PIN and name are required' });
       return;
     }
@@ -899,19 +876,13 @@ io.on('connection', (socket) => {
     }
     
     const game = games.get(pin);
-    console.log('Looking for game with PIN:', pin);
-    console.log('Game found:', !!game);
-    console.log('Available games:', Array.from(games.keys()));
     
     if (!game) {
-      console.log('Game not found for PIN:', pin);
       socket.emit('error', { message: 'Game not found' });
       return;
     }
     
-    console.log('Game state:', game.gameState);
     if (game.gameState !== 'lobby') {
-      console.log('Game already started, state:', game.gameState);
       socket.emit('error', { message: 'Game already started' });
       return;
     }
@@ -934,17 +905,13 @@ io.on('connection', (socket) => {
       players: currentPlayers
     });
     
-    console.log(`Player ${name} joined game ${pin}`);
   });
 
   socket.on('start-game', () => {
     const game = Array.from(games.values()).find(g => g.hostId === socket.id);
     if (!game) {
-      console.log('DEBUG: start-game called but no game found for host:', socket.id);
       return;
     }
-
-    console.log(`Starting game ${game.pin} with ${game.quiz.questions.length} questions, manual advancement: ${game.manualAdvancement}`);
     
     game.gameState = 'starting';
     game.startTime = new Date().toISOString();
@@ -1058,18 +1025,14 @@ io.on('connection', (socket) => {
   socket.on('next-question', () => {
     const game = Array.from(games.values()).find(g => g.hostId === socket.id);
     if (!game || game.isAdvancing) {
-      console.log(`Ignoring next-question: game=${!!game}, isAdvancing=${game?.isAdvancing}`);
       return;
     }
     
     // CRITICAL: Prevent manual advancement if game is already finished
     if (game.gameState === 'finished') {
-      console.log(`Ignoring next-question for finished game ${game.pin}`);
       io.to(game.hostId).emit('hide-next-button');
       return;
     }
-
-    console.log(`Manual next-question for game ${game.pin}, currentQuestion=${game.currentQuestion}`);
 
     // Set advancing flag to prevent race conditions
     game.isAdvancing = true;
@@ -1088,7 +1051,6 @@ io.on('connection', (socket) => {
       startQuestion(game, io);
     } else {
       // No more questions - end the game
-      console.log(`Manual advancement: No more questions for game ${game.pin}, ending`);
       endGame(game, io);
     }
     
@@ -1129,7 +1091,7 @@ io.on('connection', (socket) => {
       }
     });
 
-    console.log('User disconnected:', socket.id);
+    // User disconnected
   });
 });
 

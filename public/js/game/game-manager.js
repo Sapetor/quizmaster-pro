@@ -190,11 +190,14 @@ export class GameManager {
         // Update question counter for host
         this.updateQuestionCounter(data.questionNumber, data.totalQuestions);
         
-        // Update host question content
-        this.updateHostQuestionContent(data, elements.hostQuestionElement);
-        
-        // Update host options content
-        this.updateHostOptionsContent(data, elements.hostOptionsContainer);
+        // Add delay to ensure screen transition completes before MathJax rendering
+        setTimeout(() => {
+            // Update host question content
+            this.updateHostQuestionContent(data, elements.hostQuestionElement);
+            
+            // Update host options content
+            this.updateHostOptionsContent(data, elements.hostOptionsContainer);
+        }, 150); // Allow screen transition to complete
     }
 
     /**
@@ -211,9 +214,9 @@ export class GameManager {
         // Handle question image for host
         this.updateQuestionImage(data, 'question-image-display');
         
-        // Render MathJax for host question
-        mathJaxService.renderElement(hostQuestionElement, 100).then(() => {
-            logger.debug('MathJax question rendering completed');
+        // Render MathJax for host question with appropriate delay
+        mathJaxService.renderElement(hostQuestionElement, 200).then(() => {
+            logger.debug('MathJax question rendering completed for host');
         }).catch(err => {
             logger.error('MathJax question render error:', err);
         });
@@ -239,9 +242,9 @@ export class GameManager {
         // Translate any dynamic content in the options container
         translationManager.translateContainer(hostOptionsContainer);
         
-        // Render MathJax for host options
-        mathJaxService.renderElement(hostOptionsContainer, 150).then(() => {
-            logger.debug('MathJax options rendering completed');
+        // Render MathJax for host options with appropriate delay
+        mathJaxService.renderElement(hostOptionsContainer, 250).then(() => {
+            logger.debug('MathJax options rendering completed for host');
         }).catch(err => {
             logger.error('MathJax options render error:', err);
         });
@@ -307,14 +310,17 @@ export class GameManager {
         // Update question counter for player
         this.updatePlayerQuestionCounter(data.questionNumber, data.totalQuestions);
         
-        // Update player question content
-        this.updatePlayerQuestionContent(data, elements.questionElement);
-        
         // Reset selected answer for new question
         this.selectedAnswer = null;
         
-        // Update player options based on question type
-        this.updatePlayerOptions(data, optionsContainer);
+        // Add delay to ensure screen transition completes before MathJax rendering
+        setTimeout(() => {
+            // Update player question content
+            this.updatePlayerQuestionContent(data, elements.questionElement);
+            
+            // Update player options based on question type
+            this.updatePlayerOptions(data, optionsContainer);
+        }, 150); // Match host delay for consistency
     }
 
     /**
@@ -329,8 +335,8 @@ export class GameManager {
         // Handle question image for player
         this.updateQuestionImage(data, 'player-question-image');
         
-        // Render MathJax for player question
-        mathJaxService.renderElement(questionElement, 100).then(() => {
+        // Render MathJax for player question with appropriate delay
+        mathJaxService.renderElement(questionElement, 200).then(() => {
             logger.debug('MathJax rendering completed for player question');
         }).catch(err => {
             logger.error('MathJax player question render error:', err);
@@ -353,8 +359,8 @@ export class GameManager {
             this.setupPlayerNumericOptions(data, optionsContainer);
         }
         
-        // Render MathJax for player options
-        mathJaxService.renderElement(optionsContainer, 150).then(() => {
+        // Render MathJax for player options with appropriate delay
+        mathJaxService.renderElement(optionsContainer, 250).then(() => {
             logger.debug('MathJax rendering completed for player options');
         }).catch(err => {
             logger.error('MathJax player options render error:', err);

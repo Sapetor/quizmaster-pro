@@ -530,7 +530,6 @@ export class QuizGame {
             { id: 'toolbar-add-question', handler: () => this.addQuestionAndScrollToIt() },
             { id: 'toolbar-save', handler: () => this.quizManager.saveQuiz() },
             { id: 'toolbar-load', handler: () => this.quizManager.showLoadQuizModal() },
-            { id: 'toolbar-load-last', handler: () => this.loadLastQuiz() },
             { id: 'toolbar-preview', handler: () => this.togglePreviewMode() },
             { id: 'toolbar-ai-gen', handler: () => this.openAIGeneratorModal() },
             { id: 'toolbar-import', handler: () => this.quizManager.importQuiz() },

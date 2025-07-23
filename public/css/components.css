@@ -169,6 +169,38 @@ textarea::placeholder {
     color: var(--input-placeholder);
 }
 
+/* Select dropdown options styling - especially important for dark mode */
+select option {
+    background: var(--input-bg);
+    color: var(--input-color);
+    padding: 8px 12px;
+}
+
+/* Dark theme specific select option styling */
+[data-theme="dark"] select option {
+    background: #1c2128;
+    color: #f8fafc;
+    border: none;
+}
+
+[data-theme="dark"] select option:hover,
+[data-theme="dark"] select option:focus {
+    background: #2d333b;
+    color: #ffffff;
+}
+
+/* Light theme select option styling for contrast */
+[data-theme="light"] select option {
+    background: #ffffff;
+    color: #1e293b;
+}
+
+[data-theme="light"] select option:hover,
+[data-theme="light"] select option:focus {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
 /* === MODERN GLASS CARDS === */
 .card {
     background: var(--glass-medium);

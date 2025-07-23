@@ -20,21 +20,22 @@ export class SoundManager {
     }
 
     initializeSounds() {
-        // Create AudioContext for sound effects
+        // Don't create AudioContext immediately - wait for user interaction
         this.audioContext = null;
         this.soundsEnabled = true;
+        this.audioContextClass = null;
         
         try {
-            let AudioContextClass = window.AudioContext;
-            if (!AudioContextClass && 'webkitAudioContext' in window) {
-                AudioContextClass = window.webkitAudioContext;
-            }
-            
-            if (AudioContextClass) {
-                this.audioContext = new AudioContextClass();
+            // Check if Web Audio API is supported without creating context
+            if (window.AudioContext) {
+                this.audioContextClass = window.AudioContext;
+            } else if (window.webkitAudioContext) {
+                this.audioContextClass = window.webkitAudioContext;
             } else {
                 throw new Error('Web Audio API not supported');
             }
+            
+            logger.debug('Web Audio API supported, AudioContext will be created on first use');
         } catch (e) {
             logger.debug('Web Audio API not supported');
             this.soundsEnabled = false;
@@ -42,7 +43,21 @@ export class SoundManager {
     }
 
     playSound(frequency, duration, type = 'sine') {
-        if (!this.soundsEnabled || !this.audioContext) return;
+        if (!this.soundsEnabled) return;
+        
+        // Create AudioContext on first use (after user interaction)
+        if (!this.audioContext && this.audioContextClass) {
+            try {
+                this.audioContext = new this.audioContextClass();
+                logger.debug('AudioContext created on first use');
+            } catch (e) {
+                logger.debug('Failed to create AudioContext on first use:', e);
+                this.soundsEnabled = false;
+                return;
+            }
+        }
+        
+        if (!this.audioContext) return;
         
         try {
             // Validate parameters
@@ -75,7 +90,13 @@ export class SoundManager {
     }
 
     playVictorySound() {
-        if (!this.soundsEnabled || !this.audioContext) return;
+        if (!this.soundsEnabled) return;
+        
+        // Ensure AudioContext exists before playing
+        if (!this.audioContext && this.audioContextClass) {
+            this.playSound(0, 0); // This will create the context
+        }
+        if (!this.audioContext) return;
         
         try {
             // Play a victory melody
@@ -99,7 +120,13 @@ export class SoundManager {
     }
 
     playGameEndingFanfare() {
-        if (!this.soundsEnabled || !this.audioContext) return;
+        if (!this.soundsEnabled) return;
+        
+        // Ensure AudioContext exists before playing
+        if (!this.audioContext && this.audioContextClass) {
+            this.playSound(0, 0); // This will create the context
+        }
+        if (!this.audioContext) return;
         
         try {
             // Play an elaborate game ending fanfare (triumph-like melody)
@@ -167,14 +194,13 @@ export class SoundManager {
 
     // Utility methods
     isEnabled() {
-        return this.soundsEnabled && this.audioContext !== null;
+        return this.soundsEnabled && (this.audioContext !== null || this.audioContextClass !== null);
     }
 
     enable() {
         this.soundsEnabled = true;
-        if (!this.audioContext) {
-            this.initializeSounds();
-        }
+        // AudioContext will be created on first sound play
+        // This prevents the browser warning about AudioContext not being allowed to start
     }
 
     disable() {

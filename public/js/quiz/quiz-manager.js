@@ -818,6 +818,60 @@ export class QuizManager {
     }
 
     /**
+     * Add a generated question from AI generator
+     * @param {Object} questionData - Generated question data
+     * @param {boolean} showAlerts - Whether to show success alerts
+     */
+    addGeneratedQuestion(questionData, showAlerts = true) {
+        
+        const questionElements = document.querySelectorAll('.question-item');
+        let targetElement = null;
+        
+        // Check if there's an empty default question we can replace
+        const firstQuestion = questionElements[0];
+        if (firstQuestion && this.isEmptyQuestion(firstQuestion)) {
+            targetElement = firstQuestion;
+        } else {
+            // Add a new question
+            if (window.game && window.game.addQuestion) {
+                window.game.addQuestion();
+                const updatedQuestionElements = document.querySelectorAll('.question-item');
+                targetElement = updatedQuestionElements[updatedQuestionElements.length - 1];
+            } else {
+                logger.error('addQuestion function not available');
+                return;
+            }
+        }
+        
+        if (targetElement) {
+            // Populate the question data
+            setTimeout(() => {
+                this.populateQuestionElement(targetElement, questionData);
+            }, 100);
+        }
+    }
+
+    /**
+     * Check if a question element is empty/default
+     * @param {HTMLElement} questionElement - Question DOM element to check
+     * @returns {boolean} - True if question is empty
+     */
+    isEmptyQuestion(questionElement) {
+        const questionText = questionElement.querySelector('.question-text')?.value?.trim();
+        const options = questionElement.querySelectorAll('.option');
+        let hasEmptyOptions = true;
+        
+        // Check if all options are empty
+        options.forEach(option => {
+            if (option.value?.trim()) {
+                hasEmptyOptions = false;
+            }
+        });
+        
+        return !questionText && hasEmptyOptions;
+    }
+
+    /**
      * Auto-save quiz to localStorage
      */
     autoSaveQuiz() {

@@ -84,11 +84,13 @@ export class MathJaxService {
                     logger.debug(`🔍 Element has LaTeX content: ${hasLatexContent}`);
                     
                     if (window.MathJax?.typesetPromise) {
-                        // Windows-specific: Clear existing MathJax elements before re-rendering
+                        // Clear existing MathJax elements before re-rendering (Windows-specific fix)
                         if (this.isWindows) {
                             const existingMath = element.querySelectorAll('mjx-container');
-                            logger.debug(`🔍 Windows: Clearing ${existingMath.length} existing MathJax elements`);
-                            existingMath.forEach(mjx => mjx.remove());
+                            if (existingMath.length > 0) {
+                                logger.debug(`🔍 Windows: Clearing ${existingMath.length} existing MathJax elements`);
+                                existingMath.forEach(mjx => mjx.remove());
+                            }
                         }
                         
                         logger.debug(`🔍 Calling MathJax.typesetPromise on element with content: ${element.innerHTML.substring(0, 200)}...`);

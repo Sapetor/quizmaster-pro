@@ -21,7 +21,7 @@ export class AIQuestionGenerator {
                 name: "Ollama (Local)",
                 apiKey: false,
                 endpoint: "http://localhost:11434/api/generate",
-                models: ["qwen2.5:7b", "qwen2.5:3b", "llama3.1:8b", "phi3:mini"]
+                models: ["llama3.2:latest", "codellama:13b-instruct", "codellama:7b-instruct", "codellama:7b-code"]
             },
             huggingface: {
                 name: "Hugging Face",
@@ -43,6 +43,7 @@ export class AIQuestionGenerator {
             }
         };
         
+        this.isGenerating = false; // Flag to prevent multiple simultaneous generations
         this.initializeEventListeners();
     }
 
@@ -96,16 +97,40 @@ export class AIQuestionGenerator {
                 this.closeModal();
             });
         }
+
+        // API key input change listener
+        const apiKeyInput = document.getElementById('ai-api-key');
+        if (apiKeyInput) {
+            apiKeyInput.addEventListener('blur', (e) => {
+                const provider = document.getElementById('ai-provider')?.value;
+                if (provider && e.target.value.trim()) {
+                    localStorage.setItem(`ai_api_key_${provider}`, e.target.value.trim());
+                    logger.debug(`API key saved for provider: ${provider}`);
+                }
+            });
+        }
     }
 
     async generateQuestions() {
+        // Prevent multiple simultaneous generations
+        if (this.isGenerating) {
+            logger.debug('Generation already in progress, ignoring request');
+            return;
+        }
+        
+        this.isGenerating = true;
+        
         const provider = document.getElementById('ai-provider')?.value;
         const content = document.getElementById('source-content')?.value?.trim();
         const questionCount = parseInt(document.getElementById('question-count')?.value) || 1;
         const difficulty = document.getElementById('difficulty-level')?.value || 'medium';
         
+        // Store the requested count for use throughout the process
+        this.requestedQuestionCount = questionCount;
+        
         if (!content) {
             showAlert('please_provide_source_material');
+            this.isGenerating = false;
             return;
         }
 
@@ -115,6 +140,7 @@ export class AIQuestionGenerator {
             const apiKey = localStorage.getItem(`ai_api_key_${provider}`);
             if (!apiKey) {
                 showAlert('please_enter_api_key');
+                this.isGenerating = false;
                 return;
             }
         }
@@ -147,16 +173,29 @@ export class AIQuestionGenerator {
             }
 
             if (questions && questions.length > 0) {
-                this.processGeneratedQuestions(questions);
+                // Double-check the count one more time before processing
+                if (questions.length > this.requestedQuestionCount) {
+                    questions = questions.slice(0, this.requestedQuestionCount);
+                }
+                
+                // Process questions without showing alerts from within
+                this.processGeneratedQuestions(questions, false); // Pass flag to suppress alerts
                 this.closeModal();
-                showAlert('successfully_generated_questions', [questions.length]);
+                
+                // Show single success message after processing is complete
+                setTimeout(() => {
+                    showAlert('successfully_generated_questions', [questions.length]);
+                    this.isGenerating = false; // Reset flag after success message
+                }, 150);
             } else {
                 showAlert('error_generating');
+                this.isGenerating = false;
             }
 
         } catch (error) {
             logger.error('Generation error:', error);
             showAlert('error_generating_questions_detail', [error.message]);
+            this.isGenerating = false;
         } finally {
             // Reset UI
             if (generateBtn) generateBtn.disabled = false;
@@ -170,17 +209,33 @@ export class AIQuestionGenerator {
         
         let basePrompt = '';
         if (language === 'es') {
-            basePrompt = `Crea ${questionCount} preguntas de opción múltiple sobre el siguiente contenido. Dificultad: ${difficulty}.`;
+            basePrompt = `Crea EXACTAMENTE ${questionCount} pregunta${questionCount === 1 ? '' : 's'} de opción múltiple sobre el siguiente contenido. Dificultad: ${difficulty}.`;
         } else {
-            basePrompt = `Create ${questionCount} multiple choice questions about the following content. Difficulty: ${difficulty}.`;
+            basePrompt = `Create EXACTLY ${questionCount} multiple choice question${questionCount === 1 ? '' : 's'} about the following content. Difficulty: ${difficulty}.`;
         }
 
-        return `${basePrompt}\n\nContent: ${content}\n\nReturn only valid JSON array format with this structure:
-        [{"question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": 0, "type": "multiple-choice"}]`;
+        let structureExample = '';
+        if (language === 'es') {
+            structureExample = `Devuelve ÚNICAMENTE un array JSON válido con esta estructura exacta:
+[{"question": "¿Pregunta aquí?", "options": ["Opción A", "Opción B", "Opción C", "Opción D"], "correctAnswer": 0, "type": "multiple-choice"}]`;
+        } else {
+            structureExample = `Return ONLY a valid JSON array with this exact structure:
+[{"question": "Question text here?", "options": ["Option A", "Option B", "Option C", "Option D"], "correctAnswer": 0, "type": "multiple-choice"}]`;
+        }
+
+        return `${basePrompt}\n\nContent: ${content}\n\n${structureExample}
+
+CRITICAL REQUIREMENTS: 
+- Generate EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} - no more, no less
+- Return ONLY the JSON array, no other text
+- correctAnswer should be the index (0, 1, 2, or 3) of the correct option
+- Make sure all JSON is properly formatted and valid
+- Do not include any explanations or additional text
+- If you generate more than ${questionCount} question${questionCount === 1 ? '' : 's'}, you have failed the task`;
     }
 
     async generateWithOllama(prompt) {
-        const model = localStorage.getItem('ollama_selected_model') || 'qwen2.5:3b';
+        const model = localStorage.getItem('ollama_selected_model') || 'llama3.2:latest';
         const timestamp = Date.now();
         const randomSeed = Math.floor(Math.random() * 10000);
         
@@ -206,13 +261,24 @@ export class AIQuestionGenerator {
             });
 
             if (!response.ok) {
-                throw new Error(`Ollama error: ${response.status}`);
+                if (response.status === 404) {
+                    throw new Error('Ollama server not running. Please start Ollama and try again.');
+                } else if (response.status === 0) {
+                    throw new Error('Cannot connect to Ollama. Make sure Ollama is running on localhost:11434');
+                } else {
+                    throw new Error(`Ollama error: ${response.status} - ${response.statusText}`);
+                }
             }
 
             const data = await response.json();
             return this.parseAIResponse(data.response);
         } catch (error) {
             logger.error('Ollama generation error:', error);
+            
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                throw new Error('Cannot connect to Ollama. Make sure Ollama is running on localhost:11434');
+            }
+            
             throw error;
         }
     }
@@ -269,7 +335,19 @@ export class AIQuestionGenerator {
             }
 
             const data = await response.json();
-            return this.parseAIResponse(data.content);
+            logger.debug('Claude API response:', data);
+            
+            // Claude API returns content in data.content[0].text format
+            let content = '';
+            if (data.content && Array.isArray(data.content) && data.content.length > 0) {
+                content = data.content[0].text || data.content[0].content || '';
+            } else if (data.content) {
+                content = data.content;
+            } else {
+                throw new Error('Invalid Claude API response structure');
+            }
+            
+            return this.parseAIResponse(content);
         } catch (error) {
             logger.error('Claude generation error:', error);
             throw error;
@@ -287,17 +365,84 @@ export class AIQuestionGenerator {
                 cleanText = jsonMatch[1];
             }
             
+            // Try to extract JSON array from text even if not in code blocks
+            const arrayMatch = cleanText.match(/\[[\s\S]*\]/);
+            if (arrayMatch && !jsonMatch) {
+                cleanText = arrayMatch[0];
+            }
+            
+            // Remove any text before the JSON array
+            const startBracket = cleanText.indexOf('[');
+            const endBracket = cleanText.lastIndexOf(']');
+            if (startBracket !== -1 && endBracket !== -1 && endBracket > startBracket) {
+                cleanText = cleanText.substring(startBracket, endBracket + 1);
+            }
+            
             // Try to parse as JSON
             const parsed = JSON.parse(cleanText);
             
             // Handle both single question object and array of questions
-            return Array.isArray(parsed) ? parsed : [parsed];
+            let questions = Array.isArray(parsed) ? parsed : [parsed];
+            
+            // Limit to requested count (in case AI generates more than requested)
+            const requestedCount = this.requestedQuestionCount || 1;
+            if (questions.length > requestedCount) {
+                questions = questions.slice(0, requestedCount);
+            }
+            
+            return questions;
             
         } catch (error) {
             logger.error('Error parsing AI response:', error);
-            logger.debug('Raw response:', responseText);
-            throw new Error('Invalid JSON response from AI provider');
+            
+            // Try to extract questions manually if JSON parsing fails
+            try {
+                return this.extractQuestionsManually(responseText);
+            } catch (manualError) {
+                throw new Error(`Invalid JSON response from AI provider. Response: ${responseText.substring(0, 100)}...`);
+            }
         }
+    }
+
+    extractQuestionsManually(responseText) {
+        // Try to find question-like patterns in the text
+        const questionPattern = /(?:question|q\d+)[:\s]*(.+?)(?:options?|choices?)[:\s]*(.+?)(?:answer|correct)[:\s]*(.+?)(?=(?:question|q\d+|$))/gis;
+        const matches = [...responseText.matchAll(questionPattern)];
+        
+        if (matches.length > 0) {
+            let questions = matches.map(match => {
+                const question = match[1].trim();
+                const optionsText = match[2].trim();
+                const answerText = match[3].trim();
+                
+                // Extract options (A, B, C, D format)
+                const options = optionsText.split(/[ABCD][\):\.]?\s*/).filter(opt => opt.trim()).slice(0, 4);
+                
+                // Try to determine correct answer
+                let correctAnswer = 0;
+                if (answerText.match(/^[A]$/i)) correctAnswer = 0;
+                else if (answerText.match(/^[B]$/i)) correctAnswer = 1;
+                else if (answerText.match(/^[C]$/i)) correctAnswer = 2;
+                else if (answerText.match(/^[D]$/i)) correctAnswer = 3;
+                
+                return {
+                    question: question,
+                    options: options.length >= 4 ? options.slice(0, 4) : ['Option A', 'Option B', 'Option C', 'Option D'],
+                    correctAnswer: correctAnswer,
+                    type: 'multiple-choice'
+                };
+            });
+            
+            // Limit to requested count
+            const requestedCount = this.requestedQuestionCount || 1;
+            if (questions.length > requestedCount) {
+                questions = questions.slice(0, requestedCount);
+            }
+            
+            return questions;
+        }
+        
+        throw new Error('Could not extract questions from response');
     }
 
     detectContentType(content) {
@@ -338,7 +483,7 @@ export class AIQuestionGenerator {
             apiKeySection.style.display = 'block';
             // Load saved API key if exists
             const savedKey = localStorage.getItem(`ai_api_key_${provider}`);
-            const apiKeyInput = document.getElementById('api-key');
+            const apiKeyInput = document.getElementById('ai-api-key');
             if (savedKey && apiKeyInput) {
                 apiKeyInput.value = savedKey;
             }
@@ -361,6 +506,7 @@ export class AIQuestionGenerator {
         
         try {
             const response = await fetch('http://localhost:11434/api/tags');
+            
             if (response.ok) {
                 const data = await response.json();
                 const models = data.models || [];
@@ -373,15 +519,21 @@ export class AIQuestionGenerator {
                     modelSelect.appendChild(option);
                 });
                 
-                // Restore saved selection
+                // Restore saved selection or set default
                 const savedModel = localStorage.getItem('ollama_selected_model');
-                if (savedModel) {
+                if (savedModel && models.some(m => m.name === savedModel)) {
                     modelSelect.value = savedModel;
+                } else if (models.length > 0) {
+                    // Set default to first available model
+                    modelSelect.value = models[0].name;
+                    localStorage.setItem('ollama_selected_model', models[0].name);
                 }
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
             logger.error('Error loading Ollama models:', error);
-            modelSelect.innerHTML = '<option value="">Error loading models</option>';
+            modelSelect.innerHTML = `<option value="">Ollama not available (${error.message})</option>`;
         }
     }
 
@@ -400,23 +552,68 @@ export class AIQuestionGenerator {
         reader.readAsText(file);
     }
 
-    processGeneratedQuestions(questions) {
-        // This method would be called by the main game class
-        // For now, we'll dispatch a custom event
-        const event = new CustomEvent('questionsGenerated', { 
-            detail: { questions } 
-        });
-        document.dispatchEvent(event);
+    processGeneratedQuestions(questions, showAlerts = true) {
+        // Add questions to the main quiz
+        if (window.game && window.game.quizManager) {
+            questions.forEach(questionData => {
+                // Validate and add each question
+                if (this.validateGeneratedQuestion(questionData)) {
+                    window.game.quizManager.addGeneratedQuestion(questionData, showAlerts);
+                } else {
+                    logger.warn('Invalid generated question skipped:', questionData);
+                }
+            });
+        } else {
+            // Fallback: dispatch custom event
+            const event = new CustomEvent('questionsGenerated', { 
+                detail: { questions } 
+            });
+            document.dispatchEvent(event);
+        }
+    }
+
+    validateGeneratedQuestion(question) {
+        // Basic validation for generated questions
+        if (!question.question || !question.options || !Array.isArray(question.options)) {
+            return false;
+        }
+        
+        if (question.type === 'multiple-choice' && (question.correctAnswer === undefined || question.correctAnswer < 0 || question.correctAnswer >= question.options.length)) {
+            return false;
+        }
+        
+        return true;
     }
 
     openModal() {
         const modal = document.getElementById('ai-generator-modal');
         if (modal) {
             modal.style.display = 'flex';
-            // Initialize provider change handler
-            const provider = document.getElementById('ai-provider')?.value;
-            if (provider) {
+            
+            // Wait a bit for the modal to be fully rendered
+            setTimeout(() => {
+                // Initialize provider change handler
+                const providerSelect = document.getElementById('ai-provider');
+                const provider = providerSelect?.value || 'ollama';
+                
+                // Set to ollama by default if not already set
+                if (providerSelect && !providerSelect.value) {
+                    providerSelect.value = 'ollama';
+                }
+                
                 this.handleProviderChange(provider);
+            }, 50);
+            
+            // Clear previous content
+            const contentTextarea = document.getElementById('source-content');
+            if (contentTextarea && !contentTextarea.value.trim()) {
+                contentTextarea.placeholder = 'Enter your content here (e.g., a passage of text, topics to generate questions about, or paste from a document)...';
+            }
+            
+            // Reset question count to 1
+            const questionCount = document.getElementById('question-count');
+            if (questionCount) {
+                questionCount.value = 1;
             }
         }
     }

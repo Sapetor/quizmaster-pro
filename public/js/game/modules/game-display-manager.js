@@ -96,7 +96,7 @@ export class GameDisplayManager {
     /**
      * Render MathJax for question content
      */
-    async renderQuestionMath(element, delay = 100) {
+    async renderQuestionMath(element, delay = 200) {
         if (!element) return;
         
         try {
@@ -117,7 +117,7 @@ export class GameDisplayManager {
         logger.debug('Question text displayed');
         
         // Render MathJax after content update
-        this.renderQuestionMath(element, 100);
+        this.renderQuestionMath(element, 200);
     }
 
     /**
