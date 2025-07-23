@@ -566,6 +566,45 @@ if (this.isWindows) {
 - **Maintained Timing Improvements**: Kept beneficial screen transition delays (150ms before rendering)
 - **Preserved Performance**: Host questions (200ms), host options (250ms), player content (200ms) delays
 
+#### MathJax Page Reload Timing Fix (CRITICAL - RESOLVED)
+**Problem**: LaTeX content fails to render after pressing F5 or reloading the app - live preview shows blank and in-game displays plain text instead of rendered LaTeX.
+
+**Root Cause Analysis**:
+- Race condition between MathJax initialization and quiz loading after page reload
+- Hardcoded 500ms + 300ms timeouts in `populateQuizBuilder()` insufficient for MathJax readiness
+- Inconsistent readiness detection between MathRenderer and PreviewManager classes
+- Missing synchronization between `mathjax-ready` event and readiness checks
+
+**Technical Solution Applied**:
+```javascript
+// BEFORE: Hardcoded timeouts causing race conditions
+setTimeout(() => {
+    this.mathRenderer.renderMathJaxForEditor();
+    setTimeout(() => {
+        window.game.previewManager.renderMathJaxForPreview();
+    }, 300);
+}, 500);
+
+// AFTER: Proper MathJax readiness coordination
+renderMathForLoadedQuiz() {
+    this.mathRenderer.renderMathJaxForEditor();
+    this.mathRenderer.waitForMathJaxReady(() => {
+        if (window.game && window.game.previewManager) {
+            window.game.previewManager.renderMathJaxForPreview();
+        }
+    });
+}
+```
+
+**Key Improvements**:
+- **Eliminated Race Conditions**: Replaced fixed timeouts with proper MathJax readiness detection
+- **Unified Readiness Checks**: Standardized to check `mathJaxReady`, `window.mathJaxReady`, and `document.body.classList.contains('mathjax-ready')`
+- **Event Coordination**: Both polling and event-based detection ensure no missed initialization signals
+- **Cross-Browser Compatibility**: Multiple readiness indicators handle different timing scenarios
+- **Files Modified**: `quiz-manager.js`, `math-renderer.js` timing coordination
+
+**Status**: ✅ RESOLVED - LaTeX content now renders correctly after F5 reload in both live preview and game modes
+
 #### Audio Context Compliance & UX Improvements
 **Problem Resolved**: Browser warnings "AudioContext was not allowed to start" appearing on page load.
 
