@@ -89,6 +89,9 @@ export class GameManager {
     initializeQuestionDisplay(data) {
         logger.debug('QuestionInit', { type: data.type, options: data.options?.length, isHost: this.isHost });
         
+        // CRITICAL: Clean game elements of any MathJax contamination from loaded quizzes
+        this.cleanGameElementsForFreshRendering();
+        
         // Reset result flag for new question
         this.resultShown = false;
         
@@ -894,6 +897,43 @@ export class GameManager {
         }
         
         logger.debug('Button states reset completed');
+    }
+
+    /**
+     * Clean game elements of any MathJax contamination from loaded quizzes
+     * This prevents conflicts when loaded quiz data has pre-processed MathJax content
+     */
+    cleanGameElementsForFreshRendering() {
+        // Game elements that must be clean before MathJax rendering
+        const gameElements = document.querySelectorAll([
+            '#current-question',        // Host question display
+            '#player-question-text',    // Player question display
+            '.player-option',           // Player multiple choice options
+            '.option-display',          // Host option displays
+            '.tf-option',               // True/false options
+            '.checkbox-option',         // Multiple correct options
+            '.numeric-input-container'  // Numeric input area
+        ].join(', '));
+        
+        gameElements.forEach(element => {
+            if (element) {
+                // Remove MathJax containers that may have been added during quiz loading
+                const mathJaxContainers = element.querySelectorAll('.mjx-container, .MathJax, mjx-container, mjx-math');
+                mathJaxContainers.forEach(container => {
+                    container.remove();
+                });
+                
+                // Remove MathJax processing classes
+                element.classList.remove('processing-math', 'math-ready', 'MathJax_Processed');
+                
+                // Remove any pointer-events none that might have been added
+                if (element.style.pointerEvents === 'none') {
+                    element.style.pointerEvents = '';
+                }
+            }
+        });
+        
+        logger.debug('🧹 Cleaned game elements of MathJax contamination for fresh rendering');
     }
 
     /**

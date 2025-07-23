@@ -737,12 +737,41 @@ export class PreviewManager {
         
         if (!previewElement) return;
 
-        // Simple MathJax rendering without excessive logging
-        setTimeout(() => {
+        // Wait for MathJax to be ready, especially important after page reload
+        this.waitForMathJaxReady(() => {
             if (window.MathJax?.typesetPromise) {
-                window.MathJax.typesetPromise([previewElement]).catch(() => {});
+                window.MathJax.typesetPromise([previewElement]).catch(() => {
+                    logger.debug('Preview MathJax rendering failed, using fallback');
+                });
             }
-        }, 100);
+        });
+    }
+
+    /**
+     * Wait for MathJax to be ready before executing callback
+     */
+    waitForMathJaxReady(callback) {
+        if (window.MathJax && window.MathJax.typesetPromise && (window.mathJaxReady || document.body.classList.contains('mathjax-ready'))) {
+            callback();
+        } else {
+            // Wait with polling and event listening
+            const checkReady = () => {
+                if (window.MathJax && window.MathJax.typesetPromise && (window.mathJaxReady || document.body.classList.contains('mathjax-ready'))) {
+                    callback();
+                } else {
+                    setTimeout(checkReady, 50); // Check every 50ms
+                }
+            };
+            
+            // Also listen for the mathjax-ready event
+            const readyHandler = () => {
+                document.removeEventListener('mathjax-ready', readyHandler);
+                callback();
+            };
+            
+            document.addEventListener('mathjax-ready', readyHandler);
+            checkReady();
+        }
     }
 
     /**

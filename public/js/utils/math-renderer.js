@@ -16,7 +16,8 @@ export class MathRenderer {
     constructor() {
         this.mathJaxRenderTimeout = null;
         this.processingElements = new Set();
-        this.mathJaxReady = window.mathJaxReady || false;
+        // Check multiple readiness indicators for maximum compatibility
+        this.mathJaxReady = window.mathJaxReady || document.body.classList.contains('mathjax-ready') || false;
         
         // Listen for MathJax ready event
         if (!this.mathJaxReady) {
@@ -24,6 +25,39 @@ export class MathRenderer {
                 this.mathJaxReady = true;
                 logger.debug('MathRenderer: MathJax is now ready');
             });
+        }
+    }
+
+    /**
+     * Wait for MathJax to be ready before executing callback
+     * @param {Function} callback - Function to execute when MathJax is ready
+     */
+    waitForMathJaxReady(callback) {
+        // Check both instance flag and global indicators for maximum compatibility
+        if (window.MathJax && window.MathJax.typesetPromise && 
+            (this.mathJaxReady || window.mathJaxReady || document.body.classList.contains('mathjax-ready'))) {
+            callback();
+        } else {
+            // Wait with polling and event listening
+            const checkReady = () => {
+                if (window.MathJax && window.MathJax.typesetPromise && 
+                    (this.mathJaxReady || window.mathJaxReady || document.body.classList.contains('mathjax-ready'))) {
+                    this.mathJaxReady = true;
+                    callback();
+                } else {
+                    setTimeout(checkReady, 50); // Check every 50ms
+                }
+            };
+            
+            // Also listen for the mathjax-ready event in case we missed it
+            const readyHandler = () => {
+                this.mathJaxReady = true;
+                document.removeEventListener('mathjax-ready', readyHandler);
+                callback();
+            };
+            
+            document.addEventListener('mathjax-ready', readyHandler);
+            checkReady();
         }
     }
 
@@ -94,7 +128,8 @@ export class MathRenderer {
             clearTimeout(this.mathJaxRenderTimeout);
         }
         
-        this.mathJaxRenderTimeout = setTimeout(() => {
+        // Wait for MathJax to be ready, especially important after page reload
+        this.waitForMathJaxReady(() => {
             if (window.MathJax && window.MathJax.typesetPromise) {
                 // Add processing class to elements with math content
                 const elementsWithMath = document.querySelectorAll([
@@ -117,48 +152,76 @@ export class MathRenderer {
                     }
                 });
                 
-                // Use requestAnimationFrame to avoid blocking UI interactions
-                requestAnimationFrame(() => {
-                    // Clear existing MathJax processed content before re-rendering
-                    document.querySelectorAll('.MathJax_Processing').forEach(el => {
-                        el.classList.remove('MathJax_Processing');
-                    });
+                logger.debug('🧮 Global MathJax rendering for', elementsWithMath.length, 'elements');
+                
+                window.MathJax.typesetPromise(elementsWithMath).then(() => {
+                    logger.debug('✅ Global MathJax rendering completed');
                     
-                    window.MathJax.typesetPromise().then(() => {
-                        // Post-processing to ensure proper display
-                        document.querySelectorAll('.mjx-container').forEach(container => {
-                            container.style.display = 'inline-block';
-                            container.style.verticalAlign = 'middle';
-                            container.classList.add('MathJax_Processed');
-                            
-                            // Prevent pointer events on MathJax elements
-                            container.style.pointerEvents = 'none';
-                            
-                            // Ensure LaTeX content is properly sized
-                            if (container.closest('.player-option, .tf-option, .checkbox-option')) {
-                                container.style.fontSize = '0.9em';
-                                container.style.maxWidth = '100%';
-                            }
-                        });
-                        
-                        // Remove processing classes and show content
-                        elementsWithMath.forEach(el => {
-                            el.classList.remove('processing-math');
-                            el.classList.add('math-ready');
-                            this.processingElements.delete(el);
-                        });
-                    }).catch(err => {
-                        logger.warn('MathJax rendering failed:', err);
-                        // Remove processing classes even on error
-                        elementsWithMath.forEach(el => {
-                            el.classList.remove('processing-math');
-                            el.classList.add('math-ready');
-                            this.processingElements.delete(el);
-                        });
+                    // Remove processing classes
+                    elementsWithMath.forEach(el => {
+                        el.classList.remove('processing-math');
+                        el.classList.add('math-ready');
+                        this.processingElements.delete(el);
+                    });
+                }).catch(err => {
+                    logger.error('❌ Global MathJax rendering failed:', err);
+                    elementsWithMath.forEach(el => {
+                        el.classList.remove('processing-math');
+                        this.processingElements.delete(el);
                     });
                 });
             }
-        }, TIMING.DOM_UPDATE_DELAY); // Debounce delay
+        });
+    }
+
+    /**
+     * Render MathJax only for editor elements (quiz builder) - prevents game element contamination
+     */
+    renderMathJaxForEditor() {
+        if (this.mathJaxRenderTimeout) {
+            clearTimeout(this.mathJaxRenderTimeout);
+        }
+        
+        // Wait for MathJax to be ready, especially important after page reload
+        this.waitForMathJaxReady(() => {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                // Only target editor elements, NEVER game elements
+                const editorElements = document.querySelectorAll([
+                    '[data-has-math]',
+                    '.question-text',               // Editor question inputs
+                    '#preview-question-text-split', // Preview area
+                    '#preview-answer-area-split',   // Preview answers
+                    '.preview-content',             // Preview content
+                    '.preview-content-split'        // Split preview
+                ].join(', '));
+                
+                editorElements.forEach(el => {
+                    if (el.textContent.includes('$') || el.innerHTML.includes('$')) {
+                        el.classList.add('processing-math');
+                        this.processingElements.add(el);
+                    }
+                });
+                
+                logger.debug('🧮 Editor MathJax rendering for', editorElements.length, 'elements (avoiding game elements)');
+                
+                window.MathJax.typesetPromise(editorElements).then(() => {
+                    logger.debug('✅ Editor MathJax rendering completed');
+                    
+                    // Remove processing classes
+                    editorElements.forEach(el => {
+                        el.classList.remove('processing-math');
+                        el.classList.add('math-ready');
+                        this.processingElements.delete(el);
+                    });
+                }).catch(err => {
+                    logger.error('❌ Editor MathJax rendering failed:', err);
+                    editorElements.forEach(el => {
+                        el.classList.remove('processing-math');
+                        this.processingElements.delete(el);
+                    });
+                });
+            }
+        });
     }
 
     /**

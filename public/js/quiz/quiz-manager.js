@@ -348,6 +348,29 @@ export class QuizManager {
     }
 
     /**
+     * Render MathJax for loaded quiz with proper timing coordination
+     */
+    renderMathForLoadedQuiz() {
+        // CRITICAL: Only render MathJax for editor elements to prevent game element contamination
+        this.mathRenderer.renderMathJaxForEditor();
+        
+        // Update live preview to trigger MathJax rendering in preview
+        if (window.game && window.game.previewManager) {
+            logger.debug('🔄 Updating live preview after quiz load');
+            window.game.previewManager.updateSplitPreview();
+            
+            // Force MathJax re-render for mixed content issues with proper waiting
+            // Use the waitForMathJaxReady method instead of setTimeout
+            this.mathRenderer.waitForMathJaxReady(() => {
+                logger.debug('🔄 Force re-rendering MathJax in preview after MathJax ready');
+                if (window.game && window.game.previewManager) {
+                    window.game.previewManager.renderMathJaxForPreview();
+                }
+            });
+        }
+    }
+
+    /**
      * Populate quiz builder with loaded data
      */
     async populateQuizBuilder(quizData) {
@@ -412,23 +435,8 @@ export class QuizManager {
         translationManager.translatePage();
         logger.debug('Translated entire page after quiz load');
         
-        // Render math if present
-        setTimeout(() => {
-            // Only render MathJax for editor content (don't use processContentFormatting which destroys form values)
-            this.mathRenderer.renderMathJaxGlobal();
-            
-            // Update live preview to trigger MathJax rendering in preview
-            if (window.game && window.game.previewManager) {
-                logger.debug('🔄 Updating live preview after quiz load');
-                window.game.previewManager.updateSplitPreview();
-                
-                // Force MathJax re-render for mixed content issues
-                setTimeout(() => {
-                    logger.debug('🔄 Force re-rendering MathJax in preview for mixed content');
-                    window.game.previewManager.renderMathJaxForPreview();
-                }, 300);
-            }
-        }, 150);
+        // Render math if present - use proper MathJax readiness detection instead of hardcoded delays
+        this.renderMathForLoadedQuiz();
     }
 
     /**
