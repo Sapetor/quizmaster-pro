@@ -635,8 +635,17 @@ export class QuizManager {
             const imagePreview = questionElement.querySelector('.image-preview');
             
             if (imageElement && imagePreview) {
-                // Set the image source
-                imageElement.src = questionData.image.startsWith('http') ? questionData.image : `/${questionData.image}`;
+                // Set the image source - handle data URIs properly
+                if (questionData.image.startsWith('data:')) {
+                    // Data URI - use directly
+                    imageElement.src = questionData.image;
+                } else if (questionData.image.startsWith('http')) {
+                    // Full URL - use directly
+                    imageElement.src = questionData.image;
+                } else {
+                    // Relative path - prefix with /
+                    imageElement.src = `/${questionData.image}`;
+                }
                 imageElement.dataset.url = questionData.image;
                 
                 // Show the image preview
