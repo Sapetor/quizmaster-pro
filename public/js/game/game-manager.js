@@ -89,8 +89,8 @@ export class GameManager {
     initializeQuestionDisplay(data) {
         logger.debug('QuestionInit', { type: data.type, options: data.options?.length, isHost: this.isHost });
         
-        // REMOVED: Aggressive element cleaning was interfering with MathJax rendering during gameplay
-        // this.cleanGameElementsForFreshRendering();
+        // FIXED: Re-enable conservative element cleaning to prevent MathJax interference
+        this.cleanGameElementsForFreshRendering();
         
         // Reset result flag for new question
         this.resultShown = false;
@@ -218,16 +218,16 @@ export class GameManager {
         this.updateQuestionImage(data, 'question-image-display');
         
         // Render MathJax for host question with enhanced error handling
-        mathJaxService.renderElement(hostQuestionElement, 250).then(() => {
+        mathJaxService.renderElement(hostQuestionElement, 300).then(() => {
             logger.debug('✅ MathJax question rendering completed for host');
         }).catch(err => {
             logger.error('❌ MathJax question render error for host:', err);
             // Fallback: Try one more time with longer delay
             setTimeout(() => {
-                mathJaxService.renderElement(hostQuestionElement, 300).catch(fallbackErr => {
+                mathJaxService.renderElement(hostQuestionElement, 400).catch(fallbackErr => {
                     logger.error('❌ MathJax question fallback render failed:', fallbackErr);
                 });
-            }, 100);
+            }, 150);
         });
     }
 
@@ -252,16 +252,16 @@ export class GameManager {
         translationManager.translateContainer(hostOptionsContainer);
         
         // Render MathJax for host options with enhanced error handling
-        mathJaxService.renderElement(hostOptionsContainer, 300).then(() => {
+        mathJaxService.renderElement(hostOptionsContainer, 350).then(() => {
             logger.debug('✅ MathJax options rendering completed for host');
         }).catch(err => {
             logger.error('❌ MathJax options render error for host:', err);
             // Fallback: Try one more time with longer delay
             setTimeout(() => {
-                mathJaxService.renderElement(hostOptionsContainer, 400).catch(fallbackErr => {
+                mathJaxService.renderElement(hostOptionsContainer, 450).catch(fallbackErr => {
                     logger.error('❌ MathJax options fallback render failed:', fallbackErr);
                 });
-            }, 150);
+            }, 200);
         });
     }
 
