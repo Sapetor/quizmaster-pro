@@ -26,9 +26,9 @@ export class MathJaxService {
      * Initialize MathJax readiness detection
      */
     initializeMathJax() {
-        if (window.MathJax) {
+        if (this.isMathJaxReady()) {
             this.isReady = true;
-            logger.debug('🔍 MathJax service: MathJax already available');
+            logger.debug('🔍 MathJax service: MathJax already fully available with typesetPromise');
             return;
         }
 
@@ -41,10 +41,10 @@ export class MathJaxService {
             this.processPendingRenders();
         });
 
-        // Fallback: check periodically for MathJax
+        // Fallback: check periodically for MathJax with full readiness check
         const checkInterval = setInterval(() => {
-            if (window.MathJax) {
-                logger.debug('🔍 MathJax service: MathJax detected via polling');
+            if (this.isMathJaxReady()) {
+                logger.debug('🔍 MathJax service: MathJax fully ready detected via polling (including typesetPromise)');
                 this.isReady = true;
                 clearInterval(checkInterval);
                 this.processPendingRenders();
@@ -58,6 +58,18 @@ export class MathJaxService {
         window.debugMathJax = () => {
             logger.debug('🔍 MathJax Debug Status:', this.getStatus());
         };
+        
+        // Force MathJax initialization check
+        window.forceMathJaxCheck = () => {
+            logger.debug('🔧 Forcing MathJax initialization check...');
+            if (this.isMathJaxReady()) {
+                logger.debug('✅ MathJax is now ready!');
+                this.isReady = true;
+                this.processPendingRenders();
+            } else {
+                logger.debug('❌ MathJax still not ready');
+            }
+        };
     }
 
     /**
@@ -67,7 +79,7 @@ export class MathJaxService {
      * @param {number} maxRetries - Maximum retry attempts (default: 3)
      * @returns {Promise<void>}
      */
-    async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 3) {
+    async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 10) {
         return new Promise((resolve, reject) => {
             const attemptRender = (attempt = 1) => {
                 setTimeout(() => {
@@ -83,7 +95,7 @@ export class MathJaxService {
                                         element.innerHTML.includes('\\int');
                     logger.debug(`🔍 Element has LaTeX content: ${hasLatexContent}`);
                     
-                    if (window.MathJax?.typesetPromise) {
+                    if (this.isMathJaxReady()) {
                         // Conservative approach: Let MathJax handle its own element management
                         
                         logger.debug(`🔍 Calling MathJax.typesetPromise on element with content: ${element.innerHTML.substring(0, 200)}...`);
@@ -106,10 +118,12 @@ export class MathJaxService {
                                 }
                             });
                     } else if (attempt < maxRetries) {
-                        logger.debug(`⏳ MathJax not ready, retrying in ${timeout}ms...`);
+                        logger.debug(`⏳ MathJax not ready (MathJax: ${!!window.MathJax}, typesetPromise: ${!!window.MathJax?.typesetPromise}), retrying in ${timeout}ms...`);
                         setTimeout(() => attemptRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
                     } else {
-                        logger.debug(`❌ MathJax not available after ${maxRetries} attempts`);
+                        const mathJaxExists = !!window.MathJax;
+                        const typesetExists = !!window.MathJax?.typesetPromise;
+                        logger.error(`❌ MathJax not fully ready after ${maxRetries} attempts - MathJax: ${mathJaxExists}, typesetPromise: ${typesetExists}`);
                         this.pendingRenders.delete(element);
                         resolve(); // Resolve anyway to prevent hanging
                     }
