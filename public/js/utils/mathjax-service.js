@@ -26,7 +26,7 @@ export class MathJaxService {
      * Initialize MathJax readiness detection
      */
     initializeMathJax() {
-        if (this.isMathJaxReady()) {
+        if (this.isAvailable()) {
             this.isReady = true;
             logger.debug('🔍 MathJax service: MathJax already fully available with typesetPromise');
             return;
@@ -43,7 +43,7 @@ export class MathJaxService {
 
         // Fallback: check periodically for MathJax with full readiness check
         const checkInterval = setInterval(() => {
-            if (this.isMathJaxReady()) {
+            if (this.isAvailable()) {
                 logger.debug('🔍 MathJax service: MathJax fully ready detected via polling (including typesetPromise)');
                 this.isReady = true;
                 clearInterval(checkInterval);
@@ -62,7 +62,7 @@ export class MathJaxService {
         // Force MathJax initialization check
         window.forceMathJaxCheck = () => {
             logger.debug('🔧 Forcing MathJax initialization check...');
-            if (this.isMathJaxReady()) {
+            if (this.isAvailable()) {
                 logger.debug('✅ MathJax is now ready!');
                 this.isReady = true;
                 this.processPendingRenders();
@@ -95,7 +95,7 @@ export class MathJaxService {
                                         element.innerHTML.includes('\\int');
                     logger.debug(`🔍 Element has LaTeX content: ${hasLatexContent}`);
                     
-                    if (this.isMathJaxReady()) {
+                    if (this.isAvailable()) {
                         // Conservative approach: Let MathJax handle its own element management
                         
                         logger.debug(`🔍 Calling MathJax.typesetPromise on element with content: ${element.innerHTML.substring(0, 200)}...`);
