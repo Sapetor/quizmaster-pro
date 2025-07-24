@@ -354,19 +354,13 @@ export class QuizManager {
         // CRITICAL: Only render MathJax for editor elements to prevent game element contamination
         this.mathRenderer.renderMathJaxForEditor();
         
-        // Update live preview to trigger MathJax rendering in preview
+        // Update live preview - let it handle its own MathJax rendering
         if (window.game && window.game.previewManager) {
             logger.debug('🔄 Updating live preview after quiz load');
-            window.game.previewManager.updateSplitPreview();
-            
-            // Force MathJax re-render for mixed content issues with proper waiting
-            // Use the waitForMathJaxReady method instead of setTimeout
-            this.mathRenderer.waitForMathJaxReady(() => {
-                logger.debug('🔄 Force re-rendering MathJax in preview after MathJax ready');
-                if (window.game && window.game.previewManager) {
-                    window.game.previewManager.renderMathJaxForPreview();
-                }
-            });
+            // Use small delay to ensure editor rendering doesn't conflict
+            setTimeout(() => {
+                window.game.previewManager.updateSplitPreview();
+            }, 150);
         }
     }
 
@@ -635,18 +629,66 @@ export class QuizManager {
             const imagePreview = questionElement.querySelector('.image-preview');
             
             if (imageElement && imagePreview) {
-                // Set the image source - handle data URIs properly
+                // Set the image source - handle data URIs properly with error handling
+                let imageSrc;
                 if (questionData.image.startsWith('data:')) {
                     // Data URI - use directly
-                    imageElement.src = questionData.image;
+                    imageSrc = questionData.image;
                 } else if (questionData.image.startsWith('http')) {
                     // Full URL - use directly
-                    imageElement.src = questionData.image;
+                    imageSrc = questionData.image;
                 } else {
                     // Relative path - prefix with /
-                    imageElement.src = `/${questionData.image}`;
+                    imageSrc = `/${questionData.image}`;
                 }
+                
+                imageElement.src = imageSrc;
                 imageElement.dataset.url = questionData.image;
+                
+                // Add error handling for missing images
+                imageElement.onerror = () => {
+                    // Prevent infinite loop - remove error handler after first failure
+                    imageElement.onerror = null;
+                    
+                    logger.warn('⚠️ Quiz builder image failed to load:', questionData.image);
+                    
+                    // Replace image with a text message for the user
+                    imageElement.style.display = 'none';
+                    
+                    // Create or update error message
+                    let errorMsg = imagePreview.querySelector('.image-error-message');
+                    if (!errorMsg) {
+                        errorMsg = document.createElement('div');
+                        errorMsg.className = 'image-error-message';
+                        errorMsg.style.cssText = `
+                            padding: 15px;
+                            text-align: center;
+                            background: rgba(255, 255, 255, 0.05);
+                            border: 2px dashed rgba(255, 255, 255, 0.3);
+                            border-radius: 8px;
+                            color: var(--text-primary);
+                            font-size: 0.85rem;
+                            margin: 5px 0;
+                        `;
+                        imagePreview.appendChild(errorMsg);
+                    }
+                    
+                    errorMsg.innerHTML = `
+                        <div style="margin-bottom: 6px;">📷 Image not found</div>
+                        <div style="font-size: 0.75rem; opacity: 0.7;">${questionData.image}</div>
+                        <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 3px;">Remove reference or upload file</div>
+                    `;
+                    
+                    // Keep preview visible with error message
+                    imagePreview.style.display = 'block';
+                    logger.debug('Shown image error message in quiz builder');
+                };
+                
+                // Add load success handler
+                imageElement.onload = () => {
+                    logger.debug('✅ Quiz builder image loaded successfully:', questionData.image);
+                    imagePreview.style.display = 'block';
+                };
                 
                 // Show the image preview
                 imagePreview.style.display = 'block';

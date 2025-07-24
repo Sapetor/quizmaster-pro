@@ -610,7 +610,7 @@ export class PreviewManager {
             logger.debug('🔤 Showing fallback text for empty question');
         }
         
-        // Handle image with data URI fix
+        // Handle image with data URI fix and error handling
         const imageDisplay = document.getElementById('preview-question-image-split');
         const img = document.getElementById('preview-question-img-split');
         if (data.image && imageDisplay && img) {
@@ -624,6 +624,53 @@ export class PreviewManager {
                 img.src = imageSrc;
                 logger.debug('📸 Set preview image: URL', imageSrc);
             }
+            
+            // Add error handling for missing images
+            img.onerror = () => {
+                // Prevent infinite loop - remove error handler after first failure
+                img.onerror = null;
+                
+                logger.warn('⚠️ Preview image failed to load:', data.image);
+                
+                // Replace image with a text message for the user
+                img.style.display = 'none';
+                
+                // Create or update error message
+                let errorMsg = imageDisplay.querySelector('.image-error-message');
+                if (!errorMsg) {
+                    errorMsg = document.createElement('div');
+                    errorMsg.className = 'image-error-message';
+                    errorMsg.style.cssText = `
+                        padding: 20px;
+                        text-align: center;
+                        background: rgba(255, 255, 255, 0.05);
+                        border: 2px dashed rgba(255, 255, 255, 0.3);
+                        border-radius: 8px;
+                        color: var(--text-primary);
+                        font-size: 0.9rem;
+                        margin: 10px 0;
+                    `;
+                    imageDisplay.appendChild(errorMsg);
+                }
+                
+                errorMsg.innerHTML = `
+                    <div style="margin-bottom: 8px;">📷 Image not found</div>
+                    <div style="font-size: 0.8rem; opacity: 0.7;">${data.image}</div>
+                    <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 4px;">Remove image reference or upload the file</div>
+                `;
+                
+                // Keep container visible with error message
+                imageDisplay.style.display = 'block';
+                logger.debug('Shown image error message in preview');
+            };
+            
+            // Add load success handler to ensure proper display
+            img.onload = () => {
+                logger.debug('✅ Preview image loaded successfully:', data.image);
+                imageDisplay.style.display = 'block';
+            };
+            
+            // Initially show the container (will be hidden by onerror if image fails)
             imageDisplay.style.display = 'block';
         } else if (data.image) {
             // Image data exists but elements not found

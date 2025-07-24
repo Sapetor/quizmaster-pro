@@ -84,14 +84,7 @@ export class MathJaxService {
                     logger.debug(`🔍 Element has LaTeX content: ${hasLatexContent}`);
                     
                     if (window.MathJax?.typesetPromise) {
-                        // Clear existing MathJax elements before re-rendering (Windows-specific fix)
-                        if (this.isWindows) {
-                            const existingMath = element.querySelectorAll('mjx-container');
-                            if (existingMath.length > 0) {
-                                logger.debug(`🔍 Windows: Clearing ${existingMath.length} existing MathJax elements`);
-                                existingMath.forEach(mjx => mjx.remove());
-                            }
-                        }
+                        // Conservative approach: Let MathJax handle its own element management
                         
                         logger.debug(`🔍 Calling MathJax.typesetPromise on element with content: ${element.innerHTML.substring(0, 200)}...`);
                         
@@ -100,25 +93,12 @@ export class MathJaxService {
                                 logger.debug(`✅ MathJax render successful on attempt ${attempt}`);
                                 this.pendingRenders.delete(element);
                                 
-                                // Windows-specific: Force repaint to fix rendering issues
-                                if (this.isWindows) {
-                                    setTimeout(() => {
-                                        element.style.transform = 'translateZ(0)';
-                                        element.offsetHeight; // Force reflow
-                                        element.style.transform = '';
-                                        logger.debug(`🔍 Windows: Applied transform reflow`);
-                                        resolve();
-                                    }, 10);
-                                } else {
-                                    resolve();
-                                }
+                                resolve();
                             })
                             .catch(error => {
                                 logger.error(`❌ MathJax render error (attempt ${attempt}):`, error);
                                 if (attempt < maxRetries) {
-                                    // Windows-specific: Increase timeout for retries
-                                    const retryTimeout = this.isWindows ? timeout * 1.5 : timeout;
-                                    logger.debug(`🔍 Retrying in ${retryTimeout}ms...`);
+                                    logger.debug(`🔍 Retrying in ${timeout}ms...`);
                                     setTimeout(() => attemptRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
                                 } else {
                                     this.pendingRenders.delete(element);
@@ -127,8 +107,6 @@ export class MathJaxService {
                             });
                     } else if (attempt < maxRetries) {
                         logger.debug(`⏳ MathJax not ready, retrying in ${timeout}ms...`);
-                        // Windows-specific: Increase timeout for MathJax loading
-                        const retryTimeout = this.isWindows ? timeout * 1.5 : timeout;
                         setTimeout(() => attemptRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
                     } else {
                         logger.debug(`❌ MathJax not available after ${maxRetries} attempts`);

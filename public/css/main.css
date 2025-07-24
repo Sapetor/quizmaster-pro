@@ -15,6 +15,9 @@
 /* UI components - Buttons, inputs, cards */
 @import './components.css?v=9.3';
 
+/* Code blocks component - Unified code styling (Phase 1 refactor) */
+@import './components/code-blocks.css?v=10.0';
+
 /* Modal systems - All modal dialogs and overlays */
 @import './modals.css?v=9.3';
 

@@ -89,8 +89,8 @@ export class GameManager {
     initializeQuestionDisplay(data) {
         logger.debug('QuestionInit', { type: data.type, options: data.options?.length, isHost: this.isHost });
         
-        // CRITICAL: Clean game elements of any MathJax contamination from loaded quizzes
-        this.cleanGameElementsForFreshRendering();
+        // REMOVED: Aggressive element cleaning was interfering with MathJax rendering during gameplay
+        // this.cleanGameElementsForFreshRendering();
         
         // Reset result flag for new question
         this.resultShown = false;
@@ -200,7 +200,7 @@ export class GameManager {
             
             // Update host options content
             this.updateHostOptionsContent(data, elements.hostOptionsContainer);
-        }, 150); // Allow screen transition to complete
+        }, 200); // Increased delay for better stability
     }
 
     /**
@@ -217,11 +217,17 @@ export class GameManager {
         // Handle question image for host
         this.updateQuestionImage(data, 'question-image-display');
         
-        // Render MathJax for host question with appropriate delay
-        mathJaxService.renderElement(hostQuestionElement, 200).then(() => {
-            logger.debug('MathJax question rendering completed for host');
+        // Render MathJax for host question with enhanced error handling
+        mathJaxService.renderElement(hostQuestionElement, 250).then(() => {
+            logger.debug('✅ MathJax question rendering completed for host');
         }).catch(err => {
-            logger.error('MathJax question render error:', err);
+            logger.error('❌ MathJax question render error for host:', err);
+            // Fallback: Try one more time with longer delay
+            setTimeout(() => {
+                mathJaxService.renderElement(hostQuestionElement, 300).catch(fallbackErr => {
+                    logger.error('❌ MathJax question fallback render failed:', fallbackErr);
+                });
+            }, 100);
         });
     }
 
@@ -245,11 +251,17 @@ export class GameManager {
         // Translate any dynamic content in the options container
         translationManager.translateContainer(hostOptionsContainer);
         
-        // Render MathJax for host options with appropriate delay
-        mathJaxService.renderElement(hostOptionsContainer, 250).then(() => {
-            logger.debug('MathJax options rendering completed for host');
+        // Render MathJax for host options with enhanced error handling
+        mathJaxService.renderElement(hostOptionsContainer, 300).then(() => {
+            logger.debug('✅ MathJax options rendering completed for host');
         }).catch(err => {
-            logger.error('MathJax options render error:', err);
+            logger.error('❌ MathJax options render error for host:', err);
+            // Fallback: Try one more time with longer delay
+            setTimeout(() => {
+                mathJaxService.renderElement(hostOptionsContainer, 400).catch(fallbackErr => {
+                    logger.error('❌ MathJax options fallback render failed:', fallbackErr);
+                });
+            }, 150);
         });
     }
 
@@ -309,6 +321,9 @@ export class GameManager {
      */
     updatePlayerDisplay(data, elements, optionsContainer) {
         logger.debug('Player mode - updating display');
+        
+        // Switch to player game screen when new question starts
+        this.uiManager.showScreen('player-game-screen');
         
         // Update question counter for player
         this.updatePlayerQuestionCounter(data.questionNumber, data.totalQuestions);
@@ -917,13 +932,18 @@ export class GameManager {
         
         gameElements.forEach(element => {
             if (element) {
-                // Remove MathJax containers that may have been added during quiz loading
-                const mathJaxContainers = element.querySelectorAll('.mjx-container, .MathJax, mjx-container, mjx-math');
-                mathJaxContainers.forEach(container => {
-                    container.remove();
-                });
+                // CONSERVATIVE: Only remove specific MathJax containers that cause conflicts
+                // Use same approach as mathjax-service.js for consistency
+                const isWindows = navigator.platform.indexOf('Win') > -1;
+                if (isWindows) {
+                    const existingMath = element.querySelectorAll('mjx-container');
+                    if (existingMath.length > 0) {
+                        logger.debug('🧹 Removing existing MathJax containers for Windows compatibility');
+                        existingMath.forEach(mjx => mjx.remove());
+                    }
+                }
                 
-                // Remove MathJax processing classes
+                // Remove MathJax processing classes that could cause conflicts
                 element.classList.remove('processing-math', 'math-ready', 'MathJax_Processed');
                 
                 // Remove any pointer-events none that might have been added
@@ -1402,11 +1422,56 @@ export class GameManager {
                 imageContainer.appendChild(img);
             }
             
-            // Set image source and alt text
-            img.src = data.image.startsWith('http') ? data.image : `/${data.image}`;
+            // Set image source and alt text with error handling
+            const imageSrc = data.image.startsWith('http') ? data.image : `/${data.image}`;
+            img.src = imageSrc;
             img.alt = 'Question Image';
             
-            // Show the container
+            // Add error handling for missing images
+            img.onerror = () => {
+                // Prevent infinite loop - remove error handler after first failure
+                img.onerror = null;
+                
+                logger.warn('⚠️ Game question image failed to load:', data.image);
+                
+                // Replace image with a text message for the user
+                img.style.display = 'none';
+                
+                // Create or update error message
+                let errorMsg = imageContainer.querySelector('.image-error-message');
+                if (!errorMsg) {
+                    errorMsg = document.createElement('div');
+                    errorMsg.className = 'image-error-message';
+                    errorMsg.style.cssText = `
+                        padding: 20px;
+                        text-align: center;
+                        background: rgba(255, 255, 255, 0.05);
+                        border: 2px dashed rgba(255, 255, 255, 0.3);
+                        border-radius: 8px;
+                        color: var(--text-primary);
+                        font-size: 0.9rem;
+                        margin: 10px 0;
+                    `;
+                    imageContainer.appendChild(errorMsg);
+                }
+                
+                errorMsg.innerHTML = `
+                    <div style="margin-bottom: 8px;">📷 Image not found</div>
+                    <div style="font-size: 0.8rem; opacity: 0.7;">${data.image}</div>
+                `;
+                
+                // Keep container visible with error message
+                imageContainer.style.display = 'block';
+                logger.debug('Shown image error message in game');
+            };
+            
+            // Add load success handler
+            img.onload = () => {
+                logger.debug('✅ Game question image loaded successfully:', data.image);
+                imageContainer.style.display = 'block';
+            };
+            
+            // Initially show the container (will be hidden by onerror if image fails)
             imageContainer.style.display = 'block';
             logger.debug(`Image container ${containerId} shown with image: ${img.src}`);
         } else {

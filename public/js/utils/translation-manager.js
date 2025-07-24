@@ -348,6 +348,17 @@ class TranslationManager {
             }
         });
 
+        // Update final score element if it exists and has a score
+        const finalScore = document.getElementById('final-score');
+        if (finalScore) {
+            const text = finalScore.textContent || finalScore.innerText;
+            const scoreMatch = text.match(/(\d+)/);
+            if (scoreMatch) {
+                const score = scoreMatch[1];
+                finalScore.textContent = `${score} ${this.getTranslationSync('points')}`;
+            }
+        }
+
         // Update any other dynamic game elements
         const playerInfo = document.querySelector('.player-info');
         if (playerInfo && window.gameManager && window.gameManager.playerName) {

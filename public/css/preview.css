@@ -147,7 +147,7 @@
 
 /* Question counter in navigation bar */
 #preview-question-counter-split {
-    font-size: 1.4rem;
+    /* font-size handled by variables.css utility class for global scaling */
     font-weight: 700;
     color: var(--text-primary);
     background: rgba(255, 255, 255, 0.08);
@@ -156,8 +156,12 @@
     padding: 8px 16px;
     backdrop-filter: blur(8px);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-    min-width: 140px;
+    min-width: 180px;
+    max-width: 220px;
     text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     transition: all 0.3s ease;
 }
 
@@ -477,6 +481,7 @@ pre code {
     border-radius: 6px;
     font-size: 0.85em;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace; /* CRITICAL FIX: Ensure consistent monospace font with host-side */
 }
 
 .question-text code,

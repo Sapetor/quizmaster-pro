@@ -201,22 +201,44 @@ export function scrollToCurrentQuestion() {
 export function scrollToTop() {
     logger.debug('⬆️ Scroll to top function called');
     
-    // First try to scroll the editor container itself
-    const quizEditor = document.querySelector('.quiz-editor-section');
-    if (quizEditor) {
-        logger.debug('Scrolling editor section to top, current scrollTop:', quizEditor.scrollTop);
-        quizEditor.scrollTo({ top: 0, behavior: 'smooth' });
-        logger.debug('Editor scroll command sent');
-    } else {
-        logger.debug('Editor section not found, using window scroll');
-        // Fallback to window scroll
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+    let scrolled = false;
+    
+    // Try multiple containers to find the scrollable one
+    const containers = [
+        { element: document.querySelector('.quiz-editor-section'), name: 'editor section' },
+        { element: document.querySelector('.host-container'), name: 'host container' },
+        { element: document.documentElement, name: 'document' },
+        { element: document.body, name: 'body' }
+    ];
+    
+    for (const container of containers) {
+        if (container.element) {
+            const scrollTop = container.element.scrollTop;
+            const scrollHeight = container.element.scrollHeight;
+            const clientHeight = container.element.clientHeight;
+            
+            logger.debug(`Checking ${container.name}:`, { scrollTop, scrollHeight, clientHeight });
+            
+            // Check if this container is scrollable and has been scrolled
+            if (scrollHeight > clientHeight && scrollTop > 0) {
+                logger.debug(`Scrolling ${container.name} to top`);
+                container.element.scrollTo({ top: 0, behavior: 'smooth' });
+                scrolled = true;
+                break;
+            }
+        }
     }
     
-    // Also try scrolling any parent containers
-    const hostContainer = document.querySelector('.host-container');
-    if (hostContainer) {
-        hostContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    // Fallback: always try window scroll as well
+    const windowScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    if (windowScrollTop > 0) {
+        logger.debug('Scrolling window to top');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrolled = true;
+    }
+    
+    if (!scrolled) {
+        logger.debug('No scrollable container found or already at top');
     }
 }
 
@@ -356,27 +378,61 @@ export function toggleTheme() {
 // Initialize floating back-to-top button behavior
 function initializeBackToTopButton() {
     const backToTopBtn = document.getElementById('back-to-top-float');
+    const editorBackToTopBtn = document.getElementById('back-to-top');
     const editorSection = document.querySelector('.quiz-editor-section');
     
-    logger.debug('Initializing back-to-top button:', {
-        button: !!backToTopBtn,
+    logger.debug('Initializing back-to-top buttons:', {
+        floatingButton: !!backToTopBtn,
+        editorButton: !!editorBackToTopBtn,
         editor: !!editorSection
     });
     
-    if (backToTopBtn && editorSection) {
-        logger.debug('Setting up scroll listener for back-to-top button');
+    if (editorSection) {
+        logger.debug('Setting up scroll listener for back-to-top buttons');
         editorSection.addEventListener('scroll', () => {
             const scrollTop = editorSection.scrollTop;
             
             if (scrollTop > TIMING.SCROLL_THRESHOLD) {
-                if (!backToTopBtn.classList.contains('show')) {
-                    logger.debug('Showing back-to-top button');
+                // Show floating button
+                if (backToTopBtn && !backToTopBtn.classList.contains('show')) {
+                    logger.debug('Showing floating back-to-top button');
                     backToTopBtn.style.display = 'flex';
                     backToTopBtn.classList.add('show');
                 }
+                // Show editor button
+                if (editorBackToTopBtn && editorBackToTopBtn.style.display === 'none') {
+                    logger.debug('Showing editor back-to-top button');
+                    editorBackToTopBtn.style.display = 'flex';
+                }
             } else {
-                if (backToTopBtn.classList.contains('show')) {
-                    logger.debug('Hiding back-to-top button');
+                // Hide floating button
+                if (backToTopBtn && backToTopBtn.classList.contains('show')) {
+                    logger.debug('Hiding floating back-to-top button');
+                    backToTopBtn.classList.remove('show');
+                    setTimeout(() => {
+                        if (!backToTopBtn.classList.contains('show')) {
+                            backToTopBtn.style.display = 'none';
+                        }
+                    }, TIMING.ANIMATION_FADE_DURATION);
+                }
+                // Hide editor button
+                if (editorBackToTopBtn) {
+                    logger.debug('Hiding editor back-to-top button');
+                    editorBackToTopBtn.style.display = 'none';
+                }
+            }
+        });
+        
+        // Also listen to window scroll as fallback for both buttons
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Handle floating button
+            if (backToTopBtn) {
+                if (scrollTop > TIMING.SCROLL_THRESHOLD) {
+                    backToTopBtn.style.display = 'flex';
+                    backToTopBtn.classList.add('show');
+                } else {
                     backToTopBtn.classList.remove('show');
                     setTimeout(() => {
                         if (!backToTopBtn.classList.contains('show')) {
@@ -385,25 +441,18 @@ function initializeBackToTopButton() {
                     }, TIMING.ANIMATION_FADE_DURATION);
                 }
             }
-        });
-        
-        // Also listen to window scroll as fallback
-        window.addEventListener('scroll', () => {
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            if (scrollTop > TIMING.SCROLL_THRESHOLD) {
-                backToTopBtn.style.display = 'flex';
-                backToTopBtn.classList.add('show');
-            } else {
-                backToTopBtn.classList.remove('show');
-                setTimeout(() => {
-                    if (!backToTopBtn.classList.contains('show')) {
-                        backToTopBtn.style.display = 'none';
-                    }
-                }, TIMING.ANIMATION_FADE_DURATION);
+            
+            // Handle editor button with window scroll fallback
+            if (editorBackToTopBtn) {
+                if (scrollTop > TIMING.SCROLL_THRESHOLD) {
+                    editorBackToTopBtn.style.display = 'flex';
+                } else {
+                    editorBackToTopBtn.style.display = 'none';
+                }
             }
         });
     } else {
-        logger.warn('Back-to-top button or editor section not found');
+        logger.warn('Editor section not found for back-to-top button initialization');
     }
 }
 

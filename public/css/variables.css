@@ -337,7 +337,7 @@ body {
     font-size: calc(1.1rem * var(--global-font-scale)) !important; 
 }
 
-.fs-xl,   /* 1.2rem - Used 11x - SECOND MOST COMMON */
+.fs-xl,   /* 1.2rem - Used 12x - SECOND MOST COMMON */
 .preview-content *,
 .preview-content-split *,
 #preview-question-text,
@@ -345,7 +345,8 @@ body {
 .answer-stats .bar,
 .ai-controls .prompt-example-item,
 .result-card .score,
-.leaderboard-body .score { 
+.leaderboard-body .score,
+#preview-question-counter-split { 
     font-size: calc(1.2rem * var(--global-font-scale)) !important; 
 }
 
@@ -367,8 +368,8 @@ body {
 .quiz-editor-section h3,
 .final-results h2,
 .prompt-counter,
-.game-container .player-option,
-.game-container .tf-option { 
+.host-game-container .player-option,
+.host-game-container .tf-option { 
     font-size: calc(1.4rem * var(--global-font-scale)) !important; 
 }
 
@@ -641,7 +642,8 @@ body {
 .checkbox-option .MathJax,
 .tf-option .MathJax,
 .preview-option .MathJax,
-.game-container .MathJax {
+.host-game-container .MathJax,
+.player-game-container .MathJax {
     font-size: calc(1.2em * var(--global-font-scale)) !important;
 }
 

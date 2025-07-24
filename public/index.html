@@ -320,11 +320,6 @@
                         </div>
                         
                         <div class="preview-settings">
-                            <div class="utility-buttons">
-                                <button id="toggle-preview" class="btn secondary small" onclick="togglePreviewMode()">📱 <span data-translate="live_preview">Live Preview</span></button>
-                                <button id="ai-generator-btn" class="btn secondary small" onclick="openAIGeneratorModal()">🤖 <span data-translate="ai_generator">AI Generator</span></button>
-                                <button id="toggle-toolbar" class="btn secondary small desktop-only" onclick="toggleToolbar()">🛠️ <span data-translate="toolbar">Toolbar</span></button>
-                            </div>
                         </div>
                     </div>
                     
@@ -407,19 +402,11 @@
                         </div>
                     </div>
                     
-                    <div class="quiz-actions">
-                        <button id="add-question" class="btn secondary" data-translate="add_question">Add Question</button>
-                        <button id="save-quiz" class="btn secondary" data-translate="save_quiz">Save Quiz</button>
-                        <button id="load-quiz" class="btn secondary" data-translate="load_quiz">Load Quiz</button>
-                        <button id="import-quiz" class="btn secondary" data-translate="import_quiz">Import CSV/JSON</button>
-                        <button id="preview-quiz" class="btn secondary" data-translate="preview_quiz">Preview Quiz</button>
-                        <button id="start-hosting" class="btn primary">🚀 <span data-translate="start_game">Start Game</span></button>
-                    </div>
                     
                     <input type="file" id="import-file-input" accept=".csv,.json" style="display: none;">
                     
                     <!-- Back to Top Button -->
-                    <button id="back-to-top" class="back-to-top-btn" style="display: none;" title="Back to Top">
+                    <button id="back-to-top" class="back-to-top-btn" onclick="scrollToTop()" style="display: none;" title="Back to Top">
                         ⬆️
                     </button>
                     </div>
@@ -640,7 +627,7 @@
         </div>
 
         <div id="host-game-screen" class="screen">
-            <div class="game-container">
+            <div class="host-game-container">
                 <!-- Host-specific header with timer and counter -->
                 <div class="question-header">
                     <span id="question-counter">Question 1 of 5</span>

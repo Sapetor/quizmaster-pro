@@ -124,7 +124,7 @@ header {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 30px;
+    padding: 40px;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -337,7 +337,7 @@ header {
     gap: 20px;
 }
 
-/* .game-container styling moved to game.css for better organization */
+/* .host-game-container styling moved to game.css for better organization */
 
 /* Grid Layouts */
 .games-grid {
@@ -417,6 +417,13 @@ header {
 }
 
 /* Back to Top Button Layout */
+.back-to-top-btn {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10;
+}
+
 .host-container.split-screen .back-to-top-btn {
     position: absolute;
     bottom: 20px;

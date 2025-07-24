@@ -68,7 +68,7 @@
 /* === MODERN GAME SCREEN STYLES === */
 
 /* Host Game Screen */
-.game-container {
+.host-game-container {
     max-width: 1600px; /* Use same width for all questions for consistency */
     margin: 0 auto;
     padding: 20px;
@@ -84,12 +84,26 @@
     border-radius: var(--border-radius-large);
     padding: 40px;
     box-shadow: var(--shadow-lg);
-    text-align: center;
+    /* REMOVED text-align: center to eliminate inheritance conflicts */
     position: relative;
     overflow: hidden;
     margin-left: auto;
     margin-right: auto;
     max-width: 1600px; /* Consistent width for all questions */
+}
+
+/* Apply center alignment only to specific elements that need it */
+.question-display #current-question,
+.question-display .question-header,
+.question-display .question-text:not(pre),
+.question-display .timer-display {
+    text-align: center;
+}
+
+/* Ensure code blocks always use left alignment (no inheritance conflicts) */
+.question-display pre,
+.question-display code {
+    text-align: left;
 }
 
 /* Code questions styling handled below in the enhanced layout section */
@@ -136,10 +150,10 @@
 /* Game container adjustments for code content */
 /* Ensure code questions use same width as LaTeX questions on desktop */
 @media (min-width: 769px) {
-    .game-container:has(pre),
-    .game-container.has-code {
-        max-width: 1600px; /* Same as base .game-container */
-        padding: 20px; /* Same as base .game-container */
+    .host-game-container:has(pre),
+    .host-game-container.has-code {
+        max-width: 1600px; /* Same as base .host-game-container */
+        padding: 20px; /* Same as base .host-game-container */
     }
     
     .question-display:has(pre),
@@ -227,13 +241,29 @@
 
 /* Normalize host code blocks to match client appearance */
 #current-question pre {
-    font-size: 0.6em; /* 2rem × 0.6em = 1.2rem (matches client: 1.5rem × 0.8em = 1.2rem) */
+    font-size: 0.8em; /* Match client-side enhanced font-size (.player-option pre enhanced rule) */
+    padding: 15px; /* Match client-side padding */
+    margin: 15px auto; /* Match client-side enhanced margin (.player-option pre enhanced rule) */
+    border-radius: 8px; /* Match client-side enhanced border-radius (.player-option pre enhanced rule) */
+    background: rgba(0, 0, 0, 0.9); /* Match client-side background */
+    color: #f8f8f2; /* Match client-side color */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Match client-side border */
+    max-width: 100%; /* Match client-side max-width */
+    overflow-x: auto; /* Handle long code lines */
+    white-space: pre; /* Preserve code formatting */
+    line-height: 1.4; /* Consistent line-height */
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace; /* Explicit font-family match */
+    font-weight: 400 !important; /* CRITICAL FIX: Use normal weight to match typical client-side rendering */
+    text-align: left !important; /* CRITICAL FIX: Override parent's text-align: center to match client-side left alignment */
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace !important; /* Force monospace over any inheritance */
 }
 
-/* Fix visual rendering offset - compensate for browser rendering artifact */
+/* Match client-side nested code styling */
 #current-question pre code {
-    display: block;
-    transform: translateX(-1px); /* Fix 1px visual gap at start of first line */
+    display: inline; /* Match client-side inline display */
+    background: none; /* Match client-side nested code styling */
+    border: none;
+    padding: 0;
 }
 
 /* Inline code in host questions - theme-aware styling */
@@ -379,6 +409,19 @@
     border: 1px solid rgba(15, 23, 42, 0.2);
 }
 
+/* Base client-side inline code styling - match host styling */
+#player-question-text code,
+.player-option code {
+    background: rgba(255, 255, 255, 0.1);
+    color: #87CEEB;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+    font-weight: 600;
+    font-size: 0.9em;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 /* Light mode override for client question and option code - match host styling */
 [data-theme="light"] #player-question-text code,
 [data-theme="light"] .player-option code {
@@ -392,12 +435,20 @@
 [data-theme="light"] .option-display pre,
 [data-theme="light"] #player-question-text pre,
 [data-theme="light"] .player-option pre {
-    background: rgba(30, 41, 59, 0.95) !important;
-    color: #f1f5f9 !important;
-    border: 1px solid rgba(30, 41, 59, 0.3) !important;
+    background: rgba(0, 0, 0, 0.9) !important; /* Match client-side dark background */
+    color: #f8f8f2 !important; /* Match client-side color */
+    font-weight: 400 !important; /* Use normal weight for consistent rendering */
+    border: 1px solid rgba(255, 255, 255, 0.2) !important; /* Match client-side border */
     display: block !important;
     white-space: pre !important;
     line-height: 1.4 !important;
+    padding: 15px !important; /* Match client-side padding */
+    margin: 15px auto !important; /* Match client-side enhanced margin */
+    border-radius: 8px !important; /* Match client-side enhanced border-radius */
+    font-size: 0.8em !important; /* Match client-side enhanced font-size */
+    overflow-x: auto !important; /* Match client-side overflow */
+    max-width: 100% !important; /* Match client-side max-width */
+    text-align: left !important; /* CRITICAL: Override parent text-align: center */
 }
 
 /* Ensure code blocks always render as single containers (not per-line backgrounds) */
@@ -426,12 +477,20 @@
 :not([data-theme="light"]) .option-display pre,
 :not([data-theme="light"]) #player-question-text pre,
 :not([data-theme="light"]) .player-option pre {
-    background: rgba(0, 0, 0, 0.4) !important;
+    background: rgba(0, 0, 0, 0.9) !important; /* Match client-side background */
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     display: block !important;
     white-space: pre !important;
     line-height: 1.4 !important;
-    /* Don't override color - let syntax highlighting work */
+    padding: 15px !important; /* Match client-side padding */
+    margin: 15px auto !important; /* Match client-side enhanced margin */
+    border-radius: 8px !important; /* Match client-side enhanced border-radius */
+    font-size: 0.8em !important; /* Match client-side enhanced font-size */
+    overflow-x: auto !important; /* Match client-side overflow */
+    max-width: 100% !important; /* Match client-side max-width */
+    text-align: left !important; /* CRITICAL: Override parent text-align: center */
+    color: #f8f8f2 !important; /* Match client-side color */
+    font-weight: 400 !important; /* Use normal weight for consistent rendering */
 }
 
 /* Ensure code blocks always render as single containers in dark mode */
@@ -1826,8 +1885,8 @@
         gap: 16px;
     }
     
-    .game-container:has(pre),
-    .game-container.has-code {
+    .host-game-container:has(pre),
+    .host-game-container.has-code {
         max-width: 100%;
         padding: 16px;
     }
@@ -1964,8 +2023,8 @@
         gap: 12px;
     }
     
-    .game-container:has(pre),
-    .game-container.has-code {
+    .host-game-container:has(pre),
+    .host-game-container.has-code {
         padding: 12px;
     }
 }
