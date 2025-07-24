@@ -47,6 +47,11 @@ export class GameManager {
             window.addEventListener('beforeunload', this.cleanup);
             window.addEventListener('unload', this.cleanup);
         }
+        
+        // Make debug functions available globally
+        window.debugGame = () => this.debugGameState();
+        window.debugMathJax = () => this.debugMathJaxState();
+        window.debugLatex = () => this.debugLatexElements();
     }
 
     /**
@@ -209,19 +214,51 @@ export class GameManager {
     updateHostQuestionContent(data, hostQuestionElement) {
         if (!hostQuestionElement) return;
         
+        // DEBUG: Log detailed information about the rendering context
+        logger.debug('🔍 HOST QUESTION DEBUG:', {
+            questionId: data.questionId || 'unknown',
+            questionType: data.type,
+            questionLength: data.question?.length || 0,
+            hasLatex: this.detectLatexContent(data.question),
+            elementId: hostQuestionElement.id,
+            elementExists: !!hostQuestionElement,
+            elementVisible: hostQuestionElement.offsetParent !== null,
+            mathJaxReady: !!window.MathJax?.typesetPromise,
+            existingMathJaxElements: hostQuestionElement.querySelectorAll('mjx-container, .MathJax').length
+        });
+        
         // Simple content update - no FOUC prevention needed in game view
         hostQuestionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
         
-        logger.debug('Host question HTML set:', data.question);
+        logger.debug('Host question HTML set:', data.question.substring(0, 200) + '...');
         
         // Handle question image for host
         this.updateQuestionImage(data, 'question-image-display');
         
+        // DEBUG: Log element state before MathJax rendering
+        logger.debug('🔍 Pre-MathJax element state:', {
+            innerHTML: hostQuestionElement.innerHTML.substring(0, 200) + '...',
+            hasLatexInContent: this.detectLatexContent(hostQuestionElement.innerHTML),
+            elementClasses: hostQuestionElement.className,
+            elementStyle: hostQuestionElement.style.cssText
+        });
+        
         // Render MathJax for host question with enhanced error handling
         mathJaxService.renderElement(hostQuestionElement, 300).then(() => {
             logger.debug('✅ MathJax question rendering completed for host');
+            // DEBUG: Log success state
+            logger.debug('🔍 Post-MathJax success state:', {
+                mathJaxElements: hostQuestionElement.querySelectorAll('mjx-container').length,
+                finalHTML: hostQuestionElement.innerHTML.substring(0, 200) + '...'
+            });
         }).catch(err => {
             logger.error('❌ MathJax question render error for host:', err);
+            // DEBUG: Log failure state
+            logger.debug('🔍 Post-MathJax error state:', {
+                error: err.message,
+                mathJaxElements: hostQuestionElement.querySelectorAll('mjx-container').length,
+                elementHTML: hostQuestionElement.innerHTML.substring(0, 200) + '...'
+            });
             // Fallback: Try one more time with longer delay
             setTimeout(() => {
                 mathJaxService.renderElement(hostQuestionElement, 400).catch(fallbackErr => {
@@ -229,6 +266,21 @@ export class GameManager {
                 });
             }, 150);
         });
+    }
+    
+    /**
+     * Debug helper: Detect LaTeX content in a string
+     */
+    detectLatexContent(content) {
+        if (!content) return false;
+        return content.includes('$$') || 
+               content.includes('\\(') || 
+               content.includes('\\[') || 
+               content.includes('$') ||
+               content.includes('\\frac') ||
+               content.includes('\\sqrt') ||
+               content.includes('\\sum') ||
+               content.includes('\\int');
     }
 
     /**
@@ -251,11 +303,30 @@ export class GameManager {
         // Translate any dynamic content in the options container
         translationManager.translateContainer(hostOptionsContainer);
         
+        // DEBUG: Log options state before MathJax rendering
+        logger.debug('🔍 HOST OPTIONS DEBUG:', {
+            optionsCount: data.options?.length || 0,
+            hasLatexInOptions: data.options?.some(opt => this.detectLatexContent(opt)) || false,
+            containerHTML: hostOptionsContainer.innerHTML.substring(0, 300) + '...',
+            existingMathJaxElements: hostOptionsContainer.querySelectorAll('mjx-container, .MathJax').length
+        });
+        
         // Render MathJax for host options with enhanced error handling
         mathJaxService.renderElement(hostOptionsContainer, 350).then(() => {
             logger.debug('✅ MathJax options rendering completed for host');
+            // DEBUG: Log success state
+            logger.debug('🔍 Post-MathJax options success:', {
+                mathJaxElements: hostOptionsContainer.querySelectorAll('mjx-container').length,
+                finalHTML: hostOptionsContainer.innerHTML.substring(0, 300) + '...'
+            });
         }).catch(err => {
             logger.error('❌ MathJax options render error for host:', err);
+            // DEBUG: Log failure state
+            logger.debug('🔍 Post-MathJax options error:', {
+                error: err.message,
+                mathJaxElements: hostOptionsContainer.querySelectorAll('mjx-container').length,
+                containerHTML: hostOptionsContainer.innerHTML.substring(0, 300) + '...'
+            });
             // Fallback: Try one more time with longer delay
             setTimeout(() => {
                 mathJaxService.renderElement(hostOptionsContainer, 450).catch(fallbackErr => {
@@ -1951,5 +2022,89 @@ export class GameManager {
         } catch (error) {
             logger.error('Failed to set static timer display:', error);
         }
+    }
+    
+    // ===============================
+    // DEBUG METHODS - Call from browser console
+    // ===============================
+    
+    /**
+     * Debug game state - call debugGame() from console
+     */
+    debugGameState() {
+        const hostElement = document.getElementById('current-question');
+        const playerElement = document.getElementById('player-question-text');
+        const optionsElement = document.getElementById('answer-options');
+        
+        console.log('🔍 GAME DEBUG STATE:', {
+            isHost: this.isHost,
+            playerName: this.playerName,
+            currentQuestion: this.currentQuestion,
+            gamePin: this.gamePin,
+            elements: {
+                hostQuestionExists: !!hostElement,
+                playerQuestionExists: !!playerElement,
+                optionsExists: !!optionsElement,
+                hostVisible: hostElement?.offsetParent !== null,
+                playerVisible: playerElement?.offsetParent !== null
+            }
+        });
+        
+        return 'Game state logged above';
+    }
+    
+    /**
+     * Debug MathJax state - call debugMathJax() from console
+     */
+    debugMathJaxState() {
+        const mathJaxStatus = {
+            mathJaxExists: !!window.MathJax,
+            typesetPromiseExists: !!window.MathJax?.typesetPromise,
+            startupExists: !!window.MathJax?.startup,
+            mathJaxReady: !!window.MathJax?.typesetPromise
+        };
+        
+        console.log('🔍 MATHJAX DEBUG STATE:', mathJaxStatus);
+        
+        if (window.MathJax?.startup) {
+            console.log('🔍 MathJax Startup:', window.MathJax.startup);
+        }
+        
+        return mathJaxStatus;
+    }
+    
+    /**
+     * Debug LaTeX elements - call debugLatex() from console
+     */
+    debugLatexElements() {
+        const hostElement = document.getElementById('current-question');
+        const playerElement = document.getElementById('player-question-text');
+        const optionsElement = document.getElementById('answer-options');
+        
+        const elements = [
+            { name: 'Host Question', element: hostElement },
+            { name: 'Player Question', element: playerElement },
+            { name: 'Host Options', element: optionsElement }
+        ];
+        
+        elements.forEach(({name, element}) => {
+            if (element) {
+                const mathJaxElements = element.querySelectorAll('mjx-container, .MathJax');
+                const hasLatex = this.detectLatexContent(element.innerHTML);
+                
+                console.log(`🔍 ${name.toUpperCase()} LATEX DEBUG:`, {
+                    exists: !!element,
+                    visible: element.offsetParent !== null,
+                    innerHTML: element.innerHTML.substring(0, 200) + '...',
+                    hasLatexContent: hasLatex,
+                    mathJaxElementsCount: mathJaxElements.length,
+                    mathJaxElements: Array.from(mathJaxElements).map(el => el.tagName)
+                });
+            } else {
+                console.log(`🔍 ${name.toUpperCase()} LATEX DEBUG: Element not found`);
+            }
+        });
+        
+        return 'LaTeX elements logged above';
     }
 }

@@ -12,7 +12,7 @@ export const DEBUG = {
         INFO: 3,
         DEBUG: 4
     },
-    CURRENT_LEVEL: 2 // Show errors and warnings only (1=errors, 2=warnings, 3=info, 4=debug)
+    CURRENT_LEVEL: 4 // Show errors and warnings only (1=errors, 2=warnings, 3=info, 4=debug)
 };
 
 // Debug utility functions
