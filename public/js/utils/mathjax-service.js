@@ -143,43 +143,48 @@ export class MathJaxService {
                             logger.debug('🔧 Clearing corrupted MathJax state...');
                             delete window.MathJax;
                             
-                            // Remove existing script
-                            const existingScript = document.querySelector('script[src*="mathjax"]');
+                            // Remove existing script by ID (matches HTML file)
+                            const existingScript = document.getElementById('MathJax-script');
                             if (existingScript) {
                                 existingScript.remove();
                                 logger.debug('🔧 Removed corrupted MathJax script');
                             }
                             
-                            // Reload MathJax with cache busting
-                            const script = document.createElement('script');
-                            script.src = 'https://polyfill.io/v3/polyfill.min.js?features=es6';
-                            script.onload = () => {
-                                const mathJaxScript = document.createElement('script');
-                                mathJaxScript.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js?reload=' + Date.now();
-                                mathJaxScript.onload = () => {
-                                    logger.debug('🔧 MathJax script reloaded with cache busting');
-                                    // Wait for MathJax to fully initialize
-                                    const waitForInit = () => {
-                                        if (window.MathJax && window.MathJax.typesetPromise) {
-                                            logger.debug('✅ MathJax successfully reinitialized after F5 corruption');
-                                            // Now render the element
-                                            window.MathJax.typesetPromise([element]).then(() => {
-                                                this.pendingRenders.delete(element);
-                                                resolve();
-                                            }).catch(err => {
-                                                logger.error('❌ Render failed after F5 fix:', err);
-                                                this.pendingRenders.delete(element);
-                                                resolve();
-                                            });
-                                        } else {
-                                            setTimeout(waitForInit, 100);
-                                        }
-                                    };
-                                    waitForInit();
+                            // Reload MathJax with cache busting - use same URL as in HTML
+                            const mathJaxScript = document.createElement('script');
+                            mathJaxScript.id = 'MathJax-script';
+                            mathJaxScript.async = true;
+                            mathJaxScript.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js?reload=' + Date.now();
+                            
+                            mathJaxScript.onload = () => {
+                                logger.debug('🔧 MathJax script reloaded with cache busting');
+                                // Wait for MathJax to fully initialize
+                                const waitForInit = () => {
+                                    if (window.MathJax && window.MathJax.typesetPromise) {
+                                        logger.debug('✅ MathJax successfully reinitialized after F5 corruption');
+                                        // Now render the element
+                                        window.MathJax.typesetPromise([element]).then(() => {
+                                            this.pendingRenders.delete(element);
+                                            resolve();
+                                        }).catch(err => {
+                                            logger.error('❌ Render failed after F5 fix:', err);
+                                            this.pendingRenders.delete(element);
+                                            resolve();
+                                        });
+                                    } else {
+                                        setTimeout(waitForInit, 100);
+                                    }
                                 };
-                                document.head.appendChild(mathJaxScript);
+                                waitForInit();
                             };
-                            document.head.appendChild(script);
+                            
+                            mathJaxScript.onerror = (error) => {
+                                logger.error('❌ Failed to reload MathJax script:', error);
+                                this.pendingRenders.delete(element);
+                                resolve();
+                            };
+                            
+                            document.head.appendChild(mathJaxScript);
                             
                             this.pendingRenders.delete(element);
                             return; // Exit early
