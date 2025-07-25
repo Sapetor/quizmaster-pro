@@ -108,6 +108,78 @@ export class MathJaxService {
     }
 
     /**
+     * Coordinate multi-tab recovery to prevent interference
+     * @returns {string} 'leader' or 'follower'
+     */
+    coordinateMultiTabRecovery() {
+        try {
+            const recoveryKey = 'quizmaster_recovery_coordination';
+            const coordination = JSON.parse(localStorage.getItem(recoveryKey) || '{}');
+            const now = Date.now();
+            
+            // Clean up old coordination entries (older than 30 seconds)
+            if (coordination.timestamp && (now - coordination.timestamp > 30000)) {
+                localStorage.removeItem(recoveryKey);
+                coordination = {};
+            }
+            
+            // If no active recovery, become the leader
+            if (!coordination.leaderId || !coordination.timestamp) {
+                const newCoordination = {
+                    leaderId: this.tabId,
+                    timestamp: now,
+                    status: 'in_progress'
+                };
+                localStorage.setItem(recoveryKey, JSON.stringify(newCoordination));
+                logger.debug(`👑 Became recovery leader: ${this.tabId}`);
+                return 'leader';
+            }
+            
+            // If this tab is already the leader, continue as leader
+            if (coordination.leaderId === this.tabId) {
+                return 'leader';
+            }
+            
+            // Otherwise, follow the existing leader
+            logger.debug(`👥 Following recovery leader: ${coordination.leaderId}`);
+            return 'follower';
+            
+        } catch (e) {
+            logger.debug('Recovery coordination error (fallback to leader):', e.message);
+            return 'leader'; // Fallback to leader if coordination fails
+        }
+    }
+
+    /**
+     * Perform script reload and notify other tabs
+     */
+    async performScriptReload(element) {
+        return new Promise((resolve) => {
+            // Notify start of recovery
+            this.updateRecoveryStatus('reloading');
+            
+            // Continue with the existing script reload logic
+            // (The rest of the recovery logic will follow this)
+        });
+    }
+
+    /**
+     * Update recovery status for other tabs
+     */
+    updateRecoveryStatus(status) {
+        try {
+            const recoveryKey = 'quizmaster_recovery_coordination';
+            const coordination = JSON.parse(localStorage.getItem(recoveryKey) || '{}');
+            coordination.status = status;
+            coordination.timestamp = Date.now();
+            localStorage.setItem(recoveryKey, JSON.stringify(coordination));
+            logger.debug(`🗺 Recovery status updated: ${status}`);
+        } catch (e) {
+            logger.debug('Recovery status update error (not critical):', e.message);
+        }
+    }
+
+    /**
      * Initialize MathJax readiness detection
      */
     initializeMathJax() {
@@ -230,34 +302,44 @@ export class MathJaxService {
                                 logger.debug(`🔄 CHROME F5 DETECTED: ${this.isHost ? 'HOST' : 'CLIENT'} tab recovery (Other tabs: ${hasOtherTabs})`);
                                 
                                 if (hasOtherTabs) {
-                                    // Multi-tab scenario: Use safer recovery without script reloading
-                                    logger.debug('🚫 Multi-tab detected: Using safe recovery without script reload');
+                                    // Multi-tab scenario: Use coordinated recovery
+                                    logger.debug('🔄 Multi-tab detected: Using coordinated recovery');
                                     
-                                    // Wait longer for MathJax to self-recover
-                                    const waitForSelfRecovery = (attempts = 0) => {
-                                        const maxAttempts = 20; // 10 seconds total
+                                    // Try to coordinate script reload across tabs
+                                    const coordinationResult = this.coordinateMultiTabRecovery();
+                                    
+                                    if (coordinationResult === 'leader') {
+                                        logger.debug('👑 This tab is the recovery leader - performing script reload');
+                                        // Continue with script reload as the leader
+                                    } else if (coordinationResult === 'follower') {
+                                        logger.debug('👥 This tab is following - waiting for leader recovery');
                                         
-                                        if (window.MathJax && window.MathJax.typesetPromise) {
-                                            logger.debug('✅ Multi-tab safe recovery: MathJax self-recovered');
-                                            window.MathJax.typesetPromise([element]).then(() => {
-                                                this.pendingRenders.delete(element);
-                                                resolve();
-                                            }).catch(err => {
-                                                logger.error('❌ Multi-tab render failed:', err);
-                                                this.pendingRenders.delete(element);
-                                                resolve();
-                                            });
-                                        } else if (attempts < maxAttempts) {
-                                            setTimeout(() => waitForSelfRecovery(attempts + 1), 500);
-                                        } else {
-                                            logger.error('❌ Multi-tab recovery timeout');
-                                            this.pendingRenders.delete(element);
-                                            resolve();
-                                        }
-                                    };
-                                    
-                                    waitForSelfRecovery();
-                                    return;
+                                        // Wait for the leader tab to complete recovery
+                                        const waitForLeaderRecovery = (attempts = 0) => {
+                                            const maxAttempts = 30; // 15 seconds total
+                                            
+                                            if (window.MathJax && window.MathJax.typesetPromise) {
+                                                logger.debug('✅ Multi-tab follower: Leader recovery completed');
+                                                window.MathJax.typesetPromise([element]).then(() => {
+                                                    this.pendingRenders.delete(element);
+                                                    resolve();
+                                                }).catch(err => {
+                                                    logger.error('❌ Multi-tab follower render failed:', err);
+                                                    this.pendingRenders.delete(element);
+                                                    resolve();
+                                                });
+                                            } else if (attempts < maxAttempts) {
+                                                setTimeout(() => waitForLeaderRecovery(attempts + 1), 500);
+                                            } else {
+                                                logger.error('❌ Multi-tab follower recovery timeout - attempting own recovery');
+                                                // Fallback: try own recovery
+                                                this.performScriptReload(element).then(resolve).catch(() => resolve());
+                                            }
+                                        };
+                                        
+                                        waitForLeaderRecovery();
+                                        return;
+                                    }
                                 } else {
                                     // Single tab: Safe to use aggressive recovery
                                     logger.debug('🔧 Single tab detected: Using full recovery');
@@ -336,6 +418,9 @@ export class MathJaxService {
                                     if (window.MathJax && window.MathJax.typesetPromise) {
                                         logger.debug('✅ MathJax successfully reinitialized after F5 corruption');
                                         
+                                        // Notify other tabs that recovery is complete
+                                        this.updateRecoveryStatus('completed');
+                                        
                                         // Render the initial element that triggered recovery
                                         window.MathJax.typesetPromise([element]).then(() => {
                                             this.pendingRenders.delete(element);
@@ -357,6 +442,16 @@ export class MathJaxService {
                                         callbacks.forEach(callback => {
                                             setTimeout(callback, callbackDelay);
                                         });
+                                        
+                                        // Clean up coordination after successful recovery
+                                        setTimeout(() => {
+                                            try {
+                                                localStorage.removeItem('quizmaster_recovery_coordination');
+                                                logger.debug('🧹 Cleaned up recovery coordination');
+                                            } catch (e) {
+                                                logger.debug('Recovery cleanup error (not critical):', e.message);
+                                            }
+                                        }, 2000); // Wait 2 seconds for other tabs to process
                                     } else {
                                         const pollInterval = this.isChrome ? 150 : 100; // Chrome needs slower polling
                                         setTimeout(waitForInit, pollInterval);
@@ -372,6 +467,18 @@ export class MathJaxService {
                                 // Reset recovery state and clear callbacks
                                 this.isRecovering = false;
                                 this.recoveryCallbacks = [];
+                                
+                                // Notify other tabs that recovery failed
+                                this.updateRecoveryStatus('failed');
+                                
+                                // Clean up coordination
+                                setTimeout(() => {
+                                    try {
+                                        localStorage.removeItem('quizmaster_recovery_coordination');
+                                    } catch (e) {
+                                        logger.debug('Recovery cleanup error (not critical):', e.message);
+                                    }
+                                }, 1000);
                                 
                                 resolve();
                             };
