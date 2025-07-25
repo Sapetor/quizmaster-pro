@@ -10,6 +10,8 @@ export class MathJaxService {
         this.isReady = false;
         this.pendingRenders = new Set();
         this.isWindows = this.detectWindows();
+        this.isRecovering = false; // Track if F5 recovery is in progress
+        this.recoveryCallbacks = []; // Queue callbacks waiting for recovery
         this.initializeMathJax();
     }
 
@@ -139,6 +141,27 @@ export class MathJaxService {
                         if (hasStartup && !hasDocument && !hasTypesetPromise) {
                             logger.debug('🚨 F5 CORRUPTION DETECTED: MathJax in corrupted state (startup=true, document=false, typesetPromise=false)');
                             
+                            // If already recovering, queue this render attempt
+                            if (this.isRecovering) {
+                                logger.debug('🔄 F5 recovery already in progress, queueing render attempt');
+                                this.recoveryCallbacks.push(() => {
+                                    if (window.MathJax && window.MathJax.typesetPromise) {
+                                        window.MathJax.typesetPromise([element]).then(() => {
+                                            this.pendingRenders.delete(element);
+                                            resolve();
+                                        }).catch(err => {
+                                            logger.error('❌ Queued render failed after F5 recovery:', err);
+                                            this.pendingRenders.delete(element);
+                                            resolve();
+                                        });
+                                    }
+                                });
+                                return;
+                            }
+                            
+                            // Start recovery process
+                            this.isRecovering = true;
+                            
                             // CLEAR CORRUPTED STATE AND REINITIALIZE
                             logger.debug('🔧 Clearing corrupted MathJax state...');
                             delete window.MathJax;
@@ -162,14 +185,26 @@ export class MathJaxService {
                                 const waitForInit = () => {
                                     if (window.MathJax && window.MathJax.typesetPromise) {
                                         logger.debug('✅ MathJax successfully reinitialized after F5 corruption');
-                                        // Now render the element
+                                        
+                                        // Render the initial element that triggered recovery
                                         window.MathJax.typesetPromise([element]).then(() => {
                                             this.pendingRenders.delete(element);
                                             resolve();
                                         }).catch(err => {
-                                            logger.error('❌ Render failed after F5 fix:', err);
+                                            logger.error('❌ Initial render failed after F5 fix:', err);
                                             this.pendingRenders.delete(element);
                                             resolve();
+                                        });
+                                        
+                                        // Process all queued render attempts
+                                        logger.debug(`🔄 Processing ${this.recoveryCallbacks.length} queued render attempts`);
+                                        const callbacks = [...this.recoveryCallbacks];
+                                        this.recoveryCallbacks = [];
+                                        this.isRecovering = false;
+                                        
+                                        // Execute all queued callbacks
+                                        callbacks.forEach(callback => {
+                                            setTimeout(callback, 50); // Small delay to ensure MathJax is fully ready
                                         });
                                     } else {
                                         setTimeout(waitForInit, 100);
@@ -181,6 +216,11 @@ export class MathJaxService {
                             mathJaxScript.onerror = (error) => {
                                 logger.error('❌ Failed to reload MathJax script:', error);
                                 this.pendingRenders.delete(element);
+                                
+                                // Reset recovery state and clear callbacks
+                                this.isRecovering = false;
+                                this.recoveryCallbacks = [];
+                                
                                 resolve();
                             };
                             
