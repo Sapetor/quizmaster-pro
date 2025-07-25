@@ -4,6 +4,102 @@
 
 /* Container defined in layout.css - removed duplicate */
 
+/* === MATHJAX PROGRESSIVE LOADING === */
+.mathjax-loading {
+    position: relative;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.mathjax-loading::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background-size: 200% 100%;
+    animation: mathJaxShimmer 1.5s infinite;
+    pointer-events: none;
+    border-radius: 4px;
+}
+
+.mathjax-ready {
+    opacity: 1;
+    transition: opacity 0.4s ease;
+}
+
+.mathjax-fallback {
+    font-family: 'Courier New', monospace;
+    background: rgba(255, 255, 0, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.9em;
+    border-left: 3px solid rgba(255, 193, 7, 0.5);
+}
+
+@keyframes mathJaxShimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Progressive Question Loading */
+.question-loading {
+    min-height: 60px;
+    background: linear-gradient(135deg, 
+        rgba(255,255,255,0.1) 0%, 
+        rgba(255,255,255,0.05) 50%, 
+        rgba(255,255,255,0.1) 100%);
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.question-loading::before {
+    content: "Loading question...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255,255,255,0.6);
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+.options-loading {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.option-skeleton {
+    height: 40px;
+    background: linear-gradient(135deg, 
+        rgba(255,255,255,0.08) 0%, 
+        rgba(255,255,255,0.04) 50%, 
+        rgba(255,255,255,0.08) 100%);
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+}
+
+.option-skeleton::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: optionShimmer 2s infinite;
+}
+
+@keyframes optionShimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
 /* === MODERN BUTTON SYSTEM === */
 .btn {
     /* Base Modern Button */

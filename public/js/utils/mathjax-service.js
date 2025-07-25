@@ -294,31 +294,9 @@ export class MathJaxService {
                             window.MathJax.startup.getComponents();
                         }
                         
-                        // Recreate document object that F5 corruption destroys
-                        if (window.MathJax.startup.defaultReady && typeof window.MathJax.startup.defaultReady === 'function') {
-                            logger.debug('✨ Triggering MathJax defaultReady to recreate document');
-                            window.MathJax.startup.defaultReady();
-                            
-                            // Give it a moment to initialize
-                            setTimeout(() => {
-                                if (window.MathJax && window.MathJax.typesetPromise) {
-                                    logger.debug('✨ Lightweight recovery successful - typesetPromise restored');
-                                    window.MathJax.typesetPromise([element]).then(() => {
-                                        this.pendingRenders.delete(element);
-                                        resolve();
-                                    }).catch(err => {
-                                        logger.debug('❌ Lightweight recovery render failed:', err);
-                                        reject(err);
-                                    });
-                                } else {
-                                    logger.debug('❌ Lightweight recovery failed - typesetPromise still unavailable');
-                                    reject(new Error('typesetPromise not restored'));
-                                }
-                            }, 100); // Much faster than script reload
-                        } else {
-                            logger.debug('❌ Lightweight recovery not possible - no defaultReady function');
-                            reject(new Error('defaultReady not available'));
-                        }
+                        // For F5 corruption, lightweight recovery often fails - go straight to script reload
+                        logger.debug('❌ F5 corruption detected - lightweight recovery skipped, using script reload for reliability');
+                        reject(new Error('F5 corruption requires script reload'));
                     } catch (e) {
                         logger.debug('❌ Lightweight recovery error:', e.message);
                         reject(e);
@@ -350,17 +328,21 @@ export class MathJaxService {
                         if (window.MathJax && window.MathJax.typesetPromise) {
                             window.MathJax.typesetPromise([element]).then(() => {
                                 this.pendingRenders.delete(element);
+                                this.completeProgressiveLoading(element);
                                 resolve();
                             }).catch(() => {
                                 this.pendingRenders.delete(element);
+                                this.completeProgressiveLoading(element);
                                 resolve();
                             });
                         } else {
                             this.pendingRenders.delete(element);
+                            this.completeProgressiveLoading(element);
                             resolve();
                         }
                     }).catch(() => {
                         this.pendingRenders.delete(element);
+                        this.completeProgressiveLoading(element);
                         resolve();
                     });
                     return;
@@ -433,11 +415,13 @@ export class MathJaxService {
                         // Render the element
                         window.MathJax.typesetPromise([element]).then(() => {
                             this.pendingRenders.delete(element);
+                            this.completeProgressiveLoading(element);
                             this.isRecovering = false;
                             resolve();
                         }).catch(err => {
                             logger.error('❌ Script reload render failed:', err);
                             this.pendingRenders.delete(element);
+                            this.completeProgressiveLoading(element);
                             this.isRecovering = false;
                             resolve();
                         });
@@ -570,6 +554,9 @@ export class MathJaxService {
      */
     async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 10) {
         return new Promise((resolve, reject) => {
+            // Add progressive loading UI
+            this.showProgressiveLoading(element);
+            
             const attemptRender = (attempt = 1) => {
                 setTimeout(() => {
                     logger.debug(`🔍 MathJax render attempt ${attempt}/${maxRetries} - Platform: ${this.isWindows ? 'Windows' : 'Other'}`);
@@ -594,6 +581,9 @@ export class MathJaxService {
                                 logger.debug(`✅ MathJax render successful on attempt ${attempt}`);
                                 this.pendingRenders.delete(element);
                                 
+                                // Complete progressive loading
+                                this.completeProgressiveLoading(element);
+                                
                                 resolve();
                             })
                             .catch(error => {
@@ -603,6 +593,8 @@ export class MathJaxService {
                                     setTimeout(() => attemptRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
                                 } else {
                                     this.pendingRenders.delete(element);
+                                    // Complete progressive loading even on error
+                                    this.completeProgressiveLoading(element);
                                     reject(error);
                                 }
                             });
@@ -658,12 +650,20 @@ export class MathJaxService {
                                     if (window.MathJax && window.MathJax.typesetPromise) {
                                         window.MathJax.typesetPromise([element]).then(() => {
                                             this.pendingRenders.delete(element);
+                                            // Complete progressive loading after successful render
+                                            this.completeProgressiveLoading(element);
                                             resolve();
                                         }).catch(err => {
                                             logger.error('❌ Queued render failed after F5 recovery:', err);
                                             this.pendingRenders.delete(element);
+                                            // Complete progressive loading even on error
+                                            this.completeProgressiveLoading(element);
                                             resolve();
                                         });
+                                    } else {
+                                        // Complete progressive loading if MathJax still not ready
+                                        this.completeProgressiveLoading(element);
+                                        resolve();
                                     }
                                 });
                                 return;
@@ -737,10 +737,12 @@ export class MathJaxService {
                                         // Render the initial element that triggered recovery
                                         window.MathJax.typesetPromise([element]).then(() => {
                                             this.pendingRenders.delete(element);
+                                            this.completeProgressiveLoading(element);
                                             resolve();
                                         }).catch(err => {
                                             logger.error('❌ Initial render failed after F5 fix:', err);
                                             this.pendingRenders.delete(element);
+                                            this.completeProgressiveLoading(element);
                                             resolve();
                                         });
                                         
@@ -817,9 +819,12 @@ export class MathJaxService {
                                         window.MathJax.typesetPromise([element]).then(() => {
                                             logger.debug('✅ F5 LaTeX rendering successful');
                                             this.pendingRenders.delete(element);
+                                            this.completeProgressiveLoading(element);
                                             resolve();
                                         }).catch(err => {
                                             logger.warn('⚠️ F5 LaTeX render failed after recovery:', err);
+                                            this.pendingRenders.delete(element);
+                                            this.completeProgressiveLoading(element);
                                             resolve();
                                         });
                                     } else if (waitAttempt < maxWaitAttempts) {
@@ -881,9 +886,13 @@ export class MathJaxService {
                                             window.MathJax.typesetPromise([element]).then(() => {
                                                 logger.debug('✅ ALTERNATIVE SUCCESS: Render after startup completion');
                                                 this.pendingRenders.delete(element);
+                                                this.completeProgressiveLoading(element);
                                                 resolve();
                                             }).catch((altError) => {
                                                 logger.warn('⚠️ Alternative render failed:', altError);
+                                                this.pendingRenders.delete(element);
+                                                this.completeProgressiveLoading(element);
+                                                resolve();
                                             });
                                         } else {
                                             logger.warn('⚠️ typesetPromise still not available after startup completion');
@@ -900,6 +909,7 @@ export class MathJaxService {
                                     window.MathJax.tex.processNode(element);
                                     logger.debug('✅ ALTERNATIVE SUCCESS: Direct tex processing completed');
                                     this.pendingRenders.delete(element);
+                                    this.completeProgressiveLoading(element);
                                     resolve();
                                     return;
                                 } else {
@@ -919,8 +929,14 @@ export class MathJaxService {
                                                 window.MathJax.typesetPromise([element]).then(() => {
                                                     logger.debug('✅ LAST RESORT SUCCESS: Render after component restart');
                                                     this.pendingRenders.delete(element);
+                                                    this.completeProgressiveLoading(element);
                                                     resolve();
-                                                }).catch(err => logger.warn('⚠️ Component restart render failed:', err));
+                                                }).catch(err => {
+                                                    logger.warn('⚠️ Component restart render failed:', err);
+                                                    this.pendingRenders.delete(element);
+                                                    this.completeProgressiveLoading(element);
+                                                    resolve();
+                                                });
                                             }
                                         }).catch(err => logger.warn('⚠️ Component restart failed:', err));
                                         return;
@@ -1167,6 +1183,105 @@ export class MathJaxService {
      */
     async renderMathJax(element, timeout = TIMING.MATHJAX_TIMEOUT) {
         return this.renderElement(element, timeout);
+    }
+
+    /**
+     * Show progressive loading UI while MathJax renders
+     * @param {Element} element Element being rendered
+     */
+    showProgressiveLoading(element) {
+        if (!element) return;
+        
+        try {
+            // Add loading class for shimmer effect
+            element.classList.add('mathjax-loading');
+            
+            // Store original content in case we need to show fallback
+            if (!element.dataset.originalContent) {
+                element.dataset.originalContent = element.innerHTML;
+            }
+            
+            // For longer delays (like F5 recovery), show raw LaTeX with indication
+            const fallbackTimer = setTimeout(() => {
+                if (element.classList.contains('mathjax-loading')) {
+                    this.showFallbackContent(element);
+                }
+            }, 1000); // Show fallback after 1 second delay
+            
+            // Store timer ID for cleanup
+            element.dataset.fallbackTimer = fallbackTimer;
+            
+            logger.debug('⏳ Progressive loading started for element');
+        } catch (e) {
+            logger.debug('Progressive loading setup error (not critical):', e.message);
+        }
+    }
+
+    /**
+     * Show fallback content with indication that LaTeX is loading
+     * @param {Element} element Element being rendered
+     */
+    showFallbackContent(element) {
+        if (!element || !element.classList.contains('mathjax-loading')) return;
+        
+        try {
+            const originalContent = element.dataset.originalContent || element.innerHTML;
+            
+            // Check if content has LaTeX
+            const hasLatex = originalContent.includes('$') || 
+                           originalContent.includes('\\(') || 
+                           originalContent.includes('\\[');
+            
+            if (hasLatex) {
+                // Wrap LaTeX content with fallback styling
+                const fallbackContent = originalContent.replace(
+                    /\$([^$]+)\$/g, 
+                    '<span class="mathjax-fallback">$1</span>'
+                ).replace(
+                    /\\\(([^)]+)\\\)/g,
+                    '<span class="mathjax-fallback">$1</span>'
+                );
+                
+                element.innerHTML = fallbackContent + 
+                    '<div style="font-size: 0.8em; color: rgba(255,255,255,0.6); margin-top: 4px; font-style: italic;">' +
+                    '⌛ Rendering mathematics...</div>';
+                
+                logger.debug('🗺 Showing fallback LaTeX content with loading indicator');
+            }
+        } catch (e) {
+            logger.debug('Fallback content error (not critical):', e.message);
+        }
+    }
+
+    /**
+     * Complete progressive loading and show final rendered content
+     * @param {Element} element Element that finished rendering
+     */
+    completeProgressiveLoading(element) {
+        if (!element) return;
+        
+        try {
+            // Clean up fallback timer
+            if (element.dataset.fallbackTimer) {
+                clearTimeout(parseInt(element.dataset.fallbackTimer));
+                delete element.dataset.fallbackTimer;
+            }
+            
+            // Remove loading classes
+            element.classList.remove('mathjax-loading');
+            element.classList.add('mathjax-ready');
+            
+            // Clean up stored data
+            delete element.dataset.originalContent;
+            
+            // Remove any fallback indicators
+            const indicators = element.querySelectorAll('[style*="Rendering mathematics"]');
+            indicators.forEach(indicator => indicator.remove());
+            
+            logger.debug('✨ Progressive loading completed - MathJax ready');
+        } catch (e) {
+            logger.debug('Progressive loading completion error (not critical):', e.message);
+        }
     }
 }
 
