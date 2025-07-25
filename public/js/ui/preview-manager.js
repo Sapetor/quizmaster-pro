@@ -7,7 +7,7 @@
 import { translationManager } from '../utils/translation-manager.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { MathJaxService } from '../utils/mathjax-service.js';
-import { logger } from '../core/config.js';
+import { logger, TIMING, UI } from '../core/config.js';
 
 export class PreviewManager {
     constructor(mathRenderer) {
@@ -19,12 +19,12 @@ export class PreviewManager {
         this.previewMode = false;
         this.manualNavigationInProgress = false;
         this.mathJaxRenderingInProgress = false; // Prevent multiple simultaneous renders
-        this.updatePreviewDebounced = this.debounce(() => this.updateSplitPreview(), 150);
+        this.updatePreviewDebounced = this.debounce(() => this.updateSplitPreview(), TIMING.PREVIEW_UPDATE_DEBOUNCE);
         
         // Drag functionality state
         this.isDragging = false;
         this.dragStartX = 0;
-        this.initialSplitRatio = 50;
+        this.initialSplitRatio = UI.INITIAL_SPLIT_RATIO;
         this.dragTooltip = null;
         
         // Store listener references for proper cleanup
@@ -553,141 +553,188 @@ export class PreviewManager {
             optionsCount: data.options?.length || 0
         });
         
-        // Update question counter and text
+        this.updateSplitQuestionCounter(data.questionNumber, data.totalQuestions);
+        this.renderSplitQuestionText(data.question);
+        this.handleSplitQuestionImage(data.image);
+        this.clearAllSplitAnswerTypes();
+        this.renderSplitAnswerType(data);
+    }
+
+    /**
+     * Update the question counter display for split preview
+     */
+    updateSplitQuestionCounter(questionNumber, totalQuestions) {
         const counterDisplay = document.getElementById('preview-question-counter-display-split');
         if (counterDisplay) {
-            counterDisplay.textContent = `${translationManager.getTranslationSync('question')} ${data.questionNumber} ${translationManager.getTranslationSync('of')} ${data.totalQuestions}`;
+            counterDisplay.textContent = `${translationManager.getTranslationSync('question')} ${questionNumber} ${translationManager.getTranslationSync('of')} ${totalQuestions}`;
         }
-        
+    }
+
+    /**
+     * Render question text with LaTeX support for split preview
+     */
+    renderSplitQuestionText(questionText) {
         const previewElement = document.getElementById('preview-question-text-split');
-        logger.debug('🔍 Preview element found:', !!previewElement, 'Question data:', !!data.question);
+        logger.debug('🔍 Preview element found:', !!previewElement, 'Question data:', !!questionText);
         
         if (!previewElement) {
             logger.error('❌ Preview question text element not found! DOM structure may be incorrect.');
             return;
         }
         
-        if (data.question) {
-            // FOUC Prevention: Detect LaTeX content
-            const hasLatex = data.question && (data.question.includes('$') || data.question.includes('\\(') || 
-                            data.question.includes('\\[') || data.question.includes('\\frac') ||
-                            data.question.includes('\\sqrt') || data.question.includes('\\sum'));
-            
-            const formattedContent = this.formatCodeBlocks(data.question);
-            
-            if (hasLatex) {
-                // Hide content during LaTeX processing to prevent blinking
-                previewElement.style.opacity = '0';
-                previewElement.classList.add('tex2jax_process');
-                previewElement.innerHTML = formattedContent;
-                
-                // Show content after MathJax processing completes
-                setTimeout(() => {
-                    if (window.MathJax?.typesetPromise) {
-                        window.MathJax.typesetPromise([previewElement])
-                            .then(() => {
-                                previewElement.style.opacity = '1';
-                            })
-                            .catch(() => {
-                                previewElement.style.opacity = '1'; // Show even if MathJax fails
-                            });
-                    } else {
-                        previewElement.style.opacity = '1'; // Show if no MathJax
-                    }
-                }, 50);
-            } else {
-                // No LaTeX, show immediately
-                previewElement.style.opacity = '1';
-                previewElement.innerHTML = formattedContent;
-            }
-            
+        if (questionText) {
+            this.renderSplitTextWithLatex(previewElement, questionText);
             previewElement.dataset.hasContent = 'true';
         } else {
-            // Show fallback text when no question data
-            previewElement.style.opacity = '1';
-            previewElement.innerHTML = translationManager.getTranslationSync('enter_question_preview') || 'Enter question text to see preview...';
-            previewElement.dataset.hasContent = 'false';
-            logger.debug('🔤 Showing fallback text for empty question');
+            this.showSplitFallbackText(previewElement);
         }
+    }
+
+    /**
+     * Render text with LaTeX support and FOUC prevention
+     */
+    renderSplitTextWithLatex(element, text) {
+        // FOUC Prevention: Detect LaTeX content
+        const hasLatex = text && (text.includes('$') || text.includes('\\(') || 
+                        text.includes('\\[') || text.includes('\\frac') ||
+                        text.includes('\\sqrt') || text.includes('\\sum'));
         
-        // Handle image with data URI fix and error handling
+        const formattedContent = this.formatCodeBlocks(text);
+        
+        if (hasLatex) {
+            // Hide content during LaTeX processing to prevent blinking
+            element.style.opacity = '0';
+            element.classList.add('tex2jax_process');
+            element.innerHTML = formattedContent;
+            
+            // Show content after MathJax processing completes
+            setTimeout(() => {
+                this.mathJaxService.renderElement(element)
+                    .then(() => {
+                        element.style.opacity = '1';
+                    })
+                    .catch(() => {
+                        element.style.opacity = '1'; // Show even if MathJax fails
+                    });
+            }, 50);
+        } else {
+            // No LaTeX, show immediately
+            element.style.opacity = '1';
+            element.innerHTML = formattedContent;
+        }
+    }
+
+    /**
+     * Show fallback text when no question data is available
+     */
+    showSplitFallbackText(element) {
+        element.style.opacity = '1';
+        element.innerHTML = translationManager.getTranslationSync('enter_question_preview') || 'Enter question text to see preview...';
+        element.dataset.hasContent = 'false';
+        logger.debug('🔤 Showing fallback text for empty question');
+    }
+
+    /**
+     * Handle image display with error handling for split preview
+     */
+    handleSplitQuestionImage(imageData) {
         const imageDisplay = document.getElementById('preview-question-image-split');
         const img = document.getElementById('preview-question-img-split');
-        if (data.image && imageDisplay && img) {
-            // Check if it's a data URI (starts with data:)
-            if (data.image.startsWith('data:')) {
-                img.src = data.image;
-                logger.debug('📸 Set preview image: data URI (length:', data.image.length, ')');
-            } else {
-                // Regular URL - ensure it has proper path
-                const imageSrc = data.image.startsWith('/') ? data.image : `/${data.image}`;
-                img.src = imageSrc;
-                logger.debug('📸 Set preview image: URL', imageSrc);
-            }
-            
-            // Add error handling for missing images
-            img.onerror = () => {
-                // Prevent infinite loop - remove error handler after first failure
-                img.onerror = null;
-                
-                logger.warn('⚠️ Preview image failed to load:', data.image);
-                
-                // Replace image with a text message for the user
-                img.style.display = 'none';
-                
-                // Create or update error message
-                let errorMsg = imageDisplay.querySelector('.image-error-message');
-                if (!errorMsg) {
-                    errorMsg = document.createElement('div');
-                    errorMsg.className = 'image-error-message';
-                    errorMsg.style.cssText = `
-                        padding: 20px;
-                        text-align: center;
-                        background: rgba(255, 255, 255, 0.05);
-                        border: 2px dashed rgba(255, 255, 255, 0.3);
-                        border-radius: 8px;
-                        color: var(--text-primary);
-                        font-size: 0.9rem;
-                        margin: 10px 0;
-                    `;
-                    imageDisplay.appendChild(errorMsg);
-                }
-                
-                errorMsg.innerHTML = `
-                    <div style="margin-bottom: 8px;">📷 Image not found</div>
-                    <div style="font-size: 0.8rem; opacity: 0.7;">${data.image}</div>
-                    <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 4px;">Remove image reference or upload the file</div>
-                `;
-                
-                // Keep container visible with error message
-                imageDisplay.style.display = 'block';
-                logger.debug('Shown image error message in preview');
-            };
-            
-            // Add load success handler to ensure proper display
-            img.onload = () => {
-                logger.debug('✅ Preview image loaded successfully:', data.image);
-                imageDisplay.style.display = 'block';
-            };
-            
-            // Initially show the container (will be hidden by onerror if image fails)
+        
+        if (imageData && imageDisplay && img) {
+            this.setupSplitImageHandlers(img, imageDisplay, imageData);
+            this.setSplitImageSource(img, imageData);
             imageDisplay.style.display = 'block';
-        } else if (data.image) {
-            // Image data exists but elements not found
-            logger.warn('⚠️ Image data exists but preview elements not found:', {
-                hasImage: !!data.image,
-                imageType: data.image?.startsWith?.('data:') ? 'data-uri' : 'url',
-                hasDisplay: !!imageDisplay,
-                hasImg: !!img
-            });
+        } else if (imageData) {
+            this.logSplitImageError(imageData, imageDisplay, img);
         } else if (imageDisplay) {
             imageDisplay.style.display = 'none';
         }
+    }
+
+    /**
+     * Set up image error and load handlers
+     */
+    setupSplitImageHandlers(img, imageDisplay, imageData) {
+        // Add error handling for missing images
+        img.onerror = () => {
+            img.onerror = null; // Prevent infinite loop
+            logger.warn('⚠️ Preview image failed to load:', imageData);
+            this.showSplitImageError(imageDisplay, imageData);
+        };
         
-        // ULTRA ROBUST CLEARING: Hide all answer types and reset all states
-        logger.debug('CLEARING ALL ANSWER TYPES for question type:', data.type);
+        // Add load handler to show image when ready
+        img.onload = () => {
+            imageDisplay.style.display = 'block';
+        };
+    }
+
+    /**
+     * Set image source with proper path handling
+     */
+    setSplitImageSource(img, imageData) {
+        if (imageData.startsWith('data:')) {
+            img.src = imageData;
+            logger.debug('📸 Set preview image: data URI (length:', imageData.length, ')');
+        } else {
+            const imageSrc = imageData.startsWith('/') ? imageData : `/${imageData}`;
+            img.src = imageSrc;
+            logger.debug('📸 Set preview image: URL', imageSrc);
+        }
+    }
+
+    /**
+     * Show image error message in preview
+     */
+    showSplitImageError(imageDisplay, imageData) {
+        const img = imageDisplay.querySelector('img');
+        if (img) img.style.display = 'none';
         
-        // First, explicitly hide each specific answer type container
+        let errorMsg = imageDisplay.querySelector('.image-error-message');
+        if (!errorMsg) {
+            errorMsg = document.createElement('div');
+            errorMsg.className = 'image-error-message';
+            errorMsg.style.cssText = `
+                padding: 20px;
+                text-align: center;
+                background: rgba(255, 255, 255, 0.05);
+                border: 2px dashed rgba(255, 255, 255, 0.3);
+                border-radius: 8px;
+                color: var(--text-primary);
+                font-size: 0.9rem;
+                margin: 10px 0;
+            `;
+            imageDisplay.appendChild(errorMsg);
+        }
+        
+        errorMsg.innerHTML = `
+            <div style="margin-bottom: 8px;">📷 Image not found</div>
+            <div style="font-size: 0.8rem; opacity: 0.7;">${imageData}</div>
+            <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 4px;">Remove image reference or upload the file</div>
+        `;
+        
+        imageDisplay.style.display = 'block';
+        logger.debug('Shown image error message in preview');
+    }
+
+    /**
+     * Log error when image data exists but elements not found
+     */
+    logSplitImageError(imageData, imageDisplay, img) {
+        logger.warn('⚠️ Image data exists but preview elements not found:', {
+            hasImage: !!imageData,
+            imageType: imageData?.startsWith?.('data:') ? 'data-uri' : 'url',
+            hasDisplay: !!imageDisplay,
+            hasImg: !!img
+        });
+    }
+
+    /**
+     * Clear all answer types and reset states for split preview
+     */
+    clearAllSplitAnswerTypes() {
+        logger.debug('CLEARING ALL ANSWER TYPES for split preview');
+        
         const answerContainers = [
             'preview-multiple-choice-split',
             'preview-multiple-correct-split', 
@@ -695,52 +742,84 @@ export class PreviewManager {
             'preview-numeric-split'
         ];
         
-        answerContainers.forEach(containerId => {
+        this.hideSplitAnswerContainers(answerContainers);
+        this.resetSplitAnswerStates();
+    }
+
+    /**
+     * Hide specific answer type containers
+     */
+    hideSplitAnswerContainers(containerIds) {
+        containerIds.forEach(containerId => {
             const container = document.getElementById(containerId);
             if (container) {
                 container.style.display = 'none';
                 logger.debug(`Hidden container: ${containerId}`);
             }
         });
-        
-        // Additional clearing of all preview answer types
+    }
+
+    /**
+     * Reset all answer type states and clear content
+     */
+    resetSplitAnswerStates() {
         document.querySelectorAll('#preview-answer-area-split .preview-answer-type').forEach(type => {
             type.style.display = 'none';
-            
-            // Clear dynamic content completely
-            const playerOptions = type.querySelector('.player-options');
-            if (playerOptions) {
-                playerOptions.innerHTML = '';
-            }
-            
-            const checkboxOptions = type.querySelector('.player-checkbox-options');
-            if (checkboxOptions) {
-                checkboxOptions.innerHTML = '';
-            }
-            
-            // SPECIFICALLY reset True/False buttons
-            const tfContainer = type.querySelector('.true-false-options');
-            if (tfContainer) {
-                const tfButtons = tfContainer.querySelectorAll('.tf-option');
-                tfButtons.forEach(btn => {
-                    btn.classList.remove('correct-preview', 'selected', 'active');
-                    btn.style.display = '';
-                    btn.style.backgroundColor = '';
-                    btn.style.color = '';
-                    btn.style.fontWeight = '';
-                    btn.style.border = '';
-                });
-                logger.debug(`Reset ${tfButtons.length} True/False buttons`);
-            }
-            
-            // Reset input fields
-            const inputs = type.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.value = '';
-                input.placeholder = '';
-            });
+            this.clearSplitAnswerContent(type);
+            this.resetSplitTrueFalseButtons(type);
+            this.resetSplitInputFields(type);
         });
+    }
+
+    /**
+     * Clear dynamic content from answer types
+     */
+    clearSplitAnswerContent(type) {
+        const playerOptions = type.querySelector('.player-options');
+        if (playerOptions) {
+            playerOptions.innerHTML = '';
+        }
         
+        const checkboxOptions = type.querySelector('.player-checkbox-options');
+        if (checkboxOptions) {
+            checkboxOptions.innerHTML = '';
+        }
+    }
+
+    /**
+     * Reset True/False button states
+     */
+    resetSplitTrueFalseButtons(type) {
+        const tfContainer = type.querySelector('.true-false-options');
+        if (tfContainer) {
+            const tfButtons = tfContainer.querySelectorAll('.tf-option');
+            tfButtons.forEach(btn => {
+                btn.classList.remove('correct-preview', 'selected', 'active');
+                btn.style.display = '';
+                btn.style.backgroundColor = '';
+                btn.style.color = '';
+                btn.style.fontWeight = '';
+                btn.style.border = '';
+            });
+            logger.debug(`Reset ${tfButtons.length} True/False buttons`);
+        }
+    }
+
+    /**
+     * Reset input field values
+     */
+    resetSplitInputFields(type) {
+        const inputs = type.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.value = '';
+            input.placeholder = '';
+        });
+    }
+
+    /**
+     * Render the appropriate answer type for split preview
+     */
+    renderSplitAnswerType(data) {
         logger.debug('Rendering answer type:', data.type, 'with options:', data.options);
         logger.debug('Question data for rendering:', {
             questionNumber: data.questionNumber,
@@ -751,7 +830,6 @@ export class PreviewManager {
             correctAnswers: data.correctAnswers
         });
         
-        // Show appropriate answer type
         switch (data.type) {
             case 'multiple-choice':
                 logger.debug('🔤 Rendering multiple choice preview');
@@ -772,8 +850,6 @@ export class PreviewManager {
             default:
                 logger.warn('Unknown question type:', data.type);
         }
-        
-        // LaTeX rendering is now handled individually for each element to prevent blinking
     }
 
     /**
@@ -784,13 +860,9 @@ export class PreviewManager {
         
         if (!previewElement) return;
 
-        // Wait for MathJax to be ready, especially important after page reload
-        this.waitForMathJaxReady(() => {
-            if (window.MathJax?.typesetPromise) {
-                window.MathJax.typesetPromise([previewElement]).catch(() => {
-                    logger.debug('Preview MathJax rendering failed, using fallback');
-                });
-            }
+        // Use centralized MathJax service for rendering
+        this.mathJaxService.renderElement(previewElement).catch(() => {
+            logger.debug('Preview MathJax rendering failed, using fallback');
         });
     }
 
@@ -806,7 +878,7 @@ export class PreviewManager {
                 if (window.MathJax && window.MathJax.typesetPromise && (window.mathJaxReady || document.body.classList.contains('mathjax-ready'))) {
                     callback();
                 } else {
-                    setTimeout(checkReady, 50); // Check every 50ms
+                    setTimeout(checkReady, TIMING.MATHJAX_CHECK_INTERVAL);
                 }
             };
             
@@ -894,40 +966,13 @@ export class PreviewManager {
             optionDiv.setAttribute('data-option', index);
             
             // Check if option contains LaTeX and apply FOUC prevention
-            const hasLatex = option && (option.includes('$') || option.includes('\\(') || 
-                            option.includes('\\[') || option.includes('\\frac') ||
-                            option.includes('\\sqrt') || option.includes('\\sum'));
+            const hasLatex = this.hasLatexContent(option);
             
             const optionLetter = translationManager.getOptionLetter(index) || String.fromCharCode(65 + index);
             const formattedContent = `${optionLetter}: ${this.formatCodeBlocks(option)}`;
             
-            if (hasLatex) {
-                // Hide option during LaTeX processing to prevent blinking
-                optionDiv.style.opacity = '0';
-                optionDiv.classList.add('tex2jax_process');
-                optionDiv.innerHTML = formattedContent;
-                optionsContainer.appendChild(optionDiv);
-                
-                // Show option after MathJax processing
-                setTimeout(() => {
-                    if (window.MathJax?.typesetPromise) {
-                        window.MathJax.typesetPromise([optionDiv])
-                            .then(() => {
-                                optionDiv.style.opacity = '1';
-                            })
-                            .catch(() => {
-                                optionDiv.style.opacity = '1';
-                            });
-                    } else {
-                        optionDiv.style.opacity = '1';
-                    }
-                }, 50);
-            } else {
-                // No LaTeX, show immediately
-                optionDiv.style.opacity = '1';
-                optionDiv.innerHTML = formattedContent;
-                optionsContainer.appendChild(optionDiv);
-            }
+            // Use centralized rendering method to reduce nesting
+            this.renderOptionWithLatex(optionDiv, formattedContent, optionsContainer, hasLatex);
             
             logger.debug(`Added option ${index}: ${option} (${isCorrect ? 'correct' : 'incorrect'}) - LaTeX: ${hasLatex}`);
         });
@@ -958,40 +1003,13 @@ export class PreviewManager {
             optionDiv.setAttribute('data-option', index);
             
             // Check if option contains LaTeX and apply FOUC prevention
-            const hasLatex = option && (option.includes('$') || option.includes('\\(') || 
-                            option.includes('\\[') || option.includes('\\frac') ||
-                            option.includes('\\sqrt') || option.includes('\\sum'));
+            const hasLatex = this.hasLatexContent(option);
             
             const optionLetter = translationManager.getOptionLetter(index) || String.fromCharCode(65 + index);
             const formattedContent = `<input type="checkbox" ${isCorrect ? 'checked' : ''} disabled> ${optionLetter}: ${this.formatCodeBlocks(option)}`;
             
-            if (hasLatex) {
-                // Hide option during LaTeX processing to prevent blinking
-                optionDiv.style.opacity = '0';
-                optionDiv.classList.add('tex2jax_process');
-                optionDiv.innerHTML = formattedContent;
-                optionsContainer.appendChild(optionDiv);
-                
-                // Show option after MathJax processing
-                setTimeout(() => {
-                    if (window.MathJax?.typesetPromise) {
-                        window.MathJax.typesetPromise([optionDiv])
-                            .then(() => {
-                                optionDiv.style.opacity = '1';
-                            })
-                            .catch(() => {
-                                optionDiv.style.opacity = '1';
-                            });
-                    } else {
-                        optionDiv.style.opacity = '1';
-                    }
-                }, 50);
-            } else {
-                // No LaTeX, show immediately
-                optionDiv.style.opacity = '1';
-                optionDiv.innerHTML = formattedContent;
-                optionsContainer.appendChild(optionDiv);
-            }
+            // Use centralized rendering method to reduce nesting
+            this.renderOptionWithLatex(optionDiv, formattedContent, optionsContainer, hasLatex);
             
             logger.debug(`Added multiple correct option ${index}: ${option} (${isCorrect ? 'correct' : 'incorrect'}) - LaTeX: ${hasLatex}`);
         });
@@ -1065,6 +1083,78 @@ export class PreviewManager {
         if (input) {
             input.placeholder = translationManager.getTranslationSync('enter_answer') || 'Enter your answer';
         }
+    }
+
+    /**
+     * Check if text contains LaTeX patterns
+     * @param {string} text - Text to check
+     * @returns {boolean} - True if LaTeX is detected
+     */
+    hasLatexContent(text) {
+        if (!text) return false;
+        return text.includes('$') || text.includes('\\(') || 
+               text.includes('\\[') || text.includes('\\frac') ||
+               text.includes('\\sqrt') || text.includes('\\sum');
+    }
+
+    /**
+     * Render option with LaTeX support and prevent FOUC
+     * @param {HTMLElement} optionDiv - Option element to render
+     * @param {string} formattedContent - Formatted option content
+     * @param {HTMLElement} container - Container to append to
+     * @param {boolean} hasLatex - Whether content contains LaTeX
+     */
+    renderOptionWithLatex(optionDiv, formattedContent, container, hasLatex) {
+        if (hasLatex) {
+            this.renderLatexOption(optionDiv, formattedContent, container);
+        } else {
+            this.renderPlainOption(optionDiv, formattedContent, container);
+        }
+    }
+
+    /**
+     * Render option with LaTeX content
+     * @param {HTMLElement} optionDiv - Option element
+     * @param {string} formattedContent - Content to render
+     * @param {HTMLElement} container - Container element
+     */
+    renderLatexOption(optionDiv, formattedContent, container) {
+        // Hide option during LaTeX processing to prevent blinking
+        optionDiv.style.opacity = '0';
+        optionDiv.classList.add('tex2jax_process');
+        optionDiv.innerHTML = formattedContent;
+        container.appendChild(optionDiv);
+        
+        // Show option after MathJax processing with timeout
+        setTimeout(() => {
+            this.showOptionAfterMathjax(optionDiv);
+        }, TIMING.MATHJAX_CHECK_INTERVAL);
+    }
+
+    /**
+     * Render option without LaTeX content
+     * @param {HTMLElement} optionDiv - Option element
+     * @param {string} formattedContent - Content to render
+     * @param {HTMLElement} container - Container element
+     */
+    renderPlainOption(optionDiv, formattedContent, container) {
+        optionDiv.style.opacity = '1';
+        optionDiv.innerHTML = formattedContent;
+        container.appendChild(optionDiv);
+    }
+
+    /**
+     * Show option after MathJax rendering with error handling
+     * @param {HTMLElement} optionDiv - Option element to show
+     */
+    showOptionAfterMathjax(optionDiv) {
+        this.mathJaxService.renderElement(optionDiv)
+            .then(() => {
+                optionDiv.style.opacity = '1';
+            })
+            .catch(() => {
+                optionDiv.style.opacity = '1'; // Show even if MathJax fails
+            });
     }
 
     /**

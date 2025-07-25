@@ -17,6 +17,9 @@ export class SettingsManager {
             fullscreenMode: false
         };
         
+        // Store event handler references for cleanup
+        this.eventHandlers = {};
+        
         this.loadSettings();
     }
 

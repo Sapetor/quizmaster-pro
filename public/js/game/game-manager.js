@@ -4,7 +4,7 @@
  */
 
 import { translationManager, createQuestionCounter, getTrueFalseText } from '../utils/translation-manager.js';
-import { TIMING, logger } from '../core/config.js';
+import { TIMING, logger, UI, ANIMATION } from '../core/config.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { mathJaxService } from '../utils/mathjax-service.js';
 import { domManager } from '../utils/dom-manager.js';
@@ -205,7 +205,7 @@ export class GameManager {
             
             // Update host options content
             this.updateHostOptionsContent(data, elements.hostOptionsContainer);
-        }, 200); // Increased delay for better stability
+        }, TIMING.HOST_QUESTION_RENDER_DELAY);
     }
 
     /**
@@ -244,7 +244,7 @@ export class GameManager {
         });
         
         // Render MathJax for host question with enhanced error handling
-        mathJaxService.renderElement(hostQuestionElement, 300).then(() => {
+        mathJaxService.renderElement(hostQuestionElement, TIMING.MATHJAX_TIMEOUT).then(() => {
             logger.debug('✅ MathJax question rendering completed for host');
             // DEBUG: Log success state
             logger.debug('🔍 Post-MathJax success state:', {
@@ -264,7 +264,7 @@ export class GameManager {
                 mathJaxService.renderElement(hostQuestionElement, 400).catch(fallbackErr => {
                     logger.error('❌ MathJax question fallback render failed:', fallbackErr);
                 });
-            }, 150);
+            }, TIMING.HOST_FINALIZE_DELAY);
         });
     }
     
@@ -332,7 +332,7 @@ export class GameManager {
                 mathJaxService.renderElement(hostOptionsContainer, 450).catch(fallbackErr => {
                     logger.error('❌ MathJax options fallback render failed:', fallbackErr);
                 });
-            }, 200);
+            }, TIMING.HOST_OPTIONS_RENDER_DELAY);
         });
     }
 
@@ -409,7 +409,7 @@ export class GameManager {
             
             // Update player options based on question type
             this.updatePlayerOptions(data, optionsContainer);
-        }, 150); // Match host delay for consistency
+        }, TIMING.PLAYER_FINALIZE_DELAY);
     }
 
     /**
@@ -425,7 +425,7 @@ export class GameManager {
         this.updateQuestionImage(data, 'player-question-image');
         
         // Render MathJax for player question with appropriate delay
-        mathJaxService.renderElement(questionElement, 200).then(() => {
+        mathJaxService.renderElement(questionElement, TIMING.PLAYER_RENDER_DELAY).then(() => {
             logger.debug('MathJax rendering completed for player question');
         }).catch(err => {
             logger.error('MathJax player question render error:', err);
@@ -449,7 +449,7 @@ export class GameManager {
         }
         
         // Render MathJax for player options with appropriate delay
-        mathJaxService.renderElement(optionsContainer, 250).then(() => {
+        mathJaxService.renderElement(optionsContainer, TIMING.HOST_OPTIONS_RENDER_DELAY).then(() => {
             logger.debug('MathJax rendering completed for player options');
         }).catch(err => {
             logger.error('MathJax player options render error:', err);
@@ -1275,7 +1275,7 @@ export class GameManager {
         
         if (statFill) {
             if (totalAnswered > 0) {
-                const percentage = (count / totalAnswered) * 100;
+                const percentage = (count / totalAnswered) * ANIMATION.PERCENTAGE_CALCULATION_BASE;
                 statFill.style.width = `${percentage}%`;
                 logger.debug(`Updated stat fill for index ${index}: ${percentage}%`);
             } else {
@@ -1484,10 +1484,10 @@ export class GameManager {
             if (!img) {
                 img = document.createElement('img');
                 img.className = 'question-image';
-                img.style.maxWidth = '100%';
+                img.style.maxWidth = UI.MAX_IMAGE_WIDTH;
                 img.style.maxHeight = '300px';
                 img.style.height = 'auto';
-                img.style.borderRadius = '8px';
+                img.style.borderRadius = UI.BORDER_RADIUS_STANDARD;
                 img.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
                 img.style.margin = '15px 0';
                 imageContainer.appendChild(img);
@@ -1563,25 +1563,25 @@ export class GameManager {
             
             // Initial big burst
             confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 },
+                particleCount: ANIMATION.CONFETTI_PARTICLE_COUNT,
+                spread: ANIMATION.CONFETTI_SPREAD,
+                origin: { y: ANIMATION.CONFETTI_ORIGIN_Y },
                 colors: colors
             });
             
             // Side bursts with reduced frequency and particles
-            const burstTimes = [300, 600, 900, 1200, 1500];
+            const burstTimes = TIMING.CONFETTI_BURST_TIMES;
             burstTimes.forEach(time => {
                 setTimeout(() => {
                     confetti({
-                        particleCount: 50,
+                        particleCount: ANIMATION.CONFETTI_BURST_PARTICLES,
                         angle: 60,
                         spread: 55,
                         origin: { x: 0 },
                         colors: colors
                     });
                     confetti({
-                        particleCount: 50,
+                        particleCount: ANIMATION.CONFETTI_BURST_PARTICLES,
                         angle: 120,
                         spread: 55,
                         origin: { x: 1 },
@@ -1600,9 +1600,9 @@ export class GameManager {
         if (typeof confetti === 'function') {
             logger.debug('Triggering confetti animation');
             confetti({
-                particleCount: 50,
-                spread: 70,
-                origin: { y: 0.6 }
+                particleCount: ANIMATION.CONFETTI_BURST_PARTICLES,
+                spread: ANIMATION.CONFETTI_SPREAD,
+                origin: { y: ANIMATION.CONFETTI_ORIGIN_Y }
             });
         } else {
             logger.debug('Confetti function not available');

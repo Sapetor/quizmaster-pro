@@ -349,19 +349,19 @@ export class QuizManager {
 
     /**
      * Render MathJax for loaded quiz with proper timing coordination
+     * CRITICAL F5 FIX: Use proper MathJax readiness coordination instead of timeouts
      */
     renderMathForLoadedQuiz() {
         // CRITICAL: Only render MathJax for editor elements to prevent game element contamination
         this.mathRenderer.renderMathJaxForEditor();
         
-        // Update live preview - let it handle its own MathJax rendering
-        if (window.game && window.game.previewManager) {
-            logger.debug('🔄 Updating live preview after quiz load');
-            // Use small delay to ensure editor rendering doesn't conflict
-            setTimeout(() => {
-                window.game.previewManager.updateSplitPreview();
-            }, 150);
-        }
+        // F5 RELOAD FIX: Wait for MathJax readiness before updating preview
+        this.mathRenderer.waitForMathJaxReady(() => {
+            if (window.game && window.game.previewManager) {
+                logger.debug('🔄 Updating live preview after MathJax is ready');
+                window.game.previewManager.renderMathJaxForPreview();
+            }
+        });
     }
 
     /**
@@ -593,6 +593,15 @@ export class QuizManager {
     populateQuestionElement(questionElement, questionData) {
         logger.debug('Populating question element with data:', questionData);
         
+        this.populateBasicQuestionData(questionElement, questionData);
+        this.populateQuestionImage(questionElement, questionData);
+        this.populateTypeSpecificData(questionElement, questionData);
+    }
+
+    /**
+     * Populate basic question data (text, type, time, difficulty)
+     */
+    populateBasicQuestionData(questionElement, questionData) {
         // Set question text
         const questionText = questionElement.querySelector('.question-text');
         if (questionText) {
@@ -621,84 +630,123 @@ export class QuizManager {
         if (questionDifficulty) {
             questionDifficulty.value = questionData.difficulty || 'medium';
         }
+    }
+
+    /**
+     * Populate question image data with proper error handling
+     */
+    populateQuestionImage(questionElement, questionData) {
+        if (!questionData.image) return;
         
-        // Handle image data
-        if (questionData.image) {
-            logger.debug('Populating image for question:', questionData.image);
-            const imageElement = questionElement.querySelector('.question-image');
-            const imagePreview = questionElement.querySelector('.image-preview');
-            
-            if (imageElement && imagePreview) {
-                // Set the image source - handle data URIs properly with error handling
-                let imageSrc;
-                if (questionData.image.startsWith('data:')) {
-                    // Data URI - use directly
-                    imageSrc = questionData.image;
-                } else if (questionData.image.startsWith('http')) {
-                    // Full URL - use directly
-                    imageSrc = questionData.image;
-                } else {
-                    // Relative path - prefix with /
-                    imageSrc = `/${questionData.image}`;
-                }
-                
-                imageElement.src = imageSrc;
-                imageElement.dataset.url = questionData.image;
-                
-                // Add error handling for missing images
-                imageElement.onerror = () => {
-                    // Prevent infinite loop - remove error handler after first failure
-                    imageElement.onerror = null;
-                    
-                    logger.warn('⚠️ Quiz builder image failed to load:', questionData.image);
-                    
-                    // Replace image with a text message for the user
-                    imageElement.style.display = 'none';
-                    
-                    // Create or update error message
-                    let errorMsg = imagePreview.querySelector('.image-error-message');
-                    if (!errorMsg) {
-                        errorMsg = document.createElement('div');
-                        errorMsg.className = 'image-error-message';
-                        errorMsg.style.cssText = `
-                            padding: 15px;
-                            text-align: center;
-                            background: rgba(255, 255, 255, 0.05);
-                            border: 2px dashed rgba(255, 255, 255, 0.3);
-                            border-radius: 8px;
-                            color: var(--text-primary);
-                            font-size: 0.85rem;
-                            margin: 5px 0;
-                        `;
-                        imagePreview.appendChild(errorMsg);
-                    }
-                    
-                    errorMsg.innerHTML = `
-                        <div style="margin-bottom: 6px;">📷 Image not found</div>
-                        <div style="font-size: 0.75rem; opacity: 0.7;">${questionData.image}</div>
-                        <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 3px;">Remove reference or upload file</div>
-                    `;
-                    
-                    // Keep preview visible with error message
-                    imagePreview.style.display = 'block';
-                    logger.debug('Shown image error message in quiz builder');
-                };
-                
-                // Add load success handler
-                imageElement.onload = () => {
-                    logger.debug('✅ Quiz builder image loaded successfully:', questionData.image);
-                    imagePreview.style.display = 'block';
-                };
-                
-                // Show the image preview
-                imagePreview.style.display = 'block';
-                logger.debug('Image populated:', imageElement.src);
-            } else {
-                logger.debug('Image elements not found in question DOM');
-            }
+        logger.debug('Populating image for question:', questionData.image);
+        const imageElement = questionElement.querySelector('.question-image');
+        const imagePreview = questionElement.querySelector('.image-preview');
+        
+        if (!imageElement || !imagePreview) {
+            logger.debug('Image elements not found in question DOM');
+            return;
         }
         
-        // Handle type-specific data
+        const imageSrc = this.resolveImageSource(questionData.image);
+        this.setupImageElement(imageElement, imageSrc, questionData.image);
+        this.setupImageHandlers(imageElement, imagePreview, questionData.image);
+        
+        imagePreview.style.display = 'block';
+        logger.debug('Image populated:', imageElement.src);
+    }
+
+    /**
+     * Resolve image source from various formats
+     */
+    resolveImageSource(imageData) {
+        if (imageData.startsWith('data:')) {
+            // Data URI - use directly
+            return imageData;
+        } else if (imageData.startsWith('http')) {
+            // Full URL - use directly
+            return imageData;
+        } else {
+            // Relative path - prefix with /
+            return `/${imageData}`;
+        }
+    }
+
+    /**
+     * Set up image element with source and data attributes
+     */
+    setupImageElement(imageElement, imageSrc, originalImageData) {
+        imageElement.src = imageSrc;
+        imageElement.dataset.url = originalImageData;
+    }
+
+    /**
+     * Set up image error and load handlers
+     */
+    setupImageHandlers(imageElement, imagePreview, imageData) {
+        // Add error handling for missing images
+        imageElement.onerror = () => {
+            this.handleImageLoadError(imageElement, imagePreview, imageData);
+        };
+        
+        // Add load success handler
+        imageElement.onload = () => {
+            logger.debug('✅ Quiz builder image loaded successfully:', imageData);
+            imagePreview.style.display = 'block';
+        };
+    }
+
+    /**
+     * Handle image load errors with user-friendly messaging
+     */
+    handleImageLoadError(imageElement, imagePreview, imageData) {
+        // Prevent infinite loop - remove error handler after first failure
+        imageElement.onerror = null;
+        
+        logger.warn('⚠️ Quiz builder image failed to load:', imageData);
+        
+        // Hide the broken image
+        imageElement.style.display = 'none';
+        
+        // Create or update error message
+        this.showImageErrorMessage(imagePreview, imageData);
+        
+        // Keep preview visible with error message
+        imagePreview.style.display = 'block';
+        logger.debug('Shown image error message in quiz builder');
+    }
+
+    /**
+     * Show user-friendly image error message
+     */
+    showImageErrorMessage(imagePreview, imageData) {
+        let errorMsg = imagePreview.querySelector('.image-error-message');
+        if (!errorMsg) {
+            errorMsg = document.createElement('div');
+            errorMsg.className = 'image-error-message';
+            errorMsg.style.cssText = `
+                padding: 15px;
+                text-align: center;
+                background: rgba(255, 255, 255, 0.05);
+                border: 2px dashed rgba(255, 255, 255, 0.3);
+                border-radius: 8px;
+                color: var(--text-primary);
+                font-size: 0.85rem;
+                margin: 5px 0;
+            `;
+            imagePreview.appendChild(errorMsg);
+        }
+        
+        errorMsg.innerHTML = `
+            <div style="margin-bottom: 6px;">📷 Image not found</div>
+            <div style="font-size: 0.75rem; opacity: 0.7;">${imageData}</div>
+            <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 3px;">Remove reference or upload file</div>
+        `;
+    }
+
+    /**
+     * Populate type-specific question data with proper timing
+     */
+    populateTypeSpecificData(questionElement, questionData) {
         setTimeout(() => {
             if (questionData.type === 'multiple-choice') {
                 this.populateMultipleChoiceData(questionElement, questionData);
@@ -982,9 +1030,61 @@ export class QuizManager {
     }
 
     /**
+     * Check if text contains corruption patterns
+     * @param {string} text - Text to check
+     * @returns {boolean} - True if corrupted
+     */
+    isCorruptedText(text) {
+        return typeof text === 'string' && 
+               text.includes('if this means that we sorted the first task');
+    }
+
+    /**
+     * Validate question structure and content
+     * @param {object} question - Question object to validate
+     * @returns {boolean} - True if valid
+     */
+    validateQuestionStructure(question) {
+        if (!question || typeof question !== 'object') {
+            return false;
+        }
+        
+        // Check for corrupted question text
+        if (this.isCorruptedText(question.question)) {
+            logger.warn('Found corrupted question text:', question.question);
+            return false;
+        }
+        
+        // Validate options if present
+        return this.validateQuestionOptions(question.options);
+    }
+
+    /**
+     * Validate question options for corruption
+     * @param {Array} options - Options array to validate
+     * @returns {boolean} - True if valid
+     */
+    validateQuestionOptions(options) {
+        if (!options || !Array.isArray(options)) {
+            return true; // Options are optional, so null/undefined is valid
+        }
+        
+        // Check each option for corruption using early return
+        for (const option of options) {
+            if (this.isCorruptedText(option)) {
+                logger.warn('Found corrupted option text:', option);
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /**
      * Validate quiz data to prevent corruption
      */
     validateQuizData(data) {
+        // Early return for invalid data structure
         if (!data || typeof data !== 'object') {
             return false;
         }
@@ -993,32 +1093,8 @@ export class QuizManager {
             return false;
         }
         
-        // Check each question for corruption
-        for (const question of data.questions) {
-            if (!question || typeof question !== 'object') {
-                return false;
-            }
-            
-            // Check for the specific corruption pattern
-            if (question.question && typeof question.question === 'string' && 
-                question.question.includes('if this means that we sorted the first task')) {
-                logger.warn('Found corrupted question text:', question.question);
-                return false;
-            }
-            
-            // Check options for corruption
-            if (question.options && Array.isArray(question.options)) {
-                for (const option of question.options) {
-                    if (typeof option === 'string' && 
-                        option.includes('if this means that we sorted the first task')) {
-                        logger.warn('Found corrupted option text:', option);
-                        return false;
-                    }
-                }
-            }
-        }
-        
-        return true;
+        // Validate each question using helper method (reduces nesting)
+        return data.questions.every(question => this.validateQuestionStructure(question));
     }
 
     /**

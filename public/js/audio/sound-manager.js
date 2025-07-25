@@ -10,7 +10,7 @@
  * - Dependencies: None (standalone module)
  */
 
-import { logger } from '../core/config.js';
+import { logger, AUDIO, TIMING } from '../core/config.js';
 
 export class SoundManager {
     constructor() {
@@ -159,8 +159,8 @@ export class SoundManager {
             // Add some harmonic accompaniment
             setTimeout(() => {
                 this.playSound(523, 1.5, 'sawtooth'); // Bass C
-                setTimeout(() => this.playSound(659, 1.0, 'sawtooth'), 500); // Bass E
-                setTimeout(() => this.playSound(784, 1.2, 'sawtooth'), 1000); // Bass G
+                setTimeout(() => this.playSound(AUDIO.VICTORY_BASS_FREQUENCIES[0], AUDIO.VICTORY_BASS_DURATIONS[0], AUDIO.VICTORY_BASS_WAVEFORM), TIMING.VICTORY_BASS_DELAYS[0]);
+                setTimeout(() => this.playSound(AUDIO.VICTORY_BASS_FREQUENCIES[1], AUDIO.VICTORY_BASS_DURATIONS[1], AUDIO.VICTORY_BASS_WAVEFORM), TIMING.VICTORY_BASS_DELAYS[1]);
             }, 1500);
             
         } catch (e) {
@@ -180,16 +180,16 @@ export class SoundManager {
     playCorrectAnswerSound() {
         logger.debug('🔊 Playing correct answer sound (original ascending notes: C-E-G)');
         // Original correct answer chord progression (ascending notes)
-        setTimeout(() => this.playSound(523, 0.15), 0);   // C
-        setTimeout(() => this.playSound(659, 0.15), 150); // E
-        setTimeout(() => this.playSound(784, 0.3), 300);  // G
+        setTimeout(() => this.playSound(AUDIO.SUCCESS_FREQUENCIES[0], AUDIO.SUCCESS_DURATIONS[0]), TIMING.SUCCESS_MELODY_DELAYS[0]);
+        setTimeout(() => this.playSound(AUDIO.SUCCESS_FREQUENCIES[1], AUDIO.SUCCESS_DURATIONS[1]), TIMING.SUCCESS_MELODY_DELAYS[1]);
+        setTimeout(() => this.playSound(AUDIO.SUCCESS_FREQUENCIES[2], AUDIO.SUCCESS_DURATIONS[2]), TIMING.SUCCESS_MELODY_DELAYS[2]);
     }
 
     playIncorrectAnswerSound() {
         logger.debug('🔊 Playing incorrect answer sound (original descending sawtooth)');
         // Original incorrect answer descending tones
         this.playSound(400, 0.2, 'sawtooth');
-        setTimeout(() => this.playSound(300, 0.3, 'sawtooth'), 200);
+        setTimeout(() => this.playSound(AUDIO.WRONG_ANSWER_FREQ, AUDIO.WRONG_ANSWER_DURATION, AUDIO.WRONG_ANSWER_WAVEFORM), TIMING.WRONG_ANSWER_DELAY);
     }
 
     // Utility methods

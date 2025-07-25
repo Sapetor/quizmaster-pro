@@ -906,7 +906,10 @@
         <!-- AI Question Generator Modal -->
         <div id="ai-generator-modal" class="modal" style="display: none;">
             <div class="modal-content large">
-                <h3>🤖 <span data-translate="ai_generator">AI Question Generator</span></h3>
+                <div class="modal-header">
+                    <h3>🤖 <span data-translate="ai_generator">AI Question Generator</span></h3>
+                    <button id="close-ai-generator" class="close-btn">&times;</button>
+                </div>
                 
                 <div class="ai-config-section">
                     <div class="provider-selection">
@@ -922,7 +925,6 @@
                     <div class="model-selection" id="model-selection" style="display: none;">
                         <label for="ollama-model" data-translate="choose_model">Choose Model:</label>
                         <select id="ollama-model" class="input-field">
-                            <option value="" data-translate="loading_models_placeholder">Loading models...</option>
                         </select>
                         <small data-translate="select_ollama_model">Select which Ollama model to use for generation</small>
                     </div>

@@ -9,7 +9,7 @@
  */
 
 import { translationManager } from './translation-manager.js';
-import { logger, LIMITS, TIMING } from '../core/config.js';
+import { logger, LIMITS, TIMING, UI, ANIMATION } from '../core/config.js';
 
 // Global functions that need to be accessible from HTML
 
@@ -287,15 +287,8 @@ export function toggleGlobalFontSize() {
 export function setGlobalFontSize(scale) {
     logger.debug('Setting global font size:', scale);
     
-    // Define scale multipliers - increased range with much bigger game text
-    const scaleValues = {
-        small: 0.9,
-        medium: 1.0,
-        large: 1.3,
-        xlarge: 1.6
-    };
-    
-    const scaleValue = scaleValues[scale] || 1.0;
+    // Use centralized font scale values from config
+    const scaleValue = UI.FONT_SCALES[scale] || UI.FONT_SCALES.medium;
     
     // Update CSS custom property for global scaling - CSS utility classes handle the rest
     document.documentElement.style.setProperty('--global-font-scale', scaleValue);
@@ -339,10 +332,10 @@ export function updatePreviewSpacing(value) {
             option.style.marginBottom = `${value}px`;
         });
         
-        // Keep checkbox options at consistent 8px margin
+        // Keep checkbox options at consistent margin from config
         const checkboxOptions = previewContent.querySelectorAll('.checkbox-option');
         checkboxOptions.forEach(option => {
-            option.style.marginBottom = '8px';
+            option.style.marginBottom = `${UI.CHECKBOX_MARGIN_BOTTOM}px`;
         });
     }
     
@@ -463,22 +456,63 @@ if (document.readyState === 'loading') {
     initializeBackToTopButton();
 }
 
-// Make all functions globally accessible for HTML handlers
+// Global function registry - consolidated approach to reduce namespace pollution
+const globalFunctions = {
+    // Language functions
+    toggleLanguageDropdown,
+    selectLanguage,
+    changeLanguage: (langCode) => translationManager.changeLanguage(langCode),
+    
+    // UI control functions
+    togglePreviewMode,
+    togglePreviewSettings,
+    toggleToolbar,
+    toggleTheme,
+    
+    // Font and spacing functions
+    toggleGlobalFontSize,
+    setGlobalFontSize,
+    updatePreviewSpacing,
+    
+    // Question and content functions
+    updateQuestionType,
+    updateTimeLimit,
+    uploadImage,
+    removeImage,
+    
+    // Navigation functions
+    scrollToCurrentQuestion,
+    scrollToTop,
+    
+    // Modal functions
+    openAIGeneratorModal,
+    
+    // Time functions
+    toggleGlobalTime
+};
+
+// Single global dispatcher function - reduces 18 global assignments to 1
+window.QM = function(functionName, ...args) {
+    if (globalFunctions[functionName]) {
+        return globalFunctions[functionName](...args);
+    } else {
+        logger.error(`Global function '${functionName}' not found`);
+    }
+};
+
+// Expose the function registry for debugging
+window.QM.functions = globalFunctions;
+
+// BACKWARD COMPATIBILITY: Keep essential functions as direct assignments
+// These are critical functions used frequently and need immediate access
 window.toggleLanguageDropdown = toggleLanguageDropdown;
 window.selectLanguage = selectLanguage;
 window.togglePreviewMode = togglePreviewMode;
 window.openAIGeneratorModal = openAIGeneratorModal;
-window.toggleToolbar = toggleToolbar;
-window.toggleGlobalTime = toggleGlobalTime;
-window.updateQuestionType = updateQuestionType;
-window.updateTimeLimit = updateTimeLimit;
-window.uploadImage = uploadImage;
 window.removeImage = removeImage;
-window.scrollToCurrentQuestion = scrollToCurrentQuestion;
 window.scrollToTop = scrollToTop;
 window.togglePreviewSettings = togglePreviewSettings;
 window.toggleGlobalFontSize = toggleGlobalFontSize;
 window.setGlobalFontSize = setGlobalFontSize;
-window.updatePreviewSpacing = updatePreviewSpacing;
 window.toggleTheme = toggleTheme;
-window.changeLanguage = (langCode) => translationManager.changeLanguage(langCode); // Re-export from translation-manager
+window.scrollToCurrentQuestion = scrollToCurrentQuestion;

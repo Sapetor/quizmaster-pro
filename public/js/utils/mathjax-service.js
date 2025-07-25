@@ -52,7 +52,7 @@ export class MathJaxService {
         }, 100);
 
         // Clear interval after 10 seconds to prevent memory leak
-        setTimeout(() => clearInterval(checkInterval), 10000); // Keep 10s for MathJax loading timeout
+        setTimeout(() => clearInterval(checkInterval), TIMING.MATHJAX_LOADING_TIMEOUT);
         
         // Make status available globally for debugging
         window.debugMathJax = () => {
@@ -128,72 +128,96 @@ export class MathJaxService {
                         // RESTORE WORKING CORRUPTION DETECTION (the F5 prevention caused infinite loops)
                         logger.debug(`🔧 EMERGENCY CHECK: MathJax=${!!window.MathJax}, startup=${!!window.MathJax?.startup}, document=${!!window.MathJax?.startup?.document}, element=${!!element}`);
                         
-                        // DETECT F5 CORRUPTION: startup=true but document=false indicates corrupted state
-                        if (window.MathJax && window.MathJax.startup && !window.MathJax.startup.document) {
-                            logger.debug('🚨 CORRUPTION DETECTED: MathJax in corrupted F5 state - forcing reinitialization...');
+                        // F5 CORRUPTION DETECTION: Check for the exact corruption signature
+                        // Corruption pattern: startup=true, document=false, typesetPromise=false
+                        const hasStartup = !!(window.MathJax && window.MathJax.startup);
+                        const hasDocument = !!(window.MathJax && window.MathJax.startup && window.MathJax.startup.document);
+                        const hasTypesetPromise = !!(window.MathJax && window.MathJax.typesetPromise);
+                        
+                        logger.debug(`🔍 F5 CORRUPTION CHECK: startup=${hasStartup}, document=${hasDocument}, typesetPromise=${hasTypesetPromise}`);
+                        
+                        if (hasStartup && !hasDocument && !hasTypesetPromise) {
+                            logger.debug('🚨 F5 CORRUPTION DETECTED: MathJax in corrupted state (startup=true, document=false, typesetPromise=false)');
                             
-                            try {
-                                // Clear the corrupted MathJax object completely
-                                delete window.MathJax;
-                                
-                                // Force reload MathJax script to get clean state
-                                const mathJaxScript = document.querySelector('script[src*="mathjax"]');
-                                if (mathJaxScript) {
-                                    logger.debug('🔧 Removing and reloading MathJax script...');
-                                    
-                                    // Remove old script
-                                    mathJaxScript.remove();
-                                    
-                                    // Create new script with cache busting
-                                    const newScript = document.createElement('script');
-                                    newScript.src = mathJaxScript.src + '?reload=' + Date.now();
-                                    newScript.async = true;
-                                    
-                                    // Wait for new MathJax to load
-                                    newScript.onload = () => {
-                                        logger.debug('✅ MathJax reloaded successfully');
-                                        
-                                        // Set up a listener for when new MathJax is ready
-                                        const checkNewMathJax = setInterval(() => {
-                                            if (window.MathJax && window.MathJax.typesetPromise) {
-                                                logger.debug('✅ CORRUPTION FIX SUCCESS: New MathJax is ready');
-                                                clearInterval(checkNewMathJax);
-                                                
-                                                // Now try rendering with the fresh MathJax
-                                                window.MathJax.typesetPromise([element]).then(() => {
-                                                    logger.debug('✅ REINITIALIZATION SUCCESS: LaTeX rendered with fresh MathJax');
-                                                    this.pendingRenders.delete(element);
-                                                    resolve();
-                                                }).catch(err => {
-                                                    logger.warn('⚠️ Fresh MathJax render failed:', err);
-                                                    resolve();
-                                                });
-                                            }
-                                        }, 100);
-                                        
-                                        // Timeout after 3 seconds
-                                        setTimeout(() => {
-                                            clearInterval(checkNewMathJax);
-                                            logger.debug('🔧 Fresh MathJax initialization complete');
-                                            resolve();
-                                        }, 3000);
-                                    };
-                                    
-                                    newScript.onerror = () => {
-                                        logger.error('❌ Failed to reload MathJax script');
-                                        resolve();
-                                    };
-                                    
-                                    // Add new script to document
-                                    document.head.appendChild(newScript);
-                                    return; // Exit early, don't continue with other fallbacks
-                                } else {
-                                    logger.warn('⚠️ Could not find MathJax script to reload');
-                                }
-                                
-                            } catch (reinitError) {
-                                logger.error('❌ MathJax reinitialization failed:', reinitError);
+                            // CLEAR CORRUPTED STATE AND REINITIALIZE
+                            logger.debug('🔧 Clearing corrupted MathJax state...');
+                            delete window.MathJax;
+                            
+                            // Remove existing script
+                            const existingScript = document.querySelector('script[src*="mathjax"]');
+                            if (existingScript) {
+                                existingScript.remove();
+                                logger.debug('🔧 Removed corrupted MathJax script');
                             }
+                            
+                            // Reload MathJax with cache busting
+                            const script = document.createElement('script');
+                            script.src = 'https://polyfill.io/v3/polyfill.min.js?features=es6';
+                            script.onload = () => {
+                                const mathJaxScript = document.createElement('script');
+                                mathJaxScript.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js?reload=' + Date.now();
+                                mathJaxScript.onload = () => {
+                                    logger.debug('🔧 MathJax script reloaded with cache busting');
+                                    // Wait for MathJax to fully initialize
+                                    const waitForInit = () => {
+                                        if (window.MathJax && window.MathJax.typesetPromise) {
+                                            logger.debug('✅ MathJax successfully reinitialized after F5 corruption');
+                                            // Now render the element
+                                            window.MathJax.typesetPromise([element]).then(() => {
+                                                this.pendingRenders.delete(element);
+                                                resolve();
+                                            }).catch(err => {
+                                                logger.error('❌ Render failed after F5 fix:', err);
+                                                this.pendingRenders.delete(element);
+                                                resolve();
+                                            });
+                                        } else {
+                                            setTimeout(waitForInit, 100);
+                                        }
+                                    };
+                                    waitForInit();
+                                };
+                                document.head.appendChild(mathJaxScript);
+                            };
+                            document.head.appendChild(script);
+                            
+                            this.pendingRenders.delete(element);
+                            return; // Exit early
+                        }
+                        
+                        // FALLBACK: If not corruption, wait for normal initialization
+                        if (hasStartup && !hasDocument) {
+                            logger.debug('🚨 F5 RELOAD: MathJax still initializing after F5, waiting longer...');
+                            
+                            // Wait up to 15 seconds for MathJax to self-initialize after F5
+                            const waitForF5Recovery = (waitAttempt = 1) => {
+                                const maxWaitAttempts = 30; // 30 * 500ms = 15 seconds
+                                
+                                setTimeout(() => {
+                                    if (this.isAvailable()) {
+                                        logger.debug(`✅ F5 RECOVERY SUCCESS: MathJax ready after ${waitAttempt * 500}ms`);
+                                        // Now render with the properly initialized MathJax
+                                        window.MathJax.typesetPromise([element]).then(() => {
+                                            logger.debug('✅ F5 LaTeX rendering successful');
+                                            this.pendingRenders.delete(element);
+                                            resolve();
+                                        }).catch(err => {
+                                            logger.warn('⚠️ F5 LaTeX render failed after recovery:', err);
+                                            resolve();
+                                        });
+                                    } else if (waitAttempt < maxWaitAttempts) {
+                                        logger.debug(`⏳ F5 recovery attempt ${waitAttempt}/${maxWaitAttempts}...`);
+                                        waitForF5Recovery(waitAttempt + 1);
+                                    } else {
+                                        logger.warn('⚠️ F5 recovery timeout - giving up on LaTeX rendering');
+                                        this.pendingRenders.delete(element);
+                                        resolve();
+                                    }
+                                }, 500); // Check every 500ms during F5 recovery
+                            };
+                            
+                            waitForF5Recovery();
+                            return; // Exit early, don't continue with other fallbacks
                         }
                         
                         if (window.MathJax && window.MathJax.startup && window.MathJax.startup.document && element) {

@@ -45,7 +45,7 @@ export class MathRenderer {
                     this.mathJaxReady = true;
                     callback();
                 } else {
-                    setTimeout(checkReady, 50); // Check every 50ms
+                    setTimeout(checkReady, TIMING.MATHJAX_CHECK_INTERVAL);
                 }
             };
             
@@ -283,7 +283,7 @@ export class MathRenderer {
      * @param {number} timeout - Maximum time to wait in milliseconds
      * @returns {Promise<boolean>} - Resolves when MathJax is ready
      */
-    waitForMathJax(timeout = 5000) {
+    waitForMathJax(timeout = TIMING.MATH_RENDERER_TIMEOUT) {
         return new Promise((resolve) => {
             const startTime = Date.now();
             const checkReady = () => {

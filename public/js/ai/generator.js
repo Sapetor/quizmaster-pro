@@ -10,7 +10,7 @@
  * - Dependencies: translation-manager.js for translationManager.getTranslationSync()
  */
 
-import { logger } from '../core/config.js';
+import { logger, AI, TIMING } from '../core/config.js';
 
 import { translationManager, showAlert } from '../utils/translation-manager.js';
 
@@ -20,7 +20,7 @@ export class AIQuestionGenerator {
             ollama: {
                 name: "Ollama (Local)",
                 apiKey: false,
-                endpoint: "http://localhost:11434/api/generate",
+                endpoint: AI.OLLAMA_ENDPOINT,
                 models: ["llama3.2:latest", "codellama:13b-instruct", "codellama:7b-instruct", "codellama:7b-code"]
             },
             huggingface: {
@@ -33,7 +33,7 @@ export class AIQuestionGenerator {
                 name: "OpenAI",
                 apiKey: true,
                 endpoint: "https://api.openai.com/v1/chat/completions",
-                models: ["gpt-3.5-turbo", "gpt-4"]
+                models: [AI.OPENAI_MODEL, "gpt-4"]
             },
             claude: {
                 name: "Anthropic Claude", 
@@ -44,71 +44,178 @@ export class AIQuestionGenerator {
         };
         
         this.isGenerating = false; // Flag to prevent multiple simultaneous generations
+        this.eventHandlers = {}; // Store event handler references for cleanup
         this.initializeEventListeners();
     }
 
     initializeEventListeners() {
+        const modal = document.getElementById('ai-generator-modal');
+        const closeButton = document.getElementById('close-ai-generator');
+
+        // Store handler references for cleanup
+        this.eventHandlers.modalClick = (e) => {
+            if (e.target === modal) {
+                this.closeModal();
+            }
+        };
+
+        this.eventHandlers.closeButtonClick = () => {
+            this.closeModal();
+        };
+
+        this.eventHandlers.keydown = (e) => {
+            if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
+                this.closeModal();
+            }
+        };
+
+        this.eventHandlers.providerChange = (e) => {
+            this.handleProviderChange(e.target.value);
+        };
+
+        this.eventHandlers.modelChange = (e) => {
+            if (e.target.value) {
+                localStorage.setItem('ollama_selected_model', e.target.value);
+            }
+        };
+
+        this.eventHandlers.fileChange = (e) => {
+            this.handleFileUpload(e.target.files[0]);
+        };
+
+        this.eventHandlers.contentInput = (e) => {
+            this.detectContentType(e.target.value);
+        };
+
+        this.eventHandlers.generateClick = () => {
+            this.generateQuestions();
+        };
+
+        this.eventHandlers.cancelClick = () => {
+            this.closeModal();
+        };
+
+        this.eventHandlers.apiKeyBlur = (e) => {
+            const provider = document.getElementById('ai-provider')?.value;
+            if (provider && e.target.value.trim()) {
+                localStorage.setItem(`ai_api_key_${provider}`, e.target.value.trim());
+                logger.debug(`API key saved for provider: ${provider}`);
+            }
+        };
+
+        // Add event listeners
+        if (modal) {
+            modal.addEventListener('click', this.eventHandlers.modalClick);
+        }
+
+        if (closeButton) {
+            closeButton.addEventListener('click', this.eventHandlers.closeButtonClick);
+        }
+
+        document.addEventListener('keydown', this.eventHandlers.keydown);
+
         // Provider selection change
         const providerSelect = document.getElementById('ai-provider');
         if (providerSelect) {
-            providerSelect.addEventListener('change', (e) => {
-                this.handleProviderChange(e.target.value);
-            });
+            providerSelect.addEventListener('change', this.eventHandlers.providerChange);
         }
 
         // Model selection change
         const modelSelect = document.getElementById('ollama-model');
         if (modelSelect) {
-            modelSelect.addEventListener('change', (e) => {
-                if (e.target.value) {
-                    localStorage.setItem('ollama_selected_model', e.target.value);
-                }
-            });
+            modelSelect.addEventListener('change', this.eventHandlers.modelChange);
         }
 
         // File upload handling
         const fileInput = document.getElementById('content-file');
         if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
-                this.handleFileUpload(e.target.files[0]);
-            });
+            fileInput.addEventListener('change', this.eventHandlers.fileChange);
         }
 
         // Content type detection
         const contentTextarea = document.getElementById('source-content');
         if (contentTextarea) {
-            contentTextarea.addEventListener('input', (e) => {
-                this.detectContentType(e.target.value);
-            });
+            contentTextarea.addEventListener('input', this.eventHandlers.contentInput);
         }
 
         // Generate questions button
         const generateBtn = document.getElementById('generate-questions');
         if (generateBtn) {
-            generateBtn.addEventListener('click', () => {
-                this.generateQuestions();
-            });
+            generateBtn.addEventListener('click', this.eventHandlers.generateClick);
         }
 
         // Cancel button
         const cancelBtn = document.getElementById('cancel-ai-generator');
         if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => {
-                this.closeModal();
-            });
+            cancelBtn.addEventListener('click', this.eventHandlers.cancelClick);
         }
 
         // API key input change listener
         const apiKeyInput = document.getElementById('ai-api-key');
         if (apiKeyInput) {
-            apiKeyInput.addEventListener('blur', (e) => {
-                const provider = document.getElementById('ai-provider')?.value;
-                if (provider && e.target.value.trim()) {
-                    localStorage.setItem(`ai_api_key_${provider}`, e.target.value.trim());
-                    logger.debug(`API key saved for provider: ${provider}`);
-                }
-            });
+            apiKeyInput.addEventListener('blur', this.eventHandlers.apiKeyBlur);
         }
+    }
+
+    /**
+     * Clean up all event listeners to prevent memory leaks
+     */
+    cleanup() {
+        const modal = document.getElementById('ai-generator-modal');
+        const closeButton = document.getElementById('close-ai-generator');
+        const providerSelect = document.getElementById('ai-provider');
+        const modelSelect = document.getElementById('ollama-model');
+        const fileInput = document.getElementById('content-file');
+        const contentTextarea = document.getElementById('source-content');
+        const generateBtn = document.getElementById('generate-questions');
+        const cancelBtn = document.getElementById('cancel-ai-generator');
+        const apiKeyInput = document.getElementById('ai-api-key');
+
+        // Remove all event listeners
+        if (modal && this.eventHandlers.modalClick) {
+            modal.removeEventListener('click', this.eventHandlers.modalClick);
+        }
+
+        if (closeButton && this.eventHandlers.closeButtonClick) {
+            closeButton.removeEventListener('click', this.eventHandlers.closeButtonClick);
+        }
+
+        if (this.eventHandlers.keydown) {
+            document.removeEventListener('keydown', this.eventHandlers.keydown);
+        }
+
+        if (providerSelect && this.eventHandlers.providerChange) {
+            providerSelect.removeEventListener('change', this.eventHandlers.providerChange);
+        }
+
+        if (modelSelect && this.eventHandlers.modelChange) {
+            modelSelect.removeEventListener('change', this.eventHandlers.modelChange);
+        }
+
+        if (fileInput && this.eventHandlers.fileChange) {
+            fileInput.removeEventListener('change', this.eventHandlers.fileChange);
+        }
+
+        if (contentTextarea && this.eventHandlers.contentInput) {
+            contentTextarea.removeEventListener('input', this.eventHandlers.contentInput);
+        }
+
+        if (generateBtn && this.eventHandlers.generateClick) {
+            generateBtn.removeEventListener('click', this.eventHandlers.generateClick);
+        }
+
+        if (cancelBtn && this.eventHandlers.cancelClick) {
+            cancelBtn.removeEventListener('click', this.eventHandlers.cancelClick);
+        }
+
+        if (apiKeyInput && this.eventHandlers.apiKeyBlur) {
+            apiKeyInput.removeEventListener('blur', this.eventHandlers.apiKeyBlur);
+        }
+
+        // Clear handler references
+        this.eventHandlers = {};
+        
+        logger.debug('AI Generator event listeners cleaned up');
     }
 
     async generateQuestions() {
@@ -186,7 +293,7 @@ export class AIQuestionGenerator {
                 setTimeout(() => {
                     showAlert('successfully_generated_questions', [questions.length]);
                     this.isGenerating = false; // Reset flag after success message
-                }, 150);
+                }, TIMING.SCREEN_TRANSITION_DELAY);
             } else {
                 showAlert('error_generating');
                 this.isGenerating = false;
@@ -235,7 +342,7 @@ CRITICAL REQUIREMENTS:
     }
 
     async generateWithOllama(prompt) {
-        const model = localStorage.getItem('ollama_selected_model') || 'llama3.2:latest';
+        const model = localStorage.getItem('ollama_selected_model') || AI.OLLAMA_DEFAULT_MODEL;
         const timestamp = Date.now();
         const randomSeed = Math.floor(Math.random() * 10000);
         
@@ -244,7 +351,7 @@ CRITICAL REQUIREMENTS:
 
             Please respond with only valid JSON. Do not include explanations or additional text.`;
 
-            const response = await fetch('http://localhost:11434/api/generate', {
+            const response = await fetch(AI.OLLAMA_ENDPOINT, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -254,7 +361,7 @@ CRITICAL REQUIREMENTS:
                     prompt: enhancedPrompt,
                     stream: false,
                     options: {
-                        temperature: 0.7,
+                        temperature: AI.DEFAULT_TEMPERATURE,
                         seed: randomSeed
                     }
                 })
@@ -293,12 +400,12 @@ CRITICAL REQUIREMENTS:
                 'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: 'gpt-3.5-turbo',
+                model: AI.OPENAI_MODEL,
                 messages: [{
                     role: 'user',
                     content: prompt
                 }],
-                temperature: 0.7
+                temperature: AI.DEFAULT_TEMPERATURE
             })
         });
 
@@ -449,29 +556,29 @@ CRITICAL REQUIREMENTS:
         if (!content) return 'general';
         
         // Mathematics indicators
-        if (/\$.*\$|\\\w+{.*}|\\begin{|\\end{|\\frac|\\sqrt|\\sum|\\int/.test(content)) {
+        if (AI.MATH_INDICATORS.test(content)) {
             return 'mathematics';
         }
         
         // Programming indicators  
-        if (/def\s+\w+\(/.test(content) || /function\s+\w+\(/.test(content) || /class\s+\w+/.test(content)) {
+        if (AI.PROGRAMMING_INDICATORS.test(content) || /function\s+\w+\(/.test(content) || /class\s+\w+/.test(content)) {
             return 'programming';
         }
         
         // Physics indicators
-        if (/newton|joule|watt|volt|ampere|velocity|acceleration|force|energy|momentum/i.test(content)) {
+        if (AI.PHYSICS_INDICATORS.test(content)) {
             return 'physics';
         }
         
         // Chemistry indicators
-        if (/molecule|atom|bond|reaction|catalyst|pH|ion|electron|proton|neutron/i.test(content)) {
+        if (AI.CHEMISTRY_INDICATORS.test(content)) {
             return 'chemistry';
         }
         
         return 'general';
     }
 
-    handleProviderChange(provider) {
+    async handleProviderChange(provider) {
         const apiKeySection = document.getElementById('api-key-section');
         const modelSelection = document.getElementById('model-selection');
         
@@ -493,8 +600,7 @@ CRITICAL REQUIREMENTS:
         
         // Show model selection for Ollama
         if (provider === 'ollama') {
-            modelSelection.style.display = 'block';
-            this.loadOllamaModels();
+            await this.loadOllamaModels();
         } else {
             modelSelection.style.display = 'none';
         }
@@ -503,30 +609,44 @@ CRITICAL REQUIREMENTS:
     async loadOllamaModels() {
         const modelSelect = document.getElementById('ollama-model');
         if (!modelSelect) return;
+
+        // Set initial loading state and disable the select element
+        modelSelect.innerHTML = '<option value="">Loading models...</option>';
+        modelSelect.disabled = true;
         
         try {
-            const response = await fetch('http://localhost:11434/api/tags');
+            const response = await fetch(AI.OLLAMA_TAGS_ENDPOINT);
             
             if (response.ok) {
                 const data = await response.json();
                 const models = data.models || [];
                 
-                modelSelect.innerHTML = '<option value="">Select a model...</option>';
-                models.forEach(model => {
-                    const option = document.createElement('option');
-                    option.value = model.name;
-                    option.textContent = `${model.name} (${(model.size / 1024 / 1024 / 1024).toFixed(1)}GB)`;
-                    modelSelect.appendChild(option);
-                });
-                
-                // Restore saved selection or set default
-                const savedModel = localStorage.getItem('ollama_selected_model');
-                if (savedModel && models.some(m => m.name === savedModel)) {
-                    modelSelect.value = savedModel;
-                } else if (models.length > 0) {
-                    // Set default to first available model
-                    modelSelect.value = models[0].name;
-                    localStorage.setItem('ollama_selected_model', models[0].name);
+                // Clear existing options and populate with models
+                modelSelect.innerHTML = ''; 
+                if (models.length === 0) {
+                    modelSelect.innerHTML = '<option value="">No models found</option>';
+                } else {
+                    models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.name;
+                        option.textContent = `${model.name} (${(model.size / 1024 / 1024 / 1024).toFixed(1)}GB)`;
+                        modelSelect.appendChild(option);
+                    });
+                    
+                    // Restore saved selection or set default
+                    const savedModel = localStorage.getItem('ollama_selected_model');
+                    if (savedModel && models.some(m => m.name === savedModel)) {
+                        modelSelect.value = savedModel;
+                    } else if (models.length > 0) {
+                        // Set default to first available model
+                        modelSelect.value = models[0].name;
+                        localStorage.setItem('ollama_selected_model', models[0].name);
+                    }
+                }
+                // Show the model selection div after successful load
+                const modelSelectionDiv = document.getElementById('model-selection');
+                if (modelSelectionDiv) {
+                    modelSelectionDiv.style.display = 'block';
                 }
             } else {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -534,6 +654,13 @@ CRITICAL REQUIREMENTS:
         } catch (error) {
             logger.error('Error loading Ollama models:', error);
             modelSelect.innerHTML = `<option value="">Ollama not available (${error.message})</option>`;
+            // Show the model selection div even on error
+            const modelSelectionDiv = document.getElementById('model-selection');
+            if (modelSelectionDiv) {
+                modelSelectionDiv.style.display = 'block';
+            }
+        } finally {
+            modelSelect.disabled = false; // Always enable after loading attempt
         }
     }
 
@@ -585,35 +712,28 @@ CRITICAL REQUIREMENTS:
         return true;
     }
 
-    openModal() {
+    async openModal() {
         const modal = document.getElementById('ai-generator-modal');
         if (modal) {
+            // Set provider to 'ollama' and update the UI
+            const providerSelect = document.getElementById('ai-provider');
+            if (providerSelect) {
+                providerSelect.value = 'ollama';
+                await this.handleProviderChange('ollama');
+            }
+
             modal.style.display = 'flex';
-            
-            // Wait a bit for the modal to be fully rendered
-            setTimeout(() => {
-                // Initialize provider change handler
-                const providerSelect = document.getElementById('ai-provider');
-                const provider = providerSelect?.value || 'ollama';
-                
-                // Set to ollama by default if not already set
-                if (providerSelect && !providerSelect.value) {
-                    providerSelect.value = 'ollama';
-                }
-                
-                this.handleProviderChange(provider);
-            }, 50);
-            
+
             // Clear previous content
             const contentTextarea = document.getElementById('source-content');
             if (contentTextarea && !contentTextarea.value.trim()) {
-                contentTextarea.placeholder = 'Enter your content here (e.g., a passage of text, topics to generate questions about, or paste from a document)...';
+                contentTextarea.placeholder = 'Enter your content here (e.g., a passage of text, topics to generate questions about, or paste from a document). ..';
             }
-            
-            // Reset question count to 1
+
+            // Reset question count to default
             const questionCount = document.getElementById('question-count');
             if (questionCount) {
-                questionCount.value = 1;
+                questionCount.value = AI.DEFAULT_QUESTION_COUNT;
             }
         }
     }
@@ -628,15 +748,12 @@ CRITICAL REQUIREMENTS:
 
 // Global function for opening the AI generator modal (called from HTML)
 export function openAIGeneratorModal() {
-    const modal = document.getElementById('ai-generator-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-        // Initialize provider change handler
-        if (window.aiGenerator) {
-            const provider = document.getElementById('ai-provider')?.value;
-            if (provider) {
-                window.aiGenerator.handleProviderChange(provider);
-            }
+    if (window.aiGenerator) {
+        window.aiGenerator.openModal();
+    } else {
+        const modal = document.getElementById('ai-generator-modal');
+        if (modal) {
+            modal.style.display = 'flex';
         }
     }
 }
