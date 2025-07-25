@@ -409,7 +409,29 @@ if (window.MathJax && window.MathJax.startup && !window.MathJax.startup.document
 5. **Resume Normal Rendering**: Process LaTeX with fresh, working MathJax instance
 
 ### Results
-- **Before Fix**: 10 failed attempts, `typesetPromise: false`
-- **After Fix**: Success on attempt 1, `typesetPromise: true`
-- **User Experience**: LaTeX renders consistently after F5 refresh
+- **Before Fix**: 10 failed attempts, `typesetPromise: false`, F5 recovery timeout after 30 attempts
+- **After Fix**: Success on attempt 1, `typesetPromise: true`, proper corruption detection and script reinitialization
+- **User Experience**: LaTeX renders consistently after F5 refresh with no recovery timeouts
+- **Performance**: Only activates when corruption is detected, no overhead during normal operation
+
+### Latest Enhancement (January 2025)
+**Issue Resolved**: F5 recovery mechanism was timing out after 30 attempts due to incorrect corruption detection pattern.
+
+**Problem**: The previous fix was checking `!window.MathJax.startup.document` but missing the crucial `typesetPromise=false` check, causing infinite wait loops.
+
+**Solution Applied**: Enhanced corruption detection to match exact pattern:
+```javascript
+// Enhanced F5 corruption detection
+const hasStartup = !!(window.MathJax && window.MathJax.startup);
+const hasDocument = !!(window.MathJax.startup && window.MathJax.startup.document);
+const hasTypesetPromise = !!(window.MathJax && window.MathJax.typesetPromise);
+
+if (hasStartup && !hasDocument && !hasTypesetPromise) {
+    // Clear corrupted state and reinitialize with cache busting
+    delete window.MathJax;
+    // Reload script with new timestamp
+}
+```
+
+**Status**: ✅ RESOLVED - F5 corruption detection now works correctly with no timeouts
 - **Performance**: Only activates when corruption is detected, no overhead during normal operation
