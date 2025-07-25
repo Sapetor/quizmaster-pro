@@ -13,6 +13,18 @@ export class MathJaxService {
         this.isChrome = this.detectChrome();
         this.isRecovering = false; // Track if F5 recovery is in progress
         this.recoveryCallbacks = []; // Queue callbacks waiting for recovery
+        
+        // Tab isolation for Chrome multi-tab scenarios
+        this.tabId = this.generateTabId();
+        this.isHost = window.location.pathname.includes('host') || window.location.search.includes('host=true');
+        
+        logger.debug(`🎯 MathJax Service initialized for ${this.isHost ? 'HOST' : 'CLIENT'} tab: ${this.tabId}`);
+        
+        // Clean up tab registration on page unload
+        window.addEventListener('beforeunload', () => {
+            this.cleanupTabRegistration();
+        });
+        
         this.initializeMathJax();
     }
 
@@ -34,6 +46,65 @@ export class MathJaxService {
         const isChromium = window.chrome && window.chrome.runtime;
         const isEdge = /Edg/.test(navigator.userAgent);
         return (isChrome || isChromium) && !isEdge;
+    }
+
+    /**
+     * Generate unique tab identifier for multi-tab isolation
+     * @returns {string}
+     */
+    generateTabId() {
+        return `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    /**
+     * Check if other tabs might be affected by MathJax script reloading
+     * @returns {boolean}
+     */
+    hasOtherActiveTabs() {
+        // In Chrome, check if there are other QuizMaster tabs open
+        // This is a heuristic based on localStorage usage patterns
+        try {
+            const activeTabsKey = 'quizmaster_active_tabs';
+            const activeTabs = JSON.parse(localStorage.getItem(activeTabsKey) || '{}');
+            const now = Date.now();
+            
+            // Clean up old tab entries (older than 30 seconds)
+            Object.keys(activeTabs).forEach(tabId => {
+                if (now - activeTabs[tabId].lastSeen > 30000) {
+                    delete activeTabs[tabId];
+                }
+            });
+            
+            // Register this tab
+            activeTabs[this.tabId] = {
+                isHost: this.isHost,
+                lastSeen: now
+            };
+            
+            localStorage.setItem(activeTabsKey, JSON.stringify(activeTabs));
+            
+            // Return true if there are other active tabs
+            const otherTabs = Object.keys(activeTabs).filter(id => id !== this.tabId);
+            return otherTabs.length > 0;
+        } catch (e) {
+            logger.debug('Tab detection error (not critical):', e.message);
+            return false;
+        }
+    }
+
+    /**
+     * Clean up tab registration on page unload
+     */
+    cleanupTabRegistration() {
+        try {
+            const activeTabsKey = 'quizmaster_active_tabs';
+            const activeTabs = JSON.parse(localStorage.getItem(activeTabsKey) || '{}');
+            delete activeTabs[this.tabId];
+            localStorage.setItem(activeTabsKey, JSON.stringify(activeTabs));
+            logger.debug(`🧹 Cleaned up tab registration: ${this.tabId}`);
+        } catch (e) {
+            logger.debug('Tab cleanup error (not critical):', e.message);
+        }
     }
 
     /**
@@ -153,56 +224,43 @@ export class MathJaxService {
                         if (hasStartup && !hasDocument && !hasTypesetPromise) {
                             logger.debug('🚨 F5 CORRUPTION DETECTED: MathJax in corrupted state (startup=true, document=false, typesetPromise=false)');
                             
-                            // Chrome-specific: Alternative recovery approach
+                            // Chrome multi-tab safe recovery approach
                             if (this.isChrome) {
-                                logger.debug('🔄 CHROME F5 DETECTED: Attempting Chrome-specific recovery');
+                                const hasOtherTabs = this.hasOtherActiveTabs();
+                                logger.debug(`🔄 CHROME F5 DETECTED: ${this.isHost ? 'HOST' : 'CLIENT'} tab recovery (Other tabs: ${hasOtherTabs})`);
                                 
-                                // Try to reset MathJax configuration instead of reloading script
-                                if (window.MathJax && window.MathJax.config) {
-                                    try {
-                                        // Reset MathJax to initial state
-                                        logger.debug('🔧 Resetting MathJax configuration for Chrome');
+                                if (hasOtherTabs) {
+                                    // Multi-tab scenario: Use safer recovery without script reloading
+                                    logger.debug('🚫 Multi-tab detected: Using safe recovery without script reload');
+                                    
+                                    // Wait longer for MathJax to self-recover
+                                    const waitForSelfRecovery = (attempts = 0) => {
+                                        const maxAttempts = 20; // 10 seconds total
                                         
-                                        // Clear internal MathJax state
-                                        if (window.MathJax.startup) {
-                                            window.MathJax.startup.ready = () => {
-                                                logger.debug('🔧 Chrome MathJax reset ready callback');
-                                                window.MathJax.startup.defaultReady();
-                                                window.mathJaxReady = true;
-                                                document.body.classList.add('mathjax-ready');
-                                                document.dispatchEvent(new CustomEvent('mathjax-ready'));
-                                            };
-                                            
-                                            // Force restart
-                                            if (typeof window.MathJax.startup.ready === 'function') {
-                                                window.MathJax.startup.ready();
-                                            }
-                                        }
-                                        
-                                        // Try rendering after reset
-                                        setTimeout(() => {
-                                            if (window.MathJax && window.MathJax.typesetPromise) {
-                                                window.MathJax.typesetPromise([element]).then(() => {
-                                                    logger.debug('✅ Chrome MathJax reset successful');
-                                                    this.pendingRenders.delete(element);
-                                                    resolve();
-                                                }).catch(err => {
-                                                    logger.error('❌ Chrome MathJax reset failed:', err);
-                                                    this.pendingRenders.delete(element);
-                                                    resolve();
-                                                });
-                                            } else {
-                                                logger.error('❌ Chrome MathJax reset failed - no typesetPromise');
+                                        if (window.MathJax && window.MathJax.typesetPromise) {
+                                            logger.debug('✅ Multi-tab safe recovery: MathJax self-recovered');
+                                            window.MathJax.typesetPromise([element]).then(() => {
                                                 this.pendingRenders.delete(element);
                                                 resolve();
-                                            }
-                                        }, 500);
-                                        
-                                        return;
-                                    } catch (e) {
-                                        logger.error('❌ Chrome MathJax reset error:', e);
-                                        // Fall through to normal recovery
-                                    }
+                                            }).catch(err => {
+                                                logger.error('❌ Multi-tab render failed:', err);
+                                                this.pendingRenders.delete(element);
+                                                resolve();
+                                            });
+                                        } else if (attempts < maxAttempts) {
+                                            setTimeout(() => waitForSelfRecovery(attempts + 1), 500);
+                                        } else {
+                                            logger.error('❌ Multi-tab recovery timeout');
+                                            this.pendingRenders.delete(element);
+                                            resolve();
+                                        }
+                                    };
+                                    
+                                    waitForSelfRecovery();
+                                    return;
+                                } else {
+                                    // Single tab: Safe to use aggressive recovery
+                                    logger.debug('🔧 Single tab detected: Using full recovery');
                                 }
                             }
                             
