@@ -18,7 +18,7 @@ export class MathJaxService {
         this.tabId = this.generateTabId();
         this.isHost = window.location.pathname.includes('host') || window.location.search.includes('host=true');
         
-        logger.debug(`🎯 MathJax Service initialized for ${this.isHost ? 'HOST' : 'CLIENT'} tab: ${this.tabId}`);
+        // Reduced verbosity: only log errors and critical state changes
         
         // Clean up tab registration on page unload
         window.addEventListener('beforeunload', () => {
@@ -101,7 +101,7 @@ export class MathJaxService {
             const activeTabs = JSON.parse(localStorage.getItem(activeTabsKey) || '{}');
             delete activeTabs[this.tabId];
             localStorage.setItem(activeTabsKey, JSON.stringify(activeTabs));
-            logger.debug(`🧹 Cleaned up tab registration: ${this.tabId}`);
+            // Tab cleanup complete
         } catch (e) {
             logger.debug('Tab cleanup error (not critical):', e.message);
         }
@@ -131,7 +131,7 @@ export class MathJaxService {
                     status: 'in_progress'
                 };
                 localStorage.setItem(recoveryKey, JSON.stringify(newCoordination));
-                logger.debug(`👑 Became recovery leader: ${this.tabId}`);
+                // Recovery leader assigned
                 return 'leader';
             }
             
@@ -559,8 +559,8 @@ export class MathJaxService {
             
             const attemptRender = (attempt = 1) => {
                 setTimeout(() => {
-                    logger.debug(`🔍 MathJax render attempt ${attempt}/${maxRetries} - Platform: ${this.isWindows ? 'Windows' : 'Other'}`);
-                    logger.debug(`🔍 MathJax available: ${!!window.MathJax}, typesetPromise: ${!!window.MathJax?.typesetPromise}`);
+                    // Render attempt ${attempt}/${maxRetries}
+                    // Check MathJax availability
                     const hasLatexContent = element.innerHTML.includes('$$') || 
                                         element.innerHTML.includes('\\(') ||
                                         element.innerHTML.includes('\\[') ||
@@ -569,16 +569,16 @@ export class MathJaxService {
                                         element.innerHTML.includes('\\sqrt') ||
                                         element.innerHTML.includes('\\sum') ||
                                         element.innerHTML.includes('\\int');
-                    logger.debug(`🔍 Element has LaTeX content: ${hasLatexContent}`);
+                    // Element contains LaTeX: ${hasLatexContent}
                     
                     if (this.isAvailable()) {
                         // Conservative approach: Let MathJax handle its own element management
                         
-                        logger.debug(`🔍 Calling MathJax.typesetPromise on element with content: ${element.innerHTML.substring(0, 200)}...`);
+                        // Calling MathJax.typesetPromise
                         
                         window.MathJax.typesetPromise([element])
                             .then(() => {
-                                logger.debug(`✅ MathJax render successful on attempt ${attempt}`);
+                                // Render successful
                                 this.pendingRenders.delete(element);
                                 
                                 // Complete progressive loading - SUCCESS
@@ -589,7 +589,7 @@ export class MathJaxService {
                             .catch(error => {
                                 logger.error(`❌ MathJax render error (attempt ${attempt}):`, error);
                                 if (attempt < maxRetries) {
-                                    logger.debug(`🔍 Retrying in ${timeout}ms...`);
+                                    // Retrying render
                                     setTimeout(() => attemptRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
                                 } else {
                                     this.pendingRenders.delete(element);
@@ -599,7 +599,7 @@ export class MathJaxService {
                                 }
                             });
                     } else if (attempt < maxRetries) {
-                        logger.debug(`⏳ MathJax not ready (MathJax: ${!!window.MathJax}, typesetPromise: ${!!window.MathJax?.typesetPromise}), retrying in ${timeout}ms...`);
+                        // MathJax not ready, retrying...
                         setTimeout(() => attemptRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
                     } else {
                         const mathJaxExists = !!window.MathJax;
@@ -607,7 +607,7 @@ export class MathJaxService {
                         logger.error(`❌ MathJax not fully ready after ${maxRetries} attempts - MathJax: ${mathJaxExists}, typesetPromise: ${typesetExists}`);
                         
                         // RESTORE WORKING CORRUPTION DETECTION (the F5 prevention caused infinite loops)
-                        logger.debug(`🔧 EMERGENCY CHECK: MathJax=${!!window.MathJax}, startup=${!!window.MathJax?.startup}, document=${!!window.MathJax?.startup?.document}, element=${!!element}`);
+                        // Emergency F5 corruption check
                         
                         // F5 CORRUPTION DETECTION: Check for the exact corruption signature
                         // Corruption pattern: startup=true, document=false, typesetPromise=false
@@ -615,10 +615,10 @@ export class MathJaxService {
                         const hasDocument = !!(window.MathJax && window.MathJax.startup && window.MathJax.startup.document);
                         const hasTypesetPromise = !!(window.MathJax && window.MathJax.typesetPromise);
                         
-                        logger.debug(`🔍 F5 CORRUPTION CHECK: startup=${hasStartup}, document=${hasDocument}, typesetPromise=${hasTypesetPromise}`);
+                        // F5 corruption check: startup=${hasStartup}, document=${hasDocument}, typesetPromise=${hasTypesetPromise}
                         
                         if (hasStartup && !hasDocument && !hasTypesetPromise) {
-                            logger.debug('🚨 F5 CORRUPTION DETECTED: MathJax in corrupted state (startup=true, document=false, typesetPromise=false)');
+                            // F5 corruption detected - initiating recovery
                             
                             // Small delay to ensure DOM content is stable before recovery
                             setTimeout(() => {
@@ -852,23 +852,46 @@ export class MathJaxService {
                            originalContent.includes('\\[');
             
             if (hasLatex) {
-                // Wrap LaTeX content with fallback styling
-                const fallbackContent = originalContent.replace(
-                    /\$([^$]+)\$/g, 
-                    '<span class="mathjax-fallback">$1</span>'
-                ).replace(
-                    /\\\(([^)]+)\\\)/g,
-                    '<span class="mathjax-fallback">$1</span>'
-                );
+                // CRITICAL FIX: Use visual overlay instead of modifying innerHTML
+                // This prevents MathJax from trying to render the fallback content
                 
-                element.innerHTML = fallbackContent + 
-                    '<div style="font-size: 0.8em; color: rgba(255,255,255,0.6); margin-top: 4px; font-style: italic;">' +
-                    '⌛ Rendering mathematics...</div>';
+                // Store original content for MathJax rendering
+                if (!element.dataset.mathJaxOriginal) {
+                    element.dataset.mathJaxOriginal = originalContent;
+                }
                 
-                logger.debug('🗺 Showing fallback LaTeX content with loading indicator');
+                // Create loading overlay without modifying element content
+                const overlay = document.createElement('div');
+                overlay.className = 'mathjax-loading-overlay';
+                overlay.style.cssText = `
+                    position: absolute;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(0,0,0,0.7);
+                    color: rgba(255,255,255,0.9);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 0.85em;
+                    font-style: italic;
+                    z-index: 1000;
+                    border-radius: 4px;
+                    backdrop-filter: blur(1px);
+                `;
+                overlay.innerHTML = '⌛ Rendering mathematics...';
+                
+                // Make element container relative for overlay positioning
+                const originalPosition = element.style.position;
+                if (!originalPosition || originalPosition === 'static') {
+                    element.style.position = 'relative';
+                }
+                
+                element.appendChild(overlay);
+                element.dataset.hasLoadingOverlay = 'true';
+                
+                // Reduced verbosity - no debug logging
             }
         } catch (e) {
-            logger.debug('Fallback content error (not critical):', e.message);
+            // Silent error handling for reduced console output
         }
     }
 
@@ -887,29 +910,37 @@ export class MathJaxService {
                 delete element.dataset.fallbackTimer;
             }
             
-            // Only restore original content if rendering actually failed
-            if (!renderSucceeded && element.dataset.originalContent && 
-                element.innerHTML.includes('⌛ Rendering mathematics')) {
-                logger.debug('🔄 Restoring original content after failed MathJax render');
-                element.innerHTML = element.dataset.originalContent;
-            } else if (renderSucceeded) {
-                logger.debug('✨ MathJax rendering succeeded - keeping rendered content');
+            // CRITICAL FIX: Remove loading overlay instead of restoring content
+            if (element.dataset.hasLoadingOverlay === 'true') {
+                const overlay = element.querySelector('.mathjax-loading-overlay');
+                if (overlay) {
+                    overlay.remove();
+                }
+                delete element.dataset.hasLoadingOverlay;
             }
             
-            // Remove loading classes
+            // Restore original content ONLY if rendering failed AND we modified innerHTML
+            if (!renderSucceeded && element.dataset.originalContent && 
+                element.innerHTML.includes('⌛ Rendering mathematics')) {
+                // Only restore if innerHTML was actually modified (old fallback approach)
+                element.innerHTML = element.dataset.originalContent;
+            }
+            
+            // Remove loading classes and add ready class
             element.classList.remove('mathjax-loading');
             element.classList.add('mathjax-ready');
             
             // Clean up stored data
             delete element.dataset.originalContent;
+            delete element.dataset.mathJaxOriginal;
             
-            // Remove any fallback indicators
+            // Remove any remaining fallback indicators (old approach)
             const indicators = element.querySelectorAll('[style*="Rendering mathematics"]');
             indicators.forEach(indicator => indicator.remove());
             
-            logger.debug('✨ Progressive loading completed - MathJax ready');
+            // Reduced verbosity - no debug logging
         } catch (e) {
-            logger.debug('Progressive loading completion error (not critical):', e.message);
+            // Silent error handling for reduced console output
         }
     }
 }
