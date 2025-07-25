@@ -367,8 +367,123 @@ export class MathJaxService {
                 }
             }
             
-            // Perform the full script reload (existing logic continues here)
+            // Perform the actual script reload (restore the full logic)
             logger.debug('🔧 Performing full script reload recovery');
+            
+            // Set recovery state
+            this.isRecovering = true;
+            
+            // Preserve and restore configuration
+            const preservedConfig = this.preserveMathJaxConfig();
+            logger.debug('🗺 Preserved MathJax configuration for restoration');
+            
+            // Clear corrupted state
+            if (this.isChrome) {
+                if (window.MathJax) {
+                    try {
+                        if (window.MathJax.startup) {
+                            window.MathJax.startup.ready = null;
+                            window.MathJax.startup.input = null;
+                            window.MathJax.startup.output = null;
+                        }
+                        if (window.MathJax.config) delete window.MathJax.config;
+                    } catch (e) {
+                        logger.debug('🔧 Chrome cleanup error (expected):', e.message);
+                    }
+                }
+                if (window.gc) window.gc();
+            }
+            
+            delete window.MathJax;
+            delete window.mathJaxReady;
+            
+            // Restore configuration
+            this.restoreMathJaxConfig(preservedConfig);
+            logger.debug('🔄 Restored MathJax configuration');
+            
+            // Remove existing script
+            const existingScript = document.getElementById('MathJax-script');
+            if (existingScript) {
+                existingScript.remove();
+                logger.debug('🔧 Removed corrupted MathJax script');
+            }
+            
+            // Reload script
+            const mathJaxScript = document.createElement('script');
+            mathJaxScript.id = 'MathJax-script';
+            mathJaxScript.async = true;
+            
+            const cacheBuster = this.isChrome 
+                ? `reload=${Date.now()}&chrome=${Math.random().toString(36).substr(2, 9)}`
+                : `reload=${Date.now()}`;
+            mathJaxScript.src = `https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js?${cacheBuster}`;
+            
+            logger.debug(`🔧 Loading MathJax with ${this.isChrome ? 'Chrome-specific' : 'standard'} cache busting`);
+            
+            mathJaxScript.onload = () => {
+                logger.debug('🔧 MathJax script reloaded with cache busting');
+                
+                const waitForInit = () => {
+                    if (window.MathJax && window.MathJax.typesetPromise) {
+                        logger.debug('✅ MathJax successfully reinitialized after F5 corruption');
+                        
+                        // Notify other tabs that recovery is complete
+                        this.updateRecoveryStatus('completed');
+                        
+                        // Render the element
+                        window.MathJax.typesetPromise([element]).then(() => {
+                            this.pendingRenders.delete(element);
+                            this.isRecovering = false;
+                            resolve();
+                        }).catch(err => {
+                            logger.error('❌ Script reload render failed:', err);
+                            this.pendingRenders.delete(element);
+                            this.isRecovering = false;
+                            resolve();
+                        });
+                        
+                        // Process queued callbacks
+                        const callbacks = [...this.recoveryCallbacks];
+                        this.recoveryCallbacks = [];
+                        const callbackDelay = this.isChrome ? 150 : 50;
+                        callbacks.forEach(callback => {
+                            setTimeout(callback, callbackDelay);
+                        });
+                        
+                        // Cleanup coordination
+                        setTimeout(() => {
+                            try {
+                                localStorage.removeItem('quizmaster_recovery_coordination');
+                                logger.debug('🧹 Cleaned up recovery coordination');
+                            } catch (e) {
+                                logger.debug('Recovery cleanup error (not critical):', e.message);
+                            }
+                        }, 2000);
+                    } else {
+                        const pollInterval = this.isChrome ? 150 : 100;
+                        setTimeout(waitForInit, pollInterval);
+                    }
+                };
+                waitForInit();
+            };
+            
+            mathJaxScript.onerror = (error) => {
+                logger.error('❌ Failed to reload MathJax script:', error);
+                this.pendingRenders.delete(element);
+                this.isRecovering = false;
+                this.recoveryCallbacks = [];
+                this.updateRecoveryStatus('failed');
+                setTimeout(() => {
+                    try {
+                        localStorage.removeItem('quizmaster_recovery_coordination');
+                    } catch (e) {
+                        logger.debug('Recovery cleanup error (not critical):', e.message);
+                    }
+                }, 1000);
+                resolve();
+            };
+            
+            document.head.appendChild(mathJaxScript);
         });
     }
 
