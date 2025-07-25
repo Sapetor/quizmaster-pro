@@ -28,6 +28,7 @@ export class GameManager {
         this.timer = null;
         this.gamePin = null;
         this.selectedAnswer = null;
+        this.lastDisplayQuestionTime = 0; // Prevent rapid successive displayQuestion calls
         this.playerAnswers = new Map();
         this.gameEnded = false;
         this.resultShown = false;
@@ -59,6 +60,14 @@ export class GameManager {
      */
     displayQuestion(data) {
         return errorBoundary.safeExecute(() => {
+            // Prevent rapid successive calls that could interfere with MathJax rendering
+            const now = Date.now();
+            if (this.lastDisplayQuestion && (now - this.lastDisplayQuestionTime) < 500) {
+                logger.debug('🚫 Ignoring rapid displayQuestion call to prevent MathJax interference');
+                return;
+            }
+            this.lastDisplayQuestionTime = now;
+            
             logger.debug('Displaying question:', data);
             
             // Initialize display state
