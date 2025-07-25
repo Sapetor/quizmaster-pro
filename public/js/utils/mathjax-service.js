@@ -852,15 +852,13 @@ export class MathJaxService {
                            originalContent.includes('\\[');
             
             if (hasLatex) {
-                // CRITICAL FIX: Use visual overlay instead of modifying innerHTML
-                // This prevents MathJax from trying to render the fallback content
-                
-                // Store original content for MathJax rendering
+                // CRITICAL FIX: ONLY use visual overlay approach - no innerHTML modification
+                // Store original content for MathJax rendering (but don't modify innerHTML)
                 if (!element.dataset.mathJaxOriginal) {
                     element.dataset.mathJaxOriginal = originalContent;
                 }
                 
-                // Create loading overlay without modifying element content
+                // Create loading overlay WITHOUT modifying innerHTML
                 const overlay = document.createElement('div');
                 overlay.className = 'mathjax-loading-overlay';
                 overlay.style.cssText = `
@@ -888,7 +886,7 @@ export class MathJaxService {
                 element.appendChild(overlay);
                 element.dataset.hasLoadingOverlay = 'true';
                 
-                // Reduced verbosity - no debug logging
+                console.log('F5 DEBUG: Applied overlay without modifying innerHTML');
             }
         } catch (e) {
             // Silent error handling for reduced console output
