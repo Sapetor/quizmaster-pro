@@ -620,57 +620,92 @@ export class MathJaxService {
                         if (hasStartup && !hasDocument && !hasTypesetPromise) {
                             logger.debug('🚨 F5 CORRUPTION DETECTED: MathJax in corrupted state (startup=true, document=false, typesetPromise=false)');
                             
-                            // Chrome F5 Recovery: Try lightweight approach first, fallback to script reload
-                            if (this.isChrome) {
-                                const hasOtherTabs = this.hasOtherActiveTabs();
-                                logger.debug(`🔄 CHROME F5 DETECTED: ${this.isHost ? 'HOST' : 'CLIENT'} tab recovery (Other tabs: ${hasOtherTabs})`);
-                                
-                                // Try lightweight recovery first (much faster)
-                                const lightweightSuccess = this.attemptLightweightRecovery(element);
-                                if (lightweightSuccess) {
-                                    logger.debug('✨ Lightweight recovery successful - no script reload needed');
-                                    lightweightSuccess.then(resolve).catch(() => {
-                                        logger.debug('❌ Lightweight recovery failed - falling back to script reload');
-                                        // Fallback to script reload if lightweight fails
-                                        this.performFullScriptReload(element, hasOtherTabs).then(resolve).catch(() => resolve());
-                                    });
-                                    return;
-                                }
-                                
-                                // Fallback to full script reload if lightweight isn't applicable
-                                logger.debug('🔧 Lightweight recovery not applicable - using script reload');
-                                this.performFullScriptReload(element, hasOtherTabs).then(resolve).catch(() => resolve());
-                                return;
-                            }
-                            
-                            // If already recovering, queue this render attempt
-                            if (this.isRecovering) {
-                                logger.debug('🔄 F5 recovery already in progress, queueing render attempt');
-                                this.recoveryCallbacks.push(() => {
-                                    if (window.MathJax && window.MathJax.typesetPromise) {
-                                        window.MathJax.typesetPromise([element]).then(() => {
-                                            this.pendingRenders.delete(element);
-                                            // Complete progressive loading after successful render
-                                            this.completeProgressiveLoading(element);
-                                            resolve();
-                                        }).catch(err => {
-                                            logger.error('❌ Queued render failed after F5 recovery:', err);
-                                            this.pendingRenders.delete(element);
-                                            // Complete progressive loading even on error
-                                            this.completeProgressiveLoading(element);
-                                            resolve();
-                                        });
-                                    } else {
-                                        // Complete progressive loading if MathJax still not ready
-                                        this.completeProgressiveLoading(element);
-                                        resolve();
-                                    }
-                                });
-                                return;
-                            }
-                            
-                            // Start recovery process
-                            this.isRecovering = true;
+                            // Small delay to ensure DOM content is stable before recovery
+                            setTimeout(() => {
+                                this.handleF5Corruption(element, resolve, reject);
+                            }, 100);
+                            return;
+                        }
+                        
+                        // If no corruption detected, reject with the original error
+                        this.pendingRenders.delete(element);
+                        this.completeProgressiveLoading(element);
+                        reject(new Error(`MathJax not ready after ${maxRetries} attempts`));
+                    } else {
+                        // Normal retry logic continues here
+                        logger.debug(`⏳ MathJax not ready (MathJax: ${!!window.MathJax}, typesetPromise: ${!!window.MathJax?.typesetPromise}), retrying in ${timeout}ms...`);
+                        setTimeout(() => attemptRender(attempt + 1), timeout);
+                    }
+                }, timeout);
+            };
+            
+            attemptRender();
+        });
+    }
+    
+    /**
+     * Handle F5 corruption recovery with DOM stability delay
+     * @param {Element} element Element to render after recovery
+     * @param {Function} resolve Promise resolve function
+     * @param {Function} reject Promise reject function
+     */
+    handleF5Corruption(element, resolve, reject) {
+        // Chrome F5 Recovery: Try lightweight approach first, fallback to script reload
+        if (this.isChrome) {
+            const hasOtherTabs = this.hasOtherActiveTabs();
+            logger.debug(`🔄 CHROME F5 DETECTED: ${this.isHost ? 'HOST' : 'CLIENT'} tab recovery (Other tabs: ${hasOtherTabs})`);
+            
+            // Try lightweight recovery first (much faster)
+            const lightweightSuccess = this.attemptLightweightRecovery(element);
+            if (lightweightSuccess) {
+                logger.debug('✨ Lightweight recovery successful - no script reload needed');
+                lightweightSuccess.then(resolve).catch(() => {
+                    logger.debug('❌ Lightweight recovery failed - falling back to script reload');
+                    // Fallback to script reload if lightweight fails
+                    this.performFullScriptReload(element, hasOtherTabs).then(resolve).catch(() => resolve());
+                });
+                return;
+            }
+            
+            // Fallback to full script reload if lightweight isn't applicable
+            logger.debug('🔧 Lightweight recovery not applicable - using script reload');
+            this.performFullScriptReload(element, hasOtherTabs).then(resolve).catch(() => resolve());
+            return;
+        }
+        
+        // If already recovering, queue this render attempt
+        if (this.isRecovering) {
+            logger.debug('🔄 F5 recovery already in progress, queueing render attempt');
+            this.recoveryCallbacks.push(() => {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise([element]).then(() => {
+                        this.pendingRenders.delete(element);
+                        // Complete progressive loading after successful render
+                        this.completeProgressiveLoading(element);
+                        resolve();
+                    }).catch(err => {
+                        logger.error('❌ Queued render failed after F5 recovery:', err);
+                        this.pendingRenders.delete(element);
+                        // Complete progressive loading even on error
+                        this.completeProgressiveLoading(element);
+                        resolve();
+                    });
+                } else {
+                    // Complete progressive loading if MathJax still not ready
+                    this.completeProgressiveLoading(element);
+                    resolve();
+                }
+            });
+            return;
+        }
+        
+        // Start recovery process for non-Chrome browsers or fallback
+        this.isRecovering = true;
+        
+        // For non-Chrome browsers, use direct script reload
+        logger.debug('🔧 Non-Chrome F5 recovery - using direct script reload');
+        this.performFullScriptReload(element, false).then(resolve).catch(() => resolve());
+    }
                             
                             // CLEAR CORRUPTED STATE AND REINITIALIZE
                             logger.debug('🔧 Clearing corrupted MathJax state...');
@@ -1265,6 +1300,14 @@ export class MathJaxService {
             if (element.dataset.fallbackTimer) {
                 clearTimeout(parseInt(element.dataset.fallbackTimer));
                 delete element.dataset.fallbackTimer;
+            }
+            
+            // Restore original content if MathJax rendering failed and we still have fallback content
+            if (element.dataset.originalContent && 
+                (element.innerHTML.includes('⌛ Rendering mathematics') || 
+                 element.innerHTML.includes('mathjax-fallback'))) {
+                logger.debug('🔄 Restoring original content after failed MathJax render');
+                element.innerHTML = element.dataset.originalContent;
             }
             
             // Remove loading classes
