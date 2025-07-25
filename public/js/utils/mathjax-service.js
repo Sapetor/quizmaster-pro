@@ -552,12 +552,14 @@ export class MathJaxService {
      * @param {number} maxRetries - Maximum retry attempts (default: 3)
      * @returns {Promise<void>}
      */
-    async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 10) {
+    async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 3) {
         return new Promise((resolve, reject) => {
             // Add progressive loading UI
             this.showProgressiveLoading(element);
             
             const attemptRender = (attempt = 1) => {
+                // PERFORMANCE: Use shorter timeout for normal renders
+                const renderTimeout = this.isRecovering ? timeout : Math.min(timeout, 50);
                 setTimeout(() => {
                     // Render attempt ${attempt}/${maxRetries}
                     // Check MathJax availability
@@ -632,7 +634,7 @@ export class MathJaxService {
                         this.completeProgressiveLoading(element, false);
                         reject(new Error(`MathJax not ready after ${maxRetries} attempts`));
                     }
-                }, timeout);
+                }, renderTimeout);
             };
             
             attemptRender();
@@ -815,24 +817,31 @@ export class MathJaxService {
             // Add loading class for shimmer effect
             element.classList.add('mathjax-loading');
             
-            // Store original content in case we need to show fallback
+            // Store original content for potential fallback
             if (!element.dataset.originalContent) {
                 element.dataset.originalContent = element.innerHTML;
             }
             
-            // For longer delays (like F5 recovery), show raw LaTeX with indication
-            const fallbackTimer = setTimeout(() => {
-                if (element.classList.contains('mathjax-loading')) {
-                    this.showFallbackContent(element);
-                }
-            }, 1000); // Show fallback after 1 second delay
+            // PERFORMANCE OPTIMIZATION: Only show fallback for slow renders
+            // Skip progressive loading for fast normal renders
+            const isLikelyF5Recovery = this.isRecovering || 
+                                     !window.MathJax?.typesetPromise ||
+                                     (this.isChrome && this.hasOtherActiveTabs());
+                                     
+            if (isLikelyF5Recovery) {
+                // Only add fallback timer for recovery scenarios
+                const fallbackTimer = setTimeout(() => {
+                    if (element.classList.contains('mathjax-loading')) {
+                        this.showFallbackContent(element);
+                    }
+                }, 300); // Show fallback after 300ms delay
+                
+                element.dataset.fallbackTimer = fallbackTimer;
+                console.log('F5 DEBUG: Progressive loading enabled for slow render');
+            }
             
-            // Store timer ID for cleanup
-            element.dataset.fallbackTimer = fallbackTimer;
-            
-            logger.debug('⏳ Progressive loading started for element');
         } catch (e) {
-            logger.debug('Progressive loading setup error (not critical):', e.message);
+            // Silent error handling
         }
     }
 
