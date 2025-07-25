@@ -4,6 +4,8 @@
  */
 
 import { TIMING, logger } from '../core/config.js';
+import { domUtils } from './dom-utils.js';
+import { errorHandler } from './error-handler.js';
 
 export class MathJaxService {
     constructor() {
@@ -383,17 +385,21 @@ export class MathJaxService {
             this.restoreMathJaxConfig(preservedConfig);
             logger.debug('🔄 Restored MathJax configuration');
             
-            // Remove existing script
+            // Remove existing scripts using DOM utilities for efficiency
+            domUtils.removeTrackedScripts();
+            
+            // Also remove any scripts that might not be tracked yet
             const existingScript = document.getElementById('MathJax-script');
             if (existingScript) {
                 existingScript.remove();
                 logger.debug('🔧 Removed corrupted MathJax script');
             }
             
-            // Reload script
-            const mathJaxScript = document.createElement('script');
-            mathJaxScript.id = 'MathJax-script';
-            mathJaxScript.async = true;
+            // Reload script using DOM utilities for tracking
+            const mathJaxScript = domUtils.createTrackedScript({
+                id: 'MathJax-script',
+                async: true
+            });
             
             const cacheBuster = this.isChrome 
                 ? `reload=${Date.now()}&chrome=${Math.random().toString(36).substr(2, 9)}`
@@ -452,7 +458,11 @@ export class MathJaxService {
             };
             
             mathJaxScript.onerror = (error) => {
-                logger.error('❌ Failed to reload MathJax script:', error);
+                errorHandler.log(error, {
+                    context: 'MathJax script reload',
+                    src: mathJaxScript.src,
+                    critical: true
+                });
                 this.pendingRenders.delete(element);
                 this.isRecovering = false;
                 this.recoveryCallbacks = [];
@@ -461,7 +471,7 @@ export class MathJaxService {
                     try {
                         localStorage.removeItem('quizmaster_recovery_coordination');
                     } catch (e) {
-                        logger.debug('Recovery cleanup error (not critical):', e.message);
+                        // Silent cleanup error
                     }
                 }, 1000);
                 resolve();
@@ -596,7 +606,12 @@ export class MathJaxService {
                                 resolve();
                             })
                             .catch(error => {
-                                logger.error(`❌ MathJax render error (attempt ${attempt}):`, error);
+                                errorHandler.log(error, { 
+                                    context: 'MathJax render', 
+                                    attempt, 
+                                    maxRetries,
+                                    elementId: element.id || 'unknown'
+                                });
                                 if (attempt < maxRetries) {
                                     // Retrying render
                                     setTimeout(() => attemptRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
@@ -689,7 +704,10 @@ export class MathJaxService {
                         this.completeProgressiveLoading(element, true);
                         resolve();
                     }).catch(err => {
-                        logger.error('❌ Queued render failed after F5 recovery:', err);
+                        errorHandler.log(err, {
+                            context: 'Queued render after F5 recovery',
+                            elementId: element.id || 'unknown'
+                        });
                         this.pendingRenders.delete(element);
                         // Complete progressive loading even on error
                         this.completeProgressiveLoading(element, false);
