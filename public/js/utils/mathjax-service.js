@@ -180,6 +180,103 @@ export class MathJaxService {
     }
 
     /**
+     * Preserve MathJax configuration before clearing state
+     * @returns {Object} Preserved configuration
+     */
+    preserveMathJaxConfig() {
+        const defaultConfig = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                packages: {'[+]': ['ams', 'newcommand', 'configmacros']},
+                processEscapes: true,
+                processEnvironments: true,
+                tags: 'none',
+                autoload: {
+                    color: [],
+                    colorv2: ['color']
+                }
+            },
+            chtml: {
+                scale: 1,
+                minScale: 0.5,
+                matchFontHeight: false,
+                displayAlign: 'center',
+                displayIndent: '0em',
+                fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2'
+            },
+            startup: {
+                ready: () => {
+                    logger.debug('🔄 MathJax configuration restored and ready');
+                    if (window.MathJax && typeof window.MathJax.startup.defaultReady === 'function') {
+                        window.MathJax.startup.defaultReady();
+                    }
+                    
+                    // Mark as ready for our application
+                    window.mathJaxReady = true;
+                    
+                    // Browser and platform-specific delays
+                    const isWindows = navigator.platform.toLowerCase().includes('win') || 
+                                    navigator.userAgent.toLowerCase().includes('windows');
+                    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+                    
+                    // Chrome needs extra time for proper MathJax initialization after F5
+                    const delay = (isWindows && isChrome) ? 250 : (isWindows ? 150 : (isChrome ? 200 : 0));
+                    
+                    setTimeout(() => {
+                        // FOUC Prevention: Add ready class and remove loading
+                        document.body.classList.remove('loading');
+                        document.body.classList.add('mathjax-ready');
+                        
+                        // Dispatch custom event for modules that need to know
+                        document.dispatchEvent(new CustomEvent('mathjax-ready'));
+                    }, delay);
+                }
+            }
+        };
+        
+        try {
+            // Try to preserve existing config if available
+            if (window.MathJax && typeof window.MathJax === 'object') {
+                const preserved = {
+                    tex: window.MathJax.tex || defaultConfig.tex,
+                    chtml: window.MathJax.chtml || defaultConfig.chtml,
+                    startup: defaultConfig.startup // Always use our startup config
+                };
+                logger.debug('🗺 Preserved existing MathJax configuration');
+                return preserved;
+            }
+        } catch (e) {
+            logger.debug('🗺 Error preserving config, using default:', e.message);
+        }
+        
+        return defaultConfig;
+    }
+
+    /**
+     * Restore MathJax configuration after clearing state
+     * @param {Object} config Preserved configuration
+     */
+    restoreMathJaxConfig(config) {
+        try {
+            window.MathJax = config;
+            logger.debug('🔄 MathJax configuration restored with delimiters:', {
+                inlineMath: config.tex.inlineMath,
+                displayMath: config.tex.displayMath
+            });
+        } catch (e) {
+            logger.error('❌ Failed to restore MathJax configuration:', e);
+            // Fallback: set minimal working config
+            window.MathJax = {
+                tex: {
+                    inlineMath: [['$', '$'], ['\\(', '\\)']],
+                    displayMath: [['$$', '$$'], ['\\[', '\\]']]
+                }
+            };
+        }
+    }
+
+    /**
      * Initialize MathJax readiness detection
      */
     initializeMathJax() {
@@ -370,6 +467,10 @@ export class MathJaxService {
                             // CLEAR CORRUPTED STATE AND REINITIALIZE
                             logger.debug('🔧 Clearing corrupted MathJax state...');
                             
+                            // CRITICAL: Preserve MathJax configuration before clearing
+                            const preservedConfig = this.preserveMathJaxConfig();
+                            logger.debug('🗺 Preserved MathJax configuration for restoration');
+                            
                             // Chrome-specific: More aggressive cleanup
                             if (this.isChrome) {
                                 // Clear Chrome-specific MathJax caches and references
@@ -391,6 +492,10 @@ export class MathJaxService {
                             
                             delete window.MathJax;
                             delete window.mathJaxReady;
+                            
+                            // Restore configuration before script reload
+                            this.restoreMathJaxConfig(preservedConfig);
+                            logger.debug('🔄 Restored MathJax configuration');
                             
                             // Remove existing script by ID (matches HTML file)
                             const existingScript = document.getElementById('MathJax-script');
