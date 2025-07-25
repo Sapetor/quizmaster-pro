@@ -10,6 +10,7 @@ export class MathJaxService {
         this.isReady = false;
         this.pendingRenders = new Set();
         this.isWindows = this.detectWindows();
+        this.isChrome = this.detectChrome();
         this.isRecovering = false; // Track if F5 recovery is in progress
         this.recoveryCallbacks = []; // Queue callbacks waiting for recovery
         this.initializeMathJax();
@@ -22,6 +23,17 @@ export class MathJaxService {
     detectWindows() {
         return navigator.platform.toLowerCase().includes('win') || 
                navigator.userAgent.toLowerCase().includes('windows');
+    }
+
+    /**
+     * Detect if running on Chrome/Chromium browsers
+     * @returns {boolean}
+     */
+    detectChrome() {
+        const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+        const isChromium = window.chrome && window.chrome.runtime;
+        const isEdge = /Edg/.test(navigator.userAgent);
+        return (isChrome || isChromium) && !isEdge;
     }
 
     /**
@@ -164,7 +176,28 @@ export class MathJaxService {
                             
                             // CLEAR CORRUPTED STATE AND REINITIALIZE
                             logger.debug('🔧 Clearing corrupted MathJax state...');
+                            
+                            // Chrome-specific: More aggressive cleanup
+                            if (this.isChrome) {
+                                // Clear Chrome-specific MathJax caches and references
+                                if (window.MathJax) {
+                                    try {
+                                        if (window.MathJax.startup) {
+                                            window.MathJax.startup.ready = null;
+                                            window.MathJax.startup.input = null;
+                                            window.MathJax.startup.output = null;
+                                        }
+                                        if (window.MathJax.config) delete window.MathJax.config;
+                                    } catch (e) {
+                                        logger.debug('🔧 Chrome cleanup error (expected):', e.message);
+                                    }
+                                }
+                                // Force garbage collection hint for Chrome
+                                if (window.gc) window.gc();
+                            }
+                            
                             delete window.MathJax;
+                            delete window.mathJaxReady;
                             
                             // Remove existing script by ID (matches HTML file)
                             const existingScript = document.getElementById('MathJax-script');
@@ -177,7 +210,13 @@ export class MathJaxService {
                             const mathJaxScript = document.createElement('script');
                             mathJaxScript.id = 'MathJax-script';
                             mathJaxScript.async = true;
-                            mathJaxScript.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js?reload=' + Date.now();
+                            // Chrome-specific: More aggressive cache busting
+                            const cacheBuster = this.isChrome 
+                                ? `reload=${Date.now()}&chrome=${Math.random().toString(36).substr(2, 9)}`
+                                : `reload=${Date.now()}`;
+                            mathJaxScript.src = `https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js?${cacheBuster}`;
+                            
+                            logger.debug(`🔧 Loading MathJax with ${this.isChrome ? 'Chrome-specific' : 'standard'} cache busting`);
                             
                             mathJaxScript.onload = () => {
                                 logger.debug('🔧 MathJax script reloaded with cache busting');
@@ -202,12 +241,14 @@ export class MathJaxService {
                                         this.recoveryCallbacks = [];
                                         this.isRecovering = false;
                                         
-                                        // Execute all queued callbacks
+                                        // Execute all queued callbacks with Chrome-specific timing
+                                        const callbackDelay = this.isChrome ? 150 : 50; // Chrome needs more time
                                         callbacks.forEach(callback => {
-                                            setTimeout(callback, 50); // Small delay to ensure MathJax is fully ready
+                                            setTimeout(callback, callbackDelay);
                                         });
                                     } else {
-                                        setTimeout(waitForInit, 100);
+                                        const pollInterval = this.isChrome ? 150 : 100; // Chrome needs slower polling
+                                        setTimeout(waitForInit, pollInterval);
                                     }
                                 };
                                 waitForInit();

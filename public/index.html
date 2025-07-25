@@ -118,10 +118,13 @@
                     // Mark as ready for our application
                     window.mathJaxReady = true;
                     
-                    // Platform-specific: Small delay for Windows font loading
+                    // Browser and platform-specific delays
                     const isWindows = navigator.platform.toLowerCase().includes('win') || 
                                     navigator.userAgent.toLowerCase().includes('windows');
-                    const delay = isWindows ? 150 : 0;
+                    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+                    
+                    // Chrome needs extra time for proper MathJax initialization after F5
+                    const delay = (isWindows && isChrome) ? 250 : (isWindows ? 150 : (isChrome ? 200 : 0));
                     
                     setTimeout(() => {
                         // FOUC Prevention: Add ready class and remove loading
