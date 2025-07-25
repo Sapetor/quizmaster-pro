@@ -631,10 +631,6 @@ export class MathJaxService {
                         this.pendingRenders.delete(element);
                         this.completeProgressiveLoading(element);
                         reject(new Error(`MathJax not ready after ${maxRetries} attempts`));
-                    } else {
-                        // Normal retry logic continues here
-                        logger.debug(`⏳ MathJax not ready (MathJax: ${!!window.MathJax}, typesetPromise: ${!!window.MathJax?.typesetPromise}), retrying in ${timeout}ms...`);
-                        setTimeout(() => attemptRender(attempt + 1), timeout);
                     }
                 }, timeout);
             };

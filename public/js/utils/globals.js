@@ -64,11 +64,22 @@ export async function selectLanguage(langCode, event) {
     }
 }
 
-// Close dropdown when clicking outside
+// Event delegation for data-onclick attributes and dropdown management
 document.addEventListener('click', (event) => {
+    // Handle language dropdown close when clicking outside
     const dropdown = document.getElementById('language-selector');
     if (dropdown && !dropdown.contains(event.target)) {
         dropdown.classList.remove('open');
+    }
+    
+    // Handle data-onclick attributes
+    const target = event.target.closest('[data-onclick]');
+    if (target) {
+        const functionName = target.getAttribute('data-onclick');
+        if (window[functionName] && typeof window[functionName] === 'function') {
+            event.preventDefault();
+            window[functionName]();
+        }
     }
 });
 
