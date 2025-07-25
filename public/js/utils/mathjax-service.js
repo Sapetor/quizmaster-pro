@@ -125,6 +125,195 @@ export class MathJaxService {
                         const typesetExists = !!window.MathJax?.typesetPromise;
                         logger.error(`❌ MathJax not fully ready after ${maxRetries} attempts - MathJax: ${mathJaxExists}, typesetPromise: ${typesetExists}`);
                         
+                        // RESTORE WORKING CORRUPTION DETECTION (the F5 prevention caused infinite loops)
+                        logger.debug(`🔧 EMERGENCY CHECK: MathJax=${!!window.MathJax}, startup=${!!window.MathJax?.startup}, document=${!!window.MathJax?.startup?.document}, element=${!!element}`);
+                        
+                        // DETECT F5 CORRUPTION: startup=true but document=false indicates corrupted state
+                        if (window.MathJax && window.MathJax.startup && !window.MathJax.startup.document) {
+                            logger.debug('🚨 CORRUPTION DETECTED: MathJax in corrupted F5 state - forcing reinitialization...');
+                            
+                            try {
+                                // Clear the corrupted MathJax object completely
+                                delete window.MathJax;
+                                
+                                // Force reload MathJax script to get clean state
+                                const mathJaxScript = document.querySelector('script[src*="mathjax"]');
+                                if (mathJaxScript) {
+                                    logger.debug('🔧 Removing and reloading MathJax script...');
+                                    
+                                    // Remove old script
+                                    mathJaxScript.remove();
+                                    
+                                    // Create new script with cache busting
+                                    const newScript = document.createElement('script');
+                                    newScript.src = mathJaxScript.src + '?reload=' + Date.now();
+                                    newScript.async = true;
+                                    
+                                    // Wait for new MathJax to load
+                                    newScript.onload = () => {
+                                        logger.debug('✅ MathJax reloaded successfully');
+                                        
+                                        // Set up a listener for when new MathJax is ready
+                                        const checkNewMathJax = setInterval(() => {
+                                            if (window.MathJax && window.MathJax.typesetPromise) {
+                                                logger.debug('✅ CORRUPTION FIX SUCCESS: New MathJax is ready');
+                                                clearInterval(checkNewMathJax);
+                                                
+                                                // Now try rendering with the fresh MathJax
+                                                window.MathJax.typesetPromise([element]).then(() => {
+                                                    logger.debug('✅ REINITIALIZATION SUCCESS: LaTeX rendered with fresh MathJax');
+                                                    this.pendingRenders.delete(element);
+                                                    resolve();
+                                                }).catch(err => {
+                                                    logger.warn('⚠️ Fresh MathJax render failed:', err);
+                                                    resolve();
+                                                });
+                                            }
+                                        }, 100);
+                                        
+                                        // Timeout after 3 seconds
+                                        setTimeout(() => {
+                                            clearInterval(checkNewMathJax);
+                                            logger.debug('🔧 Fresh MathJax initialization complete');
+                                            resolve();
+                                        }, 3000);
+                                    };
+                                    
+                                    newScript.onerror = () => {
+                                        logger.error('❌ Failed to reload MathJax script');
+                                        resolve();
+                                    };
+                                    
+                                    // Add new script to document
+                                    document.head.appendChild(newScript);
+                                    return; // Exit early, don't continue with other fallbacks
+                                } else {
+                                    logger.warn('⚠️ Could not find MathJax script to reload');
+                                }
+                                
+                            } catch (reinitError) {
+                                logger.error('❌ MathJax reinitialization failed:', reinitError);
+                            }
+                        }
+                        
+                        if (window.MathJax && window.MathJax.startup && window.MathJax.startup.document && element) {
+                            try {
+                                const startupState = window.MathJax.startup.document.state ? window.MathJax.startup.document.state() : -1;
+                                logger.debug(`🔧 EMERGENCY FALLBACK: MathJax startup state: ${startupState} (8=READY)`);
+                                
+                                if (startupState >= 8) { // STATE.READY = 8
+                                    logger.debug('🚨 EMERGENCY: MathJax startup is ready, attempting direct rendering...');
+                                    
+                                    // Try to render using startup document directly
+                                    window.MathJax.startup.document.render(element).then(() => {
+                                        logger.debug('✅ EMERGENCY SUCCESS: Direct startup rendering completed');
+                                        this.pendingRenders.delete(element);
+                                        resolve();
+                                        return;
+                                    }).catch((renderError) => {
+                                        logger.warn('⚠️ Emergency startup rendering failed:', renderError);
+                                        // Continue to other debugging/fallbacks
+                                    });
+                                    
+                                    // Don't continue with other logic if we're trying the emergency fallback
+                                    return;
+                                }
+                            } catch (emergencyError) {
+                                logger.warn('⚠️ Emergency fallback failed:', emergencyError);
+                            }
+                        }
+                        
+                        // ALTERNATIVE FALLBACK: When startup.document is missing but startup exists
+                        else if (window.MathJax && window.MathJax.startup && !window.MathJax.startup.document && element) {
+                            logger.debug('🔧 ALTERNATIVE FALLBACK: startup.document missing, trying alternative methods...');
+                            logger.debug(`🔧 ALTERNATIVE DEBUG: promise=${!!window.MathJax.startup.promise}, tex=${!!window.MathJax.tex}, processNode=${!!window.MathJax.tex?.processNode}`);
+                            
+                            try {
+                                // Try to force MathJax startup completion
+                                if (window.MathJax.startup.promise) {
+                                    logger.debug('🔧 Forcing MathJax startup completion...');
+                                    window.MathJax.startup.promise.then(() => {
+                                        logger.debug('✅ MathJax startup promise resolved, retrying render...');
+                                        logger.debug(`🔧 After startup: typesetPromise=${!!window.MathJax.typesetPromise}, document=${!!window.MathJax.startup.document}`);
+                                        
+                                        if (window.MathJax.typesetPromise) {
+                                            window.MathJax.typesetPromise([element]).then(() => {
+                                                logger.debug('✅ ALTERNATIVE SUCCESS: Render after startup completion');
+                                                this.pendingRenders.delete(element);
+                                                resolve();
+                                            }).catch((altError) => {
+                                                logger.warn('⚠️ Alternative render failed:', altError);
+                                            });
+                                        } else {
+                                            logger.warn('⚠️ typesetPromise still not available after startup completion');
+                                        }
+                                    }).catch((startupError) => {
+                                        logger.warn('⚠️ Startup promise failed:', startupError);
+                                    });
+                                    return; // Don't continue to other logic
+                                }
+                                
+                                // Try direct MathJax processing if available
+                                if (window.MathJax.tex && window.MathJax.tex.processNode) {
+                                    logger.debug('🔧 Trying direct tex processing...');
+                                    window.MathJax.tex.processNode(element);
+                                    logger.debug('✅ ALTERNATIVE SUCCESS: Direct tex processing completed');
+                                    this.pendingRenders.delete(element);
+                                    resolve();
+                                    return;
+                                } else {
+                                    logger.debug('🔧 Direct tex processing not available');
+                                }
+                                
+                                // LAST RESORT: Try to force MathJax reinitialization
+                                logger.debug('🚨 LAST RESORT: Attempting MathJax reinitialization...');
+                                
+                                // Try to restart MathJax if startup exists
+                                if (window.MathJax.startup && typeof window.MathJax.startup.getComponents === 'function') {
+                                    try {
+                                        logger.debug('🔧 Attempting MathJax component restart...');
+                                        window.MathJax.startup.getComponents().then(() => {
+                                            logger.debug('✅ MathJax components loaded, retrying render...');
+                                            if (window.MathJax.typesetPromise) {
+                                                window.MathJax.typesetPromise([element]).then(() => {
+                                                    logger.debug('✅ LAST RESORT SUCCESS: Render after component restart');
+                                                    this.pendingRenders.delete(element);
+                                                    resolve();
+                                                }).catch(err => logger.warn('⚠️ Component restart render failed:', err));
+                                            }
+                                        }).catch(err => logger.warn('⚠️ Component restart failed:', err));
+                                        return;
+                                    } catch (componentError) {
+                                        logger.warn('⚠️ Component restart error:', componentError);
+                                    }
+                                }
+                                
+                                // Try manual DOM processing as absolute last resort
+                                logger.debug('🚨 FINAL ATTEMPT: Manual LaTeX processing...');
+                                try {
+                                    // Simple regex replacement for basic LaTeX
+                                    let content = element.innerHTML;
+                                    const hasBasicLatex = content.includes('$') || content.includes('\\(') || content.includes('\\[');
+                                    
+                                    if (hasBasicLatex) {
+                                        logger.debug('🔧 Found LaTeX content, will attempt CSS-based display...');
+                                        // Add a class to indicate LaTeX content for CSS styling
+                                        element.classList.add('contains-latex');
+                                        element.setAttribute('title', 'LaTeX content detected but not rendered');
+                                        logger.debug('✅ FINAL SUCCESS: LaTeX content marked for manual handling');
+                                        this.pendingRenders.delete(element);
+                                        resolve();
+                                        return;
+                                    }
+                                } catch (manualError) {
+                                    logger.warn('⚠️ Manual processing failed:', manualError);
+                                }
+                                
+                            } catch (altError) {
+                                logger.warn('⚠️ Alternative fallback failed:', altError);
+                            }
+                        }
+                        
                         // DEBUG: Log more MathJax state information
                         if (window.MathJax) {
                             logger.debug('🔍 MathJax debugging info:', {
@@ -151,9 +340,35 @@ export class MathJaxService {
                             }
                         }
                         
-                        // FALLBACK: Try alternative rendering methods
+                        // ENHANCED FALLBACK: Check startup completion state for alternative rendering
                         if (window.MathJax && element) {
-                            logger.debug('🔧 Trying fallback MathJax rendering...');
+                            logger.debug('🔧 Trying enhanced fallback MathJax rendering...');
+                            
+                            // Try startup completion fallback first
+                            if (window.MathJax.startup && window.MathJax.startup.document) {
+                                try {
+                                    const startupState = window.MathJax.startup.document.state ? window.MathJax.startup.document.state() : -1;
+                                    logger.debug(`🔍 MathJax startup state: ${startupState} (8=READY)`);
+                                    
+                                    if (startupState >= 8) { // STATE.READY = 8
+                                        logger.debug('✅ MathJax startup is ready, attempting direct document processing...');
+                                        
+                                        // Try to render using startup document directly
+                                        window.MathJax.startup.document.render(element).then(() => {
+                                            logger.debug('✅ SUCCESS: Fallback rendering via startup document completed');
+                                            this.pendingRenders.delete(element);
+                                            resolve();
+                                        }).catch((renderError) => {
+                                            logger.warn('⚠️ Direct startup document rendering failed:', renderError);
+                                            // Continue to other fallback methods
+                                        });
+                                        return;
+                                    }
+                                } catch (startupError) {
+                                    logger.warn('⚠️ Startup document rendering failed, trying other methods:', startupError);
+                                }
+                            }
+                            
                             try {
                                 // Try MathJax 2.x style rendering if available
                                 if (window.MathJax.Hub && window.MathJax.Hub.Queue) {
@@ -165,7 +380,7 @@ export class MathJaxService {
                                     window.MathJax.tex2jax.Process(element);
                                     logger.debug('✅ Fallback: tex2jax processing attempted');
                                 }
-                                // Try startup document processing
+                                // Try alternative startup document methods
                                 else if (window.MathJax.startup && window.MathJax.startup.document) {
                                     window.MathJax.startup.document.clear();
                                     window.MathJax.startup.document.updateDocument();
@@ -263,7 +478,25 @@ export class MathJaxService {
      * @returns {boolean}
      */
     isAvailable() {
-        return !!(window.MathJax && window.MathJax.typesetPromise);
+        // Primary check: typesetPromise exists
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            return true;
+        }
+        
+        // Fallback check: startup is complete
+        if (window.MathJax && window.MathJax.startup) {
+            // Check if startup promise has resolved
+            const startupComplete = window.MathJax.startup.document && 
+                                  window.MathJax.startup.document.state && 
+                                  window.MathJax.startup.document.state() >= 8; // STATE.READY = 8
+            
+            if (startupComplete) {
+                logger.debug('🔍 MathJax available via startup completion check');
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
