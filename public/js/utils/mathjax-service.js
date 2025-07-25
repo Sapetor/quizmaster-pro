@@ -124,6 +124,58 @@ export class MathJaxService {
                         const mathJaxExists = !!window.MathJax;
                         const typesetExists = !!window.MathJax?.typesetPromise;
                         logger.error(`❌ MathJax not fully ready after ${maxRetries} attempts - MathJax: ${mathJaxExists}, typesetPromise: ${typesetExists}`);
+                        
+                        // DEBUG: Log more MathJax state information
+                        if (window.MathJax) {
+                            logger.debug('🔍 MathJax debugging info:', {
+                                startup: !!window.MathJax.startup,
+                                config: !!window.MathJax.config,
+                                tex: !!window.MathJax.tex,
+                                svg: !!window.MathJax.svg,
+                                version: window.MathJax.version,
+                                state: window.MathJax.startup?.state || 'unknown'
+                            });
+                            
+                            // Try to force MathJax initialization if startup exists
+                            if (window.MathJax.startup && !window.MathJax.typesetPromise) {
+                                logger.debug('🔧 Attempting to force MathJax startup...');
+                                try {
+                                    if (typeof window.MathJax.startup.promise === 'function') {
+                                        window.MathJax.startup.promise.then(() => {
+                                            logger.debug('✅ MathJax startup promise resolved');
+                                        });
+                                    }
+                                } catch (err) {
+                                    logger.error('❌ Failed to force MathJax startup:', err);
+                                }
+                            }
+                        }
+                        
+                        // FALLBACK: Try alternative rendering methods
+                        if (window.MathJax && element) {
+                            logger.debug('🔧 Trying fallback MathJax rendering...');
+                            try {
+                                // Try MathJax 2.x style rendering if available
+                                if (window.MathJax.Hub && window.MathJax.Hub.Queue) {
+                                    window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, element]);
+                                    logger.debug('✅ Fallback: MathJax 2.x rendering attempted');
+                                }
+                                // Try direct tex2jax processing if available
+                                else if (window.MathJax.tex2jax && window.MathJax.tex2jax.Process) {
+                                    window.MathJax.tex2jax.Process(element);
+                                    logger.debug('✅ Fallback: tex2jax processing attempted');
+                                }
+                                // Try startup document processing
+                                else if (window.MathJax.startup && window.MathJax.startup.document) {
+                                    window.MathJax.startup.document.clear();
+                                    window.MathJax.startup.document.updateDocument();
+                                    logger.debug('✅ Fallback: startup document processing attempted');
+                                }
+                            } catch (fallbackError) {
+                                logger.error('❌ Fallback rendering failed:', fallbackError);
+                            }
+                        }
+                        
                         this.pendingRenders.delete(element);
                         resolve(); // Resolve anyway to prevent hanging
                     }
