@@ -516,3 +516,39 @@ const initDelay = (isWindows && isChrome) ? 250 : (isChrome ? 200 : 0);
 - **Initialization Delays**: Chrome gets 200-250ms vs 0-150ms for other browsers
 
 **Cross-Browser Compatibility**: Now provides consistent LaTeX rendering across Chrome, Firefox, Safari, Edge, and mobile browsers after F5 reload.
+
+### Chrome Multi-Tab Isolation Fix (January 2025)
+**Critical Issue Discovered**: Chrome tabs in the same browser window share global JavaScript state, causing MathJax interference when both host and client tabs are open simultaneously.
+
+**Root Cause**: When one tab (e.g., host) does F5 reload and reinitializes MathJax, it corrupts the MathJax state in the other tab (e.g., client) because they share the same `window.MathJax` object.
+
+**Solution**: Implemented tab-specific isolation and safe recovery:
+```javascript
+// Tab isolation system
+const tabId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+const isHost = window.location.pathname.includes('host');
+
+// Multi-tab detection via localStorage
+hasOtherActiveTabs() {
+    const activeTabs = JSON.parse(localStorage.getItem('quizmaster_active_tabs') || '{}');
+    activeTabs[this.tabId] = { isHost: this.isHost, lastSeen: Date.now() };
+    return Object.keys(activeTabs).filter(id => id !== this.tabId).length > 0;
+}
+
+// Safe multi-tab recovery (no script reloading)
+if (hasOtherTabs) {
+    // Wait for MathJax self-recovery instead of reloading script
+    waitForSelfRecovery();
+} else {
+    // Single tab: safe to use aggressive recovery
+    reloadMathJaxScript();
+}
+```
+
+**Multi-Tab Recovery Strategy**:
+- **Multi-Tab Scenario**: Uses patient waiting approach, no script reloading (prevents interference)
+- **Single Tab Scenario**: Uses aggressive script reloading for faster recovery
+- **Tab Cleanup**: Automatic cleanup on page unload to prevent stale entries
+- **Cross-Tab Coordination**: Tabs communicate via localStorage to avoid conflicts
+
+**Status**: ✅ **RESOLVED** - Chrome now works consistently even with host+client tabs open in same browser window.
