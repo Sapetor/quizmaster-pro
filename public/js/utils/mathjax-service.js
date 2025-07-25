@@ -153,6 +153,59 @@ export class MathJaxService {
                         if (hasStartup && !hasDocument && !hasTypesetPromise) {
                             logger.debug('🚨 F5 CORRUPTION DETECTED: MathJax in corrupted state (startup=true, document=false, typesetPromise=false)');
                             
+                            // Chrome-specific: Alternative recovery approach
+                            if (this.isChrome) {
+                                logger.debug('🔄 CHROME F5 DETECTED: Attempting Chrome-specific recovery');
+                                
+                                // Try to reset MathJax configuration instead of reloading script
+                                if (window.MathJax && window.MathJax.config) {
+                                    try {
+                                        // Reset MathJax to initial state
+                                        logger.debug('🔧 Resetting MathJax configuration for Chrome');
+                                        
+                                        // Clear internal MathJax state
+                                        if (window.MathJax.startup) {
+                                            window.MathJax.startup.ready = () => {
+                                                logger.debug('🔧 Chrome MathJax reset ready callback');
+                                                window.MathJax.startup.defaultReady();
+                                                window.mathJaxReady = true;
+                                                document.body.classList.add('mathjax-ready');
+                                                document.dispatchEvent(new CustomEvent('mathjax-ready'));
+                                            };
+                                            
+                                            // Force restart
+                                            if (typeof window.MathJax.startup.ready === 'function') {
+                                                window.MathJax.startup.ready();
+                                            }
+                                        }
+                                        
+                                        // Try rendering after reset
+                                        setTimeout(() => {
+                                            if (window.MathJax && window.MathJax.typesetPromise) {
+                                                window.MathJax.typesetPromise([element]).then(() => {
+                                                    logger.debug('✅ Chrome MathJax reset successful');
+                                                    this.pendingRenders.delete(element);
+                                                    resolve();
+                                                }).catch(err => {
+                                                    logger.error('❌ Chrome MathJax reset failed:', err);
+                                                    this.pendingRenders.delete(element);
+                                                    resolve();
+                                                });
+                                            } else {
+                                                logger.error('❌ Chrome MathJax reset failed - no typesetPromise');
+                                                this.pendingRenders.delete(element);
+                                                resolve();
+                                            }
+                                        }, 500);
+                                        
+                                        return;
+                                    } catch (e) {
+                                        logger.error('❌ Chrome MathJax reset error:', e);
+                                        // Fall through to normal recovery
+                                    }
+                                }
+                            }
+                            
                             // If already recovering, queue this render attempt
                             if (this.isRecovering) {
                                 logger.debug('🔄 F5 recovery already in progress, queueing render attempt');
