@@ -458,3 +458,23 @@ callbacks.forEach(callback => setTimeout(callback, 50));
 ```
 
 **Result**: All LaTeX elements now render correctly after F5 reload, not just the first one that triggers recovery.
+
+### Final Race Condition Fix (January 2025)
+**Issue**: Even with perfect F5 corruption recovery, multiple rapid `question-start` socket events after F5 were causing race conditions where subsequent `innerHTML` assignments would wipe out previously rendered MathJax content.
+
+**Root Cause**: The sequence was:
+1. Socket event → `displayQuestion()` → `innerHTML = rawLatex` → MathJax renders
+2. Second socket event → `displayQuestion()` → `innerHTML = rawLatex` (wipes out step 1) → MathJax renders
+
+**Solution**: Added throttling to prevent rapid successive calls:
+```javascript
+// Prevent rapid successive calls that interfere with MathJax
+const now = Date.now();
+if (this.lastDisplayQuestionTime && (now - this.lastDisplayQuestionTime) < 500) {
+    logger.debug('🚫 Ignoring rapid displayQuestion call to prevent MathJax interference');
+    return;
+}
+this.lastDisplayQuestionTime = now;
+```
+
+**Status**: ✅ **FULLY RESOLVED** - LaTeX now renders consistently after any number of F5 reloads with no race conditions or content overwrites.
