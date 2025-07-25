@@ -855,6 +855,14 @@ io.on('connection', (socket) => {
       pin: game.pin,
       gameId: game.id
     });
+    
+    // Broadcast to all clients that a new game is available
+    socket.broadcast.emit('game-available', {
+      pin: game.pin,
+      title: quiz.title,
+      questionCount: quiz.questions.length,
+      created: game.createdAt
+    });
   });
 
   socket.on('player-join', (data) => {

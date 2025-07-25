@@ -111,6 +111,7 @@ export const SOCKET_EVENTS = {
     SUBMIT_ANSWER: 'submit-answer',
     NEXT_QUESTION: 'next-question',
     GAME_CREATED: 'game-created',
+    GAME_AVAILABLE: 'game-available',
     GAME_STARTING: 'game-starting',
     QUESTION_START: 'question-start',
     QUESTION_END: 'question-end',

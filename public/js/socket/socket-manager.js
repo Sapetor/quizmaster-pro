@@ -39,6 +39,13 @@ export class SocketManager {
             this.uiManager.loadQRCode(data.pin);
             this.uiManager.showScreen('game-lobby');
         });
+        
+        // Listen for new games becoming available
+        this.socket.on('game-available', (data) => {
+            logger.debug('New game available:', data);
+            // Refresh the active games list (will only have effect if games list is visible)
+            this.uiManager.refreshActiveGames();
+        });
 
         this.socket.on('player-joined', (data) => {
             logger.debug('Player joined:', data);
