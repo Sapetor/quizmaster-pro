@@ -478,3 +478,41 @@ this.lastDisplayQuestionTime = now;
 ```
 
 **Status**: ✅ **FULLY RESOLVED** - LaTeX now renders consistently after any number of F5 reloads with no race conditions or content overwrites.
+
+### Chrome Browser Consistency Fix (January 2025)
+**Issue**: Chrome browsers showed inconsistent LaTeX rendering after F5 compared to Firefox and mobile browsers due to Chrome's aggressive caching and different timing behaviors.
+
+**Chrome-Specific Problems**:
+- More aggressive script caching interfering with cache busting
+- Different FOUC prevention timing requirements  
+- Memory management differences affecting MathJax state persistence
+- Different script loading and initialization patterns
+
+**Solution**: Added comprehensive Chrome detection and handling:
+```javascript
+// Chrome browser detection
+detectChrome() {
+    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+    const isChromium = window.chrome && window.chrome.runtime;
+    const isEdge = /Edg/.test(navigator.userAgent);
+    return (isChrome || isChromium) && !isEdge;
+}
+
+// Chrome-specific cache busting
+const cacheBuster = this.isChrome 
+    ? `reload=${Date.now()}&chrome=${Math.random().toString(36).substr(2, 9)}`
+    : `reload=${Date.now()}`;
+
+// Chrome-specific timing adjustments
+const callbackDelay = this.isChrome ? 150 : 50;
+const pollInterval = this.isChrome ? 150 : 100;
+const initDelay = (isWindows && isChrome) ? 250 : (isChrome ? 200 : 0);
+```
+
+**Chrome-Specific Enhancements**:
+- **Aggressive Cache Busting**: Random string + timestamp for Chrome vs timestamp-only for other browsers
+- **Extended Timing**: Chrome gets 150ms delays vs 50ms for other browsers
+- **Memory Cleanup**: Thorough Chrome MathJax cache clearing before reinitialization
+- **Initialization Delays**: Chrome gets 200-250ms vs 0-150ms for other browsers
+
+**Cross-Browser Compatibility**: Now provides consistent LaTeX rendering across Chrome, Firefox, Safari, Edge, and mobile browsers after F5 reload.
