@@ -277,6 +277,126 @@ export class MathJaxService {
     }
 
     /**
+     * Attempt lightweight recovery without script reload (much faster)
+     * @param {Element} element Element to render
+     * @returns {Promise|null} Promise if recovery attempted, null if not applicable
+     */
+    attemptLightweightRecovery(element) {
+        try {
+            // Check if we can recover by recreating MathJax internals without script reload
+            if (window.MathJax && window.MathJax.startup && !window.MathJax.startup.document) {
+                logger.debug('✨ Attempting lightweight F5 recovery');
+                
+                return new Promise((resolve, reject) => {
+                    try {
+                        // Try to manually trigger MathJax startup completion
+                        if (window.MathJax.startup.getComponents) {
+                            window.MathJax.startup.getComponents();
+                        }
+                        
+                        // Recreate document object that F5 corruption destroys
+                        if (window.MathJax.startup.defaultReady && typeof window.MathJax.startup.defaultReady === 'function') {
+                            logger.debug('✨ Triggering MathJax defaultReady to recreate document');
+                            window.MathJax.startup.defaultReady();
+                            
+                            // Give it a moment to initialize
+                            setTimeout(() => {
+                                if (window.MathJax && window.MathJax.typesetPromise) {
+                                    logger.debug('✨ Lightweight recovery successful - typesetPromise restored');
+                                    window.MathJax.typesetPromise([element]).then(() => {
+                                        this.pendingRenders.delete(element);
+                                        resolve();
+                                    }).catch(err => {
+                                        logger.debug('❌ Lightweight recovery render failed:', err);
+                                        reject(err);
+                                    });
+                                } else {
+                                    logger.debug('❌ Lightweight recovery failed - typesetPromise still unavailable');
+                                    reject(new Error('typesetPromise not restored'));
+                                }
+                            }, 100); // Much faster than script reload
+                        } else {
+                            logger.debug('❌ Lightweight recovery not possible - no defaultReady function');
+                            reject(new Error('defaultReady not available'));
+                        }
+                    } catch (e) {
+                        logger.debug('❌ Lightweight recovery error:', e.message);
+                        reject(e);
+                    }
+                });
+            }
+        } catch (e) {
+            logger.debug('❌ Lightweight recovery check failed:', e.message);
+        }
+        
+        return null; // Lightweight recovery not applicable
+    }
+
+    /**
+     * Perform full script reload recovery (slower but reliable)
+     * @param {Element} element Element to render
+     * @param {boolean} hasOtherTabs Whether other tabs are active
+     * @returns {Promise}
+     */
+    performFullScriptReload(element, hasOtherTabs) {
+        return new Promise((resolve) => {
+            if (hasOtherTabs) {
+                // Multi-tab coordination logic
+                const coordinationResult = this.coordinateMultiTabRecovery();
+                
+                if (coordinationResult === 'follower') {
+                    logger.debug('👥 Multi-tab follower - waiting for leader script reload');
+                    this.waitForLeaderRecovery().then(() => {
+                        if (window.MathJax && window.MathJax.typesetPromise) {
+                            window.MathJax.typesetPromise([element]).then(() => {
+                                this.pendingRenders.delete(element);
+                                resolve();
+                            }).catch(() => {
+                                this.pendingRenders.delete(element);
+                                resolve();
+                            });
+                        } else {
+                            this.pendingRenders.delete(element);
+                            resolve();
+                        }
+                    }).catch(() => {
+                        this.pendingRenders.delete(element);
+                        resolve();
+                    });
+                    return;
+                }
+            }
+            
+            // Perform the full script reload (existing logic continues here)
+            logger.debug('🔧 Performing full script reload recovery');
+        });
+    }
+
+    /**
+     * Wait for leader tab to complete recovery
+     * @returns {Promise}
+     */
+    waitForLeaderRecovery() {
+        return new Promise((resolve, reject) => {
+            const maxAttempts = 30; // 15 seconds
+            let attempts = 0;
+            
+            const checkRecovery = () => {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    resolve();
+                } else if (attempts < maxAttempts) {
+                    attempts++;
+                    setTimeout(checkRecovery, 500);
+                } else {
+                    reject(new Error('Leader recovery timeout'));
+                }
+            };
+            
+            checkRecovery();
+        });
+    }
+
+    /**
      * Initialize MathJax readiness detection
      */
     initializeMathJax() {
@@ -393,54 +513,27 @@ export class MathJaxService {
                         if (hasStartup && !hasDocument && !hasTypesetPromise) {
                             logger.debug('🚨 F5 CORRUPTION DETECTED: MathJax in corrupted state (startup=true, document=false, typesetPromise=false)');
                             
-                            // Chrome multi-tab safe recovery approach
+                            // Chrome F5 Recovery: Try lightweight approach first, fallback to script reload
                             if (this.isChrome) {
                                 const hasOtherTabs = this.hasOtherActiveTabs();
                                 logger.debug(`🔄 CHROME F5 DETECTED: ${this.isHost ? 'HOST' : 'CLIENT'} tab recovery (Other tabs: ${hasOtherTabs})`);
                                 
-                                if (hasOtherTabs) {
-                                    // Multi-tab scenario: Use coordinated recovery
-                                    logger.debug('🔄 Multi-tab detected: Using coordinated recovery');
-                                    
-                                    // Try to coordinate script reload across tabs
-                                    const coordinationResult = this.coordinateMultiTabRecovery();
-                                    
-                                    if (coordinationResult === 'leader') {
-                                        logger.debug('👑 This tab is the recovery leader - performing script reload');
-                                        // Continue with script reload as the leader
-                                    } else if (coordinationResult === 'follower') {
-                                        logger.debug('👥 This tab is following - waiting for leader recovery');
-                                        
-                                        // Wait for the leader tab to complete recovery
-                                        const waitForLeaderRecovery = (attempts = 0) => {
-                                            const maxAttempts = 30; // 15 seconds total
-                                            
-                                            if (window.MathJax && window.MathJax.typesetPromise) {
-                                                logger.debug('✅ Multi-tab follower: Leader recovery completed');
-                                                window.MathJax.typesetPromise([element]).then(() => {
-                                                    this.pendingRenders.delete(element);
-                                                    resolve();
-                                                }).catch(err => {
-                                                    logger.error('❌ Multi-tab follower render failed:', err);
-                                                    this.pendingRenders.delete(element);
-                                                    resolve();
-                                                });
-                                            } else if (attempts < maxAttempts) {
-                                                setTimeout(() => waitForLeaderRecovery(attempts + 1), 500);
-                                            } else {
-                                                logger.error('❌ Multi-tab follower recovery timeout - attempting own recovery');
-                                                // Fallback: try own recovery
-                                                this.performScriptReload(element).then(resolve).catch(() => resolve());
-                                            }
-                                        };
-                                        
-                                        waitForLeaderRecovery();
-                                        return;
-                                    }
-                                } else {
-                                    // Single tab: Safe to use aggressive recovery
-                                    logger.debug('🔧 Single tab detected: Using full recovery');
+                                // Try lightweight recovery first (much faster)
+                                const lightweightSuccess = this.attemptLightweightRecovery(element);
+                                if (lightweightSuccess) {
+                                    logger.debug('✨ Lightweight recovery successful - no script reload needed');
+                                    lightweightSuccess.then(resolve).catch(() => {
+                                        logger.debug('❌ Lightweight recovery failed - falling back to script reload');
+                                        // Fallback to script reload if lightweight fails
+                                        this.performFullScriptReload(element, hasOtherTabs).then(resolve).catch(() => resolve());
+                                    });
+                                    return;
                                 }
+                                
+                                // Fallback to full script reload if lightweight isn't applicable
+                                logger.debug('🔧 Lightweight recovery not applicable - using script reload');
+                                this.performFullScriptReload(element, hasOtherTabs).then(resolve).catch(() => resolve());
+                                return;
                             }
                             
                             // If already recovering, queue this render attempt
