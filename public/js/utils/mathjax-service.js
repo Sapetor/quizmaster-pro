@@ -554,6 +554,22 @@ export class MathJaxService {
      */
     async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 3) {
         return new Promise((resolve, reject) => {
+            // PERFORMANCE: Early exit for non-LaTeX content (like code snippets)
+            const hasLatexContent = element.innerHTML.includes('$$') || 
+                                  element.innerHTML.includes('\(') ||
+                                  element.innerHTML.includes('\[') ||
+                                  element.innerHTML.includes('$') ||
+                                  element.innerHTML.includes('\frac') ||
+                                  element.innerHTML.includes('\sqrt') ||
+                                  element.innerHTML.includes('\sum') ||
+                                  element.innerHTML.includes('\int');
+                                  
+            if (!hasLatexContent) {
+                // Skip MathJax processing entirely for code snippets/plain text
+                resolve();
+                return;
+            }
+
             // Add progressive loading UI
             this.showProgressiveLoading(element);
             
@@ -562,16 +578,7 @@ export class MathJaxService {
                 const renderTimeout = this.isRecovering ? timeout : Math.min(timeout, 50);
                 setTimeout(() => {
                     // Render attempt ${attempt}/${maxRetries}
-                    // Check MathJax availability
-                    const hasLatexContent = element.innerHTML.includes('$$') || 
-                                        element.innerHTML.includes('\\(') ||
-                                        element.innerHTML.includes('\\[') ||
-                                        element.innerHTML.includes('$') ||  // Single dollar delimiters
-                                        element.innerHTML.includes('\\frac') ||  // Common LaTeX commands
-                                        element.innerHTML.includes('\\sqrt') ||
-                                        element.innerHTML.includes('\\sum') ||
-                                        element.innerHTML.includes('\\int');
-                    // Element contains LaTeX: ${hasLatexContent}
+                    // LaTeX content confirmed, proceeding with MathJax render
                     
                     if (this.isAvailable()) {
                         // Conservative approach: Let MathJax handle its own element management
