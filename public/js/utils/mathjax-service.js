@@ -328,21 +328,21 @@ export class MathJaxService {
                         if (window.MathJax && window.MathJax.typesetPromise) {
                             window.MathJax.typesetPromise([element]).then(() => {
                                 this.pendingRenders.delete(element);
-                                this.completeProgressiveLoading(element);
+                                this.completeProgressiveLoading(element, true);
                                 resolve();
                             }).catch(() => {
                                 this.pendingRenders.delete(element);
-                                this.completeProgressiveLoading(element);
+                                this.completeProgressiveLoading(element, false);
                                 resolve();
                             });
                         } else {
                             this.pendingRenders.delete(element);
-                            this.completeProgressiveLoading(element);
+                            this.completeProgressiveLoading(element, false);
                             resolve();
                         }
                     }).catch(() => {
                         this.pendingRenders.delete(element);
-                        this.completeProgressiveLoading(element);
+                        this.completeProgressiveLoading(element, false);
                         resolve();
                     });
                     return;
@@ -415,13 +415,13 @@ export class MathJaxService {
                         // Render the element
                         window.MathJax.typesetPromise([element]).then(() => {
                             this.pendingRenders.delete(element);
-                            this.completeProgressiveLoading(element);
+                            this.completeProgressiveLoading(element, true);
                             this.isRecovering = false;
                             resolve();
                         }).catch(err => {
                             logger.error('❌ Script reload render failed:', err);
                             this.pendingRenders.delete(element);
-                            this.completeProgressiveLoading(element);
+                            this.completeProgressiveLoading(element, false);
                             this.isRecovering = false;
                             resolve();
                         });
@@ -581,8 +581,8 @@ export class MathJaxService {
                                 logger.debug(`✅ MathJax render successful on attempt ${attempt}`);
                                 this.pendingRenders.delete(element);
                                 
-                                // Complete progressive loading
-                                this.completeProgressiveLoading(element);
+                                // Complete progressive loading - SUCCESS
+                                this.completeProgressiveLoading(element, true);
                                 
                                 resolve();
                             })
@@ -593,8 +593,8 @@ export class MathJaxService {
                                     setTimeout(() => attemptRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
                                 } else {
                                     this.pendingRenders.delete(element);
-                                    // Complete progressive loading even on error
-                                    this.completeProgressiveLoading(element);
+                                    // Complete progressive loading - FAILURE
+                                    this.completeProgressiveLoading(element, false);
                                     reject(error);
                                 }
                             });
@@ -629,7 +629,7 @@ export class MathJaxService {
                         
                         // If no corruption detected, reject with the original error
                         this.pendingRenders.delete(element);
-                        this.completeProgressiveLoading(element);
+                        this.completeProgressiveLoading(element, false);
                         reject(new Error(`MathJax not ready after ${maxRetries} attempts`));
                     }
                 }, timeout);
@@ -677,18 +677,18 @@ export class MathJaxService {
                     window.MathJax.typesetPromise([element]).then(() => {
                         this.pendingRenders.delete(element);
                         // Complete progressive loading after successful render
-                        this.completeProgressiveLoading(element);
+                        this.completeProgressiveLoading(element, true);
                         resolve();
                     }).catch(err => {
                         logger.error('❌ Queued render failed after F5 recovery:', err);
                         this.pendingRenders.delete(element);
                         // Complete progressive loading even on error
-                        this.completeProgressiveLoading(element);
+                        this.completeProgressiveLoading(element, false);
                         resolve();
                     });
                 } else {
                     // Complete progressive loading if MathJax still not ready
-                    this.completeProgressiveLoading(element);
+                    this.completeProgressiveLoading(element, false);
                     resolve();
                 }
             });
@@ -875,8 +875,9 @@ export class MathJaxService {
     /**
      * Complete progressive loading and show final rendered content
      * @param {Element} element Element that finished rendering
+     * @param {boolean} renderSucceeded Whether MathJax rendering succeeded (default: true)
      */
-    completeProgressiveLoading(element) {
+    completeProgressiveLoading(element, renderSucceeded = true) {
         if (!element) return;
         
         try {
@@ -886,12 +887,13 @@ export class MathJaxService {
                 delete element.dataset.fallbackTimer;
             }
             
-            // Restore original content if MathJax rendering failed and we still have fallback content
-            if (element.dataset.originalContent && 
-                (element.innerHTML.includes('⌛ Rendering mathematics') || 
-                 element.innerHTML.includes('mathjax-fallback'))) {
+            // Only restore original content if rendering actually failed
+            if (!renderSucceeded && element.dataset.originalContent && 
+                element.innerHTML.includes('⌛ Rendering mathematics')) {
                 logger.debug('🔄 Restoring original content after failed MathJax render');
                 element.innerHTML = element.dataset.originalContent;
+            } else if (renderSucceeded) {
+                logger.debug('✨ MathJax rendering succeeded - keeping rendered content');
             }
             
             // Remove loading classes

@@ -223,6 +223,18 @@ export class GameManager {
     updateHostQuestionContent(data, hostQuestionElement) {
         if (!hostQuestionElement) return;
         
+        // Prevent content updates during F5 recovery to avoid race conditions
+        if (mathJaxService.isRecovering) {
+            logger.debug('🔒 Skipping host question update during F5 recovery to prevent race condition');
+            return;
+        }
+        
+        // Skip update if question data is empty/invalid
+        if (!data.question || data.question.trim() === '') {
+            logger.debug('🔒 Skipping host question update - empty question data');
+            return;
+        }
+        
         // DEBUG: Log detailed information about the rendering context
         logger.debug('🔍 HOST QUESTION DEBUG:', {
             questionId: data.questionId || 'unknown',
@@ -426,6 +438,18 @@ export class GameManager {
      */
     updatePlayerQuestionContent(data, questionElement) {
         if (!questionElement) return;
+        
+        // Prevent content updates during F5 recovery to avoid race conditions
+        if (mathJaxService.isRecovering) {
+            logger.debug('🔒 Skipping player question update during F5 recovery to prevent race condition');
+            return;
+        }
+        
+        // Skip update if question data is empty/invalid
+        if (!data.question || data.question.trim() === '') {
+            logger.debug('🔒 Skipping player question update - empty question data');
+            return;
+        }
         
         // Simple content update - no FOUC prevention needed in game view  
         questionElement.innerHTML = this.mathRenderer.formatCodeBlocks(data.question);
