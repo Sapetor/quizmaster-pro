@@ -16,6 +16,7 @@ export class MathJaxService {
         this.isRecovering = false; // Track if F5 recovery is in progress
         this.recoveryCallbacks = []; // Queue callbacks waiting for recovery
         this.globalRecoveryLock = false; // Prevent duplicate recoveries across instances
+        this.mathJaxCache = new Map(); // Cache rendered MathJax for instant F5 recovery
         
         // Tab isolation for Chrome multi-tab scenarios
         this.tabId = this.generateTabId();
@@ -618,6 +619,7 @@ export class MathJaxService {
                                 this.pendingRenders.delete(element);
                                 
                                 // Complete progressive loading - SUCCESS
+                                this.cacheMathJaxContent(element);
                                 this.completeProgressiveLoading(element, true);
                                 
                                 resolve();
@@ -687,6 +689,18 @@ export class MathJaxService {
      * @param {Function} reject Promise reject function
      */
     handleF5Corruption(element, resolve, reject) {
+        // Try instant cache recovery first
+        const cacheKey = this.getCacheKey(element);
+        if (this.mathJaxCache.has(cacheKey)) {
+            logger.debug('⚡ Using cached MathJax content for instant F5 recovery');
+            const cachedContent = this.mathJaxCache.get(cacheKey);
+            element.innerHTML = cachedContent;
+            this.pendingRenders.delete(element);
+            this.completeProgressiveLoading(element, true);
+            resolve();
+            return;
+        }
+        
         // Prevent duplicate recovery attempts
         if (this.globalRecoveryLock) {
             logger.debug('🔒 Recovery already in progress globally, queueing request');
@@ -694,6 +708,7 @@ export class MathJaxService {
                 if (window.MathJax && window.MathJax.typesetPromise) {
                     window.MathJax.typesetPromise([element]).then(() => {
                         this.pendingRenders.delete(element);
+                        this.cacheMathJaxContent(element);
                         this.completeProgressiveLoading(element, true);
                         resolve();
                     }).catch(() => {
@@ -729,6 +744,7 @@ export class MathJaxService {
                     window.MathJax.typesetPromise([element]).then(() => {
                         this.pendingRenders.delete(element);
                         // Complete progressive loading after successful render
+                        this.cacheMathJaxContent(element);
                         this.completeProgressiveLoading(element, true);
                         resolve();
                     }).catch(err => {
@@ -1002,6 +1018,61 @@ export class MathJaxService {
         } catch (e) {
             // Silent error handling for reduced console output
         }
+    }
+
+    /**
+     * Generate cache key for MathJax content
+     * @param {Element} element - Element containing LaTeX
+     * @returns {string} Cache key
+     */
+    getCacheKey(element) {
+        const originalContent = element.dataset.originalContent || element.innerHTML;
+        // Create hash-like key from content
+        let hash = 0;
+        for (let i = 0; i < originalContent.length; i++) {
+            const char = originalContent.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        return `mathjax_${Math.abs(hash)}_${originalContent.length}`;
+    }
+
+    /**
+     * Cache rendered MathJax content for instant F5 recovery
+     * @param {Element} element - Element with rendered MathJax
+     */
+    cacheMathJaxContent(element) {
+        if (!element || !element.innerHTML) return;
+        
+        try {
+            const cacheKey = this.getCacheKey(element);
+            const renderedContent = element.innerHTML;
+            
+            // Only cache if it contains actual MathJax rendered elements
+            if (renderedContent.includes('mjx-') || renderedContent.includes('MathJax')) {
+                this.mathJaxCache.set(cacheKey, renderedContent);
+                logger.debug(`⚡ Cached MathJax content: ${cacheKey}`);
+                
+                // Limit cache size to prevent memory issues
+                if (this.mathJaxCache.size > 50) {
+                    const firstKey = this.mathJaxCache.keys().next().value;
+                    this.mathJaxCache.delete(firstKey);
+                }
+            }
+        } catch (error) {
+            errorHandler.log(error, {
+                context: 'MathJax caching',
+                elementId: element.id || 'unknown'
+            });
+        }
+    }
+
+    /**
+     * Clear MathJax cache (useful for testing or memory management)
+     */
+    clearCache() {
+        this.mathJaxCache.clear();
+        logger.debug('🧹 Cleared MathJax cache');
     }
 }
 
