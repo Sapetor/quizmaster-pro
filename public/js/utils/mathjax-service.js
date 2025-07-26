@@ -580,7 +580,7 @@ export class MathJaxService {
      * @param {number} maxRetries - Maximum retry attempts (default: 3)
      * @returns {Promise<void>}
      */
-    async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 3) {
+    async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 8) {
         return new Promise((resolve, reject) => {
             // PERFORMANCE: Early exit for non-LaTeX content (like code snippets)
             const hasLatexContent = element.innerHTML.includes('$$') || 
@@ -632,8 +632,9 @@ export class MathJaxService {
                                     elementId: element.id || 'unknown'
                                 });
                                 if (attempt < maxRetries) {
-                                    // Retrying render
-                                    setTimeout(() => attemptRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
+                                    // Progressive backoff for render retries
+                                    const delay = attempt <= 3 ? TIMING.MATHJAX_RETRY_TIMEOUT : TIMING.MATHJAX_RETRY_TIMEOUT * 1.5;
+                                    setTimeout(() => attemptRender(attempt + 1), delay);
                                 } else {
                                     this.pendingRenders.delete(element);
                                     // Complete progressive loading - FAILURE
@@ -642,12 +643,18 @@ export class MathJaxService {
                                 }
                             });
                     } else if (attempt < maxRetries) {
-                        // MathJax not ready, retrying...
-                        setTimeout(() => attemptRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
+                        // Progressive backoff for better performance
+                        const delay = attempt <= 3 ? TIMING.MATHJAX_RETRY_TIMEOUT : TIMING.MATHJAX_RETRY_TIMEOUT * 1.5;
+                        setTimeout(() => attemptRender(attempt + 1), delay);
                     } else {
                         const mathJaxExists = !!window.MathJax;
                         const typesetExists = !!window.MathJax?.typesetPromise;
-                        logger.error(`❌ MathJax not fully ready after ${maxRetries} attempts - MathJax: ${mathJaxExists}, typesetPromise: ${typesetExists}`);
+                        // Reduce error verbosity for normal gameplay delays
+                        if (maxRetries <= 5) {
+                            logger.debug(`🔄 MathJax still loading after ${maxRetries} attempts`);
+                        } else {
+                            logger.warn(`⚠️ MathJax not ready after ${maxRetries} attempts - MathJax: ${mathJaxExists}, typesetPromise: ${typesetExists}`);
+                        }
                         
                         // RESTORE WORKING CORRUPTION DETECTION (the F5 prevention caused infinite loops)
                         // Emergency F5 corruption check
