@@ -6,28 +6,37 @@
 import { TIMING, logger } from '../core/config.js';
 import { domUtils } from './dom-utils.js';
 import { errorHandler } from './error-handler.js';
+import { recoveryService } from './mathjax/recovery-service.js';
+import { cacheService } from './mathjax/cache-service.js';
+import { RenderService } from './mathjax/render-service.js';
 
 export class MathJaxService {
     constructor() {
+        // Initialize new modular services
+        this.recoveryService = recoveryService;
+        this.cacheService = cacheService;
+        this.renderService = new RenderService(cacheService, recoveryService);
+        
+        // Maintain backward compatibility with existing properties
         this.isReady = false;
-        this.pendingRenders = new Set();
-        this.isWindows = this.detectWindows();
-        this.isChrome = this.detectChrome();
-        this.isRecovering = false; // Track if F5 recovery is in progress
-        this.recoveryCallbacks = []; // Queue callbacks waiting for recovery
-        this.globalRecoveryLock = false; // Prevent duplicate recoveries across instances
-        this.mathJaxCache = new Map(); // Cache rendered MathJax for instant F5 recovery
+        this.pendingRenders = this.renderService.pendingRenders; // Delegate to render service
+        this.mathJaxCache = this.cacheService.mathJaxCache; // Delegate to cache service
         
-        // Tab isolation for Chrome multi-tab scenarios
-        this.tabId = this.generateTabId();
-        this.isHost = window.location.pathname.includes('host') || window.location.search.includes('host=true');
+        // Delegate browser detection to recovery service
+        this.isWindows = this.recoveryService.isWindows;
+        this.isChrome = this.recoveryService.isChrome;
         
-        // Reduced verbosity: only log errors and critical state changes
+        // Delegate recovery state to recovery service  
+        this.isRecovering = this.recoveryService.isRecovering;
+        this.recoveryCallbacks = this.recoveryService.recoveryCallbacks;
+        this.globalRecoveryLock = this.recoveryService.globalRecoveryLock;
         
-        // Clean up tab registration on page unload
-        window.addEventListener('beforeunload', () => {
-            this.cleanupTabRegistration();
-        });
+        // Delegate tab management to recovery service
+        this.tabId = this.recoveryService.tabId;
+        this.isHost = this.recoveryService.isHost;
+        
+        // Sync render service recovery state with recovery service
+        this.renderService.setRecoveryState(this.recoveryService.isRecovering);
         
         this.initializeMathJax();
     }
@@ -37,8 +46,8 @@ export class MathJaxService {
      * @returns {boolean}
      */
     detectWindows() {
-        return navigator.platform.toLowerCase().includes('win') || 
-               navigator.userAgent.toLowerCase().includes('windows');
+        // Delegate to recovery service
+        return this.recoveryService.detectWindows();
     }
 
     /**
@@ -46,10 +55,8 @@ export class MathJaxService {
      * @returns {boolean}
      */
     detectChrome() {
-        const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-        const isChromium = window.chrome && window.chrome.runtime;
-        const isEdge = /Edg/.test(navigator.userAgent);
-        return (isChrome || isChromium) && !isEdge;
+        // Delegate to recovery service
+        return this.recoveryService.detectChrome();
     }
 
     /**
@@ -581,112 +588,8 @@ export class MathJaxService {
      * @returns {Promise<void>}
      */
     async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 8) {
-        return new Promise((resolve, reject) => {
-            // PERFORMANCE: Early exit for non-LaTeX content (like code snippets)
-            const hasLatexContent = element.innerHTML.includes('$$') || 
-                                  element.innerHTML.includes('\(') ||
-                                  element.innerHTML.includes('\[') ||
-                                  element.innerHTML.includes('$') ||
-                                  element.innerHTML.includes('\frac') ||
-                                  element.innerHTML.includes('\sqrt') ||
-                                  element.innerHTML.includes('\sum') ||
-                                  element.innerHTML.includes('\int');
-                                  
-            if (!hasLatexContent) {
-                // Skip MathJax processing entirely for code snippets/plain text
-                resolve();
-                return;
-            }
-
-            // Add progressive loading UI
-            this.showProgressiveLoading(element);
-            
-            const attemptRender = (attempt = 1) => {
-                // PERFORMANCE: Use shorter timeout for normal renders
-                const renderTimeout = this.isRecovering ? timeout : Math.min(timeout, 50);
-                setTimeout(() => {
-                    // Render attempt ${attempt}/${maxRetries}
-                    // LaTeX content confirmed, proceeding with MathJax render
-                    
-                    if (this.isAvailable()) {
-                        // Conservative approach: Let MathJax handle its own element management
-                        
-                        // Calling MathJax.typesetPromise
-                        
-                        window.MathJax.typesetPromise([element])
-                            .then(() => {
-                                // Render successful
-                                this.pendingRenders.delete(element);
-                                
-                                // Complete progressive loading - SUCCESS
-                                this.cacheMathJaxContent(element);
-                                this.completeProgressiveLoading(element, true);
-                                
-                                resolve();
-                            })
-                            .catch(error => {
-                                errorHandler.log(error, { 
-                                    context: 'MathJax render', 
-                                    attempt, 
-                                    maxRetries,
-                                    elementId: element.id || 'unknown'
-                                });
-                                if (attempt < maxRetries) {
-                                    // Progressive backoff for render retries
-                                    const delay = attempt <= 3 ? TIMING.MATHJAX_RETRY_TIMEOUT : TIMING.MATHJAX_RETRY_TIMEOUT * 1.5;
-                                    setTimeout(() => attemptRender(attempt + 1), delay);
-                                } else {
-                                    this.pendingRenders.delete(element);
-                                    // Complete progressive loading - FAILURE
-                                    this.completeProgressiveLoading(element, false);
-                                    reject(error);
-                                }
-                            });
-                    } else if (attempt < maxRetries) {
-                        // Progressive backoff for better performance
-                        const delay = attempt <= 3 ? TIMING.MATHJAX_RETRY_TIMEOUT : TIMING.MATHJAX_RETRY_TIMEOUT * 1.5;
-                        setTimeout(() => attemptRender(attempt + 1), delay);
-                    } else {
-                        const mathJaxExists = !!window.MathJax;
-                        const typesetExists = !!window.MathJax?.typesetPromise;
-                        // Reduce error verbosity for normal gameplay delays
-                        if (maxRetries <= 5) {
-                            logger.debug(`🔄 MathJax still loading after ${maxRetries} attempts`);
-                        } else {
-                            logger.warn(`⚠️ MathJax not ready after ${maxRetries} attempts - MathJax: ${mathJaxExists}, typesetPromise: ${typesetExists}`);
-                        }
-                        
-                        // RESTORE WORKING CORRUPTION DETECTION (the F5 prevention caused infinite loops)
-                        // Emergency F5 corruption check
-                        
-                        // F5 CORRUPTION DETECTION: Check for the exact corruption signature
-                        // Corruption pattern: startup=true, document=false, typesetPromise=false
-                        const hasStartup = !!(window.MathJax && window.MathJax.startup);
-                        const hasDocument = !!(window.MathJax && window.MathJax.startup && window.MathJax.startup.document);
-                        const hasTypesetPromise = !!(window.MathJax && window.MathJax.typesetPromise);
-                        
-                        // F5 corruption check: startup=${hasStartup}, document=${hasDocument}, typesetPromise=${hasTypesetPromise}
-                        
-                        if (hasStartup && !hasDocument && !hasTypesetPromise) {
-                            // F5 corruption detected - initiating recovery
-                            
-                            // Small delay to ensure DOM content is stable before recovery
-                            setTimeout(() => {
-                                this.handleF5Corruption(element, resolve, reject);
-                            }, 100);
-                            return;
-                        }
-                        
-                        // If no corruption detected, reject with the original error
-                        this.pendingRenders.delete(element);
-                        this.completeProgressiveLoading(element, false);
-                        reject(new Error(`MathJax not ready after ${maxRetries} attempts`));
-                    }
-                }, renderTimeout);
-            };
-            
-            attemptRender();
-        });
+        // Delegate to render service for all rendering operations
+        return this.renderService.renderElement(element, timeout, maxRetries);
     }
     
     /**
@@ -696,17 +599,18 @@ export class MathJaxService {
      * @param {Function} reject Promise reject function
      */
     handleF5Corruption(element, resolve, reject) {
-        // Try instant cache recovery first
-        const cacheKey = this.getCacheKey(element);
-        if (this.mathJaxCache.has(cacheKey)) {
-            logger.debug('⚡ Using cached MathJax content for instant F5 recovery');
-            const cachedContent = this.mathJaxCache.get(cacheKey);
-            element.innerHTML = cachedContent;
-            this.pendingRenders.delete(element);
-            this.completeProgressiveLoading(element, true);
-            resolve();
-            return;
-        }
+        // Delegate to recovery service
+        return this.recoveryService.handleF5Corruption(
+            element,
+            resolve,
+            reject,
+            this.cacheService.mathJaxCache,
+            (el) => this.cacheService.getCacheKey(el),
+            (el, success) => this.renderService.completeProgressiveLoading(el, success),
+            (el) => this.cacheService.cacheMathJaxContent(el),
+            this.renderService.pendingRenders
+        );
+    }
         
         // Prevent duplicate recovery attempts
         if (this.globalRecoveryLock) {
@@ -815,16 +719,8 @@ export class MathJaxService {
      * Process pending renders when MathJax becomes ready
      */
     processPendingRenders() {
-        if (this.pendingRenders.size === 0) return;
-
-        const elements = Array.from(this.pendingRenders);
-        this.pendingRenders.clear();
-
-        elements.forEach(element => {
-            this.renderElement(element).catch(error => {
-                logger.error('Failed to process pending MathJax render:', error);
-            });
-        });
+        // Delegate to render service
+        return this.renderService.processPendingRenders();
     }
 
     /**
@@ -832,25 +728,8 @@ export class MathJaxService {
      * @returns {boolean}
      */
     isAvailable() {
-        // Primary check: typesetPromise exists
-        if (window.MathJax && window.MathJax.typesetPromise) {
-            return true;
-        }
-        
-        // Fallback check: startup is complete
-        if (window.MathJax && window.MathJax.startup) {
-            // Check if startup promise has resolved
-            const startupComplete = window.MathJax.startup.document && 
-                                  window.MathJax.startup.document.state && 
-                                  window.MathJax.startup.document.state() >= 8; // STATE.READY = 8
-            
-            if (startupComplete) {
-                logger.debug('🔍 MathJax available via startup completion check');
-                return true;
-            }
-        }
-        
-        return false;
+        // Delegate to render service
+        return this.renderService.isAvailable();
     }
 
     /**
@@ -887,16 +766,9 @@ export class MathJaxService {
      * @param {Element} element Element being rendered
      */
     showProgressiveLoading(element) {
-        if (!element) return;
-        
-        try {
-            // Add loading class for shimmer effect
-            element.classList.add('mathjax-loading');
-            
-            // Store original content for potential fallback
-            if (!element.dataset.originalContent) {
-                element.dataset.originalContent = element.innerHTML;
-            }
+        // Delegate to render service
+        return this.renderService.showProgressiveLoading(element);
+    }
             
             // PERFORMANCE OPTIMIZATION: Only show fallback for slow renders
             // Skip progressive loading for fast normal renders
@@ -984,11 +856,9 @@ export class MathJaxService {
      * @param {boolean} renderSucceeded Whether MathJax rendering succeeded (default: true)
      */
     completeProgressiveLoading(element, renderSucceeded = true) {
-        if (!element) return;
-        
-        try {
-            // Clean up fallback timer
-            if (element.dataset.fallbackTimer) {
+        // Delegate to render service
+        return this.renderService.completeProgressiveLoading(element, renderSucceeded);
+    }
                 clearTimeout(parseInt(element.dataset.fallbackTimer));
                 delete element.dataset.fallbackTimer;
             }
