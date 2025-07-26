@@ -18,9 +18,19 @@ export class ErrorHandler {
      * @param {string} severity - Error severity (error, warn, info, debug)
      */
     log(error, context = {}, severity = 'error') {
+        // Handle null/undefined errors gracefully
+        if (!error) {
+            error = new Error('Unknown error (null/undefined)');
+        }
+        
+        // Ensure error is a proper object
+        if (typeof error === 'string') {
+            error = new Error(error);
+        }
+        
         const errorInfo = {
             timestamp: new Date().toISOString(),
-            message: error.message || error.toString(),
+            message: error.message || error.toString() || 'Unknown error',
             stack: error.stack || null,
             context: context,
             severity: severity

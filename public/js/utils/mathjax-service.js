@@ -15,6 +15,7 @@ export class MathJaxService {
         this.isChrome = this.detectChrome();
         this.isRecovering = false; // Track if F5 recovery is in progress
         this.recoveryCallbacks = []; // Queue callbacks waiting for recovery
+        this.globalRecoveryLock = false; // Prevent duplicate recoveries across instances
         
         // Tab isolation for Chrome multi-tab scenarios
         this.tabId = this.generateTabId();
@@ -222,8 +223,8 @@ export class MathJaxService {
                                     navigator.userAgent.toLowerCase().includes('windows');
                     const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
                     
-                    // Chrome needs extra time for proper MathJax initialization after F5
-                    const delay = (isWindows && isChrome) ? 250 : (isWindows ? 150 : (isChrome ? 200 : 0));
+                    // Reduced delays for faster F5 recovery
+                    const delay = (isWindows && isChrome) ? 150 : (isWindows ? 100 : (isChrome ? 100 : 0));
                     
                     setTimeout(() => {
                         // FOUC Prevention: Add ready class and remove loading
@@ -361,25 +362,31 @@ export class MathJaxService {
             const preservedConfig = this.preserveMathJaxConfig();
             logger.debug('🗺 Preserved MathJax configuration for restoration');
             
-            // Clear corrupted state
+            // Clear corrupted state more thoroughly
             if (this.isChrome) {
                 if (window.MathJax) {
                     try {
+                        // Clear all MathJax internals to prevent Package conflicts
                         if (window.MathJax.startup) {
                             window.MathJax.startup.ready = null;
                             window.MathJax.startup.input = null;
                             window.MathJax.startup.output = null;
+                            window.MathJax.startup.document = null;
                         }
                         if (window.MathJax.config) delete window.MathJax.config;
+                        if (window.MathJax.loader) delete window.MathJax.loader;
+                        if (window.MathJax._.mathjax) delete window.MathJax._.mathjax;
                     } catch (e) {
-                        logger.debug('🔧 Chrome cleanup error (expected):', e.message);
+                        // Expected during cleanup
                     }
                 }
                 if (window.gc) window.gc();
             }
             
+            // Complete MathJax cleanup
             delete window.MathJax;
             delete window.mathJaxReady;
+            delete window.MathJax_;
             
             // Restore configuration
             this.restoreMathJaxConfig(preservedConfig);
@@ -401,9 +408,12 @@ export class MathJaxService {
                 async: true
             });
             
+            // Use stronger cache busting to prevent Package conflicts
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substr(2, 9);
             const cacheBuster = this.isChrome 
-                ? `reload=${Date.now()}&chrome=${Math.random().toString(36).substr(2, 9)}`
-                : `reload=${Date.now()}`;
+                ? `v=${timestamp}&chrome=${random}&clean=1`
+                : `v=${timestamp}&clean=1`;
             mathJaxScript.src = `https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js?${cacheBuster}`;
             
             logger.debug(`🔧 Loading MathJax with ${this.isChrome ? 'Chrome-specific' : 'standard'} cache busting`);
@@ -435,10 +445,15 @@ export class MathJaxService {
                         // Process queued callbacks
                         const callbacks = [...this.recoveryCallbacks];
                         this.recoveryCallbacks = [];
-                        const callbackDelay = this.isChrome ? 150 : 50;
+                        const callbackDelay = this.isChrome ? 100 : 30;
                         callbacks.forEach(callback => {
                             setTimeout(callback, callbackDelay);
                         });
+                        
+                        // Release global lock immediately after callbacks
+                        setTimeout(() => {
+                            this.globalRecoveryLock = false;
+                        }, 50);
                         
                         // Cleanup coordination
                         setTimeout(() => {
@@ -473,6 +488,8 @@ export class MathJaxService {
                     } catch (e) {
                         // Silent cleanup error
                     }
+                    // Release global lock on error
+                    this.globalRecoveryLock = false;
                 }, 1000);
                 resolve();
             };
@@ -670,25 +687,36 @@ export class MathJaxService {
      * @param {Function} reject Promise reject function
      */
     handleF5Corruption(element, resolve, reject) {
+        // Prevent duplicate recovery attempts
+        if (this.globalRecoveryLock) {
+            logger.debug('🔒 Recovery already in progress globally, queueing request');
+            this.recoveryCallbacks.push(() => {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise([element]).then(() => {
+                        this.pendingRenders.delete(element);
+                        this.completeProgressiveLoading(element, true);
+                        resolve();
+                    }).catch(() => {
+                        this.pendingRenders.delete(element);
+                        this.completeProgressiveLoading(element, false);
+                        resolve();
+                    });
+                } else {
+                    this.completeProgressiveLoading(element, false);
+                    resolve();
+                }
+            });
+            return;
+        }
+        
+        // Set global lock
+        this.globalRecoveryLock = true;
+        
         // Chrome F5 Recovery: Try lightweight approach first, fallback to script reload
         if (this.isChrome) {
             const hasOtherTabs = this.hasOtherActiveTabs();
-            logger.debug(`🔄 CHROME F5 DETECTED: ${this.isHost ? 'HOST' : 'CLIENT'} tab recovery (Other tabs: ${hasOtherTabs})`);
-            
-            // Try lightweight recovery first (much faster)
-            const lightweightSuccess = this.attemptLightweightRecovery(element);
-            if (lightweightSuccess) {
-                logger.debug('✨ Lightweight recovery successful - no script reload needed');
-                lightweightSuccess.then(resolve).catch(() => {
-                    logger.debug('❌ Lightweight recovery failed - falling back to script reload');
-                    // Fallback to script reload if lightweight fails
-                    this.performFullScriptReload(element, hasOtherTabs).then(resolve).catch(() => resolve());
-                });
-                return;
-            }
-            
-            // Fallback to full script reload if lightweight isn't applicable
-            logger.debug('🔧 Lightweight recovery not applicable - using script reload');
+            // Simplified recovery logic - direct script reload for reliability
+            logger.debug(`🔄 F5 recovery: ${this.isHost ? 'HOST' : 'CLIENT'} (${hasOtherTabs ? 'multi-tab' : 'single-tab'})`);
             this.performFullScriptReload(element, hasOtherTabs).then(resolve).catch(() => resolve());
             return;
         }
@@ -862,7 +890,7 @@ export class MathJaxService {
                 }, 300); // Show fallback after 300ms delay
                 
                 element.dataset.fallbackTimer = fallbackTimer;
-                console.log('F5 DEBUG: Progressive loading enabled for slow render');
+                // Progressive loading enabled for F5 recovery
             }
             
         } catch (e) {
@@ -920,7 +948,7 @@ export class MathJaxService {
                 element.appendChild(overlay);
                 element.dataset.hasLoadingOverlay = 'true';
                 
-                console.log('F5 DEBUG: Applied overlay without modifying innerHTML');
+                // Applied overlay without modifying innerHTML
             }
         } catch (e) {
             // Silent error handling for reduced console output
