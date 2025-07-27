@@ -338,6 +338,26 @@ export class PreviewManager {
         const questionItems = document.querySelectorAll('.question-item');
         const totalQuestions = questionItems.length;
         
+        // CRITICAL FIX: NUCLEAR CACHE CLEAR - Clear ALL caches to force fresh rendering
+        // This prevents stale cached content from causing invisible/unselectable LaTeX
+        if (this.mathJaxService) {
+            // Clear render debounce cache
+            if (this.mathJaxService.renderService && this.mathJaxService.renderService.renderDebounce) {
+                const debounceCache = this.mathJaxService.renderService.renderDebounce;
+                const initialDebounceSize = debounceCache.size;
+                debounceCache.clear(); // NUCLEAR: Clear entire debounce cache
+                logger.warn(`🧹 NUCLEAR DEBOUNCE CLEAR: Removed ${initialDebounceSize} debounce entries`);
+            }
+            
+            // Clear MathJax content cache (this is the cached rendered content)
+            if (this.mathJaxService.cacheService && this.mathJaxService.cacheService.mathJaxCache) {
+                const mathJaxCache = this.mathJaxService.cacheService.mathJaxCache;
+                const initialCacheSize = mathJaxCache.size;
+                mathJaxCache.clear(); // NUCLEAR: Clear entire MathJax cache to force fresh rendering
+                logger.warn(`🧹 NUCLEAR MATHJAX CACHE CLEAR: Removed ${initialCacheSize} cached MathJax entries - forcing fresh rendering`);
+            }
+        }
+
         // ULTRA DEBUG: Track who called updateSplitPreview
         const stack = new Error().stack;
         const caller = stack.split('\n')[2]?.trim() || 'unknown';
@@ -415,6 +435,8 @@ export class PreviewManager {
             hasOptions: !!questionData.options,
             optionsCount: questionData.options?.length || 0
         });
+        
+        
         this.renderSplitQuestionPreview(questionData);
     }
 
@@ -553,6 +575,7 @@ export class PreviewManager {
             optionsCount: data.options?.length || 0
         });
         
+        
         this.updateSplitQuestionCounter(data.questionNumber, data.totalQuestions);
         this.renderSplitQuestionText(data.question);
         this.handleSplitQuestionImage(data.image);
@@ -594,33 +617,132 @@ export class PreviewManager {
      * Render text with LaTeX support and FOUC prevention
      */
     renderSplitTextWithLatex(element, text) {
-        // FOUC Prevention: Detect LaTeX content
-        const hasLatex = text && (text.includes('$') || text.includes('\\(') || 
-                        text.includes('\\[') || text.includes('\\frac') ||
-                        text.includes('\\sqrt') || text.includes('\\sum'));
+        // FOUC Prevention: Detect LaTeX content using same logic as render service
+        const hasLatex = text && (text.includes('$$') || 
+                        text.includes('\\(') ||
+                        text.includes('\\[') ||
+                        text.includes('$') ||
+                        text.includes('\\frac') ||
+                        text.includes('\\sqrt') ||
+                        text.includes('\\sum') ||
+                        text.includes('\\int') ||
+                        text.includes('\\lim') ||
+                        text.includes('\\alpha') ||
+                        text.includes('\\beta') ||
+                        text.includes('\\gamma') ||
+                        text.includes('\\delta') ||
+                        text.includes('\\theta') ||
+                        text.includes('\\pi') ||
+                        text.includes('\\sin') ||
+                        text.includes('\\cos') ||
+                        text.includes('\\tan') ||
+                        text.includes('\\log') ||
+                        text.includes('\\ln'));
         
         const formattedContent = this.formatCodeBlocks(text);
+        logger.debug(`🔍 Preview LaTeX detection - hasLatex: ${hasLatex}, text: "${text?.substring(0, 50)}..."`);
+        
+        // Always set content first
+        element.innerHTML = formattedContent;
         
         if (hasLatex) {
+            // CRITICAL FIX: Aggressive state reset for session-based cache interference
+            element.classList.remove('mathjax-ready', 'mathjax-loading', 'tex2jax_process');
+            
+            // Also clear any cached MathJax content attributes that might interfere
+            element.removeAttribute('data-mathJax-original');
+            element.removeAttribute('data-has-loading-overlay');
+            
+            // NUCLEAR DOM CLEAR: Remove ALL MathJax-generated content and reset DOM completely
+            const existingMathJax = element.querySelectorAll('mjx-container, .MathJax, mjx-math, mjx-assistive-mml');
+            existingMathJax.forEach(mjx => mjx.remove());
+            
+            // Also clear any data attributes that MathJax might have set
+            element.removeAttribute('data-mjx-content');
+            element.removeAttribute('data-mjx-processed');
+            
             // Hide content during LaTeX processing to prevent blinking
             element.style.opacity = '0';
             element.classList.add('tex2jax_process');
-            element.innerHTML = formattedContent;
+            logger.debug('🔄 Starting MathJax processing for preview element with aggressive state reset');
             
-            // Show content after MathJax processing completes
+            // CRITICAL FIX: Add timeout fallback to prevent permanent invisibility
+            let renderCompleted = false;
+            const fallbackTimeout = setTimeout(() => {
+                if (!renderCompleted) {
+                    logger.warn('⚠️ Preview LaTeX render timeout fallback - showing content anyway');
+                    // NUCLEAR FIX: Force complete CSS override to eliminate transition interference
+                    element.style.setProperty('opacity', '1', 'important');
+                    element.style.setProperty('transition', 'none', 'important');
+                    element.style.setProperty('animation', 'none', 'important');
+                    element.classList.remove('tex2jax_process');
+                    renderCompleted = true;
+                }
+            }, 2000); // 2 second fallback timeout
+            
+            // Show content after MathJax processing completes - use fast mode for preview to avoid F5 corruption detection
             setTimeout(() => {
-                this.mathJaxService.renderElement(element)
+                // CRITICAL FIX: Use renderElement with higher retry count instead of renderElementFast for preview reliability
+                // Fast mode was causing failures in complex LaTeX scenarios in preview contexts
+                this.mathJaxService.renderElement(element, 100, 8, true) // fastMode=true, higher retries for reliability
                     .then(() => {
-                        element.style.opacity = '1';
+                        if (!renderCompleted) {
+                            // CRITICAL VALIDATION: Verify MathJax actually created visible content before declaring success
+                            const mathJaxElements = element.querySelectorAll('mjx-container, .MathJax, mjx-math');
+                            const hasActualContent = mathJaxElements.length > 0;
+                            const hasVisibleHeight = element.offsetHeight > 0;
+                            const textContent = element.textContent.trim();
+                            
+                            if (hasActualContent && hasVisibleHeight && textContent.length > 0) {
+                                logger.debug(`✅ MathJax preview rendering successful with ${mathJaxElements.length} elements`);
+                                // NUCLEAR FIX: Force complete CSS override to eliminate transition interference
+                                element.style.setProperty('opacity', '1', 'important');
+                                element.style.setProperty('transition', 'none', 'important'); // Disable transitions
+                                element.style.setProperty('animation', 'none', 'important'); // Disable animations
+                                element.classList.remove('tex2jax_process'); // Remove processing class
+                                renderCompleted = true;
+                                clearTimeout(fallbackTimeout);
+                            } else {
+                                // CRITICAL: MathJax reported success but no actual content - force fallback
+                                logger.warn(`⚠️ MathJax render reported success but no content found - MathJax: ${mathJaxElements.length}, Height: ${element.offsetHeight}px, Text: "${textContent.substring(0, 50)}..."`);
+                                // NUCLEAR FIX: Force complete CSS override
+                                element.style.setProperty('opacity', '1', 'important');
+                                element.style.setProperty('transition', 'none', 'important');
+                                element.style.setProperty('animation', 'none', 'important');
+                                element.classList.remove('tex2jax_process');
+                                renderCompleted = true;
+                                clearTimeout(fallbackTimeout);
+                            }
+                            
+                            // CRITICAL DEBUG: Check actual visual state after validation
+                            setTimeout(() => {
+                                const computedStyle = window.getComputedStyle(element);
+                                const parentComputedStyle = window.getComputedStyle(element.parentElement);
+                                const rect = element.getBoundingClientRect();
+                                
+                                logger.error(`🔍 QUESTION VISUAL STATE - Opacity: ${element.style.opacity}/${computedStyle.opacity}, Display: ${element.style.display}/${computedStyle.display}, Visible: ${element.offsetParent !== null}, Height: ${rect.height}px, MathJax: ${element.querySelectorAll('mjx-container, .MathJax').length}, Classes: ${element.className}, Parent opacity: ${element.parentElement?.style.opacity}/${parentComputedStyle.opacity}, Text: "${element.textContent.substring(0, 50)}..."`);
+                            }, 100);
+                        }
                     })
-                    .catch(() => {
-                        element.style.opacity = '1'; // Show even if MathJax fails
+                    .catch((error) => {
+                        if (!renderCompleted) {
+                            logger.debug('❌ MathJax preview rendering failed:', error);
+                            // NUCLEAR FIX: Force complete CSS override to eliminate transition interference
+                            element.style.setProperty('opacity', '1', 'important');
+                            element.style.setProperty('transition', 'none', 'important');
+                            element.style.setProperty('animation', 'none', 'important');
+                            element.classList.remove('tex2jax_process');
+                            renderCompleted = true;
+                            clearTimeout(fallbackTimeout);
+                        }
                     });
-            }, 50);
+            }, 10); // Reduced delay for faster preview updates
         } else {
-            // No LaTeX, show immediately
+            // No LaTeX, show immediately without MathJax processing
             element.style.opacity = '1';
-            element.innerHTML = formattedContent;
+            element.classList.remove('tex2jax_process'); // Remove any existing classes
+            logger.debug('📝 No LaTeX detected, showing content immediately');
+            // Content already set above
         }
     }
 
@@ -860,10 +982,35 @@ export class PreviewManager {
         
         if (!previewElement) return;
 
-        // Use centralized MathJax service for rendering
-        this.mathJaxService.renderElement(previewElement).catch(() => {
-            logger.debug('Preview MathJax rendering failed, using fallback');
+        // Clear any existing MathJax state to ensure fresh rendering
+        previewElement.classList.remove('mathjax-ready');
+        
+        // Also clear MathJax state from all child elements (options, etc.)
+        const allMathJaxElements = previewElement.querySelectorAll('.mathjax-ready, .mathjax-loading, .tex2jax_process');
+        allMathJaxElements.forEach(el => {
+            el.classList.remove('mathjax-ready', 'mathjax-loading', 'tex2jax_process');
         });
+        
+        // Clear the render debounce cache for preview elements to prevent stale entries
+        if (this.mathJaxService && this.mathJaxService.renderService && this.mathJaxService.renderService.renderDebounce) {
+            const debounceCache = this.mathJaxService.renderService.renderDebounce;
+            const keysToDelete = [];
+            for (const [key] of debounceCache.entries()) {
+                if (key.includes('preview-') || key.includes('split')) {
+                    keysToDelete.push(key);
+                }
+            }
+            keysToDelete.forEach(key => debounceCache.delete(key));
+            logger.debug(`🧹 Cleared ${keysToDelete.length} debounce cache entries for preview`);
+        }
+        
+        // Small delay for DOM stability on initial loads
+        setTimeout(() => {
+            // Use fast rendering for live preview - immediate, no delays
+            this.mathJaxService.renderElementFast(previewElement).catch(() => {
+                logger.debug('Preview MathJax rendering failed, using fallback');
+            });
+        }, 10); // 10ms delay to ensure DOM is stable
     }
 
     /**
@@ -950,6 +1097,7 @@ export class PreviewManager {
             return;
         }
         
+        
         // Clear existing options
         optionsContainer.innerHTML = '';
         
@@ -973,6 +1121,7 @@ export class PreviewManager {
             
             // Use centralized rendering method to reduce nesting
             this.renderOptionWithLatex(optionDiv, formattedContent, optionsContainer, hasLatex);
+            
             
             logger.debug(`Added option ${index}: ${option} (${isCorrect ? 'correct' : 'incorrect'}) - LaTeX: ${hasLatex}`);
         });
@@ -1119,6 +1268,15 @@ export class PreviewManager {
      * @param {HTMLElement} container - Container element
      */
     renderLatexOption(optionDiv, formattedContent, container) {
+        // CRITICAL FIX: Aggressive state reset for session-based cache interference
+        optionDiv.classList.remove('mathjax-ready', 'mathjax-loading', 'tex2jax_process');
+        
+        // Clear any cached MathJax content attributes and elements
+        optionDiv.removeAttribute('data-mathJax-original');
+        optionDiv.removeAttribute('data-has-loading-overlay');
+        const existingMathJax = optionDiv.querySelectorAll('mjx-container, .MathJax, mjx-math');
+        existingMathJax.forEach(mjx => mjx.remove());
+        
         // Hide option during LaTeX processing to prevent blinking
         optionDiv.style.opacity = '0';
         optionDiv.classList.add('tex2jax_process');
@@ -1148,12 +1306,79 @@ export class PreviewManager {
      * @param {HTMLElement} optionDiv - Option element to show
      */
     showOptionAfterMathjax(optionDiv) {
-        this.mathJaxService.renderElement(optionDiv)
+        // Check if element is still in DOM before processing
+        if (!optionDiv || !optionDiv.parentNode || !document.contains(optionDiv)) {
+            // Element was removed during rapid preview updates - skip rendering
+            return;
+        }
+        
+        // CRITICAL FIX: Add timeout fallback to prevent permanent invisibility for options
+        let renderCompleted = false;
+        const fallbackTimeout = setTimeout(() => {
+            if (!renderCompleted && optionDiv && optionDiv.parentNode && document.contains(optionDiv)) {
+                logger.warn('⚠️ Preview option LaTeX render timeout fallback - showing content anyway');
+                // NUCLEAR FIX: Force complete CSS override to eliminate transition interference
+                optionDiv.style.setProperty('opacity', '1', 'important');
+                optionDiv.style.setProperty('transition', 'none', 'important');
+                optionDiv.style.setProperty('animation', 'none', 'important');
+                optionDiv.classList.remove('tex2jax_process');
+                renderCompleted = true;
+            }
+        }, 2000); // 2 second fallback timeout
+        
+        // CRITICAL FIX: Use renderElement with higher retry count instead of renderElementFast for option reliability
+        this.mathJaxService.renderElement(optionDiv, 100, 8, true) // fastMode=true, higher retries for reliability
             .then(() => {
-                optionDiv.style.opacity = '1';
+                // Double-check element is still in DOM before setting opacity
+                if (!renderCompleted && optionDiv && optionDiv.parentNode && document.contains(optionDiv)) {
+                    // CRITICAL VALIDATION: Verify MathJax actually created visible content before declaring success
+                    const mathJaxElements = optionDiv.querySelectorAll('mjx-container, .MathJax, mjx-math');
+                    const hasActualContent = mathJaxElements.length > 0;
+                    const hasVisibleHeight = optionDiv.offsetHeight > 0;
+                    const textContent = optionDiv.textContent.trim();
+                    
+                    if (hasActualContent && hasVisibleHeight && textContent.length > 0) {
+                        logger.debug(`✅ MathJax option rendering successful with ${mathJaxElements.length} elements`);
+                        // NUCLEAR FIX: Force complete CSS override to eliminate transition interference
+                        optionDiv.style.setProperty('opacity', '1', 'important');
+                        optionDiv.style.setProperty('transition', 'none', 'important');
+                        optionDiv.style.setProperty('animation', 'none', 'important');
+                        optionDiv.classList.remove('tex2jax_process');
+                        renderCompleted = true;
+                        clearTimeout(fallbackTimeout);
+                    } else {
+                        // CRITICAL: MathJax reported success but no actual content - force fallback
+                        logger.warn(`⚠️ Option MathJax render reported success but no content found - MathJax: ${mathJaxElements.length}, Height: ${optionDiv.offsetHeight}px, Text: "${textContent.substring(0, 30)}..."`);
+                        // NUCLEAR FIX: Force complete CSS override
+                        optionDiv.style.setProperty('opacity', '1', 'important');
+                        optionDiv.style.setProperty('transition', 'none', 'important');
+                        optionDiv.style.setProperty('animation', 'none', 'important');
+                        optionDiv.classList.remove('tex2jax_process');
+                        renderCompleted = true;
+                        clearTimeout(fallbackTimeout);
+                    }
+                    
+                    // CRITICAL DEBUG: Check option visual state after validation
+                    setTimeout(() => {
+                        const computedStyle = window.getComputedStyle(optionDiv);
+                        const parentComputedStyle = window.getComputedStyle(optionDiv.parentElement);
+                        const rect = optionDiv.getBoundingClientRect();
+                        
+                        logger.error(`🔍 OPTION VISUAL STATE - Opacity: ${optionDiv.style.opacity}/${computedStyle.opacity}, Display: ${optionDiv.style.display}/${computedStyle.display}, Visible: ${optionDiv.offsetParent !== null}, Height: ${rect.height}px, MathJax: ${optionDiv.querySelectorAll('mjx-container, .MathJax').length}, Classes: ${optionDiv.className}, Container opacity: ${optionDiv.parentElement?.style.opacity}/${parentComputedStyle.opacity}, Text: "${optionDiv.textContent.substring(0, 30)}..."`);
+                    }, 100);
+                }
             })
             .catch(() => {
-                optionDiv.style.opacity = '1'; // Show even if MathJax fails
+                // Show even if MathJax fails, but only if element still exists
+                if (!renderCompleted && optionDiv && optionDiv.parentNode && document.contains(optionDiv)) {
+                    // NUCLEAR FIX: Force complete CSS override to eliminate transition interference
+                    optionDiv.style.setProperty('opacity', '1', 'important');
+                    optionDiv.style.setProperty('transition', 'none', 'important');
+                    optionDiv.style.setProperty('animation', 'none', 'important');
+                    optionDiv.classList.remove('tex2jax_process');
+                    renderCompleted = true;
+                    clearTimeout(fallbackTimeout);
+                }
             });
     }
 

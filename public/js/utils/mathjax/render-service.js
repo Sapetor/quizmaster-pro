@@ -6,6 +6,7 @@
 
 import { TIMING, logger } from '../../core/config.js';
 import { errorHandler } from '../error-handler.js';
+import { performanceMonitor } from '../performance-monitor.js';
 
 export class RenderService {
     constructor(cacheService, recoveryService) {
@@ -13,6 +14,7 @@ export class RenderService {
         this.recoveryService = recoveryService;
         this.pendingRenders = new Set();
         this.isRecovering = false; // Will be managed by recovery service
+        this.renderDebounce = new Map(); // Debounce map for rapid render prevention
     }
 
     /**
@@ -56,7 +58,19 @@ export class RenderService {
                content.includes('\\frac') ||
                content.includes('\\sqrt') ||
                content.includes('\\sum') ||
-               content.includes('\\int');
+               content.includes('\\int') ||
+               content.includes('\\lim') ||
+               content.includes('\\alpha') ||
+               content.includes('\\beta') ||
+               content.includes('\\gamma') ||
+               content.includes('\\delta') ||
+               content.includes('\\theta') ||
+               content.includes('\\pi') ||
+               content.includes('\\sin') ||
+               content.includes('\\cos') ||
+               content.includes('\\tan') ||
+               content.includes('\\log') ||
+               content.includes('\\ln');
     }
 
     /**
@@ -170,15 +184,51 @@ export class RenderService {
      * @param {Element} element - Element containing LaTeX to render
      * @param {number} timeout - Timeout for each render attempt
      * @param {number} maxRetries - Maximum retry attempts (default: 8)
+     * @param {boolean} fastMode - Skip delays for immediate rendering (preview contexts)
      * @returns {Promise<void>}
      */
-    async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 8) {
+    async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 8, fastMode = false) {
+        const startTime = Date.now();
+        const elementId = element.id || element.className || 'unknown';
+        
         return new Promise((resolve, reject) => {
             // PERFORMANCE: Early exit for non-LaTeX content (like code snippets)
             if (!this.detectLatexContent(element)) {
                 // Skip MathJax processing entirely for code snippets/plain text
+                const endTime = Date.now();
+                performanceMonitor.trackMathJaxRender(elementId, startTime, endTime, true);
                 resolve();
                 return;
+            }
+
+            // Debounce rapid renders on the same element (for live preview)
+            const now = Date.now();
+            const currentContent = element.innerHTML;
+            const contentHash = currentContent.substring(0, 50); // First 50 chars for content fingerprint
+            const debounceKey = `${elementId}_${contentHash}`;
+            const lastRender = this.renderDebounce.get(debounceKey);
+            
+            // Only debounce if this is truly rapid successive rendering of identical content
+            // CRITICAL FIX: Exclude preview contexts from debouncing to prevent F5 invisibility issues
+            const isPreviewContext = elementId.includes('preview') || elementId.includes('split');
+            const isRapidIdenticalRender = fastMode && !isPreviewContext && lastRender && 
+                                         (now - lastRender) < 50 && // Reduced from 150ms to 50ms
+                                         element.classList.contains('mathjax-ready') &&
+                                         element.innerHTML === currentContent; // Ensure content is actually identical
+            
+            if (isRapidIdenticalRender) {
+                logger.debug(`🚫 Debouncing rapid identical render for element: ${elementId} (last render: ${now - lastRender}ms ago)`);
+                resolve(); // Skip this render to prevent conflicts
+                return;
+            }
+            
+            this.renderDebounce.set(debounceKey, now);
+            
+            // Clean up old debounce entries (older than 5 seconds)
+            for (const [key, time] of this.renderDebounce.entries()) {
+                if (now - time > 5000) {
+                    this.renderDebounce.delete(key);
+                }
             }
 
             // Add to pending renders for tracking
@@ -188,48 +238,209 @@ export class RenderService {
             this.showProgressiveLoading(element);
             
             const attemptRender = (attempt = 1) => {
-                // PERFORMANCE: Use shorter timeout for normal renders
-                const renderTimeout = this.isRecovering ? timeout : Math.min(timeout, 50);
+                // PERFORMANCE: Use shorter timeout for normal renders, zero for fast mode
+                // Mobile devices need longer initial timeouts for first render
+                const isMobile = this.recoveryService.isMobile;
+                const isChrome = this.recoveryService.isChrome;
                 
-                setTimeout(() => {
+                let baseTimeout = fastMode ? 0 : (this.isRecovering ? timeout : Math.min(timeout, 50));
+                
+                // Apply mobile-specific timeout adjustments for initial render
+                if (!fastMode && isMobile && isChrome) {
+                    baseTimeout = Math.max(baseTimeout, 200); // Mobile Chrome needs minimum 200ms
+                    logger.debug('📱 Applying mobile Chrome LaTeX optimization: 200ms timeout');
+                } else if (!fastMode && isMobile) {
+                    baseTimeout = Math.max(baseTimeout, 150); // Other mobile browsers need minimum 150ms
+                    logger.debug('📱 Applying mobile LaTeX optimization: 150ms timeout');
+                } else if (!fastMode && isChrome) {
+                    // SIMPLE FIX: Reduce desktop Chrome timeout for faster LaTeX sequence rendering
+                    baseTimeout = Math.max(baseTimeout, 25); // Reduced from 75ms to 25ms for faster host rendering
+                    logger.debug('🖥️ Applying desktop Chrome LaTeX optimization: 25ms timeout');
+                }
+                
+                const renderTimeout = baseTimeout;
+                
+                const executeRender = () => {
+                    // DOM stability check - ensure element is still in DOM and valid
+                    if (!element || !element.parentNode || !document.contains(element)) {
+                        logger.debug('Element removed from DOM during render, skipping');
+                        this.pendingRenders.delete(element);
+                        this.completeProgressiveLoading(element, false);
+                        resolve();
+                        return;
+                    }
+                    
                     if (this.isAvailable()) {
-                        // MathJax is ready - attempt render
-                        window.MathJax.typesetPromise([element])
-                            .then(() => {
-                                // Render successful
-                                this.pendingRenders.delete(element);
+                        // MathJax is ready - attempt render with DOM error protection
+                        try {
+                            window.MathJax.typesetPromise([element])
+                                .then(() => {
+                                    // Render successful
+                                    // Render successful - verify element still exists
+                                    if (element && element.parentNode && document.contains(element)) {
+                                        this.pendingRenders.delete(element);
+                                        
+                                        // Cache the rendered content for instant F5 recovery
+                                        this.cacheService.cacheMathJaxContent(element);
+                                        
+                                        // Complete progressive loading - SUCCESS
+                                        this.completeProgressiveLoading(element, true);
+                                    }
+                                    
+                                    // Track successful render performance
+                                    const endTime = Date.now();
+                                    performanceMonitor.trackMathJaxRender(elementId, startTime, endTime, true);
+                                    resolve();
+                                })
+                                .catch(error => {
+                                // Check if this is a DOM manipulation error due to element removal
+                                const isDOMError = error.message && (
+                                    error.message.includes('replaceChild') ||
+                                    error.message.includes('removeChild') ||
+                                    error.message.includes('insertBefore') ||
+                                    error.message.includes('Cannot read properties of null')
+                                );
                                 
-                                // Cache the rendered content for instant F5 recovery
-                                this.cacheService.cacheMathJaxContent(element);
+                                // Check if element is still in DOM
+                                const elementInDOM = element && element.parentNode && document.contains(element);
                                 
-                                // Complete progressive loading - SUCCESS
-                                this.completeProgressiveLoading(element, true);
+                                if (isDOMError && !elementInDOM) {
+                                    // Element was removed during rendering - this is expected in live preview
+                                    logger.debug('🔄 Element removed during MathJax rendering (expected in live preview)', {
+                                        elementId: element.id || 'unknown',
+                                        error: error.message.substring(0, 50) + '...'
+                                    });
+                                    
+                                    this.pendingRenders.delete(element);
+                                    // Don't log as error - this is expected behavior
+                                    resolve(); // Resolve successfully since element removal is intentional
+                                    return;
+                                }
                                 
-                                resolve();
-                            })
-                            .catch(error => {
+                                // Log actual errors (not DOM removal)
                                 errorHandler.log(error, { 
                                     context: 'MathJax render', 
                                     attempt, 
                                     maxRetries,
-                                    elementId: element.id || 'unknown'
+                                    elementId: element.id || 'unknown',
+                                    elementInDOM
                                 });
                                 
-                                if (attempt < maxRetries) {
-                                    // Progressive backoff for render retries
-                                    const delay = attempt <= 3 ? TIMING.MATHJAX_RETRY_TIMEOUT : TIMING.MATHJAX_RETRY_TIMEOUT * 1.5;
-                                    setTimeout(() => attemptRender(attempt + 1), delay);
+                                if (attempt < maxRetries && elementInDOM) {
+                                    // Only retry if element is still in DOM
+                                    // Mobile devices need longer delays between retry attempts
+                                    const isMobile = this.recoveryService.isMobile;
+                                    const isChrome = this.recoveryService.isChrome;
+                                    
+                                    let baseDelay = attempt <= 3 ? TIMING.MATHJAX_RETRY_TIMEOUT : TIMING.MATHJAX_RETRY_TIMEOUT * 1.5;
+                                    
+                                    // Apply mobile-specific delay multipliers
+                                    if (isMobile && isChrome) {
+                                        baseDelay *= 2.0; // Mobile Chrome needs significant delay (reduced from 2.5)
+                                    } else if (isMobile) {
+                                        baseDelay *= 1.8; // Other mobile browsers need extra delay (reduced from 2.0)
+                                    } else if (isChrome) {
+                                        // SIMPLE FIX: Further reduce desktop Chrome retry delay for faster sequence rendering
+                                        baseDelay *= 0.8; // Desktop Chrome gets faster retries (reduced from 1.1)
+                                    }
+                                    
+                                    setTimeout(() => attemptRender(attempt + 1), baseDelay);
                                 } else {
                                     this.pendingRenders.delete(element);
                                     // Complete progressive loading - FAILURE
                                     this.completeProgressiveLoading(element, false);
+                                    
+                                    // Track failed render performance
+                                    const endTime = Date.now();
+                                    performanceMonitor.trackMathJaxRender(elementId, startTime, endTime, false);
                                     reject(error);
                                 }
                             });
+                        } catch (domError) {
+                            // Handle DOM errors like replaceChild failures gracefully
+                            if (domError.message.includes('replaceChild') || 
+                                domError.message.includes('removeChild') ||
+                                domError.message.includes('Cannot read properties of null')) {
+                                // DOM manipulation error - likely F5 corruption
+                                logger.debug('🚫 DOM error detected, checking for F5 corruption');
+                                this.pendingRenders.delete(element);
+                                this.completeProgressiveLoading(element, false);
+                                
+                                // If this is F5 corruption, trigger recovery immediately
+                                if (this.recoveryService && this.recoveryService.detectF5Corruption()) {
+                                    logger.debug('🔍 F5 corruption detected via DOM error - triggering immediate recovery');
+                                    setTimeout(() => {
+                                        this.recoveryService.handleF5Corruption(
+                                            element,
+                                            resolve,
+                                            reject,
+                                            this.cacheService.mathJaxCache,
+                                            (el) => this.cacheService.getCacheKey(el),
+                                            (el, success) => this.completeProgressiveLoading(el, success),
+                                            (el) => this.cacheService.cacheMathJaxContent(el),
+                                            this.pendingRenders
+                                        );
+                                    }, 50);
+                                    return;
+                                }
+                                
+                                resolve();
+                            } else {
+                                // Other errors - retry or fail
+                                throw domError;
+                            }
+                        }
                             
                     } else if (attempt < maxRetries) {
-                        // MathJax not ready yet - retry with progressive backoff
-                        const delay = attempt <= 3 ? TIMING.MATHJAX_RETRY_TIMEOUT : TIMING.MATHJAX_RETRY_TIMEOUT * 1.5;
+                        // MathJax not ready yet - check for early recovery or continue retrying
+                        const isMobile = this.recoveryService.isMobile;
+                        const isChrome = this.recoveryService.isChrome;
+                        const mathJaxExists = !!window.MathJax;
+                        const typesetExists = !!window.MathJax?.typesetPromise;
+                        
+                        // Check for early recovery conditions before continuing retries
+                        // Be more patient during fresh app loads to avoid false positive recovery triggers
+                        const timeSinceLoad = Date.now() - performance.timing.navigationStart;
+                        const isFreshAppLoad = timeSinceLoad < 5000; // Less than 5 seconds since page load
+                        
+                        const earlyMobileRecovery = isMobile && (attempt >= (isFreshAppLoad ? 10 : 6)) && mathJaxExists && !typesetExists;
+                        // CONSERVATIVE FIX: Increase desktop Chrome early recovery threshold further for fresh app loads
+                        const earlyDesktopRecovery = !isMobile && isChrome && (attempt >= (isFreshAppLoad ? 12 : 8)) && mathJaxExists && !typesetExists;
+                        const shouldTriggerEarlyRecovery = earlyMobileRecovery || earlyDesktopRecovery;
+                        
+                        if (shouldTriggerEarlyRecovery && this.recoveryService && this.recoveryService.detectF5Corruption()) {
+                            const recoveryType = earlyDesktopRecovery ? 'Desktop Chrome (early)' : 'Mobile (early)';
+                            logger.warn(`🔍 ${recoveryType} F5 corruption detected at attempt ${attempt} - initiating early recovery`);
+                            
+                            // Trigger early recovery
+                            setTimeout(() => {
+                                this.recoveryService.handleF5Corruption(
+                                    element,
+                                    resolve,
+                                    reject,
+                                    this.cacheService.mathJaxCache,
+                                    (el) => this.cacheService.getCacheKey(el),
+                                    (el, success) => this.completeProgressiveLoading(el, success),
+                                    (el) => this.cacheService.cacheMathJaxContent(el),
+                                    this.pendingRenders
+                                );
+                            }, 50);
+                            return;
+                        }
+                        
+                        // Continue retrying with progressive backoff
+                        let delay = attempt <= 3 ? TIMING.MATHJAX_RETRY_TIMEOUT : TIMING.MATHJAX_RETRY_TIMEOUT * 1.5;
+                        
+                        // Apply mobile-specific delay multipliers for loading delays
+                        if (isMobile && isChrome) {
+                            delay *= 2.5; // Mobile Chrome needs more time to load MathJax (reduced from 3.0)
+                        } else if (isMobile) {
+                            delay *= 2.0; // Other mobile browsers need extra loading time (reduced from 2.5)
+                        } else if (isChrome) {
+                            // SIMPLE FIX: Further reduce desktop Chrome loading delay for faster sequence rendering
+                            delay *= 0.9; // Desktop Chrome gets faster loading (reduced from 1.1)
+                        }
+                        
                         setTimeout(() => attemptRender(attempt + 1), delay);
                         
                     } else {
@@ -237,16 +448,41 @@ export class RenderService {
                         const mathJaxExists = !!window.MathJax;
                         const typesetExists = !!window.MathJax?.typesetPromise;
                         
-                        // Reduce error verbosity for normal gameplay delays
-                        if (maxRetries <= 5) {
-                            logger.debug(`🔄 MathJax still loading after ${maxRetries} attempts`);
-                        } else {
-                            logger.warn(`⚠️ MathJax not ready after ${maxRetries} attempts - MathJax: ${mathJaxExists}, typesetPromise: ${typesetExists}`);
+                        // Mobile devices are more aggressive about triggering recovery (but only for clear corruption)
+                        const isMobile = this.recoveryService.isMobile;
+                        const isChrome = this.recoveryService.isChrome;
+                        
+                        // Mobile gets earlier recovery only if corruption is likely, desktop gets early recovery for clear corruption
+                        // Be more patient during fresh app loads to avoid false positive recovery triggers
+                        const timeSinceLoad = Date.now() - performance.timing.navigationStart;
+                        const isFreshAppLoad = timeSinceLoad < 5000; // Less than 5 seconds since page load
+                        
+                        const earlyMobileRecovery = isMobile && (attempt >= (isFreshAppLoad ? 10 : 6)) && mathJaxExists && !typesetExists;
+                        // CONSERVATIVE FIX: Increase desktop Chrome recovery threshold further for fresh app loads
+                        const earlyDesktopRecovery = !isMobile && isChrome && (attempt >= (isFreshAppLoad ? 12 : 8)) && mathJaxExists && !typesetExists;
+                        const normalDesktopRecovery = !isMobile && (attempt >= maxRetries);
+                        const shouldTriggerRecovery = earlyMobileRecovery || earlyDesktopRecovery || normalDesktopRecovery;
+                        
+                        // Debug logging for threshold analysis
+                        if (!shouldTriggerRecovery && attempt >= 6) {
+                            logger.debug(`🔧 ${isMobile ? 'Mobile' : 'Desktop'} waiting: attempt ${attempt}/${maxRetries}, mathJax: ${mathJaxExists}, typesetPromise: ${typesetExists}`);
                         }
                         
-                        // Check for F5 corruption and handle recovery
-                        if (this.recoveryService && this.recoveryService.detectF5Corruption()) {
-                            logger.debug('🔍 F5 corruption detected - initiating recovery');
+                        if (shouldTriggerRecovery) {
+                            const recoveryType = earlyDesktopRecovery ? 'Desktop Chrome (early)' : 
+                                               earlyMobileRecovery ? 'Mobile (early)' : 
+                                               'Desktop (normal)';
+                            logger.warn(`⚠️ ${recoveryType} MathJax not ready after ${attempt} attempts - MathJax: ${mathJaxExists}, typesetPromise: ${typesetExists}`);
+                        } else {
+                            logger.debug(`🔄 MathJax still loading after ${attempt} attempts (mobile: ${isMobile})`);
+                        }
+                        
+                        // Check for F5 corruption and handle recovery (mobile gets earlier recovery)
+                        if (shouldTriggerRecovery && this.recoveryService && this.recoveryService.detectF5Corruption()) {
+                            const recoveryType = earlyDesktopRecovery ? 'Desktop Chrome (early)' : 
+                                               earlyMobileRecovery ? 'Mobile (early)' : 
+                                               'Desktop (normal)';
+                            logger.warn(`🔍 ${recoveryType} F5 corruption detected - initiating recovery`);
                             
                             // Small delay to ensure DOM stability before recovery
                             setTimeout(() => {
@@ -267,9 +503,16 @@ export class RenderService {
                         // If no corruption detected, reject with error
                         this.pendingRenders.delete(element);
                         this.completeProgressiveLoading(element, false);
-                        reject(new Error(`MathJax not ready after ${maxRetries} attempts`));
+                        reject(new Error(`${isMobile ? 'Mobile' : 'Desktop'} MathJax not ready after ${attempt} attempts`));
                     }
-                }, renderTimeout);
+                };
+                
+                // Execute immediately for fast mode, otherwise use timeout
+                if (fastMode) {
+                    executeRender();
+                } else {
+                    setTimeout(executeRender, renderTimeout);
+                }
             };
             
             attemptRender();
@@ -347,4 +590,3 @@ export class RenderService {
 }
 
 // Note: Export class only - instances should be created with proper dependencies
-export { RenderService };

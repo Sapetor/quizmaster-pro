@@ -7,12 +7,14 @@
 import { TIMING, logger } from '../../core/config.js';
 import { domUtils } from '../dom-utils.js';
 import { errorHandler } from '../error-handler.js';
+import { performanceMonitor } from '../performance-monitor.js';
 
 export class RecoveryService {
     constructor() {
         // Browser detection
         this.isWindows = this.detectWindows();
         this.isChrome = this.detectChrome();
+        this.isMobile = this.detectMobile();
         
         // Tab isolation for Chrome multi-tab scenarios
         this.tabId = this.generateTabId();
@@ -47,6 +49,16 @@ export class RecoveryService {
         const isChromium = window.chrome && window.chrome.runtime;
         const isEdge = /Edg/.test(navigator.userAgent);
         return (isChrome || isChromium) && !isEdge;
+    }
+
+    /**
+     * Detect if running on mobile device
+     * @returns {boolean}
+     */
+    detectMobile() {
+        return /Mobile|Android|iPhone|iPad|iPod|BlackBerry|Opera Mini/.test(navigator.userAgent) ||
+               (navigator.maxTouchPoints && navigator.maxTouchPoints > 1) ||
+               window.innerWidth <= 768;
     }
 
     /**
@@ -264,7 +276,7 @@ export class RecoveryService {
      * @param {Set} pendingRenders - Set of pending renders to clean up
      * @returns {Promise}
      */
-    performFullScriptReload(element, hasOtherTabs, completeProgressiveLoading, pendingRenders) {
+    performFullScriptReload(element, hasOtherTabs, completeProgressiveLoading, pendingRenders, startTime = null, elementId = null) {
         return new Promise((resolve) => {
             if (hasOtherTabs) {
                 // Multi-tab coordination logic
@@ -367,25 +379,66 @@ export class RecoveryService {
                 logger.debug('🔧 MathJax script reloaded with cache busting');
                 
                 const waitForInit = () => {
-                    if (window.MathJax && window.MathJax.typesetPromise) {
-                        logger.debug('✅ MathJax successfully reinitialized after F5 corruption');
-                        
-                        // Notify other tabs that recovery is complete
-                        this.updateRecoveryStatus('completed');
-                        
-                        // Render the element
-                        window.MathJax.typesetPromise([element]).then(() => {
-                            pendingRenders.delete(element);
-                            completeProgressiveLoading(element, true);
-                            this.isRecovering = false;
-                            resolve();
-                        }).catch(err => {
-                            logger.error('❌ Script reload render failed:', err);
-                            pendingRenders.delete(element);
-                            completeProgressiveLoading(element, false);
-                            this.isRecovering = false;
-                            resolve();
-                        });
+                    if (window.MathJax && window.MathJax.typesetPromise && window.MathJax.startup?.document) {
+                        // Wait an additional moment for full initialization
+                        setTimeout(() => {
+                            logger.debug('✅ MathJax successfully reinitialized after F5 corruption');
+                            
+                            // Simple warm-up with basic expression to verify MathJax is working
+                            const warmupElement = document.createElement('div');
+                            warmupElement.innerHTML = '$x$';
+                            warmupElement.style.position = 'absolute';
+                            warmupElement.style.top = '-1000px';
+                            document.body.appendChild(warmupElement);
+                            
+                            window.MathJax.typesetPromise([warmupElement]).then(() => {
+                                document.body.removeChild(warmupElement);
+                                logger.debug('🔥 MathJax warmed up for optimal first render');
+                            }).catch(() => {
+                                if (warmupElement.parentNode) {
+                                    document.body.removeChild(warmupElement);
+                                }
+                            });
+                            
+                            // Notify other tabs that recovery is complete
+                            this.updateRecoveryStatus('completed');
+                            
+                            // Render the element
+                            window.MathJax.typesetPromise([element]).then(() => {
+                                pendingRenders.delete(element);
+                                completeProgressiveLoading(element, true);
+                                this.isRecovering = false;
+                                
+                                // Track script reload recovery performance
+                                if (startTime && elementId) {
+                                    const endTime = Date.now();
+                                    performanceMonitor.trackF5Recovery('script-reload', startTime, endTime, { 
+                                        elementId, 
+                                        method: 'script-reload',
+                                        hasOtherTabs,
+                                        isChrome: this.isChrome
+                                    });
+                                }
+                                resolve();
+                            }).catch(err => {
+                                logger.error('❌ Script reload render failed:', err);
+                                pendingRenders.delete(element);
+                                completeProgressiveLoading(element, false);
+                                this.isRecovering = false;
+                                
+                                // Track failed script reload recovery
+                                if (startTime && elementId) {
+                                    const endTime = Date.now();
+                                    performanceMonitor.trackF5Recovery('script-reload-failed', startTime, endTime, { 
+                                        elementId, 
+                                        method: 'script-reload',
+                                        error: err.message,
+                                        hasOtherTabs,
+                                        isChrome: this.isChrome
+                                    });
+                                }
+                                resolve();
+                            });
                         
                         // Process queued callbacks
                         const callbacks = [...this.recoveryCallbacks];
@@ -409,6 +462,7 @@ export class RecoveryService {
                                 logger.debug('Recovery cleanup error (not critical):', e.message);
                             }
                         }, 2000);
+                        }, 150); // Wait 150ms for full MathJax initialization
                     } else {
                         const pollInterval = this.isChrome ? 150 : 100;
                         setTimeout(waitForInit, pollInterval);
@@ -455,6 +509,8 @@ export class RecoveryService {
      * @param {Set} pendingRenders - Set of pending renders to clean up
      */
     handleF5Corruption(element, resolve, reject, mathJaxCache, getCacheKey, completeProgressiveLoading, cacheMathJaxContent, pendingRenders) {
+        const startTime = Date.now();
+        const elementId = element.id || element.className || 'unknown';
         // Try instant cache recovery first
         const cacheKey = getCacheKey(element);
         if (mathJaxCache.has(cacheKey)) {
@@ -463,6 +519,13 @@ export class RecoveryService {
             element.innerHTML = cachedContent;
             pendingRenders.delete(element);
             completeProgressiveLoading(element, true);
+            
+            // Track cache recovery performance
+            const endTime = Date.now();
+            performanceMonitor.trackF5Recovery('cache-recovery', startTime, endTime, { 
+                elementId, 
+                method: 'cache' 
+            });
             resolve();
             return;
         }
@@ -497,7 +560,7 @@ export class RecoveryService {
         if (this.isChrome) {
             const hasOtherTabs = this.hasOtherActiveTabs();
             logger.debug(`🔄 F5 recovery: ${this.isHost ? 'HOST' : 'CLIENT'} (${hasOtherTabs ? 'multi-tab' : 'single-tab'})`);
-            this.performFullScriptReload(element, hasOtherTabs, completeProgressiveLoading, pendingRenders).then(resolve).catch(() => resolve());
+            this.performFullScriptReload(element, hasOtherTabs, completeProgressiveLoading, pendingRenders, startTime, elementId).then(resolve).catch(() => resolve());
             return;
         }
         
@@ -537,17 +600,65 @@ export class RecoveryService {
     }
 
     /**
-     * Detect F5 corruption signature
+     * Detect F5 corruption signature (enhanced for mobile)
      * @returns {boolean} True if F5 corruption is detected
      */
     detectF5Corruption() {
-        // F5 CORRUPTION DETECTION: Check for the exact corruption signature
-        // Corruption pattern: startup=true, document=false, typesetPromise=false
+        // CONSERVATIVE F5 CORRUPTION DETECTION: Avoid false positives during normal initialization
         const hasStartup = !!(window.MathJax && window.MathJax.startup);
         const hasDocument = !!(window.MathJax && window.MathJax.startup && window.MathJax.startup.document);
         const hasTypesetPromise = !!(window.MathJax && window.MathJax.typesetPromise);
+        const startupState = window.MathJax?.startup?.document?.state?.() || 0;
         
-        return hasStartup && !hasDocument && !hasTypesetPromise;
+        // Time since page load - avoid false positives during initial load
+        const timeSinceLoad = Date.now() - performance.timing.navigationStart;
+        const isRecentLoad = timeSinceLoad < 2000; // Less than 2 seconds since page load
+        const isVeryRecentLoad = timeSinceLoad < 5000; // Less than 5 seconds since page load (for fresh app loads)
+        
+        // Log detailed state for debugging
+        if (hasStartup || window.MathJax) {
+            logger.debug('🔍 MathJax corruption check:', {
+                hasStartup,
+                hasDocument, 
+                hasTypesetPromise,
+                startupState,
+                timeSinceLoad,
+                isRecentLoad,
+                isVeryRecentLoad,
+                mathJaxExists: !!window.MathJax,
+                isChrome: this.isChrome
+            });
+        }
+        
+        // ULTRA-CONSERVATIVE: Only detect corruption if MathJax has been stuck for a while
+        // Exclude fresh app loads which can look like corruption but are just slow initialization
+        // Classic F5 corruption: startup=true, document=false, typesetPromise=false AND enough time has passed
+        const classicCorruption = hasStartup && !hasDocument && !hasTypesetPromise && !isRecentLoad && !isVeryRecentLoad;
+        
+        // Mobile-specific corruption patterns (only after sufficient time)
+        const mobilePartialCorruption = this.isMobile && hasStartup && hasDocument && !hasTypesetPromise && startupState < 8 && !isRecentLoad;
+        const mobileSlowCorruption = this.isMobile && hasStartup && !hasTypesetPromise && (timeSinceLoad > 4000); // Increased threshold
+        const mobileIncompleteCorruption = this.isMobile && window.MathJax && !window.MathJax.typesetPromise && !window.MathJax.tex && !isRecentLoad;
+        
+        const isCorrupted = classicCorruption || mobilePartialCorruption || mobileSlowCorruption || mobileIncompleteCorruption;
+        
+        if (isCorrupted) {
+            logger.warn('🚨 MathJax corruption detected (conservative check):', {
+                type: classicCorruption ? 'classic' : 
+                      mobilePartialCorruption ? 'partial' :
+                      mobileSlowCorruption ? 'slow' : 'incomplete',
+                hasStartup,
+                hasDocument,
+                hasTypesetPromise,
+                startupState,
+                timeSinceLoad,
+                isRecentLoad,
+                isVeryRecentLoad,
+                device: this.isMobile ? 'mobile' : 'desktop'
+            });
+        }
+        
+        return isCorrupted;
     }
 
     /**
