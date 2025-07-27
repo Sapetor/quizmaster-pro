@@ -145,16 +145,18 @@
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
-/* Question counter in navigation bar */
+/* Question counter in navigation bar - Compact design */
 #preview-question-counter-split {
     /* font-size handled by variables.css utility class for global scaling */
     font-weight: 700;
     color: var(--text-primary);
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
-    padding: 8px 16px;
+    border-radius: 12px; /* Reduced border radius for compact design */
+    padding: 4px 12px; /* Reduced padding for better space efficiency */
     backdrop-filter: blur(8px);
+    font-size: 0.75rem; /* Smaller font size to save space */
+    white-space: nowrap; /* Prevent text wrapping */
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
     min-width: 180px;
     max-width: 220px;
@@ -247,7 +249,7 @@
     text-align: center;
     font-size: 1.3rem;
     margin-bottom: 20px;
-    color: var(--text-secondary);
+    color: white;
     font-weight: 600;
 }
 
@@ -374,7 +376,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-width: 500px;
+    max-width: 95%; /* Use maximum available width for optimal space usage */
     margin: 0;
     align-items: flex-start; /* Left-align the checkboxes */
     text-align: left;
@@ -384,7 +386,7 @@
 /* Only preview-specific adjustments needed here */
 .preview-content .player-checkbox-options,
 .preview-content-split .player-checkbox-options {
-    max-width: 500px;
+    max-width: 700px; /* Updated to match above */
 }
 
 /* LaTeX Processing States */
@@ -883,14 +885,17 @@ pre code {
 
 /* ===== UI IMPROVEMENTS FOR BETTER PREVIEW AND DARK MODE ===== */
 
-/* Enhanced Preview Content Background */
+/* Enhanced Preview Content Background - Maximized space for content */
 .preview-content,
 .preview-content-split {
     background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary-gradient) 100%);
     border-radius: var(--border-radius-medium);
-    padding: 30px;
+    padding: 12px; /* Further reduced for maximum content space utilization */
     color: white;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    width: 100%; /* Ensure full width usage */
+    margin: 0; /* Remove any default margins */
+    box-sizing: border-box; /* Include padding in width calculation */
 }
 
 [data-theme="dark"] .preview-content,
@@ -900,13 +905,13 @@ pre code {
     box-shadow: 0 10px 30px rgba(0,0,0,0.6);
 }
 
-/* Enhanced Preview Player Options */
+/* Enhanced Preview Player Options - Increased width for better layout */
 .preview-content .player-options,
 .preview-content-split .player-options {
     display: flex;
     flex-direction: column;
     align-items: center;
-    max-width: 600px;
+    max-width: 95%; /* Use maximum available width for better space utilization */
     margin: 0 auto;
     width: 100%;
 }
@@ -925,7 +930,7 @@ pre code {
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     min-height: 55px;
     width: 100%;
-    max-width: 500px;
+    max-width: 95%; /* Use maximum available width for optimal space usage */
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -1133,13 +1138,13 @@ pre code {
     border-color: rgba(96, 165, 250, 0.6);
 }
 
-/* Enhanced Preview True/False Options */
+/* Enhanced Preview True/False Options - Increased width for better layout */
 .preview-content .true-false-options,
 .preview-content-split .true-false-options {
     display: flex;
     gap: 15px;
     justify-content: center;
-    max-width: 600px;
+    max-width: 95%; /* Use maximum available width for consistent layout */
     margin: 0 auto;
     width: 100%;
 }
@@ -1157,7 +1162,7 @@ pre code {
     margin: 10px 0;
     min-height: 60px;
     flex: 1;
-    max-width: 250px;
+    max-width: 350px; /* Increased from 250px for better proportion */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1402,28 +1407,95 @@ pre code {
     text-shadow: 0 2px 8px rgba(0,0,0,0.6);
 }
 
-/* Enhanced Preview Navigation Bar */
+/* Enhanced Preview Navigation Bar - Fixed layout and spacing */
+/* Enhanced Preview Navigation Bar - Fixed layout and clipping prevention */
 .preview-navigation-bar {
     background: rgba(0,0,0,0.08);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid var(--bg-glass-light);
     border-radius: var(--border-radius-small);
-    padding: 12px 20px;
+    padding: 6px 8px; /* Further reduced padding to prevent overflow */
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 20px;
-    margin: 0 15px;
-    margin-bottom: 15px;
+    gap: 8px; /* Minimal gap to maximize space usage */
+    margin: 0 5px; /* Minimal margins for maximum content width */
+    margin-bottom: 8px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    min-height: 40px; /* Reduced minimum height for better space efficiency */
+    flex-wrap: nowrap; /* Prevent wrapping to maintain layout */
+    overflow: hidden; /* Prevent content from overflowing container */
+    width: calc(100% - 10px); /* Ensure full width utilization minus margins */
+    box-sizing: border-box; /* Include padding and border in width calculation */
 }
 
-/* Navigation Buttons Section */
+/* Responsive navigation for smaller preview areas */
+@media (max-width: 600px) {
+    .preview-navigation-bar {
+        padding: 4px 6px;
+        gap: 4px;
+        margin: 0 2px;
+        font-size: 0.7rem;
+    }
+    
+    .nav-btn {
+        padding: 3px 6px;
+        font-size: 0.7rem;
+        border-radius: 3px;
+    }
+    
+    .nav-btn.edit-btn {
+        max-width: 80px;
+    }
+    
+    #preview-question-counter-split {
+        padding: 3px 8px;
+        font-size: 0.7rem;
+        border-radius: 8px;
+    }
+}
+
+/* Ultra compact mode for very narrow spaces */
+.preview-navigation-bar.compact {
+    padding: 2px 4px;
+    gap: 2px;
+    margin: 0;
+    min-height: 32px;
+}
+
+.preview-navigation-bar.compact .nav-btn {
+    padding: 2px 4px;
+    font-size: 0.65rem;
+}
+
+.preview-navigation-bar.compact .nav-btn.edit-btn {
+    max-width: 60px;
+}
+
+.preview-navigation-bar.compact #preview-question-counter-split {
+    padding: 2px 6px;
+    font-size: 0.65rem;
+    border-radius: 6px;
+}
+
+/* Navigation Buttons Section - Improved space management */
 .preview-nav-section {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px; /* Reduced gap for better space utilization */
+    min-width: 0; /* Allow flex shrinking */
+    flex: 1; /* Allow sections to grow and use available space */
+    justify-content: flex-start; /* Left navigation section */
+}
+
+.preview-nav-section:last-child {
+    justify-content: flex-end; /* Right navigation section */
+}
+
+.preview-nav-section.center {
+    justify-content: center; /* Center section for question counter */
+    flex: 2; /* Give more space to center section */
 }
 
 [data-theme="dark"] .preview-navigation-bar {
@@ -1431,24 +1503,30 @@ pre code {
     border: 1px solid rgba(96, 165, 250, 0.2);
 }
 
-/* Enhanced Navigation Buttons */
+/* Enhanced Navigation Buttons - Ultra compact to prevent overflow */
 .nav-btn {
     background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,0.3);
     color: white;
-    padding: 8px 16px;
-    border-radius: 8px;
+    padding: 4px 8px; /* Ultra compact padding to prevent overflow */
+    border-radius: 4px; /* Smaller radius for compact design */
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.75rem; /* Smaller font to fit more content */
     font-weight: 600;
     transition: all 0.3s ease;
     font-family: Inter, sans-serif;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 2px; /* Minimal gap for compact layout */
+    white-space: nowrap; /* Prevent text wrapping */
+    overflow: hidden; /* Prevent content overflow */
+    text-overflow: ellipsis; /* Add ellipsis if text is too long */
+    min-width: 0; /* Allow flex shrinking */
+    flex-shrink: 1; /* Allow buttons to shrink if needed */
     box-shadow: 0 2px 8px var(--shadow-light);
+    white-space: nowrap; /* Prevent text wrapping */
 }
 
 [data-theme="dark"] .nav-btn {
@@ -1474,12 +1552,16 @@ pre code {
     transform: none;
 }
 
-/* Enhanced Edit Question Button */
+/* Enhanced Edit Question Button - Overflow protection */
 .nav-btn.edit-btn {
     background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 152, 0, 0.15) 100%);
     border: 1px solid rgba(255, 193, 7, 0.4);
     color: #ffd700;
     font-weight: 700;
+    max-width: 120px; /* Prevent excessive width */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 [data-theme="dark"] .nav-btn.edit-btn {

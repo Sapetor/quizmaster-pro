@@ -36,13 +36,11 @@
 header {
     position: sticky;
     top: 0;
-    background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     z-index: 100;
     padding: 12px 20px;
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
     transition: var(--transition-smooth);
+    /* Theme-specific backgrounds defined below */
 }
 
 [data-theme="dark"] header {
@@ -63,6 +61,8 @@ header {
     gap: 16px;
     flex-wrap: wrap;
     padding: 8px 0;
+    background: transparent; /* Ensure no background interference */
+    transition: var(--transition-smooth);
 }
 
 /* Host Container Layout System */
@@ -137,16 +137,20 @@ header {
 }
 
 /* Quiz Preview Section */
+/* Quiz Preview Section - Optimized for better space utilization */
 .quiz-preview-section {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 30px;
+    padding: 15px; /* Reduced from 30px for better space utilization */
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     position: relative;
+    /* Ensure full width usage in split-screen mode */
+    width: 100%;
+    min-width: 0; /* Allow shrinking if needed */
 }
 
 /* When in non-split mode, hide preview section styling */
