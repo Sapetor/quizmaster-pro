@@ -422,12 +422,12 @@ export class QuizManager {
         // Translate all the newly added content
         if (questionsContainer) {
             translationManager.translateContainer(questionsContainer);
-            logger.debug('Translated entire questions container after quiz load');
+            // logger.debug('Translated entire questions container after quiz load');
         }
         
         // Also translate the entire page to catch any buttons/elements outside the container
         translationManager.translatePage();
-        logger.debug('Translated entire page after quiz load');
+        // logger.debug('Translated entire page after quiz load');
         
         // Render math if present - use proper MathJax readiness detection instead of hardcoded delays
         this.renderMathForLoadedQuiz();
@@ -454,7 +454,7 @@ export class QuizManager {
         
         // Translate the individual question element after populating data
         translationManager.translateContainer(questionElement);
-        logger.debug('Translated individual question element');
+        // logger.debug('Translated individual question element');
         
         // Debug: Check if translation keys are showing as actual text
         const problemElements = questionElement.querySelectorAll('*');

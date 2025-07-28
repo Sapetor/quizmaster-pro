@@ -69,7 +69,7 @@
 
 /* Host Game Screen */
 .host-game-container {
-    max-width: 1600px; /* Use same width for all questions for consistency */
+    max-width: min(1600px, 95vw); /* Responsive width with fallback */
     margin: 0 auto;
     padding: 20px;
     display: flex;
@@ -89,7 +89,7 @@
     overflow: hidden;
     margin-left: auto;
     margin-right: auto;
-    max-width: 1600px; /* Consistent width for all questions */
+    max-width: min(1600px, 95vw); /* Responsive width with fallback */
 }
 
 /* Apply center alignment only to specific elements that need it */
@@ -305,7 +305,7 @@
     flex-direction: column;
     gap: 16px;
     margin: 30px 0;
-    max-width: 800px;
+    max-width: min(800px, 90vw);
     margin-left: auto;
     margin-right: auto;
 }
@@ -534,7 +534,7 @@
 /* Player Game Screen */
 .player-game-container {
     width: 100%;
-    max-width: 900px;
+    max-width: min(900px, 95vw);
     margin: 0 auto;
     padding: 20px;
     display: flex;
@@ -596,7 +596,7 @@
     gap: 16px;
     margin: 0;
     align-items: center;
-    max-width: 600px;
+    max-width: min(600px, 90vw);
     margin: 0 auto;
 }
 
@@ -622,7 +622,7 @@
     border: none;
     outline: none;
     width: 100%;
-    max-width: 500px;
+    max-width: min(500px, 85vw);
 }
 
 /* All player options are now left-aligned by default - removed redundant :has(pre) rule */
@@ -780,7 +780,7 @@
     padding: 32px;
     margin: 24px auto;
     box-shadow: var(--shadow-md);
-    max-width: 1400px;
+    max-width: min(1400px, 95vw);
     width: 100%;
 }
 
@@ -1169,7 +1169,7 @@
 
 /* Leaderboard Container */
 .leaderboard-container {
-    max-width: 1400px;
+    max-width: min(1400px, 95vw);
     margin: 0 auto;
     padding: 40px 20px;
     display: flex;
@@ -1807,6 +1807,321 @@
     border-color: rgba(239, 68, 68, 0.4);
 }
 
+/* === MODAL FEEDBACK SYSTEM === */
+
+/* Modal overlay for feedback that prevents scrolling issues */
+.feedback-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+
+.feedback-modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Modal feedback container */
+.feedback-modal {
+    background: var(--glass-medium);
+    backdrop-filter: var(--blur-medium);
+    border: 2px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    transform: scale(0.8) translateY(20px);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 90vw;
+    min-width: 300px;
+    position: relative;
+    overflow: hidden;
+}
+
+.feedback-modal-overlay.active .feedback-modal {
+    transform: scale(1) translateY(0);
+}
+
+/* Animated background gradient for modal */
+.feedback-modal::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.1;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    z-index: -1;
+}
+
+/* Modal feedback states */
+.feedback-modal.correct {
+    border-color: var(--color-success-500);
+    box-shadow: 0 20px 60px rgba(16, 185, 129, 0.4);
+}
+
+.feedback-modal.correct::before {
+    background: linear-gradient(135deg, 
+        rgba(16, 185, 129, 0.2) 0%, 
+        rgba(5, 150, 105, 0.1) 100%);
+    opacity: 1;
+}
+
+.feedback-modal.incorrect {
+    border-color: var(--color-error-500);
+    box-shadow: 0 20px 60px rgba(239, 68, 68, 0.4);
+}
+
+.feedback-modal.incorrect::before {
+    background: linear-gradient(135deg, 
+        rgba(239, 68, 68, 0.2) 0%, 
+        rgba(220, 38, 38, 0.1) 100%);
+    opacity: 1;
+}
+
+/* Modal feedback message styling */
+.feedback-modal .feedback-message {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.feedback-modal .feedback-icon {
+    font-size: 2.2rem;
+    animation: feedbackBounce 0.6s ease-out;
+}
+
+.feedback-modal.correct .feedback-message {
+    color: var(--color-success-500);
+}
+
+.feedback-modal.correct .feedback-icon {
+    color: var(--color-success-500);
+}
+
+.feedback-modal.incorrect .feedback-message {
+    color: var(--color-error-500);
+}
+
+.feedback-modal.incorrect .feedback-icon {
+    color: var(--color-error-500);
+}
+
+/* Modal score display styling */
+.feedback-modal .score-display {
+    background: var(--glass-light);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px 24px;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-top: 16px;
+    color: var(--text-primary);
+    display: inline-block;
+    min-width: 140px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.feedback-modal.correct .score-display {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: var(--color-success-500);
+}
+
+.feedback-modal.incorrect .score-display {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: var(--color-error-500);
+}
+
+/* Modal animations */
+@keyframes feedbackBounce {
+    0% {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Confetti animation for correct answers */
+.feedback-modal.correct {
+    overflow: visible;
+}
+
+.feedback-modal.correct::after {
+    content: '🎉';
+    position: absolute;
+    font-size: 1.5rem;
+    animation: confettiFloat 2s ease-out infinite;
+    opacity: 0.8;
+}
+
+@keyframes confettiFloat {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+    20% {
+        opacity: 1;
+    }
+    80% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-30px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Dark theme modal adjustments */
+[data-theme="dark"] .feedback-modal {
+    background: rgba(15, 23, 42, 0.95);
+    border-color: rgba(96, 165, 250, 0.3);
+}
+
+[data-theme="dark"] .feedback-modal .feedback-message {
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .feedback-modal.correct .feedback-message,
+[data-theme="dark"] .feedback-modal.correct .feedback-icon {
+    color: #22c55e;
+}
+
+[data-theme="dark"] .feedback-modal.incorrect .feedback-message,
+[data-theme="dark"] .feedback-modal.incorrect .feedback-icon {
+    color: #f87171;
+}
+
+[data-theme="dark"] .feedback-modal .score-display {
+    background: rgba(15, 23, 42, 0.8);
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .feedback-modal.correct .score-display {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.4);
+    color: #22c55e;
+}
+
+[data-theme="dark"] .feedback-modal.incorrect .score-display {
+    background: rgba(248, 113, 113, 0.2);
+    border-color: rgba(248, 113, 113, 0.4);
+    color: #f87171;
+}
+
+/* Light theme modal adjustments */
+[data-theme="light"] .feedback-modal {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.15);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .feedback-modal .feedback-message {
+    color: #1e293b;
+}
+
+[data-theme="light"] .feedback-modal.correct .feedback-message,
+[data-theme="light"] .feedback-modal.correct .feedback-icon {
+    color: #059669;
+}
+
+[data-theme="light"] .feedback-modal.incorrect .feedback-message,
+[data-theme="light"] .feedback-modal.incorrect .feedback-icon {
+    color: #dc2626;
+}
+
+[data-theme="light"] .feedback-modal .score-display {
+    background: rgba(248, 250, 252, 0.9);
+    color: #1e293b;
+}
+
+[data-theme="light"] .feedback-modal.correct .score-display {
+    background: rgba(240, 253, 244, 0.9);
+    border-color: rgba(5, 150, 105, 0.3);
+    color: #059669;
+}
+
+[data-theme="light"] .feedback-modal.incorrect .score-display {
+    background: rgba(254, 242, 242, 0.9);
+    border-color: rgba(220, 38, 38, 0.3);
+    color: #dc2626;
+}
+
+/* Mobile optimizations for modal feedback */
+@media (max-width: 768px) {
+    .feedback-modal {
+        margin: 20px;
+        padding: 24px 20px;
+        max-width: calc(100vw - 40px);
+        min-width: 280px;
+    }
+    
+    .feedback-modal .feedback-message {
+        font-size: 1.5rem;
+        margin-bottom: 12px;
+    }
+    
+    .feedback-modal .feedback-icon {
+        font-size: 1.8rem;
+    }
+    
+    .feedback-modal .score-display {
+        padding: 16px 20px;
+        font-size: 1.2rem;
+        min-width: 120px;
+    }
+}
+
+@media (max-width: 480px) {
+    .feedback-modal {
+        margin: 15px;
+        padding: 20px 16px;
+        border-radius: 16px;
+    }
+    
+    .feedback-modal .feedback-message {
+        font-size: 1.3rem;
+        gap: 8px;
+    }
+    
+    .feedback-modal .feedback-icon {
+        font-size: 1.5rem;
+    }
+    
+    .feedback-modal .score-display {
+        padding: 12px 16px;
+        font-size: 1.1rem;
+        margin-top: 12px;
+    }
+}
+
 /* Animations */
 @keyframes pulse {
     0%, 100% { transform: scale(1); }
@@ -1828,7 +2143,7 @@
 @media (max-width: 768px) {
     /* Host Game Screen */
     .question-display {
-        padding: 24px 20px;
+        padding: 16px 12px;
         margin: 10px;
     }
     
@@ -1844,7 +2159,7 @@
     
     #timer {
         font-size: 1.4rem;
-        padding: 10px 20px;
+        padding: 8px 16px;
     }
     
     .options-grid {
@@ -1854,7 +2169,7 @@
     }
     
     .option-display {
-        padding: 16px 20px;
+        padding: 12px 16px;
         font-size: 1.1rem;
         min-height: 60px;
     }
@@ -1893,12 +2208,12 @@
     
     /* Player Game Screen */
     .player-game-container {
-        padding: 16px;
+        padding: 12px;
         gap: 20px;
     }
     
     .player-question-area {
-        padding: 24px 20px;
+        padding: 16px 12px;
     }
     
     #player-question-text {
@@ -1912,14 +2227,14 @@
     }
     
     .player-option {
-        padding: 16px;
+        padding: 12px;
         font-size: 1rem;
         min-height: 60px;
         max-width: 100%;
     }
     
     .player-answer-type {
-        padding: 20px;
+        padding: 16px;
     }
     
     /* True/False Mobile */
@@ -1929,7 +2244,7 @@
     }
     
     #player-true-false .tf-option {
-        padding: 20px;
+        padding: 16px;
         font-size: 1.2rem;
         min-height: 80px;
     }
@@ -1977,7 +2292,7 @@
 
 @media (max-width: 480px) {
     .question-display {
-        padding: 20px 16px;
+        padding: 16px 12px;
     }
     
     #current-question {
@@ -1991,7 +2306,7 @@
     }
     
     .player-option {
-        padding: 14px;
+        padding: 12px;
         font-size: 0.95rem;
         min-height: 50px;
     }
@@ -2027,4 +2342,388 @@
     .host-game-container.has-code {
         padding: 12px;
     }
+}
+
+/* === GAME STATE UI MANAGEMENT === */
+
+/* Immersive Game Mode - Hide non-essential UI during active gameplay */
+.game-state-playing {
+    /* Hide main header during gameplay for maximum screen space */
+    header {
+        transform: translateY(-100%);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s ease-in-out;
+    }
+    
+    /* Hide horizontal toolbar during gameplay */
+    .horizontal-toolbar {
+        transform: translateY(-100%);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s ease-in-out;
+    }
+    
+    /* Adjust container to account for hidden header */
+    .container {
+        padding-top: 0;
+        transition: padding-top 0.3s ease-in-out;
+    }
+    
+    /* Maximize game area */
+    .host-game-container,
+    .player-game-container {
+        height: 100dvh;
+        padding-top: 20px;
+        transition: all 0.3s ease-in-out;
+    }
+}
+
+/* Game State: Waiting for players (lobby) - Show all UI */
+.game-state-lobby {
+    /* Keep all UI visible during lobby */
+    header {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: all;
+        transition: all 0.3s ease-in-out;
+    }
+    
+    .horizontal-toolbar {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: all;
+        transition: all 0.3s ease-in-out;
+    }
+}
+
+/* Game State: Editing mode - Show all UI with enhanced toolbar */
+.game-state-editing {
+    /* Full UI visibility for editing */
+    header {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: all;
+        transition: all 0.3s ease-in-out;
+    }
+    
+    .horizontal-toolbar {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: all;
+        transition: all 0.3s ease-in-out;
+        background: var(--glass-strong);
+        backdrop-filter: var(--blur-strong);
+    }
+}
+
+/* Game State: Results/Leaderboard - Minimal UI with room for celebration */
+.game-state-results {
+    /* Keep essential UI but optimize for results display */
+    header {
+        transform: translateY(0);
+        opacity: 0.7;
+        pointer-events: all;
+        transition: all 0.3s ease-in-out;
+    }
+    
+    .horizontal-toolbar {
+        transform: translateY(-100%);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s ease-in-out;
+    }
+    
+    /* Optimize for confetti and celebration */
+    .host-game-container,
+    .player-game-container {
+        padding-top: 60px;
+        transition: all 0.3s ease-in-out;
+    }
+}
+
+/* Quick-reveal UI controls for gameplay */
+.game-ui-reveal {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 9998;
+    display: none;
+    opacity: 0;
+    transition: all 0.3s ease-in-out;
+}
+
+.game-state-playing .game-ui-reveal {
+    display: flex;
+    gap: 8px;
+}
+
+.game-state-playing.ui-revealed .game-ui-reveal {
+    opacity: 1;
+}
+
+.game-state-playing.ui-revealed header {
+    transform: translateY(0);
+    opacity: 0.9;
+    pointer-events: all;
+}
+
+/* Floating action controls for essential functions during gameplay */
+.floating-controls {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9997;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease-in-out;
+}
+
+.game-state-playing .floating-controls {
+    display: flex;
+}
+
+.game-state-playing.show-floating-controls .floating-controls {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.floating-control-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease-in-out;
+}
+
+.floating-control-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Progressive UI disclosure for different screen sizes */
+@media (max-width: 768px) {
+    .game-state-playing {
+        /* Even more aggressive hiding on mobile */
+        header {
+            transform: translateY(-100%);
+        }
+        
+        .horizontal-toolbar {
+            transform: translateY(-100%);
+        }
+        
+        /* Maximize mobile screen real estate */
+        .host-game-container,
+        .player-game-container {
+            height: 100dvh;
+            padding: 5px 10px; /* Reduce vertical padding for more content space */
+            gap: 12px; /* Reduce gap between main container elements */
+            overflow-y: auto; /* Allow scrolling only when necessary */
+        }
+        
+        /* Question header stays but becomes more compact */
+        .question-header {
+            padding: 8px 12px;
+            background: var(--glass-medium);
+            backdrop-filter: var(--blur-medium);
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        
+        /* Ultra-compact player question area for mobile gameplay */
+        .player-question-area {
+            padding: 12px 10px; /* Minimal padding for maximum content space */
+            margin-bottom: 10px; /* Reduce gaps between elements */
+        }
+        
+        /* Compact spacing for player options on mobile */
+        .player-options {
+            gap: 8px; /* Reduce gap between options for better space utilization */
+        }
+        
+        /* Completely eliminate legacy feedback space on mobile */
+        .feedback.hidden,
+        #answer-feedback.hidden {
+            display: none !important; /* Force complete removal from layout */
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+        }
+        
+        /* Also ensure question info is compact */
+        .question-info {
+            margin-bottom: 8px; /* Reduce spacing from question counter */
+        }
+        
+        /* Ensure all hidden answer types take no space */
+        .player-answer-type[style*="display: none"],
+        .player-answer-type:not(.active) {
+            display: none !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        /* 🎯 ULTRATHINK SMART SOLUTION: Content-aware mobile layout */
+        
+        /* Hide ALL interfering elements during mobile gameplay */
+        .container.game-state-playing,
+        .game-state-playing #feedback-modal-overlay,
+        .game-state-playing header,
+        .game-state-playing .horizontal-toolbar,
+        .game-state-playing .left-toolbar {
+            display: none !important;
+        }
+        
+        /* Default: Short content (LaTeX, simple text) - Fixed positioning for immersive experience */
+        .game-state-playing .player-game-container {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100dvh !important;
+            margin: 0 !important;
+            padding: 10px !important;
+            background: var(--bg-primary) !important;
+            z-index: 9999 !important;
+            overflow-y: auto !important;
+            box-sizing: border-box !important;
+        }
+        
+        /* Tall content (code snippets, images) - Natural scrolling with full body height */
+        .game-state-playing.tall-content .player-game-container {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: auto !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 100dvh !important;
+            padding: 15px !important;
+            z-index: 9999 !important;
+        }
+        
+        /* Ensure body allows natural scrolling for tall content */
+        .game-state-playing.tall-content {
+            overflow-y: auto !important;
+            height: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+        
+        /* Enhance scrolling smoothness for tall content */
+        .game-state-playing.tall-content .player-game-container {
+            scroll-behavior: smooth !important;
+            overscroll-behavior: contain !important;
+            touch-action: pan-y !important;
+        }
+        
+        /* Prevent bounce scrolling for short content */
+        .game-state-playing:not(.tall-content) {
+            overscroll-behavior: none !important;
+            touch-action: none !important;
+        }
+        
+        /* Code snippet specific optimizations */
+        .game-state-playing.has-code .player-game-container {
+            padding: 10px !important;
+        }
+        
+        .game-state-playing.has-code .question-content pre,
+        .game-state-playing.has-code .question-content code {
+            font-size: 0.85rem !important;
+            line-height: 1.4 !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+        }
+        
+        /* Image content optimizations */
+        .game-state-playing.has-image .player-game-container {
+            padding: 12px !important;
+        }
+        
+        .game-state-playing.has-image img {
+            max-width: 100% !important;
+            height: auto !important;
+            border-radius: 8px !important;
+            margin: 10px 0 !important;
+        }
+        
+        /* Ensure player game screen doesn't interfere */
+        .game-state-playing #player-game-screen {
+            position: static !important;
+            height: auto !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        
+        /* Force body container to not take space during mobile gameplay */
+        body.game-state-lobby .container,
+        body.game-state-playing .container,
+        .game-state-lobby .container,
+        .game-state-playing .container {
+            padding: 0 !important;
+            margin: 0 !important;
+            min-height: 0 !important;
+        }
+        
+        /* CRITICAL FIX: Completely remove header from layout on mobile during gameplay */
+        .game-state-playing header,
+        .game-state-lobby header {
+            display: none !important; /* Remove from layout flow entirely */
+        }
+        
+        /* Also remove horizontal toolbar completely */
+        .game-state-playing .horizontal-toolbar,
+        .game-state-lobby .horizontal-toolbar {
+            display: none !important;
+        }
+    }
+    
+    /* Floating controls are more important on mobile */
+    .floating-controls {
+        bottom: 15px;
+        right: 15px;
+        gap: 10px;
+    }
+    
+    .floating-control-btn {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+}
+
+/* Gesture-based UI reveal (preparation for gesture navigation) */
+.game-state-playing.gesture-reveal {
+    /* Quick slide-down gesture reveals header temporarily */
+    header {
+        transform: translateY(0);
+        opacity: 0.95;
+        pointer-events: all;
+    }
+}
+
+/* Auto-hide animation timing for different contexts */
+.game-ui-auto-hide {
+    transition: all 0.5s ease-in-out 3s; /* Hide after 3 seconds */
+}
+
+.game-ui-keep-visible {
+    transition: all 0.3s ease-in-out; /* Immediate visibility changes */
 }

@@ -6,6 +6,7 @@
 import { translationManager } from '../utils/translation-manager.js';
 import { errorBoundary } from '../utils/error-boundary.js';
 import { logger } from '../core/config.js';
+import { gameStateManager } from '../utils/game-state-manager.js';
 
 export class SocketManager {
     constructor(socket, gameManager, uiManager, soundManager) {
@@ -82,11 +83,32 @@ export class SocketManager {
             logger.debug('Question timeLimit value:', data.timeLimit, 'Type:', typeof data.timeLimit);
             logger.debug('Question image data:', JSON.stringify(data.image), 'Has image:', !!data.image);
             logger.debug('Full question data received:', JSON.stringify(data, null, 2));
+            
+            // DEBUG: This should always show
+            console.log('🐛 QUESTION START EVENT - Mobile debugging');
+            console.log('🐛 Data received:', data);
+            
+            try {
+                // Switch to playing state for immersive gameplay
+                console.log('🐛 QUESTION START - About to set game state to playing');
+                console.log('🐛 gameStateManager exists:', !!gameStateManager);
+                console.log('🐛 Current viewport:', window.innerWidth, 'x', window.innerHeight);
+                
+                if (gameStateManager && typeof gameStateManager.setState === 'function') {
+                    gameStateManager.setState('playing');
+                    console.log('🐛 Game state set to playing completed');
+                } else {
+                    console.log('🐛 gameStateManager not available or setState not a function');
+                }
+            } catch (error) {
+                console.error('🐛 Error in game state change:', error);
+            }
+            
             this.gameManager.displayQuestion(data);
             
             // Ensure timer has valid duration
             const timerDuration = data.timeLimit && !isNaN(data.timeLimit) ? data.timeLimit * 1000 : 30000; // Default 30 seconds
-            logger.debug('Timer duration calculated:', timerDuration);
+            // logger.debug('Timer duration calculated:', timerDuration);
             this.gameManager.startTimer(timerDuration);
             
             if (this.soundManager.isEnabled()) {
@@ -150,6 +172,9 @@ export class SocketManager {
 
         this.socket.on('game-end', (data) => {
             logger.debug('Game ended:', data);
+            
+            // Switch to results state for leaderboard and celebration
+            gameStateManager.setState('results');
             
             // Hide manual advancement button
             const nextButton = document.getElementById('next-question');

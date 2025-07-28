@@ -7,32 +7,83 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Critical FOUC prevention styles - must be inline to load immediately */
+        :root {
+            /* Critical theme variables for immediate application */
+            --critical-bg: #0a0a0a;
+            --critical-text: #ffffff;
+        }
+        
+        [data-theme="light"] {
+            --critical-bg: #f8fafc;
+            --critical-text: #1a202c;
+        }
+        
+        [data-theme="dark"] {
+            --critical-bg: #0a0a0a;
+            --critical-text: #ffffff;
+        }
+        
+        html { 
+            background: var(--critical-bg);
+            color: var(--critical-text);
+        }
+        
+        body { 
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--critical-bg);
+            color: var(--critical-text);
+            opacity: 0;
+            transition: opacity 0.3s ease-in;
+        }
+        
+        body.loaded { 
+            opacity: 1; 
+        }
+        
+        /* Prevent Inter font loading shift - exclude MathJax elements */
+        *:not(mjx-container):not(mjx-container *):not(.MathJax):not(.MathJax *) { 
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+    </style>
     <link rel="stylesheet" href="css/main.css?v=modular-9.32-progressive-loading">
     <!-- Removed problematic polyfill.io CDN - MathJax handles ES6 polyfills automatically -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script>
-        // FOUC Prevention: Set font scale immediately from localStorage
+        // FOUC Prevention: Set font scale and theme immediately from localStorage
         (function() {
             const savedFontSize = localStorage.getItem('globalFontSize') || 'medium';
             const scaleValues = { small: 0.9, medium: 1.0, large: 1.3, xlarge: 1.6 };
             document.documentElement.style.setProperty('--global-font-scale', scaleValues[savedFontSize]);
             
+            // Apply theme immediately to prevent color shift
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
             // Set theme and update icons when DOM is ready
             document.addEventListener('DOMContentLoaded', () => {
-                const savedTheme = localStorage.getItem('theme') || 'light';
                 if (document.body) {
                     document.body.setAttribute('data-theme', savedTheme);
+                    // Ensure both html and body have the same theme for consistent CSS matching
+                    document.documentElement.setAttribute('data-theme', savedTheme);
                 }
                 
-                // Quick fix: Prevent problematic data URI fetches while allowing legitimate ones
+                // Enhanced data URI fetch interceptor to identify problematic requests
                 const originalFetch = window.fetch;
                 window.fetch = function(...args) {
                     const url = args[0];
                     if (typeof url === 'string' && url.startsWith('data:')) {
-                        // Only block data URIs that look like they're being fetched incorrectly
-                        // Allow legitimate data URI usage for images, etc.
-                        console.debug('⚠️ Data URI fetch detected:', url.substring(0, 50) + '...');
+                        // Log data URI fetch attempts with stack trace for debugging
+                        console.warn('🚨 Data URI fetch detected (should not be fetched):', {
+                            url: url.substring(0, 100) + '...',
+                            stack: new Error().stack,
+                            arguments: args
+                        });
+                        
+                        // Return a rejected promise to prevent the fetch
+                        return Promise.reject(new Error('Data URIs should not be fetched - use directly as src'));
                     }
                     return originalFetch.apply(this, args);
                 };
@@ -61,7 +112,10 @@
             const currentTheme = body.getAttribute('data-theme') || 'light';
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             
+            // Set theme on both html and body for consistent CSS matching
             body.setAttribute('data-theme', newTheme);
+            document.documentElement.setAttribute('data-theme', newTheme);
+            
             if (themeToggle) {
                 themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
             }
@@ -174,7 +228,7 @@
         }
     </style>
 </head>
-<body class="loading">
+<body>
     <div class="container">
         <header>
             <h1 data-translate="app_title">QuizMaster Pro</h1>
@@ -814,6 +868,7 @@
                     </div>
                 </div>
                 
+                <!-- Legacy inline feedback (kept for compatibility) -->
                 <div id="answer-feedback" class="feedback hidden">
                     <div id="feedback-message"></div>
                     <div id="score-display"></div>
@@ -1001,6 +1056,17 @@
                     <button id="generate-questions" class="btn primary" data-translate="generate_questions_btn">Generate Questions</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Feedback System -->
+    <div id="feedback-modal-overlay" class="feedback-modal-overlay">
+        <div id="feedback-modal" class="feedback-modal">
+            <div class="feedback-message">
+                <span class="feedback-icon" id="feedback-icon"></span>
+                <span id="modal-feedback-text"></span>
+            </div>
+            <div class="score-display" id="modal-score-display"></div>
         </div>
     </div>
 

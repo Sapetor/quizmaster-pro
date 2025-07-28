@@ -9,6 +9,8 @@ import { MathRenderer } from '../utils/math-renderer.js';
 import { mathJaxService } from '../utils/mathjax-service.js';
 import { domManager } from '../utils/dom-manager.js';
 import { errorBoundary } from '../utils/error-boundary.js';
+import { modalFeedback } from '../utils/modal-feedback.js';
+import { gameStateManager } from '../utils/game-state-manager.js';
 
 export class GameManager {
     constructor(socket, uiManager, soundManager, socketManager = null) {
@@ -597,6 +599,13 @@ export class GameManager {
         
         // Store current question data
         this.currentQuestion = data;
+        
+        // Trigger mobile layout adaptation for content-aware display
+        setTimeout(() => {
+            document.dispatchEvent(new CustomEvent('question-content-updated', {
+                detail: { questionData: data, isHost: this.isHost }
+            }));
+        }, 250); // Delay to ensure DOM and MathJax rendering is complete
     }
 
     /**
@@ -789,7 +798,7 @@ export class GameManager {
     }
 
     /**
-     * Show player result (correct/incorrect)
+     * Show player result (correct/incorrect) using modal feedback system
      */
     showPlayerResult(data) {
         return errorBoundary.safeExecute(() => {
@@ -802,98 +811,71 @@ export class GameManager {
                 return;
             }
             this.resultShown = true;
-        logger.debug('Processing player result...');
-        
-        const resultElement = document.getElementById('answer-feedback');
-        logger.debug('answer-feedback element found:', !!resultElement);
-        if (!resultElement) {
-            logger.error('answer-feedback element not found, returning');
-            return;
-        }
-        
-        const isCorrect = data.isCorrect !== undefined ? data.isCorrect : data.correct;
-        logger.debug('Raw data received:', data);
-        logger.debug('Extracted isCorrect:', isCorrect, 'from data.isCorrect:', data.isCorrect, 'or data.correct:', data.correct);
-        const earnedPoints = data.points || 0;
-        logger.debug('isCorrect:', isCorrect, 'earnedPoints:', earnedPoints);
-        
-        // Use the existing feedback structure from the original monolithic version
-        resultElement.classList.remove('hidden');
-        logger.debug('Set result element visible');
-        
-        const messageElement = document.getElementById('feedback-message');
-        const scoreElement = document.getElementById('score-display');
-        
-        if (messageElement) {
+            logger.debug('Processing player result...');
+            
+            const isCorrect = data.isCorrect !== undefined ? data.isCorrect : data.correct;
+            logger.debug('Raw data received:', data);
+            logger.debug('Extracted isCorrect:', isCorrect, 'from data.isCorrect:', data.isCorrect, 'or data.correct:', data.correct);
+            const earnedPoints = data.points || 0;
+            logger.debug('isCorrect:', isCorrect, 'earnedPoints:', earnedPoints);
+            
+            // Prepare feedback message
+            let feedbackMessage = isCorrect 
+                ? translationManager.getTranslationSync('correct_answer_msg')
+                : translationManager.getTranslationSync('incorrect_answer_msg');
+            
+            // Add total score to message if available
+            if (earnedPoints > 0 && data.totalScore !== undefined) {
+                feedbackMessage += ` (+${earnedPoints} ${translationManager.getTranslationSync('points')})`;
+            }
+            
+            // Show modal feedback instead of inline feedback
+            modalFeedback.show(isCorrect, feedbackMessage, earnedPoints, TIMING.RESULT_DISPLAY_DURATION);
+            logger.debug('Modal feedback shown:', isCorrect ? 'correct' : 'incorrect');
+            
+            // Show correct answer if player was wrong (preserve existing functionality)
+            if (!isCorrect && data.correctAnswer !== undefined) {
+                // Delay to allow modal to appear first
+                setTimeout(() => {
+                    this.showCorrectAnswerOnClient(data.correctAnswer);
+                }, 500);
+            }
+            
+            // Play result sound and show confetti for correct answers
+            logger.debug('Player result - isCorrect:', isCorrect, 'isHost:', this.isHost, 'soundEnabled:', this.soundManager.isEnabled());
             if (isCorrect) {
-                resultElement.style.backgroundColor = '#2ecc71';
-                messageElement.textContent = '🎉 ' + translationManager.getTranslationSync('correct_answer_msg');
+                logger.debug('Playing correct answer sound and showing confetti');
+                if (this.soundManager.isEnabled()) {
+                    this.soundManager.playCorrectAnswerSound();
+                }
+                // Show confetti for correct answers (for players only)
+                if (!this.isHost) {
+                    logger.debug('Showing confetti for correct answer');
+                    this.showConfetti();
+                }
             } else {
-                resultElement.style.backgroundColor = '#e74c3c';
-                messageElement.textContent = '❌ ' + translationManager.getTranslationSync('incorrect_answer_msg');
+                logger.debug('Playing incorrect answer sound');
+                if (this.soundManager.isEnabled()) {
+                    this.soundManager.playIncorrectAnswerSound();
+                }
             }
-        }
-        
-        if (scoreElement && earnedPoints > 0) {
-            scoreElement.textContent = `+${earnedPoints} ${translationManager.getTranslationSync('points')} (${translationManager.getTranslationSync('total')}: ${data.totalScore})`;
-        }
-        
-        // Show correct answer if player was wrong (from monolithic version)
-        if (!isCorrect && data.correctAnswer !== undefined) {
-            this.showCorrectAnswerOnClient(data.correctAnswer);
-        }
-        logger.debug('Result element updated and shown');
-        
-        // Play result sound and show confetti for correct answers
-        logger.debug('Player result - isCorrect:', isCorrect, 'isHost:', this.isHost, 'soundEnabled:', this.soundManager.isEnabled());
-        if (isCorrect) {
-            logger.debug('Playing correct answer sound and showing confetti');
-            if (this.soundManager.isEnabled()) {
-                this.soundManager.playCorrectAnswerSound();
-            }
-            // Show confetti for correct answers (for players only)
-            if (!this.isHost) {
-                logger.debug('Showing confetti for correct answer');
-                this.showConfetti();
-            }
-        } else {
-            logger.debug('Playing incorrect answer sound');
-            if (this.soundManager.isEnabled()) {
-                this.soundManager.playIncorrectAnswerSound();
-            }
-        }
-        
-            // Hide after delay
-            setTimeout(() => {
-                resultElement.classList.add('hidden');
-            }, TIMING.RESULT_DISPLAY_DURATION);
+            
         }, {
             type: 'game_logic',
             operation: 'player_result',
             playerId: data.playerId
         }, () => {
-            // Fallback: show basic result message
-            logger.error('Failed to show player result, using fallback');
-            this.showResultErrorState();
+            // Fallback: show basic modal feedback
+            logger.error('Failed to show player result, using fallback modal');
+            modalFeedback.show(false, 'Error displaying result', null, 2000);
         });
     }
 
     /**
-     * Show answer submitted feedback (from monolithic version)
+     * Show answer submitted feedback using modal system
      */
     showAnswerSubmitted(answer) {
         logger.debug('showAnswerSubmitted called with:', answer);
-        const feedback = document.getElementById('answer-feedback');
-        const message = document.getElementById('feedback-message');
-        const scoreDisplay = document.getElementById('score-display');
-        
-        if (!feedback || !message) {
-            logger.error('answer-feedback or feedback-message elements not found');
-            return;
-        }
-        
-        feedback.classList.remove('hidden', 'correct', 'incorrect');
-        feedback.style.backgroundColor = '#3498db'; // Blue for submission
         
         let displayText = '';
         if (typeof answer === 'number') {
@@ -901,28 +883,26 @@ export class GameManager {
             if (Number.isInteger(answer) && answer >= 0 && answer <= 3) {
                 // Multiple choice answer - convert to letter
                 const letter = String.fromCharCode(65 + answer);
-                displayText = `Answer submitted: ${letter}`;
+                displayText = `${translationManager.getTranslationSync('answer_submitted')}: ${letter}`;
             } else {
                 // Numeric input answer - show the actual number
-                displayText = `Answer submitted: ${answer}`;
+                displayText = `${translationManager.getTranslationSync('answer_submitted')}: ${answer}`;
             }
         } else if (Array.isArray(answer)) {
             const letters = answer.map(a => String.fromCharCode(65 + a)).join(', ');
-            displayText = `Answers submitted: ${letters}`;
+            displayText = `${translationManager.getTranslationSync('answers_submitted')}: ${letters}`;
         } else if (typeof answer === 'boolean') {
-            displayText = `Answer submitted: ${answer ? 'TRUE' : 'FALSE'}`;
+            displayText = `${translationManager.getTranslationSync('answer_submitted')}: ${answer ? 'TRUE' : 'FALSE'}`;
         } else if (typeof answer === 'string') {
-            displayText = `Answer submitted: ${answer.toUpperCase()}`;
+            displayText = `${translationManager.getTranslationSync('answer_submitted')}: ${answer.toUpperCase()}`;
         } else {
-            displayText = `Answer submitted: ${answer}`;
+            displayText = `${translationManager.getTranslationSync('answer_submitted')}: ${answer}`;
         }
         
-        message.textContent = displayText;
-        if (scoreDisplay) {
-            scoreDisplay.textContent = translationManager.getTranslationSync('waiting_for_results');
-        }
+        // Show modal feedback with neutral state and shorter duration
+        modalFeedback.show(true, displayText, null, 2000); // 2 seconds for submission confirmation
         
-        logger.debug('Answer submission feedback shown:', displayText);
+        logger.debug('Answer submission modal feedback shown:', displayText);
     }
 
     /**
@@ -1693,11 +1673,11 @@ export class GameManager {
      */
     updateTimerDisplay(timeRemaining) {
         const timerElement = document.getElementById('timer');
-        logger.debug('updateTimerDisplay - element found:', !!timerElement, 'timeRemaining:', timeRemaining);
+        // logger.debug('updateTimerDisplay - element found:', !!timerElement, 'timeRemaining:', timeRemaining);
         if (timerElement && isFinite(timeRemaining) && timeRemaining >= 0) {
             const seconds = Math.ceil(timeRemaining / 1000);
             timerElement.textContent = seconds;
-            logger.debug('Timer updated to:', seconds);
+            // logger.debug('Timer updated to:', seconds);
             
             // Add warning class when time is running out
             if (timeRemaining <= 5000) {
@@ -1708,9 +1688,9 @@ export class GameManager {
         } else if (timerElement) {
             // Fallback for invalid timeRemaining
             timerElement.textContent = '0';
-            logger.debug('Timer set to 0 (fallback)');
+            // logger.debug('Timer set to 0 (fallback)');
         } else {
-            logger.debug('Timer element not found!');
+            // logger.debug('Timer element not found!');
         }
     }
 
@@ -1719,7 +1699,7 @@ export class GameManager {
      */
     startTimer(duration) {
         return errorBoundary.safeExecute(() => {
-            logger.debug('Starting timer with duration:', duration, 'ms');
+            // logger.debug('Starting timer with duration:', duration, 'ms');
             
             // Validate duration
             if (!duration || isNaN(duration) || duration <= 0) {
@@ -1736,11 +1716,11 @@ export class GameManager {
             
             this.timer = this.createTimerTracked(() => {
                 timeRemaining -= 1000;
-                logger.debug('Timer tick - timeRemaining:', timeRemaining);
+                // logger.debug('Timer tick - timeRemaining:', timeRemaining);
                 this.updateTimerDisplay(timeRemaining);
                 
                 if (timeRemaining <= 0) {
-                    logger.debug('Timer finished');
+                    // logger.debug('Timer finished');
                     this.clearTimerTracked(this.timer);
                     this.timer = null;
                 }
@@ -1836,7 +1816,7 @@ export class GameManager {
         const timer = isInterval ? setInterval(callback, interval) : setTimeout(callback, interval);
         this.timers.add(timer);
         
-        logger.debug(`Tracked ${isInterval ? 'interval' : 'timeout'}:`, timer);
+        // logger.debug(`Tracked ${isInterval ? 'interval' : 'timeout'}:`, timer);
         return timer;
     }
 
@@ -1877,7 +1857,7 @@ export class GameManager {
             clearTimeout(timer); // Works for both setTimeout and setInterval
             clearInterval(timer);
             this.timers.delete(timer);
-            logger.debug('Cleared tracked timer:', timer);
+            // logger.debug('Cleared tracked timer:', timer);
         }
     }
 
@@ -1915,7 +1895,7 @@ export class GameManager {
                 }
             });
             this.timers.clear();
-            logger.debug(`Cleaned up ${timerCount} timers`);
+            // logger.debug(`Cleaned up ${timerCount} timers`);
 
             // Clear DOM references
             this.domReferences.clear();

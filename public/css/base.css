@@ -15,7 +15,7 @@ body {
     font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: var(--bg-primary);
     background-attachment: fixed;
-    min-height: 100vh;
+    min-height: 100dvh;
     color: var(--text-primary);
     transition: var(--transition-smooth);
     font-weight: 400;
@@ -24,19 +24,20 @@ body {
     overflow-x: hidden;
 }
 
-/* FOUC Prevention - Smooth loading transitions */
-body.loading {
-    visibility: hidden;
+/* FOUC Prevention - Enhanced smooth loading */
+body {
+    /* Opacity handled by inline styles for immediate application */
 }
 
-body:not(.loading) {
-    visibility: visible;
-    animation: fadeIn 0.3s ease-in;
+/* Remove any jarring transitions during theme switching on load */
+body:not(.loaded) * {
+    transition: none !important;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+/* Font loading optimization - prevent layout shift */
+@font-face {
+    font-family: 'Inter';
+    font-display: swap; /* Use fallback immediately, swap when Inter loads */
 }
 
 /* LaTeX rendering - hide until ready */

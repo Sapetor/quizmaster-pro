@@ -17,7 +17,124 @@ import { logger, LIMITS, TIMING, UI, ANIMATION } from '../core/config.js';
 export function toggleLanguageDropdown() {
     const dropdown = document.getElementById('language-selector');
     if (dropdown) {
+        const isOpening = !dropdown.classList.contains('open');
         dropdown.classList.toggle('open');
+        
+        // Handle mobile positioning for fixed dropdown
+        if (isOpening && window.innerWidth <= 768) {
+            positionMobileDropdown(dropdown);
+        }
+    }
+}
+
+// Restore dropdown to original position when closing
+function restoreDropdownToOriginalPosition(dropdown) {
+    const dropdownOptions = dropdown.querySelector('.language-dropdown-options');
+    if (!dropdownOptions) {
+        // Try to find it in the body if it was moved
+        const bodyDropdown = document.body.querySelector('.language-dropdown-options[data-portal-moved="true"]');
+        if (bodyDropdown && bodyDropdown.dataset.originalParent === 'language-dropdown') {
+            // Move back to original parent
+            dropdown.appendChild(bodyDropdown);
+            // Clean up portal attributes
+            delete bodyDropdown.dataset.portalMoved;
+            delete bodyDropdown.dataset.originalParent;
+            // Reset positioning
+            bodyDropdown.style.position = '';
+            bodyDropdown.style.left = '';
+            bodyDropdown.style.top = '';
+            bodyDropdown.style.width = '';
+            bodyDropdown.style.zIndex = '';
+            bodyDropdown.style.transform = '';
+            bodyDropdown.style.isolation = '';
+            bodyDropdown.style.pointerEvents = '';
+            bodyDropdown.style.visibility = '';
+            bodyDropdown.style.opacity = '';
+            
+            logger.debug('📱 Restored dropdown from body portal to original position');
+        }
+    } else if (dropdownOptions.dataset.portalMoved) {
+        // It's in the dropdown but was moved before, clean up portal attributes
+        delete dropdownOptions.dataset.portalMoved;
+        delete dropdownOptions.dataset.originalParent;
+        // Reset positioning
+        dropdownOptions.style.position = '';
+        dropdownOptions.style.left = '';
+        dropdownOptions.style.top = '';
+        dropdownOptions.style.width = '';
+        dropdownOptions.style.zIndex = '';
+        dropdownOptions.style.transform = '';
+        dropdownOptions.style.isolation = '';
+        dropdownOptions.style.pointerEvents = '';
+        dropdownOptions.style.visibility = '';
+        dropdownOptions.style.opacity = '';
+        
+        logger.debug('📱 Reset dropdown positioning attributes');
+    }
+}
+
+// Position dropdown on mobile using body portal approach
+function positionMobileDropdown(dropdown) {
+    const dropdownButton = dropdown.querySelector('.language-dropdown-selected');
+    const dropdownOptions = dropdown.querySelector('.language-dropdown-options');
+    
+    if (dropdownButton && dropdownOptions) {
+        const rect = dropdownButton.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        const dropdownHeight = 300; // max-height from CSS
+        const dropdownMinWidth = 200;
+        const dropdownMaxWidth = Math.min(300, viewportWidth - 20);
+        
+        // Calculate optimal position
+        let top = rect.bottom + 8; // 8px margin for better spacing
+        let left = rect.left;
+        
+        // Adjust if dropdown would go off-screen vertically
+        if (top + dropdownHeight > viewportHeight - 10) {
+            top = rect.top - dropdownHeight - 8; // Show above instead
+            // If still off-screen, center vertically
+            if (top < 10) {
+                top = Math.max(10, (viewportHeight - dropdownHeight) / 2);
+            }
+        }
+        
+        // Ensure dropdown doesn't go off left/right edges
+        if (left + dropdownMaxWidth > viewportWidth - 10) {
+            left = viewportWidth - dropdownMaxWidth - 10;
+        }
+        left = Math.max(10, left);
+        
+        // For very narrow screens, center horizontally
+        if (viewportWidth <= 400) {
+            left = (viewportWidth - dropdownMaxWidth) / 2;
+        }
+        
+        // AGGRESSIVE FIX: Move dropdown to body to escape ALL container constraints
+        if (!dropdownOptions.dataset.portalMoved) {
+            // Mark as moved to avoid moving multiple times
+            dropdownOptions.dataset.portalMoved = 'true';
+            dropdownOptions.dataset.originalParent = 'language-dropdown';
+            
+            // Move to body to escape all container bounds
+            document.body.appendChild(dropdownOptions);
+            
+            logger.debug('📱 Moved dropdown to body portal to escape container bounds');
+        }
+        
+        // Apply positioning with maximum priority
+        dropdownOptions.style.position = 'fixed';
+        dropdownOptions.style.left = `${left}px`;
+        dropdownOptions.style.top = `${top}px`;
+        dropdownOptions.style.width = `${dropdownMaxWidth}px`;
+        dropdownOptions.style.zIndex = '2147483647'; // Maximum z-index
+        dropdownOptions.style.transform = 'none'; // Reset any transforms
+        dropdownOptions.style.isolation = 'isolate'; // Create new stacking context
+        dropdownOptions.style.pointerEvents = 'auto'; // Ensure clickable
+        dropdownOptions.style.visibility = 'visible'; // Force visible
+        dropdownOptions.style.opacity = '1'; // Force opaque
+        
+        logger.debug(`📱 Mobile dropdown positioned at: ${Math.round(left)}px, ${Math.round(top)}px (viewport: ${viewportWidth}x${viewportHeight})`);
     }
 }
 
@@ -26,10 +143,11 @@ export async function selectLanguage(langCode, event) {
     
     logger.debug(`🌐 Switching language to: ${langCode}`);
     
-    // Close dropdown
+    // Close dropdown and restore to original position
     const dropdown = document.getElementById('language-selector');
     if (dropdown) {
         dropdown.classList.remove('open');
+        restoreDropdownToOriginalPosition(dropdown);
     }
     
     // Update selected language display
@@ -69,7 +187,15 @@ document.addEventListener('click', (event) => {
     // Handle language dropdown close when clicking outside
     const dropdown = document.getElementById('language-selector');
     if (dropdown && !dropdown.contains(event.target)) {
+        // Check if clicking on the dropdown options that might be in body portal
+        const bodyDropdown = document.body.querySelector('.language-dropdown-options[data-portal-moved="true"]');
+        if (bodyDropdown && bodyDropdown.contains(event.target)) {
+            // Clicked inside the portal dropdown, don't close
+            return;
+        }
+        
         dropdown.classList.remove('open');
+        restoreDropdownToOriginalPosition(dropdown);
     }
     
     // Handle data-onclick attributes
@@ -80,6 +206,48 @@ document.addEventListener('click', (event) => {
             event.preventDefault();
             window[functionName]();
         }
+    }
+});
+
+// Handle mobile dropdown repositioning on window resize and scroll
+window.addEventListener('resize', () => {
+    const dropdown = document.getElementById('language-selector');
+    if (dropdown && dropdown.classList.contains('open')) {
+        if (window.innerWidth <= 768) {
+            // Small delay to ensure resize is complete
+            setTimeout(() => positionMobileDropdown(dropdown), 100);
+        } else {
+            // Reset to desktop positioning
+            const dropdownOptions = dropdown.querySelector('.language-dropdown-options');
+            if (dropdownOptions) {
+                dropdownOptions.style.position = '';
+                dropdownOptions.style.left = '';
+                dropdownOptions.style.top = '';
+                dropdownOptions.style.width = '';
+                dropdownOptions.style.zIndex = '';
+                dropdownOptions.style.transform = '';
+                dropdownOptions.style.isolation = '';
+            }
+        }
+    }
+});
+
+window.addEventListener('scroll', () => {
+    const dropdown = document.getElementById('language-selector');
+    if (dropdown && dropdown.classList.contains('open') && window.innerWidth <= 768) {
+        // Close dropdown on scroll to prevent positioning issues
+        dropdown.classList.remove('open');
+        restoreDropdownToOriginalPosition(dropdown);
+    }
+});
+
+// Handle orientation changes on mobile devices
+window.addEventListener('orientationchange', () => {
+    const dropdown = document.getElementById('language-selector');
+    if (dropdown && dropdown.classList.contains('open')) {
+        // Close dropdown on orientation change, let user reopen it
+        dropdown.classList.remove('open');
+        restoreDropdownToOriginalPosition(dropdown);
     }
 });
 
@@ -371,6 +539,7 @@ export function toggleTheme() {
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
         
         body.setAttribute('data-theme', newTheme);
+        document.documentElement.setAttribute('data-theme', newTheme);
         if (themeToggle) {
             themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️'; // Moon for dark, sun for light
         }
@@ -527,3 +696,6 @@ window.toggleGlobalFontSize = toggleGlobalFontSize;
 window.setGlobalFontSize = setGlobalFontSize;
 window.toggleTheme = toggleTheme;
 window.scrollToCurrentQuestion = scrollToCurrentQuestion;
+window.updateQuestionType = updateQuestionType;
+window.updateTimeLimit = updateTimeLimit;
+window.uploadImage = uploadImage;

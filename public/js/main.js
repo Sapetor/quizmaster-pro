@@ -8,6 +8,16 @@ import { translationManager } from './utils/translation-manager.js';
 import { errorBoundary } from './utils/error-boundary.js';
 import { TIMING, logger } from './core/config.js';
 import './utils/globals.js'; // Import globals to make them available
+import './utils/mathjax/integration-tests.js'; // Load integration tests for development
+import './utils/mathjax/f5-corruption-simulator.js'; // Load F5 corruption testing tools
+import './utils/mathjax/performance-benchmarks.js'; // Load performance benchmarking suite
+import './utils/mathjax/browser-test-suite.js'; // Load comprehensive browser testing
+import './utils/mathjax/testing-dashboard.js'; // Load unified testing dashboard
+import { performanceMonitor } from './utils/performance-monitor.js'; // Basic performance monitoring for debugging
+import { performanceDashboard } from './utils/performance-dashboard.js'; // Performance dashboard
+import { browserOptimizer } from './utils/browser-optimizer.js'; // Browser-specific optimizations
+import { contentDensityManager } from './utils/content-density-manager.js'; // Smart content spacing and sizing
+import { mobileLayoutManager } from './utils/mobile-layout-manager.js'; // Smart mobile layout for different content types
 
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
@@ -43,8 +53,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.game = new QuizGame();
         logger.debug('QuizGame instance created successfully');
         
-        // FOUC Prevention: Remove loading class from body after initialization
-        document.body.classList.remove('loading');
+        // Initialize content density manager for smart spacing
+        contentDensityManager.initialize();
+        logger.debug('Content density manager initialized');
+        
+        // Initialize mobile layout manager for content-aware layouts
+        mobileLayoutManager.setEnabled(window.innerWidth <= 768);
+        logger.debug('Mobile layout manager initialized');
+        
+        // DEBUG: Basic mobile debugging
+        console.log('🐛 MAIN.JS - App initialized');
+        console.log('🐛 Window size:', window.innerWidth, 'x', window.innerHeight);
+        console.log('🐛 Is mobile detected:', window.innerWidth <= 768);
+        console.log('🐛 gameStateManager available:', typeof window.gameStateManager);
+        
+        // FOUC Prevention: Add loaded class for smooth appearance
+        document.body.classList.add('loaded');
         
         // Make sure theme toggle is available globally
         window.toggleTheme = () => {
@@ -59,6 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Apply saved theme immediately
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.body.setAttribute('data-theme', savedTheme);
+        document.documentElement.setAttribute('data-theme', savedTheme);
         
         // Update theme toggle icon to match current theme
         const themeToggle = document.getElementById('theme-toggle');
@@ -81,6 +106,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }, 'font-size-init');
         }, TIMING.MATHJAX_RETRY_TIMEOUT);
+        
+        // Add performance dashboard keyboard shortcut (Ctrl+Shift+P)
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+                e.preventDefault();
+                performanceDashboard.toggle();
+                logger.debug('Performance dashboard toggled via keyboard shortcut');
+            }
+            
+        });
+        
+        // Start performance monitoring
+        performanceMonitor.startMonitoring();
+        
+        
+        // Initialize browser optimizations
+        logger.debug('Browser optimization status:', browserOptimizer.getOptimizationStatus());
         
         logger.debug('QuizMaster Pro - Application initialized successfully');
     }, 'app_initialization', () => {
@@ -117,7 +159,7 @@ document.addEventListener('visibilitychange', () => {
                 // Clear main game timer to prevent unnecessary ticking when page is hidden
                 window.game.gameManager.clearTimerTracked(window.game.gameManager.timer);
                 window.game.gameManager.timer = null;
-                logger.debug('Main game timer cleared while page hidden');
+                // logger.debug('Main game timer cleared while page hidden');
             }
         } catch (error) {
             logger.error('Error during partial cleanup:', error);

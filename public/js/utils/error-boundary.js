@@ -191,7 +191,7 @@ export class ErrorBoundary {
         }
         
         if (context.operation === 'timer') {
-            if (isDev) logger.debug('Timer error, attempting to reset timer state');
+            if (isDev) // logger.debug('Timer error, attempting to reset timer state');
             this.resetTimerState();
             return true;
         }

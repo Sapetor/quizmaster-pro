@@ -280,7 +280,7 @@ class TranslationManager {
             if (translationKey) {
                 const translatedText = this.getTranslationSync(translationKey, parsedArgs);
                 element.textContent = translatedText;
-                logger.debug(`Translated "${translationKey}" to "${translatedText}"`);
+                // // logger.debug(`Translated "${translationKey}" to "${translatedText}"`);
             }
         });
 

@@ -11,21 +11,19 @@
  */
 
 import { TIMING, logger } from '../core/config.js';
+import { coreCoordinator } from './mathjax/core-coordinator.js';
 
 export class MathRenderer {
     constructor() {
         this.mathJaxRenderTimeout = null;
         this.processingElements = new Set();
-        // Check multiple readiness indicators for maximum compatibility
-        this.mathJaxReady = window.mathJaxReady || document.body.classList.contains('mathjax-ready') || false;
+        // Delegate to Core Coordinator for MathJax readiness
+        this.mathJaxReady = false;
         
-        // Listen for MathJax ready event
-        if (!this.mathJaxReady) {
-            document.addEventListener('mathjax-ready', () => {
-                this.mathJaxReady = true;
-                logger.debug('MathRenderer: MathJax is now ready');
-            });
-        }
+        // Initialize with Core Coordinator
+        this.coreCoordinator = coreCoordinator;
+        
+        logger.debug('🔄 MathRenderer: Delegating to Core Coordinator system');
     }
 
     /**
@@ -65,163 +63,111 @@ export class MathRenderer {
      * Render MathJax for a specific element
      * @param {HTMLElement} element - Element to render math content in
      */
-    renderMathJax(element) {
+    async renderMathJax(element) {
         if (!element) return;
         
-        // Add processing class to prevent flash
-        element.classList.add('processing-math');
-        this.processingElements.add(element);
-        
-        const tryRender = (attempt = 0) => {
-            if (this.mathJaxReady && window.MathJax && window.MathJax.typesetPromise) {
-                // Clear any existing MathJax content in the element first
-                const mathJaxElements = element.querySelectorAll('.MathJax, .mjx-container');
-                mathJaxElements.forEach(el => el.remove());
+        try {
+            // Delegate to Core Coordinator for consistent, efficient rendering
+            await this.coreCoordinator.render(element);
+            
+            // Ensure proper display styling after rendering
+            const containers = element.querySelectorAll('.mjx-container');
+            containers.forEach(container => {
+                container.style.display = 'inline-block';
+                container.style.verticalAlign = 'middle';
+                container.classList.add('MathJax_Processed');
                 
-                // Use a more robust rendering approach
-                MathJax.typesetPromise([element]).then(() => {
-                    // Ensure proper display after rendering
-                    const containers = element.querySelectorAll('.mjx-container');
-                    containers.forEach(container => {
-                        container.style.display = 'inline-block';
-                        container.style.verticalAlign = 'middle';
-                        container.classList.add('MathJax_Processed');
-                        
-                        // Prevent pointer events on MathJax elements to allow parent clicking
-                        container.style.pointerEvents = 'none';
-                    });
-                    
-                    // Remove processing class and show content
-                    element.classList.remove('processing-math');
-                    element.classList.add('math-ready');
-                    this.processingElements.delete(element);
-                }).catch(err => {
-                    logger.warn('MathJax rendering failed:', err);
-                    // Remove processing class even on error
-                    element.classList.remove('processing-math');
-                    element.classList.add('math-ready');
-                    this.processingElements.delete(element);
-                    
-                    // Fallback: try global typeset if element-specific fails
-                    MathJax.typesetPromise().catch(globalErr => {
-                        logger.warn('Global MathJax rendering also failed:', globalErr);
-                    });
-                });
-            } else if (attempt < 3) {
-                setTimeout(() => tryRender(attempt + 1), TIMING.MATHJAX_RETRY_TIMEOUT);
-            } else {
-                // Silently fail after 3 attempts to reduce log spam
-                element.classList.remove('processing-math');
-                element.classList.add('math-ready');
-                this.processingElements.delete(element);
-            }
-        };
-        
-        tryRender();
+                // Prevent pointer events on MathJax elements to allow parent clicking
+                container.style.pointerEvents = 'none';
+            });
+            
+        } catch (err) {
+            logger.warn('MathJax rendering failed via Core Coordinator:', err);
+        }
     }
 
     /**
      * Render MathJax globally with debouncing for performance
      */
-    renderMathJaxGlobal() {
+    async renderMathJaxGlobal() {
         if (this.mathJaxRenderTimeout) {
             clearTimeout(this.mathJaxRenderTimeout);
         }
         
-        // Wait for MathJax to be ready, especially important after page reload
-        this.waitForMathJaxReady(() => {
-            if (window.MathJax && window.MathJax.typesetPromise) {
-                // Add processing class to elements with math content
-                const elementsWithMath = document.querySelectorAll([
-                    '[data-has-math]',
-                    '.question-text',
-                    '#current-question',
-                    '#player-question-text',
-                    '.player-option',
-                    '.option-display',
-                    '#preview-question-text-split',
-                    '#preview-answer-area-split',
-                    '.preview-content',
-                    '.preview-content-split'
-                ].join(', '));
-                
-                elementsWithMath.forEach(el => {
-                    if (el.textContent.includes('$') || el.innerHTML.includes('$')) {
-                        el.classList.add('processing-math');
-                        this.processingElements.add(el);
-                    }
-                });
-                
-                logger.debug('🧮 Global MathJax rendering for', elementsWithMath.length, 'elements');
-                
-                window.MathJax.typesetPromise(elementsWithMath).then(() => {
-                    logger.debug('✅ Global MathJax rendering completed');
-                    
-                    // Remove processing classes
-                    elementsWithMath.forEach(el => {
-                        el.classList.remove('processing-math');
-                        el.classList.add('math-ready');
-                        this.processingElements.delete(el);
-                    });
-                }).catch(err => {
-                    logger.error('❌ Global MathJax rendering failed:', err);
-                    elementsWithMath.forEach(el => {
-                        el.classList.remove('processing-math');
-                        this.processingElements.delete(el);
-                    });
-                });
+        try {
+            // Find all elements with math content
+            const elementsWithMath = document.querySelectorAll([
+                '[data-has-math]',
+                '.question-text',
+                '#current-question',
+                '#player-question-text',
+                '.player-option',
+                '.option-display',
+                '#preview-question-text-split',
+                '#preview-answer-area-split',
+                '.preview-content',
+                '.preview-content-split'
+            ].join(', '));
+            
+            const mathElements = Array.from(elementsWithMath).filter(el => 
+                el.textContent.includes('$') || el.innerHTML.includes('$')
+            );
+            
+            if (mathElements.length === 0) {
+                logger.debug('🧮 No elements with LaTeX found for global rendering');
+                return;
             }
-        });
+            
+            logger.debug('🧮 Global MathJax rendering for', mathElements.length, 'elements');
+            
+            // Delegate to Core Coordinator for batch rendering
+            await this.coreCoordinator.renderBatch(mathElements);
+            
+            logger.debug('✅ Global MathJax rendering completed via Core Coordinator');
+            
+        } catch (err) {
+            logger.error('❌ Global MathJax rendering failed:', err);
+        }
     }
 
     /**
      * Render MathJax only for editor elements (quiz builder) - prevents game element contamination
      */
-    renderMathJaxForEditor() {
+    async renderMathJaxForEditor() {
         if (this.mathJaxRenderTimeout) {
             clearTimeout(this.mathJaxRenderTimeout);
         }
         
-        // Wait for MathJax to be ready, especially important after page reload
-        this.waitForMathJaxReady(() => {
-            if (window.MathJax && window.MathJax.typesetPromise) {
-                // Only target editor elements, NEVER game elements
-                const editorElements = document.querySelectorAll([
-                    '[data-has-math]',
-                    '.question-text',               // Editor question inputs
-                    '#preview-question-text-split', // Preview area
-                    '#preview-answer-area-split',   // Preview answers
-                    '.preview-content',             // Preview content
-                    '.preview-content-split'        // Split preview
-                ].join(', '));
-                
-                editorElements.forEach(el => {
-                    if (el.textContent.includes('$') || el.innerHTML.includes('$')) {
-                        el.classList.add('processing-math');
-                        this.processingElements.add(el);
-                    }
-                });
-                
-                logger.debug('🧮 Editor MathJax rendering for', editorElements.length, 'elements (avoiding game elements)');
-                
-                window.MathJax.typesetPromise(editorElements).then(() => {
-                    logger.debug('✅ Editor MathJax rendering completed');
-                    
-                    // Remove processing classes
-                    editorElements.forEach(el => {
-                        el.classList.remove('processing-math');
-                        el.classList.add('math-ready');
-                        this.processingElements.delete(el);
-                    });
-                }).catch(err => {
-                    logger.error('❌ Editor MathJax rendering failed:', err);
-                    editorElements.forEach(el => {
-                        el.classList.remove('processing-math');
-                        this.processingElements.delete(el);
-                    });
-                });
+        try {
+            // Only target editor elements, NEVER game elements
+            const editorElements = document.querySelectorAll([
+                '[data-has-math]',
+                '.question-text',               // Editor question inputs
+                '#preview-question-text-split', // Preview area
+                '#preview-answer-area-split',   // Preview answers
+                '.preview-content',             // Preview content
+                '.preview-content-split'        // Split preview
+            ].join(', '));
+            
+            const elementsWithMath = Array.from(editorElements).filter(el => 
+                el.textContent.includes('$') || el.innerHTML.includes('$')
+            );
+            
+            if (elementsWithMath.length === 0) {
+                logger.debug('🧮 No editor elements with LaTeX found');
+                return;
             }
-        });
+            
+            logger.debug('🧮 Editor MathJax rendering for', elementsWithMath.length, 'elements (avoiding game elements)');
+            
+            // Delegate to Core Coordinator for consistent processing
+            await this.coreCoordinator.renderBatch(elementsWithMath, { fastMode: true });
+            
+            logger.debug('✅ Editor MathJax rendering completed via Core Coordinator');
+            
+        } catch (err) {
+            logger.error('❌ Editor MathJax rendering failed:', err);
+        }
     }
 
     /**

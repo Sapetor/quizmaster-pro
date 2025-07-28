@@ -141,6 +141,40 @@
     --accent-primary: #667eea;
     --accent-secondary-gradient: #764ba2;
     
+    /* === CONTENT-DENSITY AWARE SPACING SYSTEM === */
+    /* Base spacing units for different content densities */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+    --spacing-xl: 24px;
+    --spacing-2xl: 32px;
+    
+    /* Content-specific density variables */
+    --question-padding-compact: 12px;
+    --question-padding-normal: 15px;
+    --question-padding-spacious: 20px;
+    
+    --option-gap-compact: 6px;
+    --option-gap-normal: 8px;
+    --option-gap-spacious: 12px;
+    
+    --option-padding-compact: 8px 12px;
+    --option-padding-normal: 12px 16px;
+    --option-padding-spacious: 16px 20px;
+    
+    /* Smart sizing based on content type */
+    --text-only-max-width: 600px;
+    --latex-content-max-width: 700px;
+    --code-content-max-width: 800px;
+    --mixed-content-max-width: 750px;
+    
+    /* Question type specific adjustments */
+    --multiple-choice-option-height: 60px;
+    --true-false-option-height: 65px;
+    --numeric-input-height: 50px;
+    --checkbox-option-height: 45px;
+
     /* Preview Settings Variables */
     --split-left: 50fr;
     --split-right: 50fr;
@@ -148,12 +182,12 @@
     --preview-font-question: 1.1em;
     --preview-font-option: 0.95rem;
     --preview-font-small: 0.7rem;
-    --preview-spacing: 8px;
-    --preview-spacing-small: 4px;
-    --preview-spacing-large: 12px;
-    --preview-button-padding: 8px 12px;
+    --preview-spacing: var(--option-gap-normal);
+    --preview-spacing-small: var(--spacing-xs);
+    --preview-spacing-large: var(--option-gap-spacious);
+    --preview-button-padding: var(--option-padding-normal);
     --preview-border-radius: 8px;
-    --preview-question-padding: 15px;
+    --preview-question-padding: var(--question-padding-normal);
     --preview-section-gap: 10px;
     --preview-line-height: 1.4;
     --preview-nav-padding: 5px 10px;
@@ -161,7 +195,7 @@
     --preview-content-padding: 8px;
     --preview-header-padding: 3px 4px;
     --preview-button-spacing: 6px 0;
-    --preview-option-margin: 4px 0;
+    --preview-option-margin: var(--spacing-xs) 0;
     
     /* Global Font Scale */
     --global-font-scale: 1.0;

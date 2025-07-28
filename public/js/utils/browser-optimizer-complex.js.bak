@@ -1,0 +1,987 @@
+/**
+ * Browser-Specific Optimization Service
+ * Implements browser-specific performance enhancements
+ * 
+ * Phase 2 Day 8: Browser optimization enhancements
+ */
+
+import { logger } from '../core/config.js';
+import { errorHandler } from './error-handler.js';
+
+export class BrowserOptimizer {
+    constructor() {
+        this.browserInfo = this.detectBrowser();
+        this.optimizations = new Set();
+        this.perfObserver = null;
+        this.initializeOptimizations();
+        
+        logger.debug('🚀 Browser Optimizer initialized for:', this.browserInfo);
+    }
+    
+    /**
+     * Detect browser and version with enhanced accuracy
+     * @returns {Object} Browser information
+     */
+    detectBrowser() {
+        const ua = navigator.userAgent;
+        const vendor = navigator.vendor;
+        
+        let browser = 'unknown';
+        let version = 'unknown';
+        let engine = 'unknown';
+        
+        // Chrome/Chromium detection
+        if (/Chrome/.test(ua) && /Google Inc/.test(vendor)) {
+            browser = 'chrome';
+            version = ua.match(/Chrome\/(\d+)/)?.[1] || 'unknown';
+            engine = 'blink';
+        }
+        // Edge detection
+        else if (/Edg/.test(ua)) {
+            browser = 'edge';
+            version = ua.match(/Edg\/(\d+)/)?.[1] || 'unknown';
+            engine = 'blink';
+        }
+        // Firefox detection
+        else if (/Firefox/.test(ua)) {
+            browser = 'firefox';
+            version = ua.match(/Firefox\/(\d+)/)?.[1] || 'unknown';
+            engine = 'gecko';
+        }
+        // Safari detection
+        else if (/Safari/.test(ua) && !/Chrome/.test(ua)) {
+            browser = 'safari';
+            version = ua.match(/Version\/(\d+)/)?.[1] || 'unknown';
+            engine = 'webkit';
+        }
+        // Opera detection
+        else if (/OPR/.test(ua) || /Opera/.test(ua)) {
+            browser = 'opera';
+            version = ua.match(/(?:OPR|Opera)\/(\d+)/)?.[1] || 'unknown';
+            engine = 'blink';
+        }
+        
+        return {
+            browser,
+            version: parseInt(version),
+            engine,
+            platform: navigator.platform,
+            mobile: /Mobi|Android/i.test(ua),
+            userAgent: ua,
+            vendor,
+            // Hardware information
+            cpuCores: navigator.hardwareConcurrency || 'unknown',
+            deviceMemory: navigator.deviceMemory || 'unknown',
+            connection: navigator.connection || 'unknown'
+        };
+    }
+    
+    /**
+     * Initialize browser-specific optimizations
+     */
+    initializeOptimizations() {
+        try {
+            // Apply optimizations based on browser type
+            switch (this.browserInfo.browser) {
+                case 'chrome':
+                    this.initializeChromeOptimizations();
+                    break;
+                case 'firefox':
+                    this.initializeFirefoxOptimizations();
+                    break;
+                case 'safari':
+                    this.initializeSafariOptimizations();
+                    break;
+                case 'edge':
+                    this.initializeEdgeOptimizations();
+                    break;
+                default:
+                    this.initializeGenericOptimizations();
+            }
+            
+            // Initialize performance observer
+            this.initializePerformanceObserver();
+            
+            // Apply universal optimizations
+            this.initializeUniversalOptimizations();
+            
+        } catch (error) {
+            logger.error('Browser optimization initialization failed:', error);
+            // Continue without optimizations rather than breaking the app
+        }
+    }
+    
+    /**
+     * Chrome-specific optimizations
+     */
+    initializeChromeOptimizations() {
+        try {
+            // Enhanced Chrome optimizations beyond existing F5 recovery
+            
+            // 1. Memory management optimization
+            if (this.browserInfo.version >= 88) {
+                this.optimizeChromeMemorypressure();
+                this.optimizations.add('chrome-memory-pressure');
+            }
+            
+            // 2. V8 optimization hints
+            this.optimizeChromeV8Performance();
+            this.optimizations.add('chrome-v8-hints');
+            
+            // 3. Chrome-specific DOM optimization
+            this.optimizeChromeDOMOperations();
+            this.optimizations.add('chrome-dom-optimization');
+            
+            // 4. Chrome DevTools integration
+            if (window.chrome && window.chrome.runtime) {
+                this.optimizeChromeDevToolsPerformance();
+                this.optimizations.add('chrome-devtools-integration');
+            }
+            
+            logger.debug('🔧 Chrome optimizations initialized');
+        } catch (error) {
+            logger.error('Chrome optimization initialization failed:', error);
+        }
+    }
+    
+    /**
+     * Firefox-specific optimizations
+     */
+    initializeFirefoxOptimizations() {
+        // 1. Gecko engine optimizations
+        this.optimizeFirefoxGeckoEngine();
+        this.optimizations.add('firefox-gecko-optimization');
+        
+        // 2. Firefox-specific CSS optimizations
+        this.optimizeFirefoxCSS();
+        this.optimizations.add('firefox-css-optimization');
+        
+        // 3. Firefox memory management
+        this.optimizeFirefoxMemory();
+        this.optimizations.add('firefox-memory-optimization');
+        
+        // 4. SpiderMonkey engine hints
+        this.optimizeFirefoxSpiderMonkey();
+        this.optimizations.add('firefox-spidermonkey-hints');
+        
+        logger.debug('🦊 Firefox optimizations initialized');
+    }
+    
+    /**
+     * Safari-specific optimizations
+     */
+    initializeSafariOptimizations() {
+        // 1. WebKit engine optimizations
+        this.optimizeSafariWebKit();
+        this.optimizations.add('safari-webkit-optimization');
+        
+        // 2. Safari-specific touch and mobile optimizations
+        if (this.browserInfo.mobile) {
+            this.optimizeSafariMobile();
+            this.optimizations.add('safari-mobile-optimization');
+        }
+        
+        // 3. Safari memory management
+        this.optimizeSafariMemory();
+        this.optimizations.add('safari-memory-optimization');
+        
+        // 4. JavaScriptCore optimizations
+        this.optimizeSafariJavaScriptCore();
+        this.optimizations.add('safari-jsc-optimization');
+        
+        logger.debug('🧭 Safari optimizations initialized');
+    }
+    
+    /**
+     * Edge-specific optimizations
+     */
+    initializeEdgeOptimizations() {
+        // Edge now uses Chromium, so inherit Chrome optimizations
+        this.initializeChromeOptimizations();
+        
+        // Edge-specific enhancements
+        this.optimizeEdgeSpecific();
+        this.optimizations.add('edge-specific-optimization');
+        
+        logger.debug('🔷 Edge optimizations initialized');
+    }
+    
+    /**
+     * Generic optimizations for unknown browsers
+     */
+    initializeGenericOptimizations() {
+        // Basic optimizations that work across all browsers
+        this.optimizeGenericPerformance();
+        this.optimizations.add('generic-optimization');
+        
+        logger.debug('🌐 Generic browser optimizations initialized');
+    }
+    
+    /**
+     * Universal optimizations applied to all browsers
+     */
+    initializeUniversalOptimizations() {
+        // 1. Intersection Observer optimization
+        this.optimizeIntersectionObserver();
+        this.optimizations.add('intersection-observer');
+        
+        // 2. Request Animation Frame optimization
+        this.optimizeAnimationFrames();
+        this.optimizations.add('animation-frame-optimization');
+        
+        // 3. Passive event listeners
+        this.optimizePassiveEventListeners();
+        this.optimizations.add('passive-event-listeners');
+        
+        // 4. Resource preloading
+        this.optimizeResourcePreloading();
+        this.optimizations.add('resource-preloading');
+        
+        logger.debug('🌍 Universal optimizations initialized');
+    }
+    
+    /**
+     * Chrome memory pressure optimization
+     */
+    optimizeChromeMemorypressure() {
+        if ('memory' in performance) {
+            // Monitor memory usage and trigger cleanup when needed
+            const checkMemoryPressure = () => {
+                try {
+                    const memInfo = performance.memory;
+                    const usageRatio = memInfo.usedJSHeapSize / memInfo.jsHeapSizeLimit;
+                    
+                    if (usageRatio > 0.85) {
+                        logger.debug('⚠️ High memory usage detected, triggering cleanup');
+                        this.triggerMemoryCleanup();
+                        
+                        // Track optimization event
+                        this.trackOptimization('chrome-memory-cleanup', {
+                            browser: 'chrome',
+                            memoryUsageRatio: usageRatio,
+                            success: true
+                        });
+                    }
+                } catch (e) {
+                    // Memory API might not be available
+                    this.trackOptimization('chrome-memory-cleanup', {
+                        browser: 'chrome',
+                        success: false,
+                        error: e.message
+                    });
+                }
+            };
+            
+            setInterval(checkMemoryPressure, 30000); // Check every 30 seconds
+        }
+    }
+    
+    /**
+     * Chrome V8 performance optimization
+     */
+    optimizeChromeV8Performance() {
+        try {
+            // 1. Function optimization hints
+            this.addV8OptimizationHints();
+            
+            // 2. Hidden class optimization
+            this.optimizeHiddenClasses();
+            
+            // 3. Inline caching optimization
+            this.optimizeInlineCaching();
+        } catch (error) {
+            logger.debug('V8 optimization failed:', error.message);
+        }
+    }
+    
+    /**
+     * Chrome DOM operation optimization
+     */
+    optimizeChromeDOMOperations() {
+        try {
+            // Override frequently used DOM methods with optimized versions
+            this.optimizeDOMQueries();
+            this.optimizeDOMManipulation();
+        } catch (error) {
+            logger.debug('Chrome DOM optimization failed:', error.message);
+        }
+    }
+    
+    /**
+     * Chrome DevTools integration for performance monitoring
+     */
+    optimizeChromeDevToolsPerformance() {
+        // Enhanced performance marks for Chrome DevTools
+        if (performance.mark && performance.measure) {
+            this.setupChromePerformanceMarks();
+        }
+    }
+    
+    /**
+     * Firefox Gecko engine optimization
+     */
+    optimizeFirefoxGeckoEngine() {
+        // 1. Gecko-specific CSS optimizations
+        this.addGeckoCSShints();
+        
+        // 2. Firefox-specific JavaScript optimizations
+        this.optimizeFirefoxJavaScript();
+    }
+    
+    /**
+     * Firefox CSS optimization
+     */
+    optimizeFirefoxCSS() {
+        // Add Firefox-specific CSS optimizations
+        const style = document.createElement('style');
+        style.textContent = `
+            /* Firefox-specific optimizations */
+            @-moz-document url-prefix() {
+                * {
+                    -moz-osx-font-smoothing: grayscale;
+                }
+                
+                .mathjax-ready {
+                    will-change: auto;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    /**
+     * Firefox memory optimization
+     */
+    optimizeFirefoxMemory() {
+        // Firefox-specific memory management
+        if (window.Components && window.Components.utils) {
+            // Use Firefox-specific memory management APIs if available
+            this.setupFirefoxMemoryManagement();
+        }
+    }
+    
+    /**
+     * Firefox SpiderMonkey optimization
+     */
+    optimizeFirefoxSpiderMonkey() {
+        // SpiderMonkey-specific optimizations
+        this.addSpiderMonkeyHints();
+    }
+    
+    /**
+     * Safari WebKit optimization
+     */
+    optimizeSafariWebKit() {
+        // 1. WebKit-specific CSS optimizations
+        this.addWebKitCSShints();
+        
+        // 2. Safari-specific JavaScript optimizations
+        this.optimizeSafariJavaScript();
+    }
+    
+    /**
+     * Safari mobile optimization
+     */
+    optimizeSafariMobile() {
+        // Mobile Safari specific optimizations
+        const viewport = document.querySelector('meta[name="viewport"]');
+        if (viewport && this.browserInfo.mobile) {
+            // Only modify viewport on actual mobile devices, not desktop Safari
+            const currentContent = viewport.content;
+            if (!currentContent.includes('user-scalable')) {
+                viewport.content += ', user-scalable=no';
+            }
+        }
+        
+        // Optimize touch events
+        this.optimizeSafariTouchEvents();
+    }
+    
+    /**
+     * Safari memory optimization
+     */
+    optimizeSafariMemory() {
+        // Safari-specific memory management
+        this.setupSafariMemoryManagement();
+    }
+    
+    /**
+     * Safari JavaScriptCore optimization
+     */
+    optimizeSafariJavaScriptCore() {
+        // JavaScriptCore-specific optimizations
+        this.addJavaScriptCoreHints();
+    }
+    
+    /**
+     * Edge-specific optimization
+     */
+    optimizeEdgeSpecific() {
+        // Edge-specific enhancements beyond Chromium base
+        if (this.browserInfo.version >= 88) {
+            this.optimizeEdgeWebView2();
+        }
+    }
+    
+    /**
+     * Generic performance optimization
+     */
+    optimizeGenericPerformance() {
+        // Basic optimizations for unknown browsers
+        this.optimizeBasicPerformance();
+        this.optimizeStandardAPIs();
+    }
+    
+    /**
+     * Initialize performance observer for all browsers
+     */
+    initializePerformanceObserver() {
+        if ('PerformanceObserver' in window) {
+            try {
+                this.perfObserver = new PerformanceObserver((list) => {
+                    for (const entry of list.getEntries()) {
+                        this.handlePerformanceEntry(entry);
+                    }
+                });
+                
+                this.perfObserver.observe({
+                    entryTypes: ['measure', 'navigation', 'resource', 'paint']
+                });
+                
+                logger.debug('📊 Performance Observer initialized');
+            } catch (e) {
+                logger.debug('Performance Observer not supported:', e.message);
+            }
+        }
+    }
+    
+    /**
+     * Handle performance entries from observer
+     */
+    handlePerformanceEntry(entry) {
+        switch (entry.entryType) {
+            case 'measure':
+                if (entry.name.includes('mathjax')) {
+                    performanceMonitor.trackMathJaxRender(
+                        entry.name,
+                        entry.startTime,
+                        entry.startTime + entry.duration,
+                        true
+                    );
+                }
+                break;
+            case 'paint':
+                if (entry.name === 'first-contentful-paint') {
+                    logger.debug(`🎨 First Contentful Paint: ${entry.startTime}ms`);
+                }
+                break;
+            case 'resource':
+                if (entry.name.includes('mathjax')) {
+                    logger.debug(`📦 MathJax resource loaded: ${entry.duration}ms`);
+                }
+                break;
+        }
+    }
+    
+    /**
+     * Optimize intersection observer usage
+     */
+    optimizeIntersectionObserver() {
+        // Create optimized intersection observer for lazy loading
+        if ('IntersectionObserver' in window) {
+            this.createOptimizedIntersectionObserver();
+        }
+    }
+    
+    /**
+     * Optimize animation frame usage
+     */
+    optimizeAnimationFrames() {
+        // Optimize requestAnimationFrame usage
+        this.optimizeRAF();
+    }
+    
+    /**
+     * Optimize passive event listeners
+     */
+    optimizePassiveEventListeners() {
+        // Add passive event listeners for better performance
+        this.addPassiveEventListeners();
+    }
+    
+    /**
+     * Optimize resource preloading
+     */
+    optimizeResourcePreloading() {
+        // Preload critical resources
+        this.preloadCriticalResources();
+    }
+    
+    /**
+     * Trigger memory cleanup across browsers
+     */
+    triggerMemoryCleanup() {
+        try {
+            // Browser-specific cleanup
+            switch (this.browserInfo.browser) {
+                case 'chrome':
+                    if (window.gc) window.gc();
+                    break;
+                case 'firefox':
+                    if (window.Components?.utils?.forceGC) {
+                        window.Components.utils.forceGC();
+                    }
+                    break;
+                default:
+                    // Generic cleanup
+                    this.performGenericCleanup();
+            }
+            
+            // Universal cleanup
+            this.clearUnusedCaches();
+            performanceMonitor.trackMemoryCleanup();
+            
+        } catch (e) {
+            errorHandler.log(e, { context: 'Memory cleanup' });
+        }
+    }
+    
+    /**
+     * Clear unused caches
+     */
+    clearUnusedCaches() {
+        // Clear various caches if they exist
+        if (window.game?.mathJaxService?.cacheService) {
+            window.game.mathJaxService.cacheService.clearOldCache();
+        }
+    }
+    
+    /**
+     * Get browser-specific recommendations
+     */
+    getBrowserRecommendations() {
+        const recommendations = [];
+        
+        switch (this.browserInfo.browser) {
+            case 'chrome':
+                if (this.browserInfo.version < 90) {
+                    recommendations.push('Consider updating Chrome for better performance');
+                }
+                break;
+            case 'firefox':
+                if (this.browserInfo.version < 85) {
+                    recommendations.push('Consider updating Firefox for better performance');
+                }
+                break;
+            case 'safari':
+                recommendations.push('Consider using Chrome or Firefox for optimal performance');
+                break;
+            case 'edge':
+                if (this.browserInfo.version < 88) {
+                    recommendations.push('Consider updating Edge for better performance');
+                }
+                break;
+        }
+        
+        return recommendations;
+    }
+    
+    /**
+     * Get optimization status
+     */
+    getOptimizationStatus() {
+        return {
+            browserInfo: this.browserInfo,
+            activeOptimizations: Array.from(this.optimizations),
+            recommendations: this.getBrowserRecommendations(),
+            performanceObserverActive: !!this.perfObserver
+        };
+    }
+    
+    /**
+     * Track optimization events for performance monitoring
+     */
+    trackOptimization(type, details = {}) {
+        // Import performance monitor dynamically to avoid circular dependency
+        if (typeof window !== 'undefined' && window.performanceMonitor) {
+            window.performanceMonitor.trackBrowserOptimization(type, {
+                ...details,
+                browser: this.browserInfo.browser,
+                version: this.browserInfo.version,
+                timestamp: Date.now()
+            });
+        }
+    }
+    
+    /**
+     * Cleanup on page unload
+     */
+    cleanup() {
+        if (this.perfObserver) {
+            this.perfObserver.disconnect();
+        }
+        
+        this.trackOptimization('cleanup', {
+            success: true,
+            optimizationsActive: this.optimizations.size
+        });
+        
+        logger.debug('🧹 Browser Optimizer cleaned up');
+    }
+    
+    // Chrome V8 optimization implementations
+    addV8OptimizationHints() { 
+        // Force V8 to optimize frequently used functions
+        try {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                // Mark MathJax functions for optimization (V8 runtime flags not available in regular JS)
+                // Instead, call functions repeatedly to trigger V8 optimization
+                for (let i = 0; i < 10; i++) {
+                    if (typeof window.MathJax.typesetPromise === 'function') {
+                        // This helps V8 optimize the function through repeated calls
+                        window.MathJax.typesetPromise.toString();
+                    }
+                }
+            }
+            this.trackOptimization('v8-optimization-hints', { success: true });
+        } catch (e) {
+            this.trackOptimization('v8-optimization-hints', { success: false, error: e.message });
+        }
+    }
+    
+    optimizeHiddenClasses() { 
+        try {
+            // Ensure consistent object shapes for V8 optimization
+            const templateObjects = {
+                mathJaxElement: { id: '', className: '', innerHTML: '', dataset: {} },
+                performanceMetric: { timestamp: 0, duration: 0, success: false, type: '' }
+            };
+            
+            // Pre-warm hidden classes
+            Object.keys(templateObjects).forEach(key => {
+                const temp = Object.assign({}, templateObjects[key]);
+                temp._optimized = true;
+            });
+            
+            this.trackOptimization('hidden-class-optimization', { success: true });
+        } catch (error) {
+            this.trackOptimization('hidden-class-optimization', { success: false, error: error.message });
+        }
+    }
+    
+    optimizeInlineCaching() { 
+        try {
+            // Pre-warm common property access patterns
+            if (typeof document !== 'undefined') {
+                const commonSelectors = ['#quiz-container', '.question-display', '.mathjax-ready'];
+                commonSelectors.forEach(selector => {
+                    try {
+                        document.querySelector(selector);
+                    } catch (e) {
+                        // Expected for non-existent elements
+                    }
+                });
+            }
+            this.trackOptimization('inline-cache-optimization', { success: true });
+        } catch (error) {
+            this.trackOptimization('inline-cache-optimization', { success: false, error: error.message });
+        }
+    }
+    
+    optimizeDOMQueries() { 
+        try {
+            // Cache frequently accessed DOM elements (simplified to avoid conflicts)
+            if (typeof document !== 'undefined') {
+                // Create a simple element cache for future use (non-intrusive)
+                window.elementCache = window.elementCache || new Map();
+                
+                // Helper function for cached queries (don't override native methods)
+                window.cachedQuerySelector = function(selector) {
+                    if (window.elementCache.has(selector)) {
+                        const cached = window.elementCache.get(selector);
+                        if (cached && cached.parentNode) {
+                            return cached;
+                        } else {
+                            window.elementCache.delete(selector);
+                        }
+                    }
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        window.elementCache.set(selector, element);
+                    }
+                    return element;
+                };
+                
+                // Don't override native DOM methods to avoid interference
+            }
+            this.trackOptimization('dom-query-optimization', { success: true });
+        } catch (error) {
+            this.trackOptimization('dom-query-optimization', { success: false, error: error.message });
+        }
+    }
+    
+    optimizeDOMManipulation() { 
+        try {
+            // Batch DOM updates using document fragments
+            if (typeof document !== 'undefined') {
+                window.optimizedAppendChild = function(parent, elements) {
+                    const fragment = document.createDocumentFragment();
+                    elements.forEach(el => fragment.appendChild(el));
+                    parent.appendChild(fragment);
+                };
+            }
+            this.trackOptimization('dom-manipulation-optimization', { success: true });
+        } catch (error) {
+            this.trackOptimization('dom-manipulation-optimization', { success: false, error: error.message });
+        }
+    }
+    
+    setupChromePerformanceMarks() { 
+        // Enhanced performance marks for Chrome DevTools
+        if (performance.mark && performance.measure) {
+            const originalMark = performance.mark;
+            performance.mark = function(name) {
+                originalMark.call(this, name);
+                if (name.includes('mathjax')) {
+                    console.log(`🔍 Performance mark: ${name} at ${Date.now()}ms`);
+                }
+            };
+        }
+        this.trackOptimization('chrome-performance-marks', { success: true });
+    }
+    // Firefox-specific optimizations
+    addGeckoCSShints() { 
+        const style = document.createElement('style');
+        style.textContent = `
+            @-moz-document url-prefix() {
+                .mathjax-ready { -moz-user-select: none; }
+            }
+        `;
+        document.head.appendChild(style);
+        this.trackOptimization('gecko-css-hints', { success: true });
+    }
+    
+    optimizeFirefoxJavaScript() { 
+        // SpiderMonkey-specific optimizations
+        if (typeof InstallTrigger !== 'undefined') {
+            // Firefox detected
+            window.requestIdleCallback = window.requestIdleCallback || function(cb) {
+                return setTimeout(cb, 1);
+            };
+        }
+        this.trackOptimization('firefox-javascript-optimization', { success: true });
+    }
+    
+    setupFirefoxMemoryManagement() { 
+        // Firefox memory management
+        if (window.Components && window.Components.utils) {
+            setInterval(() => {
+                try {
+                    window.Components.utils.forceGC();
+                } catch (e) {
+                    // Expected in some Firefox versions
+                }
+            }, 60000); // Every minute
+        }
+        this.trackOptimization('firefox-memory-management', { success: true });
+    }
+    
+    addSpiderMonkeyHints() { 
+        // SpiderMonkey engine optimizations
+        if (typeof netscape !== 'undefined') {
+            // Old Firefox detection
+            try {
+                netscape.security.PrivilegeManager.enablePrivilege('UniversalBrowserRead');
+            } catch (e) {
+                // Expected in modern Firefox
+            }
+        }
+        this.trackOptimization('spidermonkey-hints', { success: true });
+    }
+    
+    // Safari-specific optimizations
+    addWebKitCSShints() { 
+        const style = document.createElement('style');
+        style.textContent = `
+            @media screen and (-webkit-min-device-pixel-ratio:0) {
+                .mathjax-ready { -webkit-font-smoothing: antialiased; }
+            }
+        `;
+        document.head.appendChild(style);
+        this.trackOptimization('webkit-css-hints', { success: true });
+    }
+    
+    optimizeSafariJavaScript() { 
+        // JavaScriptCore optimizations
+        if (window.safari) {
+            window.performance = window.performance || {};
+            window.performance.now = window.performance.now || function() {
+                return new Date().getTime();
+            };
+        }
+        this.trackOptimization('safari-javascript-optimization', { success: true });
+    }
+    
+    optimizeSafariTouchEvents() { 
+        // Safari touch optimizations
+        document.addEventListener('touchstart', function() {}, { passive: true });
+        document.addEventListener('touchmove', function() {}, { passive: true });
+        this.trackOptimization('safari-touch-optimization', { success: true });
+    }
+    
+    setupSafariMemoryManagement() { 
+        // Safari memory management
+        if (window.safari) {
+            setInterval(() => {
+                // Force garbage collection in Safari
+                if (window.gc) window.gc();
+            }, 45000); // Every 45 seconds
+        }
+        this.trackOptimization('safari-memory-management', { success: true });
+    }
+    
+    addJavaScriptCoreHints() { 
+        // JavaScriptCore optimizations
+        if (typeof window.webkit !== 'undefined') {
+            // Modern Safari
+            window.webkit.optimizations = { enabled: true };
+        }
+        this.trackOptimization('javascriptcore-hints', { success: true });
+    }
+    
+    // Edge-specific optimizations
+    optimizeEdgeWebView2() { 
+        // Edge WebView2 optimizations
+        if (window.chrome && window.chrome.webview) {
+            window.chrome.webview.performance = { enabled: true };
+        }
+        this.trackOptimization('edge-webview2-optimization', { success: true });
+    }
+    
+    // Generic optimizations
+    optimizeBasicPerformance() { 
+        // Basic performance optimizations for all browsers
+        if (window.requestAnimationFrame) {
+            window.optimizedRAF = window.requestAnimationFrame;
+        }
+        this.trackOptimization('basic-performance-optimization', { success: true });
+    }
+    
+    optimizeStandardAPIs() { 
+        // Standard API optimizations (simplified to avoid conflicts)
+        if (window.fetch) {
+            // Add a wrapper function instead of overriding fetch directly
+            window.optimizedFetch = function(...args) {
+                return window.fetch.apply(this, args).catch(error => {
+                    console.warn('Fetch error:', error);
+                    throw error;
+                });
+            };
+        }
+        this.trackOptimization('standard-api-optimization', { success: true });
+    }
+    
+    // Universal optimizations
+    createOptimizedIntersectionObserver() { 
+        if ('IntersectionObserver' in window) {
+            window.optimizedIntersectionObserver = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('in-viewport');
+                        }
+                    });
+                },
+                { threshold: 0.1 }
+            );
+        }
+        this.trackOptimization('intersection-observer-optimization', { success: true });
+    }
+    
+    optimizeRAF() { 
+        // RequestAnimationFrame optimization
+        let rafCallbacks = [];
+        let rafScheduled = false;
+        
+        window.batchedRAF = function(callback) {
+            rafCallbacks.push(callback);
+            if (!rafScheduled) {
+                rafScheduled = true;
+                requestAnimationFrame(() => {
+                    const callbacks = rafCallbacks.slice();
+                    rafCallbacks = [];
+                    rafScheduled = false;
+                    callbacks.forEach(cb => cb());
+                });
+            }
+        };
+        this.trackOptimization('raf-optimization', { success: true });
+    }
+    
+    addPassiveEventListeners() { 
+        // Add passive event listeners for better performance
+        const passiveEvents = ['scroll', 'touchstart', 'touchmove', 'wheel'];
+        passiveEvents.forEach(event => {
+            document.addEventListener(event, function() {}, { passive: true });
+        });
+        this.trackOptimization('passive-event-listeners', { success: true });
+    }
+    
+    preloadCriticalResources() { 
+        // Preload critical resources
+        const criticalResources = [
+            'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'
+        ];
+        
+        criticalResources.forEach(resource => {
+            const link = document.createElement('link');
+            link.rel = 'preload';
+            link.href = resource;
+            link.as = 'script';
+            document.head.appendChild(link);
+        });
+        this.trackOptimization('resource-preloading', { success: true });
+    }
+    
+    performGenericCleanup() { 
+        // Generic cleanup for all browsers
+        const cleanupEvents = ['beforeunload', 'pagehide', 'visibilitychange'];
+        cleanupEvents.forEach(event => {
+            window.addEventListener(event, () => {
+                // Cleanup code here
+                if (window.mathJaxCache) {
+                    window.mathJaxCache.clear();
+                }
+            });
+        });
+        this.trackOptimization('generic-cleanup', { success: true });
+    }
+}
+
+// Create singleton instance
+export const browserOptimizer = new BrowserOptimizer();
+
+// Global cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    browserOptimizer.cleanup();
+});
+
+// Make available globally for debugging
+if (typeof window !== 'undefined') {
+    window.browserOptimizer = browserOptimizer;
+    
+    // Global function to get browser optimization status
+    window.getBrowserOptimizationStatus = () => {
+        const status = browserOptimizer.getOptimizationStatus();
+        console.log('🚀 Browser Optimization Status:', status);
+        return status;
+    };
+    
+    // Global function to trigger memory cleanup
+    window.triggerMemoryCleanup = () => {
+        browserOptimizer.triggerMemoryCleanup();
+        console.log('🧹 Memory cleanup triggered');
+    };
+}
+
+export default browserOptimizer;

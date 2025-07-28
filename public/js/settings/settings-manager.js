@@ -77,6 +77,7 @@ export class SettingsManager {
             body.classList.add('dark-theme');
             body.classList.remove('light-theme');
             body.setAttribute('data-theme', 'dark');
+            document.documentElement.setAttribute('data-theme', 'dark');
             if (themeToggle) {
                 themeToggle.textContent = '🌙'; // Moon represents dark mode
                 themeToggle.title = getThemeToggleTitles().switchToLight;
@@ -85,6 +86,7 @@ export class SettingsManager {
             body.classList.add('light-theme');
             body.classList.remove('dark-theme');
             body.setAttribute('data-theme', 'light');
+            document.documentElement.setAttribute('data-theme', 'light');
             if (themeToggle) {
                 themeToggle.textContent = '☀️'; // Sun represents light mode
                 themeToggle.title = getThemeToggleTitles().switchToDark;

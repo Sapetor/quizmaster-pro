@@ -6,6 +6,8 @@
 import { translationManager } from '../utils/translation-manager.js';
 import { TIMING, logger } from '../core/config.js';
 import { errorHandler } from '../utils/error-handler.js';
+import { gameStateManager } from '../utils/game-state-manager.js';
+import { APIHelper } from '../utils/api-helper.js';
 
 export class UIManager {
     constructor() {
@@ -28,6 +30,29 @@ export class UIManager {
             this.currentScreen = screenId;
             logger.debug('Successfully switched to screen:', screenId);
             
+            // DEBUG: Simple console log that should always appear
+            console.log('🐛 UI MANAGER - Screen switched to:', screenId);
+            
+            // DEBUG: Log current layout state for mobile debugging
+            console.log('🐛 SCREEN SWITCH - Layout debug for:', screenId);
+            console.log('🐛 Current screen viewport height:', window.innerHeight);
+            console.log('🐛 Document body height:', document.body.scrollHeight);
+            console.log('🐛 Document body classes:', document.body.className);
+            
+            // Look for any containers that might be causing spacing issues
+            const allContainers = document.querySelectorAll('.container, [class*="container"]');
+            console.log('🐛 Found containers during screen switch:', allContainers.length);
+            allContainers.forEach((container, index) => {
+                const rect = container.getBoundingClientRect();
+                if (rect.height > 0) {
+                    console.log(`🐛 Container ${index} (${container.className}):`, {
+                        height: rect.height,
+                        top: rect.top,
+                        element: container
+                    });
+                }
+            });
+            
             // Show/hide header elements based on screen
             const headerStartBtn = document.getElementById('start-hosting-header-small');
             const horizontalToolbar = document.getElementById('horizontal-toolbar');
@@ -36,10 +61,39 @@ export class UIManager {
                 // Show toolbar and start button for host screen
                 if (headerStartBtn) headerStartBtn.style.display = 'block';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'flex';
+                
+                // Set editing state for quiz creation
+                gameStateManager.setState('editing');
             } else {
                 // Hide toolbar and start button for other screens
                 if (headerStartBtn) headerStartBtn.style.display = 'none';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'none';
+            }
+            
+            // Set appropriate game state based on screen
+            switch (screenId) {
+                case 'main-menu':
+                    gameStateManager.setState('lobby');
+                    break;
+                case 'host-lobby':
+                case 'player-lobby':
+                    gameStateManager.setState('lobby');
+                    break;
+                case 'host-game-screen':
+                case 'player-game-screen':
+                    // Note: playing state will be set by question-start event
+                    // This ensures UI is ready for gameplay transition
+                    break;
+                case 'game-browser':
+                case 'join-screen':
+                    gameStateManager.setState('lobby');
+                    break;
+                default:
+                    // Default to lobby state for other screens
+                    if (screenId !== 'host-screen') {
+                        gameStateManager.setState('lobby');
+                    }
+                    break;
             }
             
             // Translate the new screen
@@ -63,8 +117,7 @@ export class UIManager {
 
     async loadQRCode(pin) {
         try {
-            const response = await fetch(`/api/qr/${pin}`);
-            const data = await response.json();
+            const data = await APIHelper.fetchAPIJSON(`/api/qr/${pin}`);
             
             if (data.qrCode) {
                 const qrImage = document.getElementById('qr-code-image');
@@ -100,8 +153,8 @@ export class UIManager {
         gamesContainer.innerHTML = `<div class="loading-games">${translationManager.getTranslationSync('loading_games')}</div>`;
 
         try {
-            const response = await fetch('/api/active-games');
-            const data = await response.json();
+            // Use API helper to ensure proper URL handling across different network configurations
+            const data = await APIHelper.fetchAPIJSON('/api/active-games');
 
             if (data.games && data.games.length > 0) {
                 gamesContainer.innerHTML = '';
@@ -116,10 +169,22 @@ export class UIManager {
             }
         } catch (error) {
             logger.error('Failed to fetch active games:', error);
+            
+            // Show detailed error information for debugging
+            const errorMessage = error.message || 'Unknown error';
+            const isNetworkError = error.name === 'TypeError' && error.message.includes('fetch');
+            
             gamesContainer.innerHTML = `
                 <div class="no-games">
                     <h3>${translationManager.getTranslationSync('failed_load_games')}</h3>
                     <p>${translationManager.getTranslationSync('check_connection')}</p>
+                    <details style="margin-top: 10px; font-size: 0.8em; color: #666;">
+                        <summary>Debug Info (tap to expand)</summary>
+                        <p><strong>Error:</strong> ${errorMessage}</p>
+                        <p><strong>Host:</strong> ${window.location.host}</p>
+                        <p><strong>Network Error:</strong> ${isNetworkError ? 'Yes' : 'No'}</p>
+                        <p><strong>Time:</strong> ${new Date().toLocaleTimeString()}</p>
+                    </details>
                 </div>
             `;
         }

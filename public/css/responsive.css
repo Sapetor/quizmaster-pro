@@ -55,19 +55,51 @@
 @media (max-width: 768px) {
     /* Container and Layout */
     .container {
-        padding: 15px;
+        padding: 12px;
         display: flex;
         flex-direction: column;
         overflow-x: hidden;
     }
     
-    /* Player Game Container */
+    /* Ensure language dropdown is visible on mobile */
+    .header-controls .language-selector {
+        position: static; /* Allow dropdown to escape container bounds */
+        overflow: visible; /* Ensure dropdown is not clipped */
+    }
+    
+    /* Fix join-container overflow that clips language dropdown on mobile */
+    .join-container {
+        overflow: visible; /* Allow language dropdown to escape container */
+    }
+    
+    /* Compensate for join-container overflow change on mobile */
+    .join-container::before {
+        border-radius: var(--border-radius-large); /* Maintain rounded appearance */
+        overflow: hidden; /* Keep glass effect contained */
+    }
+    
+    /* Ensure header doesn't clip language dropdown on mobile */
+    header {
+        overflow: visible; /* Prevent dropdown clipping */
+        /* Maintain sticky positioning and backdrop filter */
+    }
+    
+    /* Any other containers that might clip the dropdown */
+    .screen {
+        overflow-x: hidden; /* Prevent horizontal scroll only */
+        overflow-y: visible; /* Allow vertical overflow for dropdowns */
+    }
+    
+    /* Player Game Container - Optimize for mobile space utilization */
     .player-game-container {
         display: flex;
         flex-direction: column;
-        height: 100vh;
-        padding: 10px;
+        height: 100dvh;
+        padding: 8px;
         box-sizing: border-box;
+        justify-content: flex-start; /* Prevent extra spacing distribution */
+        overflow-y: auto; /* Enable scrolling only when needed */
+        overflow-x: hidden; /* Prevent horizontal scroll */
     }
     
     /* Header Adjustments */
@@ -198,6 +230,15 @@
         padding: 8px;
     }
     
+    /* Extra small mobile dropdown fixes */
+    .join-container {
+        overflow: visible; /* Ensure dropdown visibility on very small screens */
+    }
+    
+    .header-controls .language-selector {
+        overflow: visible; /* Critical for dropdown visibility */
+    }
+    
     header h1 {
         font-size: 1.8rem;
     }
@@ -298,6 +339,52 @@
     }
 }
 
+/* === CONTENT-DENSITY RESPONSIVE ADJUSTMENTS === */
+
+/* Mobile Compact Density */
+@media (max-width: 768px) {
+    :root {
+        /* Switch to compact spacing on mobile */
+        --preview-question-padding: var(--question-padding-compact);
+        --preview-spacing: var(--option-gap-compact);
+        --preview-button-padding: var(--option-padding-compact);
+        
+        /* Reduce content widths for mobile */
+        --text-only-max-width: 300px;
+        --latex-content-max-width: 350px;
+        --code-content-max-width: 95vw;
+        --mixed-content-max-width: 320px;
+        
+        /* Adjust option heights for touch */
+        --multiple-choice-option-height: 55px;
+        --true-false-option-height: 60px;
+        --numeric-input-height: 48px;
+        --checkbox-option-height: 42px;
+    }
+}
+
+/* Large Desktop Spacious Density */
+@media (min-width: 1200px) {
+    :root {
+        /* Switch to spacious spacing on large screens */
+        --preview-question-padding: var(--question-padding-spacious);
+        --preview-spacing: var(--option-gap-spacious);
+        --preview-button-padding: var(--option-padding-spacious);
+        
+        /* Increase content widths for large screens */
+        --text-only-max-width: 700px;
+        --latex-content-max-width: 800px;
+        --code-content-max-width: 900px;
+        --mixed-content-max-width: 850px;
+        
+        /* Larger option heights for desktop */
+        --multiple-choice-option-height: 65px;
+        --true-false-option-height: 70px;
+        --numeric-input-height: 55px;
+        --checkbox-option-height: 50px;
+    }
+}
+
 /* High DPI Displays */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
     /* Enhance for retina displays */
@@ -335,7 +422,7 @@
 /* Landscape Phone Orientation */
 @media (max-width: 768px) and (orientation: landscape) {
     .player-game-container {
-        height: 100vh;
+        height: 100dvh;
         padding: 5px 10px;
     }
     

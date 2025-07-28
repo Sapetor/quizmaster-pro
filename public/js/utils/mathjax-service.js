@@ -9,13 +9,17 @@ import { errorHandler } from './error-handler.js';
 import { recoveryService } from './mathjax/recovery-service.js';
 import { cacheService } from './mathjax/cache-service.js';
 import { RenderService } from './mathjax/render-service.js';
+import { coreCoordinator } from './mathjax/core-coordinator.js';
 
 export class MathJaxService {
     constructor() {
-        // Initialize new modular services
-        this.recoveryService = recoveryService;
-        this.cacheService = cacheService;
-        this.renderService = new RenderService(cacheService, recoveryService);
+        // Initialize Core Coordinator for orchestrated service management
+        this.coreCoordinator = coreCoordinator;
+        
+        // Initialize new modular services (delegated to core coordinator)
+        this.recoveryService = coreCoordinator.recoveryService;
+        this.cacheService = coreCoordinator.cacheService;
+        this.renderService = coreCoordinator.renderService;
         
         // Maintain backward compatibility with existing properties
         this.isReady = false;
@@ -25,6 +29,7 @@ export class MathJaxService {
         // Delegate browser detection to recovery service
         this.isWindows = this.recoveryService.isWindows;
         this.isChrome = this.recoveryService.isChrome;
+        this.isMobile = this.recoveryService.isMobile;
         
         // Delegate recovery state to recovery service  
         this.isRecovering = this.recoveryService.isRecovering;
@@ -230,9 +235,24 @@ export class MathJaxService {
                     const isWindows = navigator.platform.toLowerCase().includes('win') || 
                                     navigator.userAgent.toLowerCase().includes('windows');
                     const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+                    const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|Opera Mini/.test(navigator.userAgent) ||
+                                   (navigator.maxTouchPoints && navigator.maxTouchPoints > 1) ||
+                                   window.innerWidth <= 768;
                     
-                    // Reduced delays for faster F5 recovery
-                    const delay = (isWindows && isChrome) ? 150 : (isWindows ? 100 : (isChrome ? 100 : 0));
+                    // Mobile devices need longer delays due to slower processing
+                    // Desktop Chrome needs delays for proper initialization
+                    let delay = 0;
+                    if (isMobile && isChrome) {
+                        delay = 400; // Mobile Chrome needs significant delay
+                    } else if (isMobile) {
+                        delay = 300; // Other mobile browsers need some delay
+                    } else if (isWindows && isChrome) {
+                        delay = 150; // Desktop Chrome on Windows
+                    } else if (isChrome) {
+                        delay = 100; // Desktop Chrome on other platforms
+                    } else if (isWindows) {
+                        delay = 100; // Windows other browsers
+                    }
                     
                     setTimeout(() => {
                         // FOUC Prevention: Add ready class and remove loading
@@ -534,6 +554,44 @@ export class MathJaxService {
      * Initialize MathJax readiness detection
      */
     initializeMathJax() {
+        // Set load time for F5 corruption detection timing
+        if (!window.mathJaxLoadTime) {
+            window.mathJaxLoadTime = Date.now();
+        }
+        
+        // Mobile-specific early corruption detection after refresh
+        // Only run on mobile devices and only if there are clear corruption signs
+        if (this.isMobile && window.MathJax) {
+            const hasStartup = !!(window.MathJax && window.MathJax.startup);
+            const hasDocument = !!(window.MathJax && window.MathJax.startup && window.MathJax.startup.document);
+            const hasTypesetPromise = !!(window.MathJax && window.MathJax.typesetPromise);
+            
+            // Only trigger early recovery for clear mobile corruption patterns
+            const clearMobileCorruption = (hasStartup && !hasDocument && !hasTypesetPromise) || // Classic corruption
+                                        (hasStartup && !hasTypesetPromise && (Date.now() - performance.timing.navigationStart > 2000)); // Slow mobile loading
+            
+            if (clearMobileCorruption) {
+                logger.warn('🚨 Early mobile corruption detected during initialization - triggering immediate recovery');
+                // Force immediate recovery without waiting for render attempts
+                setTimeout(() => {
+                    this.recoveryService.handleF5Corruption(
+                        document.body, // Use body as placeholder element
+                        () => {
+                            logger.info('✅ Early mobile recovery completed');
+                            this.isReady = true;
+                        },
+                        () => logger.error('❌ Early mobile recovery failed'),
+                        this.cacheService.mathJaxCache,
+                        () => 'early_recovery',
+                        () => {},
+                        () => {},
+                        this.renderService.pendingRenders
+                    );
+                }, 50); // Faster trigger for mobile
+                return;
+            }
+        }
+        
         if (this.isAvailable()) {
             this.isReady = true;
             logger.debug('🔍 MathJax service: MathJax already fully available with typesetPromise');
@@ -567,6 +625,31 @@ export class MathJaxService {
             logger.debug('🔍 MathJax Debug Status:', this.getStatus());
         };
         
+        // Enhanced debugging with Core Coordinator
+        window.mathJaxHealth = async () => {
+            const health = await this.getHealthReport();
+            logger.debug('🏥 MathJax Health Report:', health);
+            return health;
+        };
+        
+        // Reset health metrics
+        window.resetMathJaxHealth = () => {
+            this.resetHealthMetrics();
+            logger.debug('🔄 MathJax health metrics reset');
+        };
+        
+        // Force recovery test
+        window.testMathJaxRecovery = async (elementId = 'preview-content-split') => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                logger.debug('🔧 Testing MathJax recovery...');
+                await this.testRecovery(element);
+                logger.debug('✅ Recovery test completed');
+            } else {
+                logger.error(`❌ Element '${elementId}' not found for recovery test`);
+            }
+        };
+        
         // Force MathJax initialization check
         window.forceMathJaxCheck = () => {
             logger.debug('🔧 Forcing MathJax initialization check...');
@@ -584,12 +667,24 @@ export class MathJaxService {
      * Render MathJax for a specific element with retry mechanism
      * @param {HTMLElement} element - Element to render MathJax in
      * @param {number} timeout - Delay before rendering (default: 100ms)
-     * @param {number} maxRetries - Maximum retry attempts (default: 3)
+     * @param {number} maxRetries - Maximum retry attempts (default: 8)
+     * @param {boolean} fastMode - Skip delays for immediate rendering (preview contexts)
      * @returns {Promise<void>}
      */
-    async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 8) {
-        // Delegate to render service for all rendering operations
-        return this.renderService.renderElement(element, timeout, maxRetries);
+    async renderElement(element, timeout = TIMING.MATHJAX_TIMEOUT, maxRetries = 8, fastMode = false) {
+        // Delegate to Core Coordinator for orchestrated rendering with health monitoring
+        return this.coreCoordinator.render(element, { timeout, maxRetries, fastMode });
+    }
+
+    /**
+     * Fast render method optimized for live preview contexts
+     * Skips delays and timeouts for immediate rendering
+     * @param {HTMLElement} element - Element to render MathJax in
+     * @returns {Promise<void>}
+     */
+    async renderElementFast(element) {
+        // Delegate to Core Coordinator for fast rendering with monitoring
+        return this.coreCoordinator.renderFast(element);
     }
     
     /**
@@ -610,79 +705,6 @@ export class MathJaxService {
             (el) => this.cacheService.cacheMathJaxContent(el),
             this.renderService.pendingRenders
         );
-    }
-        
-        // Prevent duplicate recovery attempts
-        if (this.globalRecoveryLock) {
-            logger.debug('🔒 Recovery already in progress globally, queueing request');
-            this.recoveryCallbacks.push(() => {
-                if (window.MathJax && window.MathJax.typesetPromise) {
-                    window.MathJax.typesetPromise([element]).then(() => {
-                        this.pendingRenders.delete(element);
-                        this.cacheMathJaxContent(element);
-                        this.completeProgressiveLoading(element, true);
-                        resolve();
-                    }).catch(() => {
-                        this.pendingRenders.delete(element);
-                        this.completeProgressiveLoading(element, false);
-                        resolve();
-                    });
-                } else {
-                    this.completeProgressiveLoading(element, false);
-                    resolve();
-                }
-            });
-            return;
-        }
-        
-        // Set global lock
-        this.globalRecoveryLock = true;
-        
-        // Chrome F5 Recovery: Try lightweight approach first, fallback to script reload
-        if (this.isChrome) {
-            const hasOtherTabs = this.hasOtherActiveTabs();
-            // Simplified recovery logic - direct script reload for reliability
-            logger.debug(`🔄 F5 recovery: ${this.isHost ? 'HOST' : 'CLIENT'} (${hasOtherTabs ? 'multi-tab' : 'single-tab'})`);
-            this.performFullScriptReload(element, hasOtherTabs).then(resolve).catch(() => resolve());
-            return;
-        }
-        
-        // If already recovering, queue this render attempt
-        if (this.isRecovering) {
-            logger.debug('🔄 F5 recovery already in progress, queueing render attempt');
-            this.recoveryCallbacks.push(() => {
-                if (window.MathJax && window.MathJax.typesetPromise) {
-                    window.MathJax.typesetPromise([element]).then(() => {
-                        this.pendingRenders.delete(element);
-                        // Complete progressive loading after successful render
-                        this.cacheMathJaxContent(element);
-                        this.completeProgressiveLoading(element, true);
-                        resolve();
-                    }).catch(err => {
-                        errorHandler.log(err, {
-                            context: 'Queued render after F5 recovery',
-                            elementId: element.id || 'unknown'
-                        });
-                        this.pendingRenders.delete(element);
-                        // Complete progressive loading even on error
-                        this.completeProgressiveLoading(element, false);
-                        resolve();
-                    });
-                } else {
-                    // Complete progressive loading if MathJax still not ready
-                    this.completeProgressiveLoading(element, false);
-                    resolve();
-                }
-            });
-            return;
-        }
-        
-        // Start recovery process for non-Chrome browsers or fallback
-        this.isRecovering = true;
-        
-        // For non-Chrome browsers, use direct script reload
-        logger.debug('🔧 Non-Chrome F5 recovery - using direct script reload');
-        this.performFullScriptReload(element, false).then(resolve).catch(() => resolve());
     }
 
     /**
@@ -737,7 +759,11 @@ export class MathJaxService {
      * @returns {object}
      */
     getStatus() {
+        // Combine legacy status with Core Coordinator health data
+        const coordinatorHealth = this.coreCoordinator.getHealthStatus();
+        
         return {
+            // Legacy status for backward compatibility
             isReady: this.isReady,
             mathJaxExists: !!window.MathJax,
             typesetPromiseExists: !!window.MathJax?.typesetPromise,
@@ -747,8 +773,40 @@ export class MathJaxService {
             hubExists: !!window.MathJax?.Hub,
             isWindows: this.isWindows,
             platform: navigator.platform,
-            userAgent: navigator.userAgent.substring(0, 100) + '...' // Truncated for readability
+            userAgent: navigator.userAgent.substring(0, 100) + '...',
+            
+            // Enhanced status from Core Coordinator
+            coordinator: coordinatorHealth.coordinator,
+            services: coordinatorHealth.services,
+            performance: coordinatorHealth.performance,
+            cache: coordinatorHealth.cache,
+            lastError: coordinatorHealth.lastError,
+            recentPerformance: coordinatorHealth.recentPerformance
         };
+    }
+
+    /**
+     * Get comprehensive health report
+     * @returns {Promise<object>} Complete health and diagnostic data
+     */
+    async getHealthReport() {
+        return this.coreCoordinator.runDiagnostics();
+    }
+
+    /**
+     * Reset health metrics (useful for testing)
+     */
+    resetHealthMetrics() {
+        this.coreCoordinator.resetHealthMetrics();
+    }
+
+    /**
+     * Force F5 recovery for testing purposes
+     * @param {HTMLElement} element - Element to test recovery with
+     * @returns {Promise<void>}
+     */
+    async testRecovery(element) {
+        return this.coreCoordinator.forceRecovery(element);
     }
 
     /**
@@ -768,29 +826,6 @@ export class MathJaxService {
     showProgressiveLoading(element) {
         // Delegate to render service
         return this.renderService.showProgressiveLoading(element);
-    }
-            
-            // PERFORMANCE OPTIMIZATION: Only show fallback for slow renders
-            // Skip progressive loading for fast normal renders
-            const isLikelyF5Recovery = this.isRecovering || 
-                                     !window.MathJax?.typesetPromise ||
-                                     (this.isChrome && this.hasOtherActiveTabs());
-                                     
-            if (isLikelyF5Recovery) {
-                // Only add fallback timer for recovery scenarios
-                const fallbackTimer = setTimeout(() => {
-                    if (element.classList.contains('mathjax-loading')) {
-                        this.showFallbackContent(element);
-                    }
-                }, 300); // Show fallback after 300ms delay
-                
-                element.dataset.fallbackTimer = fallbackTimer;
-                // Progressive loading enabled for F5 recovery
-            }
-            
-        } catch (e) {
-            // Silent error handling
-        }
     }
 
     /**
@@ -859,43 +894,6 @@ export class MathJaxService {
         // Delegate to render service
         return this.renderService.completeProgressiveLoading(element, renderSucceeded);
     }
-                clearTimeout(parseInt(element.dataset.fallbackTimer));
-                delete element.dataset.fallbackTimer;
-            }
-            
-            // CRITICAL FIX: Remove loading overlay instead of restoring content
-            if (element.dataset.hasLoadingOverlay === 'true') {
-                const overlay = element.querySelector('.mathjax-loading-overlay');
-                if (overlay) {
-                    overlay.remove();
-                }
-                delete element.dataset.hasLoadingOverlay;
-            }
-            
-            // Restore original content ONLY if rendering failed AND we modified innerHTML
-            if (!renderSucceeded && element.dataset.originalContent && 
-                element.innerHTML.includes('⌛ Rendering mathematics')) {
-                // Only restore if innerHTML was actually modified (old fallback approach)
-                element.innerHTML = element.dataset.originalContent;
-            }
-            
-            // Remove loading classes and add ready class
-            element.classList.remove('mathjax-loading');
-            element.classList.add('mathjax-ready');
-            
-            // Clean up stored data
-            delete element.dataset.originalContent;
-            delete element.dataset.mathJaxOriginal;
-            
-            // Remove any remaining fallback indicators (old approach)
-            const indicators = element.querySelectorAll('[style*="Rendering mathematics"]');
-            indicators.forEach(indicator => indicator.remove());
-            
-            // Reduced verbosity - no debug logging
-        } catch (e) {
-            // Silent error handling for reduced console output
-        }
-    }
 
     /**
      * Generate cache key for MathJax content
@@ -903,15 +901,8 @@ export class MathJaxService {
      * @returns {string} Cache key
      */
     getCacheKey(element) {
-        const originalContent = element.dataset.originalContent || element.innerHTML;
-        // Create hash-like key from content
-        let hash = 0;
-        for (let i = 0; i < originalContent.length; i++) {
-            const char = originalContent.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32-bit integer
-        }
-        return `mathjax_${Math.abs(hash)}_${originalContent.length}`;
+        // Delegate to cache service
+        return this.cacheService.getCacheKey(element);
     }
 
     /**
@@ -919,37 +910,16 @@ export class MathJaxService {
      * @param {Element} element - Element with rendered MathJax
      */
     cacheMathJaxContent(element) {
-        if (!element || !element.innerHTML) return;
-        
-        try {
-            const cacheKey = this.getCacheKey(element);
-            const renderedContent = element.innerHTML;
-            
-            // Only cache if it contains actual MathJax rendered elements
-            if (renderedContent.includes('mjx-') || renderedContent.includes('MathJax')) {
-                this.mathJaxCache.set(cacheKey, renderedContent);
-                logger.debug(`⚡ Cached MathJax content: ${cacheKey}`);
-                
-                // Limit cache size to prevent memory issues
-                if (this.mathJaxCache.size > 50) {
-                    const firstKey = this.mathJaxCache.keys().next().value;
-                    this.mathJaxCache.delete(firstKey);
-                }
-            }
-        } catch (error) {
-            errorHandler.log(error, {
-                context: 'MathJax caching',
-                elementId: element.id || 'unknown'
-            });
-        }
+        // Delegate to cache service
+        return this.cacheService.cacheMathJaxContent(element);
     }
 
     /**
      * Clear MathJax cache (useful for testing or memory management)
      */
     clearCache() {
-        this.mathJaxCache.clear();
-        logger.debug('🧹 Cleared MathJax cache');
+        // Delegate to cache service
+        return this.cacheService.clearCache();
     }
 }
 

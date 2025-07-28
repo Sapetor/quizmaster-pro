@@ -49,7 +49,7 @@ export class GameStateManager {
         this.stopTimer(); // Clear any existing timer
         
         let timeLeft = duration;
-        logger.debug('Starting timer:', timeLeft, 'seconds');
+        // logger.debug('Starting timer:', timeLeft, 'seconds');
         
         this.timer = setInterval(() => {
             timeLeft--;
@@ -74,7 +74,7 @@ export class GameStateManager {
         if (this.timer) {
             clearInterval(this.timer);
             this.timer = null;
-            logger.debug('Timer stopped');
+            // logger.debug('Timer stopped');
         }
     }
 

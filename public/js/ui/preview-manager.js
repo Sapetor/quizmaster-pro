@@ -7,6 +7,7 @@
 import { translationManager } from '../utils/translation-manager.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { MathJaxService } from '../utils/mathjax-service.js';
+import { contentDensityManager } from '../utils/content-density-manager.js';
 import { logger, TIMING, UI } from '../core/config.js';
 
 export class PreviewManager {
