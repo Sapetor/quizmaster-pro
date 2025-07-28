@@ -188,7 +188,7 @@ export const ANIMATION = {
     CONFETTI_PARTICLE_COUNT: 100,
     CONFETTI_BURST_PARTICLES: 50,
     CONFETTI_SPREAD: 70,
-    CONFETTI_ORIGIN_Y: 0.6,
+    CONFETTI_ORIGIN_Y: 0.1, // Confetti falls from near the top of screen
     CONFETTI_ANGLE_RANGE: [55, 125],
     
     // Visual effects

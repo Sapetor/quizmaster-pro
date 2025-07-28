@@ -3,7 +3,7 @@
  * Replaces inline feedback with modal popups to prevent scrolling issues on mobile
  */
 
-import { logger } from '../core/config.js';
+import { logger, ANIMATION } from '../core/config.js';
 import { getTranslation } from './translation-manager.js';
 
 export class ModalFeedback {
@@ -116,9 +116,9 @@ export class ModalFeedback {
      * @param {number} score - Score to display
      */
     updateContent(isCorrect, message, score) {
-        // Set feedback icon
+        // Set feedback icon - no rotating emoji for correct answers
         if (this.feedbackIcon) {
-            this.feedbackIcon.textContent = isCorrect ? '✅' : '❌';
+            this.feedbackIcon.textContent = isCorrect ? '🎉' : '❌';
         }
 
         // Set feedback message
@@ -160,13 +160,67 @@ export class ModalFeedback {
     }
 
     /**
-     * Show correct answer feedback
+     * Show correct answer feedback with confetti animation
      * @param {string} message - Custom message (optional)
      * @param {number} score - Score to display (optional)
      * @param {number} autoDismissTime - Auto-dismiss time in ms (default: 3000)
      */
     showCorrect(message = null, score = null, autoDismissTime = 3000) {
         this.show(true, message, score, autoDismissTime);
+        
+        // Add confetti animation on top of the modal
+        this.triggerModalConfetti();
+    }
+    
+    /**
+     * Trigger confetti animation positioned over the modal feedback
+     */
+    triggerModalConfetti() {
+        if (typeof confetti === 'function') {
+            logger.debug('🎊 Triggering modal confetti animation');
+            
+            // Get modal position for confetti targeting
+            const modalRect = this.modal ? this.modal.getBoundingClientRect() : null;
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
+            
+            // Calculate confetti origin relative to modal
+            const originY = modalRect ? (modalRect.top / viewportHeight) - 0.1 : 0.1; // Above modal
+            const originX = modalRect ? (modalRect.left + modalRect.width / 2) / viewportWidth : 0.5; // Center of modal
+            
+            // Main burst over the modal
+            confetti({
+                particleCount: ANIMATION.CONFETTI_BURST_PARTICLES + 20,
+                spread: 60,
+                origin: { y: Math.max(0.05, originY), x: originX },
+                colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
+                gravity: 0.8,
+                scalar: 1.2
+            });
+            
+            // Side bursts for extra celebration
+            setTimeout(() => {
+                confetti({
+                    particleCount: 25,
+                    angle: 60,
+                    spread: 45,
+                    origin: { y: Math.max(0.05, originY), x: Math.max(0.1, originX - 0.3) },
+                    colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00'],
+                    gravity: 0.8
+                });
+                
+                confetti({
+                    particleCount: 25,
+                    angle: 120,
+                    spread: 45,
+                    origin: { y: Math.max(0.05, originY), x: Math.min(0.9, originX + 0.3) },
+                    colors: ['#ff00ff', '#00ffff', '#ffff00', '#00ff00'],
+                    gravity: 0.8
+                });
+            }, 200);
+        } else {
+            logger.debug('Confetti function not available for modal feedback');
+        }
     }
 
     /**

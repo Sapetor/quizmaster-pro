@@ -1611,12 +1611,37 @@ export class GameManager {
     showConfetti() {
         logger.debug('showConfetti called, confetti function available:', typeof confetti === 'function');
         if (typeof confetti === 'function') {
-            logger.debug('Triggering confetti animation');
+            logger.debug('Triggering confetti animation from top of screen');
+            
+            // Main center burst from top
             confetti({
-                particleCount: ANIMATION.CONFETTI_BURST_PARTICLES,
+                particleCount: ANIMATION.CONFETTI_BURST_PARTICLES + 30, // More particles for celebration
                 spread: ANIMATION.CONFETTI_SPREAD,
-                origin: { y: ANIMATION.CONFETTI_ORIGIN_Y }
+                origin: { y: ANIMATION.CONFETTI_ORIGIN_Y, x: 0.5 }, // Center top
+                colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']
             });
+            
+            // Left side burst
+            setTimeout(() => {
+                confetti({
+                    particleCount: ANIMATION.CONFETTI_BURST_PARTICLES / 2,
+                    angle: 60,
+                    spread: 55,
+                    origin: { y: ANIMATION.CONFETTI_ORIGIN_Y, x: 0.2 },
+                    colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']
+                });
+            }, 150);
+            
+            // Right side burst
+            setTimeout(() => {
+                confetti({
+                    particleCount: ANIMATION.CONFETTI_BURST_PARTICLES / 2,
+                    angle: 120,
+                    spread: 55,
+                    origin: { y: ANIMATION.CONFETTI_ORIGIN_Y, x: 0.8 },
+                    colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']
+                });
+            }, 300);
         } else {
             logger.debug('Confetti function not available');
         }
