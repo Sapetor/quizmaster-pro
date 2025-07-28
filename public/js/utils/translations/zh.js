@@ -19,7 +19,7 @@ export default {
         randomize_answers: "随机化答案位置",
         use_same_time: "所有问题使用相同时间",
         manual_advancement: "手动问题推进（主持人控制）",
-        manual_advancement_desc: "启用时，您可以控制何时进入下一个问题",
+        manual_advancement_desc: "手动推进现在是默认设置。取消选中以使用基于计时器的自动推进",
         browse_games: "浏览可用游戏",
         refresh: "刷新",
         back_to_join: "返回加入",

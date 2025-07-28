@@ -19,7 +19,7 @@ export default {
         randomize_answers: "回答の位置をランダム化",
         use_same_time: "すべての質問で同じ時間を使用",
         manual_advancement: "手動質問進行（ホスト制御）",
-        manual_advancement_desc: "有効にすると、次の質問に進むタイミングを制御できます",
+        manual_advancement_desc: "手動進行がデフォルトになりました。タイマーベースの自動進行にはチェックを外してください",
         browse_games: "利用可能なゲームを閲覧",
         refresh: "更新",
         back_to_join: "参加に戻る",

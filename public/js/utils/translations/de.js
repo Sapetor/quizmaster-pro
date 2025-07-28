@@ -19,7 +19,7 @@ export default {
         randomize_answers: "Antwortpositionen zufällig ordnen",
         use_same_time: "Gleiche Zeit für alle Fragen verwenden",
         manual_advancement: "Manuelle Fragenweiterleitung (Host-Kontrolle)",
-        manual_advancement_desc: "Wenn aktiviert, kontrollieren Sie, wann zur nächsten Frage weitergegangen wird",
+        manual_advancement_desc: "Manuelle Weiterleitung ist jetzt Standard. Abwählen für automatische Timer-basierte Weiterleitung",
         browse_games: "Verfügbare Spiele durchsuchen",
         refresh: "Aktualisieren",
         back_to_join: "Zurück zum Beitreten",

@@ -19,7 +19,7 @@ export default {
         randomize_answers: "Embaralhar posições das respostas",
         use_same_time: "Usar o mesmo tempo para todas as perguntas",
         manual_advancement: "Avanço manual das perguntas (controle do anfitrião)",
-        manual_advancement_desc: "Quando ativado, você controla quando passar para a próxima pergunta",
+        manual_advancement_desc: "O avanço manual é agora padrão. Desmarque para avanço automático baseado em temporizador",
         browse_games: "Procurar Jogos Disponíveis",
         refresh: "Atualizar",
         back_to_join: "Voltar para Juntar-se",

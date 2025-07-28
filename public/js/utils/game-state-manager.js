@@ -198,30 +198,6 @@ export class GameStateManager {
         // Apply new state class
         this.container.classList.add(`game-state-${state}`);
         
-        // DEBUG: Log container info for mobile debugging
-        console.log('🐛 MOBILE DEBUG - Container after state change:');
-        console.log('🐛 Container element:', this.container);
-        console.log('🐛 Container tagName:', this.container.tagName);
-        console.log('🐛 Container id:', this.container.id);
-        console.log('🐛 Container classes:', this.container.className);
-        console.log('🐛 Container computed height:', window.getComputedStyle(this.container).height);
-        console.log('🐛 Container getBoundingClientRect:', this.container.getBoundingClientRect());
-        console.log('🐛 Container parent:', this.container.parentElement);
-        console.log('🐛 Container innerHTML length:', this.container.innerHTML.length);
-        console.log('🐛 Is mobile:', window.innerWidth <= 768);
-        
-        // FIND ALL CONTAINERS WITH GAME STATE CLASSES
-        const allContainers = document.querySelectorAll('.container');
-        console.log('🐛 All containers found:', allContainers.length);
-        allContainers.forEach((container, index) => {
-            console.log(`🐛 Container ${index}:`, {
-                element: container,
-                classes: container.className,
-                height: window.getComputedStyle(container).height,
-                rect: container.getBoundingClientRect()
-            });
-        });
-        
         // Handle state-specific logic
         switch (state) {
             case 'playing':

@@ -19,7 +19,7 @@ export default {
         randomize_answers: "Randomize answer positions",
         use_same_time: "Use same time for all questions",
         manual_advancement: "Manual question advancement (host control)",
-        manual_advancement_desc: "When enabled, you control when to advance to the next question",
+        manual_advancement_desc: "Manual advancement is now the default. Uncheck for automatic timer-based advancement",
         browse_games: "Browse Available Games",
         refresh: "Refresh",
         back_to_join: "Back to Join",

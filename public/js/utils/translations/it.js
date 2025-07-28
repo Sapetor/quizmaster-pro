@@ -19,7 +19,7 @@ export default {
         randomize_answers: "Mescola posizioni risposte",
         use_same_time: "Usa lo stesso tempo per tutte le domande",
         manual_advancement: "Avanzamento manuale domande (controllo host)",
-        manual_advancement_desc: "Quando abilitato, controlli quando passare alla prossima domanda",
+        manual_advancement_desc: "L'avanzamento manuale è ora predefinito. Deseleziona per avanzamento automatico basato su timer",
         browse_games: "Sfoglia Giochi Disponibili",
         refresh: "Aggiorna",
         back_to_join: "Torna a Unisciti",

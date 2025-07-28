@@ -169,7 +169,7 @@
     }
 }
 
-/* Question Header - Counter and Timer */
+/* Question Header - Counter, Next Button, and Timer */
 .question-header {
     display: flex;
     justify-content: space-between;
@@ -179,6 +179,7 @@
     gap: 20px;
     min-height: 60px; /* Ensure consistent height */
 }
+
 
 #question-counter {
     font-size: 1.1rem;
@@ -1341,6 +1342,83 @@
     z-index: 1;
 }
 
+/* Leaderboard Header with Next Question Button */
+.leaderboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 24px;
+}
+
+.leaderboard-header h2 {
+    margin-bottom: 0; /* Remove default margin since we handle spacing with the header container */
+}
+
+/* Next Question Button (Manual Advancement) - Now in leaderboard header */
+.leaderboard-header #next-question {
+    padding: 12px 24px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    position: relative;
+    z-index: 2;
+    background: linear-gradient(135deg, 
+        var(--color-primary-500) 0%, 
+        var(--color-primary-600) 50%, 
+        var(--color-primary-700) 100%);
+    border: 2px solid var(--color-primary-500);
+    border-radius: var(--border-radius);
+    box-shadow: 
+        var(--shadow-md),
+        var(--shadow-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(0);
+    overflow: hidden;
+    white-space: nowrap;
+    min-width: 160px;
+    color: white;
+}
+
+#next-question::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.2), 
+        transparent);
+    transition: left 0.5s ease;
+}
+
+.leaderboard-header #next-question:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        var(--shadow-lg),
+        0 0 25px rgba(59, 130, 246, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    border-color: rgba(59, 130, 246, 0.6);
+    background: linear-gradient(135deg, 
+        var(--color-primary-600) 0%, 
+        var(--color-primary-700) 50%, 
+        var(--color-primary-900) 100%);
+}
+
+.leaderboard-header #next-question:hover::before {
+    left: 100%;
+}
+
+.leaderboard-header #next-question:active {
+    transform: translateY(-1px);
+    transition: transform 0.1s ease;
+}
+
+
 .leaderboard-title {
     text-align: center;
     font-size: 32px;
@@ -2147,6 +2225,21 @@
         text-align: center;
     }
     
+    /* Compact leaderboard header for mobile */
+    .leaderboard-header {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+    }
+    
+    /* Compact next question button for mobile */
+    .leaderboard-header #next-question {
+        padding: 10px 18px;
+        font-size: 1rem;
+        min-width: 140px;
+        order: 2; /* Place after title since it's now on the right */
+    }
+    
     #timer {
         font-size: 1.4rem;
         padding: 8px 16px;
@@ -2338,11 +2431,15 @@
 
 /* Immersive Game Mode - Hide non-essential UI during active gameplay */
 .game-state-playing {
-    /* Hide main header during gameplay for maximum screen space */
+    /* SOLUTION: Remove header from document flow entirely during gameplay */
     header {
-        transform: translateY(-100%);
+        position: absolute !important;
+        top: -100px !important; /* Move completely out of view */
+        left: 0;
+        right: 0;
         opacity: 0;
         pointer-events: none;
+        z-index: -1; /* Ensure it's behind everything */
         transition: all 0.3s ease-in-out;
     }
     
@@ -2354,25 +2451,35 @@
         transition: all 0.3s ease-in-out;
     }
     
-    /* Adjust container to account for hidden header */
+    /* SOLUTION: Reclaim header space by adjusting main container */
     .container {
-        padding-top: 0;
-        transition: padding-top 0.3s ease-in-out;
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+        /* Compensate for removed sticky header space */
+        min-height: 100dvh !important;
+        transition: all 0.3s ease-in-out;
     }
     
-    /* Maximize game area */
+    /* SOLUTION: Maximize game area and eliminate blank space */
     .host-game-container,
     .player-game-container {
-        height: 100dvh;
-        padding-top: 20px;
+        min-height: 100dvh !important;
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+        /* Ensure content starts at the very top */
+        position: relative;
+        top: 0;
         transition: all 0.3s ease-in-out;
     }
 }
 
 /* Game State: Waiting for players (lobby) - Show all UI */
 .game-state-lobby {
-    /* Keep all UI visible during lobby */
+    /* SOLUTION: Restore normal header positioning during lobby */
     header {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
         transform: translateY(0);
         opacity: 1;
         pointer-events: all;
@@ -2389,8 +2496,11 @@
 
 /* Game State: Editing mode - Show all UI with enhanced toolbar */
 .game-state-editing {
-    /* Full UI visibility for editing */
+    /* SOLUTION: Restore normal header positioning during editing */
     header {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
         transform: translateY(0);
         opacity: 1;
         pointer-events: all;
@@ -2409,8 +2519,11 @@
 
 /* Game State: Results/Leaderboard - Minimal UI with room for celebration */
 .game-state-results {
-    /* Keep essential UI but optimize for results display */
+    /* SOLUTION: Restore normal header positioning during results */
     header {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
         transform: translateY(0);
         opacity: 0.7;
         pointer-events: all;
@@ -2453,7 +2566,10 @@
 }
 
 .game-state-playing.ui-revealed header {
-    transform: translateY(0);
+    /* SOLUTION: Restore header position when UI is revealed */
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
     opacity: 0.9;
     pointer-events: all;
 }
@@ -2517,8 +2633,8 @@
         /* Maximize mobile screen real estate */
         .host-game-container,
         .player-game-container {
-            height: 100dvh;
-            padding: 5px 10px; /* Reduce vertical padding for more content space */
+            min-height: 100dvh;
+            padding: 0 10px 5px 10px; /* Remove top padding, keep bottom and sides */
             gap: 12px; /* Reduce gap between main container elements */
             overflow-y: auto; /* Allow scrolling only when necessary */
         }
@@ -2596,7 +2712,8 @@
         }
         
         /* Tall content (code snippets, images) - Natural scrolling with full body height */
-        .game-state-playing.tall-content .player-game-container {
+        .game-state-playing.tall-content .player-game-container,
+        .game-state-playing.tall-content .host-game-container {
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
@@ -2617,7 +2734,8 @@
         }
         
         /* Enhance scrolling smoothness for tall content */
-        .game-state-playing.tall-content .player-game-container {
+        .game-state-playing.tall-content .player-game-container,
+        .game-state-playing.tall-content .host-game-container {
             scroll-behavior: smooth !important;
             overscroll-behavior: contain !important;
             touch-action: pan-y !important;
@@ -2643,7 +2761,8 @@
         }
         
         /* Image content optimizations */
-        .game-state-playing.has-image .player-game-container {
+        .game-state-playing.has-image .player-game-container,
+        .game-state-playing.has-image .host-game-container {
             padding: 12px !important;
         }
         
@@ -2701,9 +2820,11 @@
 
 /* Gesture-based UI reveal (preparation for gesture navigation) */
 .game-state-playing.gesture-reveal {
-    /* Quick slide-down gesture reveals header temporarily */
+    /* SOLUTION: Quick slide-down gesture reveals header temporarily */
     header {
-        transform: translateY(0);
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
         opacity: 0.95;
         pointer-events: all;
     }

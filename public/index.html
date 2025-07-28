@@ -363,7 +363,7 @@
                                 <input type="checkbox" id="randomize-answers"> <span data-translate="randomize_answers">Randomize answer positions</span>
                             </label>
                             <label>
-                                <input type="checkbox" id="use-global-time" onchange="toggleGlobalTime()"> <span data-translate="use_same_time">Use same time for all questions</span>
+                                <input type="checkbox" id="use-global-time" onchange="QM('toggleGlobalTime')"> <span data-translate="use_same_time">Use same time for all questions</span>
                             </label>
                             <div id="global-time-container" class="time-setting-container" style="display: none;">
                                 <label class="time-input-label">
@@ -374,7 +374,7 @@
                         </div>
                         <div class="advanced-options">
                             <label class="manual-advancement-option" style="border: 2px solid #4299e1; border-radius: 8px; padding: 8px; background: rgba(66, 153, 225, 0.1);">
-                                <input type="checkbox" id="manual-advancement" data-translate-title="manual_advancement_desc" title="When enabled, you control when to advance to the next question"> <strong>🎮 <span data-translate="manual_advancement">Manual question advancement (host control)</span></strong>
+                                <input type="checkbox" id="manual-advancement" checked data-translate-title="manual_advancement_desc" title="Manual advancement is now the default. Uncheck for automatic timer-based advancement"> <strong>🎮 <span data-translate="manual_advancement">Manual question advancement (host control)</span></strong>
                             </label>
                         </div>
                         
@@ -878,9 +878,11 @@
 
         <div id="leaderboard-screen" class="screen">
             <div class="leaderboard-container">
-                <h2 data-translate="leaderboard_title">🏆 Leaderboard</h2>
+                <div class="leaderboard-header">
+                    <h2 data-translate="leaderboard_title">🏆 Leaderboard</h2>
+                    <button id="next-question" class="btn primary" style="display: none;" data-translate="next_question">Next Question</button>
+                </div>
                 <div id="leaderboard-list" class="leaderboard"></div>
-                <button id="next-question" class="btn primary" style="display: none;" data-translate="next_question">Next Question</button>
                 <div id="final-results" class="final-results hidden">
                     <h3 data-translate="game_complete">🎉 Game Complete!</h3>
                     <button id="new-game" class="btn primary" data-translate="new_game">New Game</button>

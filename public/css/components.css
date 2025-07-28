@@ -916,7 +916,7 @@ select option {
     height: 16px;
     transform: scale(1) !important; /* Override any scaling */
     accent-color: var(--color-primary-500);
-    margin-right: 8px;
+    margin: 0 8px 0 15px; /* top right bottom left - added left margin for highlight visibility */
 }
 
 /* === FIX GRAY BOXES AND RECTANGLE SHAPE AROUND QUIZ SETTINGS LABELS === */
@@ -1062,6 +1062,12 @@ select option {
 
 .general-options {
     margin-bottom: 8px; /* Much closer spacing */
+    margin-left: 20px; /* Add left margin for breathing room from container edge */
+}
+
+/* Add left margin to "Create Your Quiz" heading for better spacing */
+.quiz-editor-section h2:first-of-type {
+    margin-left: 20px; /* Match the spacing with checkboxes below */
 }
 
 .advanced-options {

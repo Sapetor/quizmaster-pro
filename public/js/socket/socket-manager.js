@@ -84,24 +84,9 @@ export class SocketManager {
             logger.debug('Question image data:', JSON.stringify(data.image), 'Has image:', !!data.image);
             logger.debug('Full question data received:', JSON.stringify(data, null, 2));
             
-            // DEBUG: This should always show
-            console.log('🐛 QUESTION START EVENT - Mobile debugging');
-            console.log('🐛 Data received:', data);
-            
-            try {
-                // Switch to playing state for immersive gameplay
-                console.log('🐛 QUESTION START - About to set game state to playing');
-                console.log('🐛 gameStateManager exists:', !!gameStateManager);
-                console.log('🐛 Current viewport:', window.innerWidth, 'x', window.innerHeight);
-                
-                if (gameStateManager && typeof gameStateManager.setState === 'function') {
-                    gameStateManager.setState('playing');
-                    console.log('🐛 Game state set to playing completed');
-                } else {
-                    console.log('🐛 gameStateManager not available or setState not a function');
-                }
-            } catch (error) {
-                console.error('🐛 Error in game state change:', error);
+            // Switch to playing state for immersive gameplay
+            if (gameStateManager && typeof gameStateManager.setState === 'function') {
+                gameStateManager.setState('playing');
             }
             
             this.gameManager.displayQuestion(data);
@@ -144,20 +129,24 @@ export class SocketManager {
             logger.debug('Showing next question button');
             const nextButton = document.getElementById('next-question');
             if (nextButton) {
+                // Simply show the button and let CSS handle all styling
                 nextButton.style.display = 'block';
-                nextButton.style.position = 'fixed';
-                nextButton.style.bottom = '20px';
-                nextButton.style.right = '20px';
-                nextButton.style.zIndex = '1000';
-                nextButton.style.backgroundColor = '#4CAF50';
-                nextButton.style.color = 'white';
-                nextButton.style.border = 'none';
-                nextButton.style.padding = '15px 30px';
-                nextButton.style.borderRadius = '8px';
-                nextButton.style.fontSize = '16px';
-                nextButton.style.cursor = 'pointer';
-                nextButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-                nextButton.onclick = null; // Clear any existing onclick
+                // Clear any existing onclick handler
+                nextButton.onclick = null;
+                
+                // Remove any previously set inline styles that might interfere with CSS
+                nextButton.style.position = '';
+                nextButton.style.bottom = '';
+                nextButton.style.right = '';
+                nextButton.style.zIndex = '';
+                nextButton.style.backgroundColor = '';
+                nextButton.style.color = '';
+                nextButton.style.border = '';
+                nextButton.style.padding = '';
+                nextButton.style.borderRadius = '';
+                nextButton.style.fontSize = '';
+                nextButton.style.cursor = '';
+                nextButton.style.boxShadow = '';
             }
         });
 

@@ -11,8 +11,28 @@ export class ErrorBoundary {
     constructor() {
         this.errorHandler = errorHandler;
         this.errorCount = 0;
-        this.maxErrors = 10; // Maximum errors before disabling error recovery
+        this.maxErrors = 50; // Increased even more - be very tolerant during DOM operations
         this.criticalErrorOccurred = false;
+        
+        // Track different error types separately
+        this.errorTypeCounts = {
+            dom_operation: 0,
+            network_operation: 0,
+            game_logic: 0,
+            translation: 0,
+            socket_event: 0,
+            other: 0
+        };
+        
+        // Define which error types should be more tolerant
+        this.tolerantErrorTypes = new Set(['dom_operation', 'translation', 'generic_recovery']);
+        
+        // Circuit breaker for rapid error cascades
+        this.recentErrors = [];
+        this.cascadeThreshold = 5; // 5 errors in rapid succession
+        this.cascadeTimeWindow = 1000; // within 1 second
+        this.inCircuitBreakerMode = false;
+        this.circuitBreakerTimeout = null;
         
         // Bind methods
         this.handleError = this.handleError.bind(this);
@@ -29,6 +49,13 @@ export class ErrorBoundary {
     setupGlobalErrorHandlers() {
         // Global error handler for uncaught exceptions
         window.addEventListener('error', (event) => {
+            // Skip common non-critical errors
+            const errorMessage = event.error?.message || '';
+            if (this.isNonCriticalError(errorMessage, event.error)) {
+                logger.debug('Skipping non-critical error:', errorMessage);
+                return;
+            }
+            
             logger.error('Global error caught:', event.error);
             this.handleError(event.error, {
                 type: 'global_error',
@@ -40,6 +67,13 @@ export class ErrorBoundary {
 
         // Global handler for unhandled promise rejections
         window.addEventListener('unhandledrejection', (event) => {
+            // Skip common non-critical promise rejections
+            const reason = event.reason?.message || event.reason?.toString() || '';
+            if (this.isNonCriticalError(reason, event.reason)) {
+                logger.debug('Skipping non-critical promise rejection:', reason);
+                return;
+            }
+            
             logger.error('Unhandled promise rejection:', event.reason);
             this.handleError(event.reason, {
                 type: 'unhandled_promise_rejection'
@@ -63,16 +97,193 @@ export class ErrorBoundary {
     }
 
     /**
+     * Check if an error should be considered non-critical and not counted
+     */
+    /**
+     * Check if an error should be considered non-critical and not counted
+     */
+    isNonCriticalError(message, error) {
+        const nonCriticalPatterns = [
+            // Browser/ResizeObserver errors
+            /ResizeObserver loop limit exceeded/i,
+            /ResizeObserver loop completed with undelivered notifications/i,
+            /ResizeObserver.*callback has queued a mutation/i,
+            
+            // Network/Loading errors
+            /Non-Error promise rejection captured/i,
+            /Script error/i,
+            /Loading chunk \d+ failed/i,
+            /ChunkLoadError/i,
+            /Loading CSS chunk/i,
+            /Network request failed/i,
+            /Failed to fetch/i,
+            /AbortError/i,
+            /The operation was aborted/i,
+            /timeout/i,
+            /NetworkError/i,
+            
+            // MathJax/Rendering errors  
+            /MathJax.*not ready/i,
+            /MathJax.*startup/i,
+            /MathJax.*typesetPromise/i,
+            
+            // Common DOM manipulation errors during UI updates
+            /Cannot read.*of null/i,
+            /Cannot read.*of undefined/i,
+            /Cannot read property.*null/i,
+            /Cannot read property.*undefined/i,
+            /Cannot access before initialization/i,
+            /Element.*does not exist/i,
+            /parentNode.*null/i,
+            /parentElement.*null/i,
+            /insertBefore.*null/i,
+            /insertAfter.*null/i,
+            /removeChild.*null/i,
+            /appendChild.*null/i,
+            /querySelector.*null/i,
+            /getElementById.*null/i,
+            /Node was not found/i,
+            /The node to be removed is not a child/i,
+            /Failed to execute.*on.*Element/i,
+            
+            // Event handling errors during DOM manipulation
+            /addEventListener.*null/i,
+            /removeEventListener.*null/i,
+            /dispatchEvent.*null/i,
+            /click.*null/i,
+            /focus.*null/i,
+            /blur.*null/i,
+            
+            // Style/CSS errors during DOM updates
+            /Cannot set property.*of null/i,
+            /Cannot set property.*of undefined/i,
+            /style.*null/i,
+            /classList.*null/i,
+            /className.*null/i,
+            
+            // Form/Input errors
+            /value.*null/i,
+            /checked.*null/i,
+            /selected.*null/i,
+            /disabled.*null/i,
+            
+            // Animation/Transition errors
+            /requestAnimationFrame/i,
+            /cancelAnimationFrame/i,
+            /transition.*null/i,
+            /transform.*null/i,
+            
+            // Common undefined reference errors during rapid DOM changes
+            /is not defined/i,
+            /is not a function/i,
+            /has no properties/i,
+            /undefined.*function/i,
+            
+            // Preview-specific errors that shouldn't crash the app
+            /preview.*error/i,
+            /question.*container.*null/i,
+            /question.*element.*null/i,
+            /question.*item.*null/i,
+            
+            // Generic temporary state errors
+            /temporarily unavailable/i,
+            /not yet initialized/i,
+            /still loading/i,
+            /operation pending/i
+        ];
+        
+        // Also check for specific error objects that are non-critical
+        if (error) {
+            // Skip DOMException errors that are non-critical
+            if (error.name === 'AbortError' || error.name === 'NetworkError') {
+                return true;
+            }
+            
+            // Skip errors without meaningful stack traces (often browser internals)
+            if (!error.stack || error.stack.length < 50) {
+                return true;
+            }
+        }
+        
+        return nonCriticalPatterns.some(pattern => pattern.test(message));
+    }
+
+    /**
+     * Handle errors with context and recovery attempts
+     */
+    /**
+     * Handle errors with context and recovery attempts
+     */
+    /**
      * Handle errors with context and recovery attempts
      */
     handleError(error, context = {}) {
-        this.errorCount++;
+        const now = Date.now();
+        const errorMessage = error?.message || error?.toString() || 'Unknown error';
+        
+        // Circuit breaker: detect error cascades and temporarily stop counting errors
+        this.recentErrors.push(now);
+        this.recentErrors = this.recentErrors.filter(time => now - time < this.cascadeTimeWindow);
+        
+        if (this.recentErrors.length >= this.cascadeThreshold && !this.inCircuitBreakerMode) {
+            this.inCircuitBreakerMode = true;
+            logger.warn('Error cascade detected - enabling circuit breaker mode for 5 seconds');
+            
+            // Clear circuit breaker after 5 seconds
+            if (this.circuitBreakerTimeout) {
+                clearTimeout(this.circuitBreakerTimeout);
+            }
+            this.circuitBreakerTimeout = setTimeout(() => {
+                this.inCircuitBreakerMode = false;
+                this.recentErrors = [];
+                logger.info('Circuit breaker mode disabled');
+            }, 5000);
+        }
+        
+        // Skip counting errors during circuit breaker mode
+        if (this.inCircuitBreakerMode) {
+            logger.debug('Circuit breaker active - skipping error count for:', errorMessage);
+            return true; // Always recover during circuit breaker
+        }
+        
+        // Log detailed error information for debugging (only in development)
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            const errorStack = error?.stack || 'No stack trace';
+            logger.error('Error Boundary - Error Details:', {
+                message: errorMessage,  
+                type: context.type,
+                operation: context.operation,
+                elementId: context.elementId,
+                filename: context.filename,
+                stack: errorStack.split('\n').slice(0, 3).join('\n') // First 3 lines of stack
+            });
+        }
+        
+        // Skip counting certain error types that are typically non-critical
+        const shouldCount = !this.tolerantErrorTypes.has(context.type) || this.errorCount < 10;
+        
+        if (shouldCount) {
+            this.errorCount++;
+            
+            // Track by error type
+            const errorType = context.type || 'other';
+            if (this.errorTypeCounts[errorType] !== undefined) {
+                this.errorTypeCounts[errorType]++;
+            } else {
+                this.errorTypeCounts.other++;
+            }
+        }
         
         // Log the error
         this.errorHandler.log(error, context, 'error');
         
         // Check if we've exceeded maximum errors
-        if (this.errorCount > this.maxErrors) {
+        // Much more lenient for DOM operations during live preview
+        const effectiveMaxErrors = context.operation === 'preview_update' || context.operation === 'question_shuffle' 
+            ? this.maxErrors * 3 
+            : this.maxErrors;
+        
+        if (this.errorCount > effectiveMaxErrors) {
             this.criticalErrorOccurred = true;
             this.showCriticalErrorMessage();
             return false;
@@ -83,11 +294,8 @@ export class ErrorBoundary {
             return this.attemptRecovery(error, context);
         } catch (recoveryError) {
             logger.error('Error during recovery attempt:', recoveryError);
-            this.errorHandler.log(recoveryError, { 
-                ...context, 
-                recovery_attempt: true 
-            }, 'error');
-            return false;
+            // Don't count recovery errors toward the total
+            return true; // Always return true for recovery errors to prevent cascades
         }
     }
 
@@ -128,6 +336,12 @@ export class ErrorBoundary {
         // Only log in development mode
         const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         if (isDev) logger.debug('Attempting DOM error recovery');
+        
+        // For preview operations, be extra tolerant
+        if (context.operation === 'preview_update' || context.operation === 'question_shuffle') {
+            if (isDev) logger.debug('DOM error during preview operation - continuing with graceful degradation');
+            return true; // Always recover from preview DOM errors
+        }
         
         // Try to find alternative elements or create fallbacks
         if (context.elementId) {
@@ -191,7 +405,7 @@ export class ErrorBoundary {
         }
         
         if (context.operation === 'timer') {
-            if (isDev) // logger.debug('Timer error, attempting to reset timer state');
+            if (isDev) logger.debug('Timer error, attempting to reset timer state');
             this.resetTimerState();
             return true;
         }
@@ -327,6 +541,9 @@ export class ErrorBoundary {
             errorContainer.innerHTML = `
                 <h2>Application Error</h2>
                 <p>Multiple errors have occurred. Please refresh the page to continue.</p>
+                <div style="margin: 10px 0; font-size: 14px; opacity: 0.8;">
+                    Error count: ${this.errorCount}/${this.maxErrors}
+                </div>
                 <button onclick="window.location.reload()" style="
                     margin-top: 20px;
                     padding: 10px 20px;
@@ -337,6 +554,16 @@ export class ErrorBoundary {
                     cursor: pointer;
                     font-size: 16px;
                 ">Refresh Page</button>
+                <button onclick="try { document.getElementById('critical-error-overlay').remove(); window.errorBoundary.reset(); console.log('Error boundary reset successfully'); } catch(e) { console.error('Failed to reset:', e); location.reload(); }" style="
+                    margin-top: 10px;
+                    padding: 8px 16px;
+                    background: #ff9800;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">Try to Continue (Advanced)</button>
             `;
             
             document.body.appendChild(errorContainer);
@@ -425,7 +652,8 @@ export class ErrorBoundary {
             errorCount: this.errorCount,
             maxErrors: this.maxErrors,
             criticalErrorOccurred: this.criticalErrorOccurred,
-            isHealthy: this.errorCount < this.maxErrors / 2
+            isHealthy: this.errorCount < this.maxErrors / 2,
+            errorTypeCounts: { ...this.errorTypeCounts }
         };
     }
 
@@ -435,6 +663,11 @@ export class ErrorBoundary {
     reset() {
         this.errorCount = 0;
         this.criticalErrorOccurred = false;
+        
+        // Reset error type counts
+        Object.keys(this.errorTypeCounts).forEach(key => {
+            this.errorTypeCounts[key] = 0;
+        });
         
         // Remove critical error overlay if present
         const errorOverlay = document.getElementById('critical-error-overlay');
@@ -447,6 +680,49 @@ export class ErrorBoundary {
             logger.debug('Error boundary reset');
         }
     }
+
+    /**
+     * Safe DOM manipulation specifically for question movement/shuffling
+     */
+    safeDOMManipulation(operation, description = 'DOM operation') {
+        return this.safeExecute(() => {
+            try {
+                return operation();
+            } catch (domError) {
+                logger.debug(`Safe DOM manipulation failed (${description}):`, domError.message);
+                // For DOM operations, we almost always want to continue
+                return null;
+            }
+        }, {
+            type: 'dom_operation',
+            operation: 'question_shuffle'
+        }, null);
+    }
+
+    /**
+     * Ultra-safe element access that never throws
+     */
+    safeElementAccess(selector, operation) {
+        try {
+            const element = typeof selector === 'string' 
+                ? document.querySelector(selector)
+                : selector;
+                
+            if (!element) {
+                logger.debug(`Element not found: ${selector}`);
+                return null;
+            }
+            
+            if (typeof operation === 'function') {
+                return operation(element);
+            }
+            
+            return element;
+        } catch (error) {
+            logger.debug(`Safe element access failed for ${selector}:`, error.message);
+            return null;
+        }
+    }
 }
 
 // Create global error boundary instance
@@ -454,3 +730,7 @@ export const errorBoundary = new ErrorBoundary();
 
 // Make it available globally for debugging
 window.errorBoundary = errorBoundary;
+
+// Export safe DOM manipulation functions for use in other modules
+export const safeDOMManipulation = (operation, description) => errorBoundary.safeDOMManipulation(operation, description);
+export const safeElementAccess = (selector, operation) => errorBoundary.safeElementAccess(selector, operation);

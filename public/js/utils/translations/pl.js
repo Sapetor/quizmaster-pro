@@ -19,7 +19,7 @@ export default {
         randomize_answers: "Losowa kolejność odpowiedzi",
         use_same_time: "Użyj tego samego czasu dla wszystkich pytań",
         manual_advancement: "Ręczne przechodzenie do następnego pytania",
-        manual_advancement_desc: "Kiedy włączone, kontrolujesz kiedy przejść do następnego pytania",
+        manual_advancement_desc: "Ręczne przechodzenie jest teraz domyślne. Odznacz dla automatycznego przechodzenia opartego na timerze",
         browse_games: "Przeglądaj Dostępne Gry",
         refresh: "Odśwież",
         back_to_join: "Powrót do Dołączania",
