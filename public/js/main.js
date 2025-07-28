@@ -19,6 +19,53 @@ import { browserOptimizer } from './utils/browser-optimizer.js'; // Browser-spec
 import { contentDensityManager } from './utils/content-density-manager.js'; // Smart content spacing and sizing
 import { mobileLayoutManager } from './utils/mobile-layout-manager.js'; // Smart mobile layout for different content types
 
+/**
+ * Update language dropdown display to show the currently selected language
+ * @param {string} languageCode - Current language code (e.g., 'en', 'es', 'fr')
+ */
+function updateLanguageDropdownDisplay(languageCode) {
+    try {
+        const dropdown = document.getElementById('language-selector');
+        if (!dropdown) {
+            logger.debug('Language dropdown not found during initialization');
+            return;
+        }
+
+        const selectedFlag = dropdown.querySelector('.language-dropdown-selected .language-flag');
+        const selectedName = dropdown.querySelector('.language-dropdown-selected .language-name');
+        const optionElement = dropdown.querySelector(`[data-value="${languageCode}"]`);
+
+        if (selectedFlag && selectedName && optionElement) {
+            const optionFlag = optionElement.querySelector('.language-flag');
+            const optionName = optionElement.querySelector('.language-name');
+            
+            if (optionFlag && optionName) {
+                // Update displayed flag and name
+                selectedFlag.textContent = optionFlag.textContent;
+                selectedName.textContent = optionName.textContent;
+                
+                // Update translation key if present
+                const translateKey = optionName.getAttribute('data-translate');
+                if (translateKey) {
+                    selectedName.setAttribute('data-translate', translateKey);
+                }
+                
+                // Update selected state in options
+                dropdown.querySelectorAll('.language-option').forEach(option => {
+                    option.classList.remove('selected');
+                });
+                optionElement.classList.add('selected');
+                
+                logger.debug(`Updated language dropdown display to: ${languageCode}`);
+            }
+        } else {
+            logger.warn(`Could not find language option for: ${languageCode}`);
+        }
+    } catch (error) {
+        logger.error('Error updating language dropdown display:', error);
+    }
+}
+
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     logger.debug('QuizMaster Pro - Initializing modular application...');
@@ -41,6 +88,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Translate the page after initialization
             translationManager.translatePage();
             logger.debug('Page translated with language:', savedLanguage);
+            
+            // Update language dropdown display to show current language
+            updateLanguageDropdownDisplay(savedLanguage);
             
             // Log memory savings
             const memoryInfo = translationManager.getMemoryInfo();

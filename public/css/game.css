@@ -1908,7 +1908,10 @@
 
 .feedback-modal .feedback-icon {
     font-size: 2.2rem;
-    /* Removed rotating animation - confetti provides the celebration instead */
+    /* Completely disable any animations */
+    animation: none !important;
+    transform: none !important;
+    transition: none !important;
 }
 
 .feedback-modal.correct .feedback-message {

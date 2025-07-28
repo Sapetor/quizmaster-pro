@@ -119,6 +119,9 @@ export class ModalFeedback {
         // Set feedback icon - no rotating emoji for correct answers
         if (this.feedbackIcon) {
             this.feedbackIcon.textContent = isCorrect ? '🎉' : '❌';
+            // Force remove any animation classes
+            this.feedbackIcon.style.animation = 'none';
+            this.feedbackIcon.style.transform = 'none';
         }
 
         // Set feedback message
@@ -179,15 +182,18 @@ export class ModalFeedback {
         if (typeof confetti === 'function') {
             logger.debug('🎊 Triggering modal confetti animation');
             
-            // Create confetti canvas with high z-index to appear above modal
+            // Create confetti canvas that sits above everything
             const confettiCanvas = document.createElement('canvas');
             confettiCanvas.style.position = 'fixed';
             confettiCanvas.style.top = '0';
             confettiCanvas.style.left = '0';
-            confettiCanvas.style.width = '100%';
-            confettiCanvas.style.height = '100%';
-            confettiCanvas.style.zIndex = '10001'; // Higher than modal overlay (10000) - appears clearly on top
+            confettiCanvas.style.width = '100vw';
+            confettiCanvas.style.height = '100vh';
+            confettiCanvas.style.zIndex = '99999'; // Much higher than modal to be clearly visible
             confettiCanvas.style.pointerEvents = 'none';
+            confettiCanvas.style.background = 'transparent';
+            
+            // Append to body with maximum z-index for ultimate visibility
             document.body.appendChild(confettiCanvas);
             
             // Create confetti instance targeting our canvas
@@ -205,34 +211,39 @@ export class ModalFeedback {
             const originY = modalRect ? (modalRect.top / viewportHeight) - 0.1 : 0.1; // Above modal
             const originX = modalRect ? (modalRect.left + modalRect.width / 2) / viewportWidth : 0.5; // Center of modal
             
-            // Main burst over the modal
+            // Main burst over the modal - much bigger and more prominent
             confettiInstance({
-                particleCount: ANIMATION.CONFETTI_BURST_PARTICLES + 20,
-                spread: 60,
+                particleCount: 150, // Much more particles for visibility
+                spread: 90,
                 origin: { y: Math.max(0.05, originY), x: originX },
                 colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
-                gravity: 0.8,
-                scalar: 1.2
+                gravity: 0.6, // Slower fall for more visibility
+                scalar: 1.5, // Bigger particles
+                startVelocity: 60 // More explosive burst
             });
             
-            // Side bursts for extra celebration
+            // Side bursts for extra celebration - more prominent
             setTimeout(() => {
                 confettiInstance({
-                    particleCount: 25,
+                    particleCount: 50,
                     angle: 60,
-                    spread: 45,
+                    spread: 60,
                     origin: { y: Math.max(0.05, originY), x: Math.max(0.1, originX - 0.3) },
                     colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00'],
-                    gravity: 0.8
+                    gravity: 0.6,
+                    scalar: 1.3,
+                    startVelocity: 50
                 });
                 
                 confettiInstance({
-                    particleCount: 25,
+                    particleCount: 50,
                     angle: 120,
-                    spread: 45,
+                    spread: 60,
                     origin: { y: Math.max(0.05, originY), x: Math.min(0.9, originX + 0.3) },
                     colors: ['#ff00ff', '#00ffff', '#ffff00', '#00ff00'],
-                    gravity: 0.8
+                    gravity: 0.6,
+                    scalar: 1.3,
+                    startVelocity: 50
                 });
             }, 200);
             
