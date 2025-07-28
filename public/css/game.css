@@ -1819,7 +1819,7 @@
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    z-index: 9999;
+    z-index: 10000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1954,20 +1954,7 @@
     color: var(--color-error-500);
 }
 
-/* Modal animations */
-@keyframes feedbackBounce {
-    0% {
-        transform: scale(0.3);
-        opacity: 0;
-    }
-    50% {
-        transform: scale(1.1);
-    }
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
+/* Modal animations - feedbackBounce removed, confetti provides celebration */
 
 /* Confetti animation for correct answers */
 .feedback-modal.correct {

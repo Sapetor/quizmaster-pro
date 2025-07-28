@@ -179,6 +179,23 @@ export class ModalFeedback {
         if (typeof confetti === 'function') {
             logger.debug('🎊 Triggering modal confetti animation');
             
+            // Create confetti canvas with high z-index to appear above modal
+            const confettiCanvas = document.createElement('canvas');
+            confettiCanvas.style.position = 'fixed';
+            confettiCanvas.style.top = '0';
+            confettiCanvas.style.left = '0';
+            confettiCanvas.style.width = '100%';
+            confettiCanvas.style.height = '100%';
+            confettiCanvas.style.zIndex = '10001'; // Higher than modal overlay (10000) - appears clearly on top
+            confettiCanvas.style.pointerEvents = 'none';
+            document.body.appendChild(confettiCanvas);
+            
+            // Create confetti instance targeting our canvas
+            const confettiInstance = confetti.create(confettiCanvas, {
+                resize: true,
+                useWorker: true
+            });
+            
             // Get modal position for confetti targeting
             const modalRect = this.modal ? this.modal.getBoundingClientRect() : null;
             const viewportHeight = window.innerHeight;
@@ -189,7 +206,7 @@ export class ModalFeedback {
             const originX = modalRect ? (modalRect.left + modalRect.width / 2) / viewportWidth : 0.5; // Center of modal
             
             // Main burst over the modal
-            confetti({
+            confettiInstance({
                 particleCount: ANIMATION.CONFETTI_BURST_PARTICLES + 20,
                 spread: 60,
                 origin: { y: Math.max(0.05, originY), x: originX },
@@ -200,7 +217,7 @@ export class ModalFeedback {
             
             // Side bursts for extra celebration
             setTimeout(() => {
-                confetti({
+                confettiInstance({
                     particleCount: 25,
                     angle: 60,
                     spread: 45,
@@ -209,7 +226,7 @@ export class ModalFeedback {
                     gravity: 0.8
                 });
                 
-                confetti({
+                confettiInstance({
                     particleCount: 25,
                     angle: 120,
                     spread: 45,
@@ -218,6 +235,13 @@ export class ModalFeedback {
                     gravity: 0.8
                 });
             }, 200);
+            
+            // Remove canvas after animation completes
+            setTimeout(() => {
+                if (confettiCanvas && confettiCanvas.parentNode) {
+                    confettiCanvas.parentNode.removeChild(confettiCanvas);
+                }
+            }, 4000);
         } else {
             logger.debug('Confetti function not available for modal feedback');
         }
