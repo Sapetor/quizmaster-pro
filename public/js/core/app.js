@@ -776,23 +776,27 @@ export class QuizGame {
      */
     openAIGeneratorModal() {
         logger.info('Opening AI Generator Modal');
-        const modal = document.getElementById('ai-generator-modal');
-        if (modal) {
-            modal.style.display = 'flex';
-            logger.debug('AI Generator modal opened');
-            
-            // Initialize AI generator if not already done
-            if (this.aiGenerator && this.aiGenerator.initializeEventListeners) {
-                this.aiGenerator.initializeEventListeners();
-                logger.debug('AI Generator event listeners initialized');
-            } else {
-                logger.warn('AI Generator not available or already initialized');
-            }
+        
+        // Use the AI generator's openModal method if available
+        if (this.aiGenerator && this.aiGenerator.openModal) {
+            this.aiGenerator.openModal();
+            logger.debug('AI Generator modal opened via class method');
         } else {
-            logger.error('AI Generator modal not found in DOM');
-            // Try to find similar elements for debugging
-            const allModals = document.querySelectorAll('[id*="modal"], [id*="ai"]');
-            logger.debug('Available modal elements:', Array.from(allModals).map(el => el.id));
+            // Fallback: open modal directly
+            logger.warn('AI Generator class method not available, using fallback');
+            const modal = document.getElementById('ai-generator-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                logger.debug('AI Generator modal opened via fallback');
+                
+                // Initialize AI generator if not already done
+                if (this.aiGenerator && this.aiGenerator.initializeEventListeners) {
+                    this.aiGenerator.initializeEventListeners();
+                    logger.debug('AI Generator event listeners initialized');
+                }
+            } else {
+                logger.error('AI Generator modal not found in DOM');
+            }
         }
     }
 

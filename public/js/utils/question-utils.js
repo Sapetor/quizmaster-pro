@@ -100,7 +100,7 @@ export class QuestionUtils {
                 <input type="number" class="numeric-tolerance" placeholder="0.1" step="any" value="0.1">
             </div>
             
-            <button class="btn secondary remove-question" onclick="this.parentElement.remove()" data-translate="remove">Remove</button>
+            <button class="btn secondary remove-question" onclick="removeQuestion(this)" data-translate="remove">Remove</button>
         `;
     }
 
@@ -495,6 +495,12 @@ export function addQuestion() {
     
     // Translate the newly added question element
     translationManager.translateContainer(questionDiv);
+    
+    // Update remove button visibility for all questions
+    if (window.game && window.game.quizManager && window.game.quizManager.updateRemoveButtonVisibility) {
+        window.game.quizManager.updateRemoveButtonVisibility();
+        window.game.quizManager.updateQuestionNumbering();
+    }
     
     return questionDiv;
 }

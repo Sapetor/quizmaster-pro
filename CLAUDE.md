@@ -210,7 +210,7 @@ await mathJaxService.renderElements(elements);
 - [ ] Host can create and start games without errors
 - [ ] Players can join via PIN and QR code
 - [ ] All question types work with colorful options (MC, Multiple correct, T/F, Numeric)
-- [ ] Game timing and advancement work correctly (both auto and manual modes)
+- [ ] Game timing and advancement work correctly (manual default, automatic optional)
 - [ ] Final leaderboard displays properly with confetti animation
 
 #### LaTeX Rendering
@@ -261,6 +261,8 @@ await mathJaxService.renderElements(elements);
 - ✅ **Code Quality Assessment**: Balanced evaluation with practical improvement recommendations
 - ✅ **CSS Architecture**: Component-based system with design token centralization
 - ✅ **Error Handling**: Robust error recovery across all modules with graceful degradation
+- ✅ **Blank Space Fix**: Eliminated blank space during gameplay by reclaiming header space with absolute positioning
+- ✅ **Manual Advancement Default**: Changed default setting from automatic to manual advancement with updated translations
 
 ### Production Readiness
 The application is **production-ready** with excellent stability, performance, and user experience across all supported browsers and devices.
@@ -380,6 +382,8 @@ async loadLanguage(languageCode) {
 - **Modular Architecture**: Clean separation of concerns with centralized utilities and focused CSS modules
 - **Browser Compliant**: Cross-browser compatibility including Chrome multi-tab isolation
 - **UI Optimized**: Live preview layout issues resolved with responsive navigation and maximum width utilization
+- **Space Efficient**: Gameplay uses full viewport with no blank space - header space properly reclaimed during games
+- **User-Friendly Defaults**: Manual advancement now default for better host control, with automatic as optional setting
 
 ## Common Issues & Solutions
 
@@ -407,6 +411,12 @@ async loadLanguage(languageCode) {
 2. Batch MathJax rendering calls instead of individual renders
 3. Clear event listeners and timers in cleanup methods
 4. Minimize console.log statements in production
+
+### Layout and UI Issues
+1. **Blank Space During Gameplay**: ✅ RESOLVED - Header space is now properly reclaimed using absolute positioning
+2. **Manual Advancement**: ✅ RESOLVED - Now default setting with automatic as optional
+3. **Header Visibility**: Use Escape key or gesture navigation to temporarily reveal UI during gameplay
+4. **Responsive Design**: All layouts adapt properly across desktop, tablet, and mobile devices
 
 ## F5 LaTeX Corruption Fix Implementation
 

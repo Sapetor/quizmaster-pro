@@ -429,8 +429,84 @@ export class QuizManager {
         translationManager.translatePage();
         // logger.debug('Translated entire page after quiz load');
         
+        // Update remove button visibility after loading questions
+        this.updateRemoveButtonVisibility();
+        
+        // Update question numbering after loading questions
+        this.updateQuestionNumbering();
+        
         // Render math if present - use proper MathJax readiness detection instead of hardcoded delays
         this.renderMathForLoadedQuiz();
+    }
+
+    /**
+     * Update remove button visibility for all questions
+     * Show remove buttons when there are multiple questions, hide when only one
+     */
+    updateRemoveButtonVisibility() {
+        const questionsContainer = document.getElementById('questions-container');
+        if (!questionsContainer) return;
+        
+        const questionItems = questionsContainer.querySelectorAll('.question-item');
+        const hasMultipleQuestions = questionItems.length > 1;
+        
+        questionItems.forEach((questionItem, index) => {
+            let removeButton = questionItem.querySelector('.remove-question');
+            
+            // If remove button doesn't exist, create it
+            if (!removeButton) {
+                removeButton = document.createElement('button');
+                removeButton.className = 'btn secondary remove-question';
+                removeButton.onclick = () => {
+                    questionItem.remove();
+                    this.updateRemoveButtonVisibility();
+                    this.updateQuestionNumbering();
+                };
+                removeButton.setAttribute('data-translate', 'remove');
+                removeButton.textContent = 'Remove';
+                questionItem.appendChild(removeButton);
+            }
+            
+            // Show/hide based on number of questions
+            if (hasMultipleQuestions) {
+                removeButton.style.display = 'block';
+            } else {
+                removeButton.style.display = 'none';
+            }
+        });
+        
+        logger.debug(`Updated remove button visibility for ${questionItems.length} questions`);
+    }
+
+    /**
+     * Update question numbering after questions are added or removed
+     */
+    updateQuestionNumbering() {
+        const questionsContainer = document.getElementById('questions-container');
+        if (!questionsContainer) return;
+        
+        const questionItems = questionsContainer.querySelectorAll('.question-item');
+        
+        questionItems.forEach((questionItem, index) => {
+            // Update data-question attribute
+            questionItem.setAttribute('data-question', index);
+            
+            // Update the question heading text
+            const questionHeading = questionItem.querySelector('h3');
+            if (questionHeading) {
+                // Look for existing translation or create new content
+                const questionNumber = index + 1;
+                if (questionHeading.hasAttribute('data-translate')) {
+                    // If it has translation attribute, update the text but keep the attribute
+                    questionHeading.textContent = `Question ${questionNumber}`;
+                } else {
+                    // Direct text update
+                    questionHeading.textContent = `Question ${questionNumber}`;
+                }
+            }
+        });
+        
+        logger.debug(`Updated question numbering for ${questionItems.length} questions`);
     }
 
     /**
@@ -930,6 +1006,10 @@ export class QuizManager {
      * @param {boolean} showAlerts - Whether to show success alerts
      */
     addGeneratedQuestion(questionData, showAlerts = true) {
+        logger.debug('🔧 AddGeneratedQuestion - Starting with question:', {
+            type: questionData.type,
+            question: questionData.question?.substring(0, 50) + '...'
+        });
         
         const questionElements = document.querySelectorAll('.question-item');
         let targetElement = null;
@@ -937,24 +1017,33 @@ export class QuizManager {
         // Check if there's an empty default question we can replace
         const firstQuestion = questionElements[0];
         if (firstQuestion && this.isEmptyQuestion(firstQuestion)) {
+            logger.debug('🔧 AddGeneratedQuestion - Using existing empty question');
             targetElement = firstQuestion;
+            
+            // Populate immediately since no new DOM element was created
+            this.populateQuestionElement(targetElement, questionData);
         } else {
             // Add a new question
+            logger.debug('🔧 AddGeneratedQuestion - Creating new question element');
             if (window.game && window.game.addQuestion) {
                 window.game.addQuestion();
-                const updatedQuestionElements = document.querySelectorAll('.question-item');
-                targetElement = updatedQuestionElements[updatedQuestionElements.length - 1];
+                
+                // Wait longer for DOM to update when creating new elements
+                setTimeout(() => {
+                    const updatedQuestionElements = document.querySelectorAll('.question-item');
+                    targetElement = updatedQuestionElements[updatedQuestionElements.length - 1];
+                    
+                    if (targetElement) {
+                        logger.debug('🔧 AddGeneratedQuestion - New element created, populating data');
+                        this.populateQuestionElement(targetElement, questionData);
+                    } else {
+                        logger.error('🔧 AddGeneratedQuestion - Failed to find new question element');
+                    }
+                }, 300); // Increased timeout to 300ms for DOM updates + any animations
             } else {
                 logger.error('addQuestion function not available');
                 return;
             }
-        }
-        
-        if (targetElement) {
-            // Populate the question data
-            setTimeout(() => {
-                this.populateQuestionElement(targetElement, questionData);
-            }, 100);
         }
     }
 

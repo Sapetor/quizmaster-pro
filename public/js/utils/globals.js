@@ -363,6 +363,20 @@ export function removeImage(buttonElement) {
     }
 }
 
+export function removeQuestion(buttonElement) {
+    logger.debug('Remove question function called');
+    const questionItem = buttonElement.closest('.question-item');
+    if (questionItem) {
+        questionItem.remove();
+        
+        // Update remove button visibility for all remaining questions
+        if (window.game && window.game.quizManager && window.game.quizManager.updateRemoveButtonVisibility) {
+            window.game.quizManager.updateRemoveButtonVisibility();
+            window.game.quizManager.updateQuestionNumbering();
+        }
+    }
+}
+
 export function scrollToCurrentQuestion() {
     logger.debug('Scroll to current question function called');
     if (window.game && window.game.previewManager && window.game.previewManager.scrollToCurrentQuestion) {
@@ -659,6 +673,7 @@ const globalFunctions = {
     updateTimeLimit,
     uploadImage,
     removeImage,
+    removeQuestion,
     
     // Navigation functions
     scrollToCurrentQuestion,
@@ -699,3 +714,4 @@ window.scrollToCurrentQuestion = scrollToCurrentQuestion;
 window.updateQuestionType = updateQuestionType;
 window.updateTimeLimit = updateTimeLimit;
 window.uploadImage = uploadImage;
+window.removeQuestion = removeQuestion;

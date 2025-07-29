@@ -29,6 +29,11 @@ body {
     /* Opacity handled by inline styles for immediate application */
 }
 
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
 /* Remove any jarring transitions during theme switching on load */
 body:not(.loaded) * {
     transition: none !important;

@@ -232,6 +232,30 @@ export class AIQuestionGenerator {
         const questionCount = parseInt(document.getElementById('question-count')?.value) || 1;
         const difficulty = document.getElementById('difficulty-level')?.value || 'medium';
         
+        // Get selected question types
+        const selectedTypes = [];
+        if (document.getElementById('type-multiple-choice')?.checked) {
+            selectedTypes.push('multiple-choice');
+        }
+        if (document.getElementById('type-true-false')?.checked) {
+            selectedTypes.push('true-false');
+        }
+        if (document.getElementById('type-multiple-correct')?.checked) {
+            selectedTypes.push('multiple-correct');
+        }
+        if (document.getElementById('type-numeric')?.checked) {
+            selectedTypes.push('numeric');
+        }
+        
+        logger.debug('Selected question types:', selectedTypes);
+        
+        // Validate that at least one type is selected
+        if (selectedTypes.length === 0) {
+            showAlert('Please select at least one question type');
+            this.isGenerating = false;
+            return;
+        }
+        
         // Store the requested count for use throughout the process
         this.requestedQuestionCount = questionCount;
         
@@ -260,8 +284,8 @@ export class AIQuestionGenerator {
         if (statusDiv) statusDiv.style.display = 'block';
 
         try {
-            // Build prompt based on content type and settings
-            const prompt = this.buildPrompt(content, questionCount, difficulty);
+            // Build prompt based on content type and settings, including selected question types
+            const prompt = this.buildPrompt(content, questionCount, difficulty, selectedTypes);
             
             let questions = [];
             switch (provider) {
@@ -286,7 +310,7 @@ export class AIQuestionGenerator {
                 }
                 
                 // Process questions without showing alerts from within
-                this.processGeneratedQuestions(questions, false); // Pass flag to suppress alerts
+                await this.processGeneratedQuestions(questions, false); // Pass flag to suppress alerts
                 this.closeModal();
                 
                 // Show single success message after processing is complete
@@ -310,36 +334,71 @@ export class AIQuestionGenerator {
         }
     }
 
-    buildPrompt(content, questionCount, difficulty) {
+    buildPrompt(content, questionCount, difficulty, selectedTypes) {
         const contentType = this.detectContentType(content);
-        const language = localStorage.getItem('language') || 'en';
+        // Use translation manager to get current app language (more reliable than localStorage)
+        const language = translationManager.getCurrentLanguage() || 'en';
         
-        let basePrompt = '';
-        if (language === 'es') {
-            basePrompt = `Crea EXACTAMENTE ${questionCount} pregunta${questionCount === 1 ? '' : 's'} de opción múltiple sobre el siguiente contenido. Dificultad: ${difficulty}.`;
-        } else {
-            basePrompt = `Create EXACTLY ${questionCount} multiple choice question${questionCount === 1 ? '' : 's'} about the following content. Difficulty: ${difficulty}.`;
+        // Language name mapping for LLM instruction
+        const languageNames = {
+            'en': 'English',
+            'es': 'Spanish', 
+            'fr': 'French',
+            'de': 'German',
+            'it': 'Italian',
+            'pt': 'Portuguese', 
+            'pl': 'Polish',
+            'ja': 'Japanese',
+            'zh': 'Chinese'
+        };
+        
+        const targetLanguage = languageNames[language] || 'English';
+        
+        // Build question type description (using English prompts - LLM will handle translation)
+        let typeDescription = `Create EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} about the following content. Difficulty: ${difficulty}.`;
+        let structureExamples = [];
+        
+        if (selectedTypes.includes('multiple-choice')) {
+            typeDescription += '\n- Some questions should be multiple choice (4 options, one correct)';
+            structureExamples.push('{"question": "Question text here?", "type": "multiple-choice", "options": ["Option A", "Option B", "Option C", "Option D"], "correctAnswer": 0, "timeLimit": 30}');
         }
-
-        let structureExample = '';
-        if (language === 'es') {
-            structureExample = `Devuelve ÚNICAMENTE un array JSON válido con esta estructura exacta:
-[{"question": "¿Pregunta aquí?", "options": ["Opción A", "Opción B", "Opción C", "Opción D"], "correctAnswer": 0, "type": "multiple-choice"}]`;
-        } else {
-            structureExample = `Return ONLY a valid JSON array with this exact structure:
-[{"question": "Question text here?", "options": ["Option A", "Option B", "Option C", "Option D"], "correctAnswer": 0, "type": "multiple-choice"}]`;
+        if (selectedTypes.includes('true-false')) {
+            typeDescription += '\n- Some questions should be true/false (single factual statements about the content, not choices between opposites)';
+            structureExamples.push('{"question": "Python is an interpreted programming language.", "type": "true-false", "options": ["True", "False"], "correctAnswer": "true", "timeLimit": 20}');
         }
+        if (selectedTypes.includes('multiple-correct')) {
+            typeDescription += '\n- Some questions should allow multiple correct answers (use "correctAnswers" array with indices)';
+            structureExamples.push('{"question": "Which of the following statements are TRUE? (Select all that apply)", "type": "multiple-correct", "options": ["Statement A is correct", "Statement B is wrong", "Statement C is correct", "Statement D is also correct"], "correctAnswers": [0, 2, 3], "timeLimit": 35}');
+        }
+        if (selectedTypes.includes('numeric')) {
+            typeDescription += '\n- Some questions should have numeric answers derived from the content (counts, dates, measurements, etc., NO generic math problems)';
+            structureExamples.push('{"question": "In what year was Python first released?", "type": "numeric", "correctAnswer": 1991, "tolerance": 0, "timeLimit": 25}');
+        }
+        
+        // Build structure example showing all selected types
+        const structureExample = `Return ONLY a valid JSON array with structures EXACTLY like these:\n[${structureExamples.join(',\n')}]`;
 
-        return `${basePrompt}\n\nContent: ${content}\n\n${structureExample}
+        return `${typeDescription}\n\nContent: ${content}\n\n${structureExample}
 
 CRITICAL REQUIREMENTS: 
+- Generate ALL questions in ${targetLanguage} language
 - Generate EXACTLY ${questionCount} question${questionCount === 1 ? '' : 's'} - no more, no less
+- ALL questions MUST be directly related to the provided content - no off-topic questions
+- Mix different question types from the selected types: ${selectedTypes.join(', ')}
+- For true/false questions: Create single factual statements about the content, NOT binary choices between opposites (e.g., "Tom is a cat" not "Choose happy or sad")
+- For numeric questions: Numbers must come from the content (dates, counts, measurements), NOT random math problems
 - Return ONLY the JSON array, no other text
-- correctAnswer should be the index (0, 1, 2, or 3) of the correct option
+- Use EXACTLY these JSON structures:
+  * Multiple-choice: correctAnswer as integer index (0, 1, 2, or 3), options array with 4 items
+  * True-false: Single factual statement about content, options must be ["True", "False"], correctAnswer as string ("true" or "false")  
+  * Multiple-correct: correctAnswers as array of indices [0, 1, 2, 3], options array
+  * Numeric: Answer derived from content, NO options array, correctAnswer as number, tolerance as number
+- All questions must have "timeLimit" field (15-40 seconds based on difficulty)
 - Make sure all JSON is properly formatted and valid
 - Do not include any explanations or additional text
 - If you generate more than ${questionCount} question${questionCount === 1 ? '' : 's'}, you have failed the task`;
     }
+
 
     async generateWithOllama(prompt) {
         const model = localStorage.getItem('ollama_selected_model') || AI.OLLAMA_DEFAULT_MODEL;
@@ -462,6 +521,9 @@ CRITICAL REQUIREMENTS:
     }
 
     parseAIResponse(responseText) {
+        logger.debug('🔍 ParseAIResponse - Raw response length:', responseText.length);
+        logger.debug('🔍 ParseAIResponse - Raw response preview:', responseText.substring(0, 200) + '...');
+        
         try {
             // Clean up the response text
             let cleanText = responseText.trim();
@@ -470,12 +532,14 @@ CRITICAL REQUIREMENTS:
             const jsonMatch = cleanText.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
             if (jsonMatch) {
                 cleanText = jsonMatch[1];
+                logger.debug('🔍 ParseAIResponse - Extracted from code block');
             }
             
             // Try to extract JSON array from text even if not in code blocks
             const arrayMatch = cleanText.match(/\[[\s\S]*\]/);
             if (arrayMatch && !jsonMatch) {
                 cleanText = arrayMatch[0];
+                logger.debug('🔍 ParseAIResponse - Extracted JSON array from text');
             }
             
             // Remove any text before the JSON array
@@ -485,27 +549,50 @@ CRITICAL REQUIREMENTS:
                 cleanText = cleanText.substring(startBracket, endBracket + 1);
             }
             
+            logger.debug('🔍 ParseAIResponse - Clean text for parsing:', cleanText.substring(0, 300) + '...');
+            
             // Try to parse as JSON
             const parsed = JSON.parse(cleanText);
+            logger.debug('🔍 ParseAIResponse - JSON parsed successfully');
             
             // Handle both single question object and array of questions
             let questions = Array.isArray(parsed) ? parsed : [parsed];
+            logger.debug('🔍 ParseAIResponse - Questions after array handling:', questions.length);
             
             // Limit to requested count (in case AI generates more than requested)
             const requestedCount = this.requestedQuestionCount || 1;
+            logger.debug('🔍 ParseAIResponse - Requested count:', requestedCount);
+            
             if (questions.length > requestedCount) {
+                logger.debug('🔍 ParseAIResponse - Truncating from', questions.length, 'to', requestedCount);
                 questions = questions.slice(0, requestedCount);
             }
+            
+            logger.debug('🔍 ParseAIResponse - Final questions count:', questions.length);
+            questions.forEach((q, i) => {
+                logger.debug(`🔍 ParseAIResponse - Question ${i + 1}:`, {
+                    type: q.type,
+                    question: q.question?.substring(0, 50) + '...',
+                    hasOptions: !!q.options,
+                    optionsCount: q.options?.length,
+                    correctAnswer: q.correctAnswer,
+                    correctAnswers: q.correctAnswers
+                });
+            });
             
             return questions;
             
         } catch (error) {
-            logger.error('Error parsing AI response:', error);
+            logger.error('🔍 ParseAIResponse - JSON parsing failed:', error);
+            logger.debug('🔍 ParseAIResponse - Failed text:', responseText.substring(0, 500));
             
             // Try to extract questions manually if JSON parsing fails
             try {
-                return this.extractQuestionsManually(responseText);
+                const manualQuestions = this.extractQuestionsManually(responseText);
+                logger.debug('🔍 ParseAIResponse - Manual extraction succeeded, count:', manualQuestions.length);
+                return manualQuestions;
             } catch (manualError) {
+                logger.error('🔍 ParseAIResponse - Manual extraction also failed:', manualError);
                 throw new Error(`Invalid JSON response from AI provider. Response: ${responseText.substring(0, 100)}...`);
             }
         }
@@ -579,88 +666,164 @@ CRITICAL REQUIREMENTS:
     }
 
     async handleProviderChange(provider) {
-        const apiKeySection = document.getElementById('api-key-section');
-        const modelSelection = document.getElementById('model-selection');
-        
-        if (!apiKeySection || !modelSelection) return;
-        
-        const needsApiKey = this.providers[provider]?.apiKey;
-        
-        if (needsApiKey) {
-            apiKeySection.style.display = 'block';
-            // Load saved API key if exists
-            const savedKey = localStorage.getItem(`ai_api_key_${provider}`);
-            const apiKeyInput = document.getElementById('ai-api-key');
-            if (savedKey && apiKeyInput) {
-                apiKeyInput.value = savedKey;
-            }
-        } else {
-            apiKeySection.style.display = 'none';
+        // Prevent multiple simultaneous calls
+        if (this.isChangingProvider) {
+            logger.debug('HandleProviderChange - Already changing provider, ignoring call for:', provider);
+            return;
         }
         
-        // Show model selection for Ollama
-        if (provider === 'ollama') {
-            await this.loadOllamaModels();
-        } else {
-            modelSelection.style.display = 'none';
+        this.isChangingProvider = true;
+        logger.debug('HandleProviderChange called with provider:', provider);
+        
+        try {
+            const apiKeySection = document.getElementById('api-key-section');
+            const modelSelection = document.getElementById('model-selection');
+            
+            logger.debug('HandleProviderChange - Elements found:', { apiKeySection: !!apiKeySection, modelSelection: !!modelSelection });
+            
+            if (!apiKeySection || !modelSelection) return;
+            
+            const needsApiKey = this.providers[provider]?.apiKey;
+            
+            if (needsApiKey) {
+                apiKeySection.style.display = 'block';
+                // Load saved API key if exists
+                const savedKey = localStorage.getItem(`ai_api_key_${provider}`);
+                const apiKeyInput = document.getElementById('ai-api-key');
+                if (savedKey && apiKeyInput) {
+                    apiKeyInput.value = savedKey;
+                }
+            } else {
+                apiKeySection.style.display = 'none';
+            }
+            
+            // Model selection visibility and loading
+            if (provider === 'ollama') {
+                logger.debug('HandleProviderChange - Showing model selection for Ollama');
+                // Make sure it's visible (remove hidden class if it exists)
+                modelSelection.classList.remove('hidden');
+                modelSelection.style.display = 'block';
+                
+                // Load the models
+                await this.loadOllamaModels();
+            } else {
+                logger.debug('HandleProviderChange - Hiding model selection for provider:', provider);
+                modelSelection.classList.add('hidden');
+            }
+        } finally {
+            this.isChangingProvider = false;
         }
     }
 
     async loadOllamaModels() {
         const modelSelect = document.getElementById('ollama-model');
-        if (!modelSelect) return;
+        const modelSelection = document.getElementById('model-selection');
+        
+        if (!modelSelect) {
+            logger.debug('LoadOllamaModels - Model select element not found');
+            return;
+        }
 
+        logger.debug('LoadOllamaModels - Starting model loading');
+        
+        // Ensure the parent div is visible first
+        if (modelSelection) {
+            modelSelection.classList.remove('hidden');
+            modelSelection.style.display = 'block';
+            logger.debug('LoadOllamaModels - Ensured model selection div is visible');
+        }
+        
         // Set initial loading state and disable the select element
-        modelSelect.innerHTML = '<option value="">Loading models...</option>';
+        modelSelect.innerHTML = '<option value="">🔄 Loading models...</option>';
         modelSelect.disabled = true;
         
         try {
+            logger.debug('LoadOllamaModels - Fetching from:', AI.OLLAMA_TAGS_ENDPOINT);
+            
             const response = await fetch(AI.OLLAMA_TAGS_ENDPOINT);
+            
+            logger.debug('LoadOllamaModels - Fetch response status:', response.status);
             
             if (response.ok) {
                 const data = await response.json();
+                logger.debug('LoadOllamaModels - Response data:', data);
+                
                 const models = data.models || [];
+                logger.debug('LoadOllamaModels - Found models count:', models.length);
                 
                 // Clear existing options and populate with models
                 modelSelect.innerHTML = ''; 
+                
                 if (models.length === 0) {
+                    logger.debug('LoadOllamaModels - No models found, showing message');
                     modelSelect.innerHTML = '<option value="">No models found</option>';
                 } else {
-                    models.forEach(model => {
+                    logger.debug('LoadOllamaModels - Populating select with models');
+                    
+                    models.forEach((model, index) => {
                         const option = document.createElement('option');
                         option.value = model.name;
                         option.textContent = `${model.name} (${(model.size / 1024 / 1024 / 1024).toFixed(1)}GB)`;
                         modelSelect.appendChild(option);
+                        logger.debug(`LoadOllamaModels - Added model ${index + 1}:`, model.name);
                     });
                     
                     // Restore saved selection or set default
                     const savedModel = localStorage.getItem('ollama_selected_model');
                     if (savedModel && models.some(m => m.name === savedModel)) {
                         modelSelect.value = savedModel;
+                        logger.debug('LoadOllamaModels - Set saved model:', savedModel);
                     } else if (models.length > 0) {
                         // Set default to first available model
                         modelSelect.value = models[0].name;
                         localStorage.setItem('ollama_selected_model', models[0].name);
+                        logger.debug('LoadOllamaModels - Set default model:', models[0].name);
                     }
                 }
-                // Show the model selection div after successful load
-                const modelSelectionDiv = document.getElementById('model-selection');
-                if (modelSelectionDiv) {
-                    modelSelectionDiv.style.display = 'block';
-                }
+                
+                logger.debug('LoadOllamaModels - Final select options count:', modelSelect.options.length);
+                
             } else {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
-            logger.error('Error loading Ollama models:', error);
-            modelSelect.innerHTML = `<option value="">Ollama not available (${error.message})</option>`;
-            // Show the model selection div even on error
-            const modelSelectionDiv = document.getElementById('model-selection');
-            if (modelSelectionDiv) {
-                modelSelectionDiv.style.display = 'block';
+            logger.error('LoadOllamaModels - Error:', error);
+            modelSelect.innerHTML = `<option value="">❌ Ollama not available (${error.message})</option>`;
+            
+            // Try loading fallback models from the provider config
+            logger.debug('LoadOllamaModels - Trying fallback models');
+            const fallbackModels = this.providers.ollama.models;
+            if (fallbackModels && fallbackModels.length > 0) {
+                logger.debug('LoadOllamaModels - Loading fallback models:', fallbackModels);
+                modelSelect.innerHTML = '';
+                fallbackModels.forEach(modelName => {
+                    const option = document.createElement('option');
+                    option.value = modelName;
+                    option.textContent = `${modelName} (fallback)`;
+                    modelSelect.appendChild(option);
+                });
+                
+                // Set first fallback as default
+                modelSelect.value = fallbackModels[0];
+                localStorage.setItem('ollama_selected_model', fallbackModels[0]);
+                logger.debug('LoadOllamaModels - Set fallback default:', fallbackModels[0]);
             }
         } finally {
-            modelSelect.disabled = false; // Always enable after loading attempt
+            modelSelect.disabled = false;
+            
+            // Force visibility again after loading
+            if (modelSelection) {
+                modelSelection.classList.remove('hidden');
+                modelSelection.style.display = 'block';
+                logger.debug('LoadOllamaModels - Final visibility enforcement');
+            }
+            
+            logger.debug('LoadOllamaModels - Enabled select, final state:', {
+                optionsCount: modelSelect.options.length,
+                selectedValue: modelSelect.value,
+                disabled: modelSelect.disabled,
+                parentVisible: modelSelection ? window.getComputedStyle(modelSelection).display : 'unknown'
+            });
         }
     }
 
@@ -679,18 +842,59 @@ CRITICAL REQUIREMENTS:
         reader.readAsText(file);
     }
 
-    processGeneratedQuestions(questions, showAlerts = true) {
+    async processGeneratedQuestions(questions, showAlerts = true) {
+        logger.debug('🔄 ProcessGeneratedQuestions - Starting with questions:', questions.length);
+        
         // Add questions to the main quiz
         if (window.game && window.game.quizManager) {
-            questions.forEach(questionData => {
+            let validCount = 0;
+            let invalidCount = 0;
+            
+            // Process questions SEQUENTIALLY to avoid race conditions with DOM creation
+            for (let index = 0; index < questions.length; index++) {
+                const questionData = questions[index];
+                logger.debug(`🔄 ProcessGeneratedQuestions - Processing question ${index + 1}:`, {
+                    type: questionData.type,
+                    hasQuestion: !!questionData.question,
+                    hasOptions: !!questionData.options,
+                    optionsLength: questionData.options?.length,
+                    correctAnswer: questionData.correctAnswer,
+                    correctAnswers: questionData.correctAnswers
+                });
+                
                 // Validate and add each question
                 if (this.validateGeneratedQuestion(questionData)) {
-                    window.game.quizManager.addGeneratedQuestion(questionData, showAlerts);
+                    logger.debug(`✅ ProcessGeneratedQuestions - Question ${index + 1} is valid, adding to quiz`);
+                    
+                    // Add question and wait for DOM updates to complete
+                    await new Promise(resolve => {
+                        // Check if this will create a new DOM element
+                        const questionElements = document.querySelectorAll('.question-item');
+                        const firstQuestion = questionElements[0];
+                        const needsNewElement = !(firstQuestion && window.game.quizManager.isEmptyQuestion(firstQuestion));
+                        
+                        window.game.quizManager.addGeneratedQuestion(questionData, showAlerts);
+                        
+                        // Wait longer if we created a new DOM element
+                        const waitTime = needsNewElement ? 400 : 50;
+                        setTimeout(resolve, waitTime);
+                    });
+                    
+                    validCount++;
                 } else {
-                    logger.warn('Invalid generated question skipped:', questionData);
+                    logger.warn(`❌ ProcessGeneratedQuestions - Question ${index + 1} is invalid, skipping:`, questionData);
+                    invalidCount++;
                 }
+            }
+            
+            logger.debug('🔄 ProcessGeneratedQuestions - Summary:', {
+                total: questions.length,
+                valid: validCount,
+                invalid: invalidCount
             });
+            
         } else {
+            logger.warn('🔄 ProcessGeneratedQuestions - Window.game.quizManager not available, using fallback');
             // Fallback: dispatch custom event
             const event = new CustomEvent('questionsGenerated', { 
                 detail: { questions } 
@@ -700,29 +904,131 @@ CRITICAL REQUIREMENTS:
     }
 
     validateGeneratedQuestion(question) {
+        logger.debug('🔍 ValidateGeneratedQuestion - Validating:', {
+            type: question.type,
+            hasQuestion: !!question.question,
+            hasOptions: !!question.options,
+            optionsLength: question.options?.length,
+            correctAnswer: question.correctAnswer,
+            correctAnswers: question.correctAnswers
+        });
+        
         // Basic validation for generated questions
-        if (!question.question || !question.options || !Array.isArray(question.options)) {
+        if (!question.question || !question.type) {
+            logger.debug('❌ ValidateGeneratedQuestion - Missing basic fields');
             return false;
         }
         
-        if (question.type === 'multiple-choice' && (question.correctAnswer === undefined || question.correctAnswer < 0 || question.correctAnswer >= question.options.length)) {
+        // Type-specific validation
+        if (question.type === 'multiple-choice') {
+            if (!question.options || !Array.isArray(question.options) || 
+                question.correctAnswer === undefined || 
+                question.correctAnswer < 0 || 
+                question.correctAnswer >= question.options.length) {
+                logger.debug('❌ ValidateGeneratedQuestion - Multiple choice validation failed');
+                return false;
+            }
+        } else if (question.type === 'multiple-correct') {
+            // Auto-fix: If AI used "correctAnswer" instead of "correctAnswers"
+            if (question.correctAnswer !== undefined && !question.correctAnswers) {
+                logger.debug('🔧 ValidateGeneratedQuestion - Auto-fixing: converting correctAnswer to correctAnswers array');
+                question.correctAnswers = Array.isArray(question.correctAnswer) ? question.correctAnswer : [question.correctAnswer];
+                delete question.correctAnswer;
+            }
+            
+            if (!question.options || !Array.isArray(question.options) ||
+                !question.correctAnswers || !Array.isArray(question.correctAnswers) ||
+                question.correctAnswers.length === 0) {
+                logger.debug('❌ ValidateGeneratedQuestion - Multiple correct validation failed');
+                return false;
+            }
+            
+            // Validate that all correctAnswers indices are within bounds
+            const invalidIndices = question.correctAnswers.filter(index => 
+                index < 0 || index >= question.options.length
+            );
+            if (invalidIndices.length > 0) {
+                logger.debug('❌ ValidateGeneratedQuestion - Multiple correct has invalid indices:', invalidIndices);
+                return false;
+            }
+        } else if (question.type === 'true-false') {
+            if (!question.options || !Array.isArray(question.options) || 
+                question.options.length !== 2 ||
+                (question.correctAnswer !== 'true' && question.correctAnswer !== 'false')) {
+                logger.debug('❌ ValidateGeneratedQuestion - True/false validation failed', {
+                    optionsLength: question.options?.length,
+                    correctAnswer: question.correctAnswer,
+                    correctAnswerType: typeof question.correctAnswer
+                });
+                return false;
+            }
+        } else if (question.type === 'numeric') {
+            // Auto-fix: Remove options array if AI incorrectly added it
+            if (question.options) {
+                logger.debug('🔧 ValidateGeneratedQuestion - Auto-fixing: removing options from numeric question');
+                delete question.options;
+            }
+            
+            // Auto-fix: Convert string numbers to actual numbers
+            if (typeof question.correctAnswer === 'string' && !isNaN(question.correctAnswer)) {
+                logger.debug('🔧 ValidateGeneratedQuestion - Auto-fixing: converting string answer to number');
+                question.correctAnswer = parseFloat(question.correctAnswer);
+            }
+            
+            // Auto-fix: Add tolerance if missing
+            if (question.tolerance === undefined) {
+                logger.debug('🔧 ValidateGeneratedQuestion - Auto-fixing: adding default tolerance 0');
+                question.tolerance = 0;
+            }
+            
+            if (question.correctAnswer === undefined || isNaN(question.correctAnswer)) {
+                logger.debug('❌ ValidateGeneratedQuestion - Numeric validation failed');
+                return false;
+            }
+        } else {
+            logger.debug('❌ ValidateGeneratedQuestion - Unknown question type:', question.type);
             return false;
         }
         
+        logger.debug('✅ ValidateGeneratedQuestion - Question is valid');
         return true;
     }
 
     async openModal() {
         const modal = document.getElementById('ai-generator-modal');
         if (modal) {
-            // Set provider to 'ollama' and update the UI
+            logger.debug('🚀 OpenModal - START');
+            modal.style.display = 'flex';
+
+            // Set provider to 'ollama' immediately
             const providerSelect = document.getElementById('ai-provider');
+            logger.debug('🚀 OpenModal - Provider select found:', !!providerSelect);
             if (providerSelect) {
+                logger.debug('🚀 OpenModal - Provider select current value before:', providerSelect.value);
                 providerSelect.value = 'ollama';
-                await this.handleProviderChange('ollama');
+                logger.debug('🚀 OpenModal - Provider select set to:', providerSelect.value);
             }
 
-            modal.style.display = 'flex';
+            // Show the model selection div immediately
+            const modelSelection = document.getElementById('model-selection');
+            logger.debug('🚀 OpenModal - Model selection div found:', !!modelSelection);
+            if (modelSelection) {
+                logger.debug('🚀 OpenModal - Model selection current display before:', window.getComputedStyle(modelSelection).display);
+                modelSelection.classList.remove('hidden');
+                modelSelection.style.display = 'block';
+                logger.debug('🚀 OpenModal - Model selection set to block, computed style now:', window.getComputedStyle(modelSelection).display);
+            }
+
+            // Show loading message immediately
+            const modelSelect = document.getElementById('ollama-model');
+            logger.debug('🚀 OpenModal - Model select found:', !!modelSelect);
+            if (modelSelect) {
+                logger.debug('🚀 OpenModal - Model select current innerHTML before:', modelSelect.innerHTML);
+                modelSelect.innerHTML = '<option value="">🔄 Loading models...</option>';
+                modelSelect.disabled = true;
+                logger.debug('🚀 OpenModal - Model select set to loading, innerHTML now:', modelSelect.innerHTML);
+                logger.debug('🚀 OpenModal - Model select disabled:', modelSelect.disabled);
+            }
 
             // Clear previous content
             const contentTextarea = document.getElementById('source-content');
@@ -735,6 +1041,27 @@ CRITICAL REQUIREMENTS:
             if (questionCount) {
                 questionCount.value = AI.DEFAULT_QUESTION_COUNT;
             }
+
+            logger.debug('🚀 OpenModal - About to set timeout for delayed loading');
+            
+            // Trigger the actual model loading after a short delay to let everything settle
+            setTimeout(async () => {
+                logger.debug('🚀 OpenModal - TIMEOUT TRIGGERED - Delayed model loading starting');
+                
+                // Debug current state before loading
+                const currentModelSelection = document.getElementById('model-selection');
+                const currentModelSelect = document.getElementById('ollama-model');
+                
+                logger.debug('🚀 TIMEOUT - Model selection div exists:', !!currentModelSelection);
+                logger.debug('🚀 TIMEOUT - Model selection computed display:', currentModelSelection ? window.getComputedStyle(currentModelSelection).display : 'NOT_FOUND');
+                logger.debug('🚀 TIMEOUT - Model select exists:', !!currentModelSelect);
+                logger.debug('🚀 TIMEOUT - Model select innerHTML:', currentModelSelect ? currentModelSelect.innerHTML : 'NOT_FOUND');
+                
+                await this.loadOllamaModels();
+                logger.debug('🚀 OpenModal - TIMEOUT COMPLETED - Model loading finished');
+            }, 100);
+            
+            logger.debug('🚀 OpenModal - END');
         }
     }
 
