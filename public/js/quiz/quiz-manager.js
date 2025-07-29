@@ -429,14 +429,64 @@ export class QuizManager {
         translationManager.translatePage();
         // logger.debug('Translated entire page after quiz load');
         
-        // Update remove button visibility after loading questions
-        this.updateRemoveButtonVisibility();
-        
-        // Update question numbering after loading questions
-        this.updateQuestionNumbering();
+        // Update questions UI in single operation to prevent visual glitches
+        this.updateQuestionsUI();
         
         // Render math if present - use proper MathJax readiness detection instead of hardcoded delays
         this.renderMathForLoadedQuiz();
+    }
+
+    /**
+     * Combined update method for questions UI - prevents visual glitches
+     * Updates both remove button visibility and question numbering in single operation
+     */
+    updateQuestionsUI() {
+        const questionsContainer = document.getElementById('questions-container');
+        if (!questionsContainer) return;
+        
+        const questionItems = questionsContainer.querySelectorAll('.question-item');
+        const hasMultipleQuestions = questionItems.length > 1;
+        
+        questionItems.forEach((questionItem, index) => {
+            // Update data-question attribute
+            questionItem.setAttribute('data-question', index);
+            
+            // Update the question heading with proper translation
+            const questionHeading = questionItem.querySelector('h3');
+            if (questionHeading) {
+                const questionNumber = index + 1;
+                // Set up the heading with proper translation structure
+                questionHeading.innerHTML = `<span data-translate="question">Question</span> ${questionNumber}`;
+                
+                // Trigger translation update for this specific element
+                translationManager.translateContainer(questionHeading);
+            }
+            
+            // Handle remove button
+            let removeButton = questionItem.querySelector('.remove-question');
+            
+            // If remove button doesn't exist, create it
+            if (!removeButton) {
+                removeButton = document.createElement('button');
+                removeButton.className = 'btn secondary remove-question';
+                removeButton.onclick = () => {
+                    questionItem.remove();
+                    this.updateQuestionsUI();
+                };
+                removeButton.setAttribute('data-translate', 'remove');
+                removeButton.textContent = 'Remove';
+                questionItem.appendChild(removeButton);
+            }
+            
+            // Show/hide based on number of questions
+            if (hasMultipleQuestions) {
+                removeButton.style.display = 'block';
+            } else {
+                removeButton.style.display = 'none';
+            }
+        });
+        
+        logger.debug(`Updated questions UI for ${questionItems.length} questions`);
     }
 
     /**
@@ -494,15 +544,10 @@ export class QuizManager {
             // Update the question heading text
             const questionHeading = questionItem.querySelector('h3');
             if (questionHeading) {
-                // Look for existing translation or create new content
                 const questionNumber = index + 1;
-                if (questionHeading.hasAttribute('data-translate')) {
-                    // If it has translation attribute, update the text but keep the attribute
-                    questionHeading.textContent = `Question ${questionNumber}`;
-                } else {
-                    // Direct text update
-                    questionHeading.textContent = `Question ${questionNumber}`;
-                }
+                // Use translation system instead of hardcoded English
+                const questionText = translationManager.getTranslationSync('question') || 'Question';
+                questionHeading.textContent = `${questionText} ${questionNumber}`;
             }
         });
         

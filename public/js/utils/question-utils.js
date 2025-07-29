@@ -496,10 +496,9 @@ export function addQuestion() {
     // Translate the newly added question element
     translationManager.translateContainer(questionDiv);
     
-    // Update remove button visibility for all questions
-    if (window.game && window.game.quizManager && window.game.quizManager.updateRemoveButtonVisibility) {
-        window.game.quizManager.updateRemoveButtonVisibility();
-        window.game.quizManager.updateQuestionNumbering();
+    // Update questions UI in single operation to prevent visual glitches
+    if (window.game && window.game.quizManager && window.game.quizManager.updateQuestionsUI) {
+        window.game.quizManager.updateQuestionsUI();
     }
     
     return questionDiv;
