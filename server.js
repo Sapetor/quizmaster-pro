@@ -394,6 +394,15 @@ app.post('/api/claude/generate', async (req, res) => {
   }
 });
 
+// Simple ping endpoint for connection status monitoring
+app.get('/api/ping', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    server: 'QuizMaster Pro'
+  });
+});
+
 const games = new Map();
 const players = new Map();
 

@@ -15,6 +15,8 @@ import { MathRenderer } from '../utils/math-renderer.js';
 import { AIQuestionGenerator } from '../ai/generator.js';
 import { addQuestion, createQuestionElement, randomizeAnswers, shuffleArray } from '../utils/question-utils.js';
 import { translationManager, showErrorAlert, createQuestionCounter } from '../utils/translation-manager.js';
+import { connectionStatus } from '../utils/connection-status.js';
+import { keyboardShortcuts } from '../utils/keyboard-shortcuts.js';
 
 export class QuizGame {
     constructor() {
@@ -52,6 +54,9 @@ export class QuizGame {
         
         // Update GameManager with SocketManager reference
         this.gameManager.socketManager = this.socketManager;
+        
+        // Initialize connection status monitoring
+        connectionStatus.setSocket(this.socket);
         this.aiGenerator = new AIQuestionGenerator();
         
         // Initialize core functionality

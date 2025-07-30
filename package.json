@@ -5,7 +5,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build:css": "postcss public/css/main.css -o public/css/main.min.css --verbose",
+    "build:css:watch": "postcss public/css/main.css -o public/css/main.min.css --watch --verbose",
+    "build": "npm run build:css"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -18,7 +21,11 @@
   },
   "devDependencies": {
     "eslint": "^9.28.0",
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "postcss": "^8.4.35",
+    "postcss-cli": "^11.0.0",
+    "autoprefixer": "^10.4.17",
+    "cssnano": "^6.0.3"
   },
   "keywords": [
     "quiz",

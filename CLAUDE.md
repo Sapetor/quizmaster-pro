@@ -12,7 +12,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 No test framework is configured in this project.
 
 **Building:**
-No build process required - static files served directly.
+- `npm run build` - Process CSS with autoprefixer and minification for production
+- `npm run build:css` - Process CSS files with browser compatibility prefixes
+- `npm run build:css:watch` - Watch CSS files and rebuild automatically
+- `node build-css.js` - Alternative CSS build script with detailed output
+
+**CSS Processing:**
+- Uses PostCSS with Autoprefixer for broader browser compatibility
+- Supports IE11+ and modern browsers for LAN environments
+- Creates both development (prefixed) and production (minified) versions
+- Configuration in `postcss.config.js` and `.browserslistrc`
 
 **Debugging:**
 - Development/production logging controlled via `DEBUG.ENABLED` and `DEBUG.CURRENT_LEVEL` in `/public/js/core/config.js`

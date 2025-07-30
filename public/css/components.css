@@ -2231,3 +2231,312 @@ select option {
         border-width: 2px !important;
     }
 }
+
+/* === CONNECTION STATUS INDICATOR === */
+.connection-status {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin: 0 12px;
+    font-size: 13px;
+    user-select: none;
+}
+
+.connection-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--glass-light);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 110px;
+}
+
+.connection-indicator:hover {
+    background: var(--glass-medium);
+    border-color: var(--color-primary-400);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.connection-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-gray-400);
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+/* Connection quality states */
+.connection-dot.excellent {
+    background: var(--color-success-500);
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+.connection-dot.good {
+    background: var(--color-success-400);
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.3);
+}
+
+.connection-dot.fair {
+    background: var(--color-warning-500);
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+}
+
+.connection-dot.poor {
+    background: var(--color-danger-500);
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+}
+
+.connection-dot.offline {
+    background: var(--color-gray-500);
+    box-shadow: none;
+}
+
+.connection-text {
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+/* Connection details dropdown */
+.connection-details {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: var(--glass-dark);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 12px;
+    min-width: 180px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.detail-item:not(:last-child) {
+    border-bottom: 1px solid var(--glass-border);
+    margin-bottom: 4px;
+    padding-bottom: 8px;
+}
+
+.detail-item span:last-child {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .connection-status {
+        margin: 0 8px;
+    }
+    
+    .connection-indicator {
+        padding: 4px 8px;
+        min-width: 90px;
+    }
+    
+    .connection-text {
+        font-size: 11px;
+    }
+    
+    .connection-details {
+        right: -20px;
+        min-width: 160px;
+    }
+}
+
+/* Dark/Light theme specific adjustments */
+[data-theme="dark"] .connection-details {
+    background: rgba(17, 24, 39, 0.95);
+    border-color: rgba(75, 85, 99, 0.3);
+}
+
+[data-theme="light"] .connection-details {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(229, 231, 235, 0.8);
+}
+
+/* === KEYBOARD SHORTCUTS COMPONENTS === */
+/* Shortcut feedback toast */
+.shortcut-feedback {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--color-primary-600);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 10000;
+    box-shadow: var(--shadow-lg);
+    animation: slideInRight 0.3s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.shortcut-feedback.fade-out {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+/* Shortcuts help modal */
+.shortcuts-help-modal {
+    z-index: 9999;
+}
+
+.shortcuts-help-content {
+    max-width: 600px;
+    width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.shortcuts-body {
+    padding: 0;
+}
+
+.shortcut-category {
+    margin-bottom: 24px;
+}
+
+.shortcut-category h3 {
+    color: var(--color-primary-500);
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.shortcut-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.shortcut-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--glass-light);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    transition: background 0.2s ease;
+}
+
+.shortcut-item:hover {
+    background: var(--glass-medium);
+}
+
+.shortcut-keys {
+    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+    background: var(--glass-dark);
+    border: 1px solid var(--glass-border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: center;
+}
+
+.shortcut-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-left: 16px;
+    flex: 1;
+}
+
+.shortcuts-footer {
+    margin-top: 20px;
+    padding: 16px;
+    background: var(--glass-light);
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+}
+
+.shortcuts-footer p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+/* Responsive adjustments for shortcuts modal */
+@media (max-width: 768px) {
+    .shortcuts-help-content {
+        width: 95vw;
+        max-height: 90vh;
+    }
+    
+    .shortcut-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .shortcut-keys {
+        min-width: auto;
+        align-self: flex-end;
+    }
+    
+    .shortcut-desc {
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
+    .shortcut-feedback {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        text-align: center;
+    }
+}
+
+/* Dark/Light theme specific adjustments for shortcuts */
+[data-theme="dark"] .shortcut-keys {
+    background: rgba(55, 65, 81, 0.8);
+    border-color: rgba(75, 85, 99, 0.4);
+}
+
+[data-theme="light"] .shortcut-keys {
+    background: rgba(243, 244, 246, 0.8);
+    border-color: rgba(209, 213, 219, 0.6);
+}
