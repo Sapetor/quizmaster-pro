@@ -892,7 +892,8 @@ export class GameManager {
             const letters = answer.map(a => String.fromCharCode(65 + a)).join(', ');
             displayText = `${getTranslation('answer_submitted')}: ${letters}`;
         } else if (typeof answer === 'boolean') {
-            displayText = `${getTranslation('answer_submitted')}: ${answer ? 'TRUE' : 'FALSE'}`;
+            const translatedValue = answer ? getTranslation('true') : getTranslation('false');
+            displayText = `${getTranslation('answer_submitted')}: ${translatedValue}`;
         } else if (typeof answer === 'string') {
             displayText = `${getTranslation('answer_submitted')}: ${answer.toUpperCase()}`;
         } else {
