@@ -1484,12 +1484,10 @@ export class GameManager {
         const imageContainer = document.getElementById(containerId);
         if (!imageContainer) {
             logger.debug(`Image container ${containerId} not found`);
-            logger.debug(`Image container ${containerId} not found`);
             return;
         }
         
         if (data.image && data.image.trim()) {
-            logger.debug(`Displaying image for question: ${data.image}`);
             logger.debug(`Displaying image for question: ${data.image}`);
             
             // Create or update image element
@@ -1562,7 +1560,6 @@ export class GameManager {
             // Hide the container if no image
             logger.debug(`No image for question, hiding container ${containerId}`);
             imageContainer.style.display = 'none';
-            logger.debug(`No image for question, hiding container ${containerId}`);
         }
     }
 

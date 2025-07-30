@@ -491,6 +491,24 @@ export function addQuestion() {
     questionDiv.setAttribute('data-question', questionCount);
     
     questionDiv.innerHTML = questionUtils.generateQuestionHTML(questionCount);
+    
+    // Pre-create the remove button to avoid later DOM manipulation
+    const removeButton = document.createElement('button');
+    removeButton.className = 'btn secondary remove-question';
+    removeButton.onclick = () => {
+        questionDiv.remove();
+        // Use setTimeout to prevent immediate reflow issues
+        setTimeout(() => {
+            if (window.game && window.game.quizManager && window.game.quizManager.updateQuestionsUI) {
+                window.game.quizManager.updateQuestionsUI();
+            }
+        }, 10);
+    };
+    removeButton.setAttribute('data-translate', 'remove');
+    removeButton.textContent = 'Remove';
+    removeButton.style.display = 'none'; // Hidden initially
+    questionDiv.appendChild(removeButton);
+    
     questionsContainer.appendChild(questionDiv);
     
     // Translate the newly added question element
@@ -502,6 +520,493 @@ export function addQuestion() {
     }
     
     return questionDiv;
+}
+
+/**
+ * Debug function to monitor DOM and style changes during question addition
+ */
+function debugQuestionChanges() {
+    console.log('🔍 DEBUG: Setting up question change monitoring...');
+    
+    const questionsContainer = document.getElementById('questions-container');
+    if (!questionsContainer) return;
+    
+    // Monitor all question items for style changes
+    const questionItems = questionsContainer.querySelectorAll('.question-item');
+    questionItems.forEach((item, index) => {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes') {
+                    console.log(`🎨 DEBUG: Question ${index} - Attribute "${mutation.attributeName}" changed`);
+                    if (mutation.attributeName === 'style') {
+                        console.log(`🎨 DEBUG: Question ${index} - Style changed to:`, item.style.cssText);
+                    }
+                    if (mutation.attributeName === 'data-question') {
+                        console.log(`🎨 DEBUG: Question ${index} - data-question changed to:`, item.getAttribute('data-question'));
+                    }
+                }
+                if (mutation.type === 'childList') {
+                    console.log(`🎨 DEBUG: Question ${index} - Child nodes changed`);
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            console.log(`🎨 DEBUG: Question ${index} - Added element:`, node.tagName, node.className);
+                        }
+                    });
+                    mutation.removedNodes.forEach(node => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            console.log(`🎨 DEBUG: Question ${index} - Removed element:`, node.tagName, node.className);
+                        }
+                    });
+                }
+                if (mutation.type === 'characterData') {
+                    console.log(`🎨 DEBUG: Question ${index} - Text content changed to:`, mutation.target.textContent);
+                }
+            });
+        });
+        
+        observer.observe(item, {
+            attributes: true,
+            childList: true,
+            subtree: true,
+            characterData: true,
+            attributeOldValue: true,
+            characterDataOldValue: true
+        });
+        
+        // Store observer for cleanup
+        item._debugObserver = observer;
+    });
+    
+    // Monitor for new question items being added
+    const containerObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach(node => {
+                if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('question-item')) {
+                    console.log(`📝 DEBUG: New question item added to container`);
+                }
+            });
+        });
+    });
+    
+    containerObserver.observe(questionsContainer, {
+        childList: true
+    });
+}
+
+/**
+ * Enhanced addQuestion with comprehensive debugging
+ */
+export function addQuestionWithDebugging() {
+    console.log('🚀🔍 DEBUG: addQuestionWithDebugging() started');
+    
+    // Monitor existing questions before changes
+    debugQuestionChanges();
+    
+    // Call original addQuestion
+    const result = addQuestion();
+    
+    // Monitor after changes
+    setTimeout(() => {
+        debugQuestionChanges();
+        console.log('🚀🔍 DEBUG: Post-addition monitoring setup complete');
+    }, 100);
+    
+    return result;
+}
+
+/**
+ * Advanced debugging utility to track animation triggers and visual changes
+ */
+class QuestionAnimationDebugger {
+    constructor() {
+        this.isDebugging = false;
+        this.styleSnapshots = new Map();
+        this.changeLog = [];
+    }
+    
+    startDebugging() {
+        console.log('🎬 DEBUG: Starting animation debugging...');
+        this.isDebugging = true;
+        this.changeLog = [];
+        this.addVisualDebugger();
+        this.captureInitialStyles();
+        this.setupAnimationTracking();
+    }
+    
+    stopDebugging() {
+        console.log('🎬 DEBUG: Stopping animation debugging...');
+        this.isDebugging = false;
+        this.removeVisualDebugger();
+        this.printChangeReport();
+    }
+    
+    addVisualDebugger() {
+        // Add visual overlay to track changes
+        if (document.getElementById('debug-overlay')) return;
+        
+        const overlay = document.createElement('div');
+        overlay.id = 'debug-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 10000;
+            max-width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+        `;
+        overlay.innerHTML = '<h4>🎬 Animation Debugger</h4><div id="debug-log"></div>';
+        document.body.appendChild(overlay);
+    }
+    
+    removeVisualDebugger() {
+        const overlay = document.getElementById('debug-overlay');
+        if (overlay) overlay.remove();
+    }
+    
+    logChange(message, element = null) {
+        if (!this.isDebugging) return;
+        
+        const timestamp = Date.now();
+        const logEntry = { timestamp, message, element };
+        this.changeLog.push(logEntry);
+        
+        console.log(`🎬 ${message}`);
+        
+        // Update visual debugger
+        const debugLog = document.getElementById('debug-log');
+        if (debugLog) {
+            const entry = document.createElement('div');
+            entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            entry.style.color = this.getLogColor(message);
+            debugLog.appendChild(entry);
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+    }
+    
+    getLogColor(message) {
+        if (message.includes('CHANGING')) return '#ff6b6b';
+        if (message.includes('CREATE')) return '#4ecdc4';
+        if (message.includes('REMOVE')) return '#ffe66d';
+        if (message.includes('STYLE')) return '#a8e6cf';
+        return '#ffffff';
+    }
+    
+    captureInitialStyles() {
+        const questionsContainer = document.getElementById('questions-container');
+        if (!questionsContainer) return;
+        
+        const questionItems = questionsContainer.querySelectorAll('.question-item');
+        questionItems.forEach((item, index) => {
+            const computedStyle = window.getComputedStyle(item);
+            const snapshot = {
+                background: computedStyle.background,
+                backgroundColor: computedStyle.backgroundColor,
+                border: computedStyle.border,
+                borderColor: computedStyle.borderColor,
+                boxShadow: computedStyle.boxShadow,
+                opacity: computedStyle.opacity,
+                transform: computedStyle.transform,
+                transition: computedStyle.transition
+            };
+            this.styleSnapshots.set(`question-${index}`, snapshot);
+            this.logChange(`CAPTURED initial styles for question ${index}`);
+        });
+    }
+    
+    setupAnimationTracking() {
+        // Track CSS animation events
+        document.addEventListener('animationstart', (e) => {
+            if (e.target.classList.contains('question-item')) {
+                this.logChange(`ANIMATION START: ${e.animationName} on question item`, e.target);
+            }
+        });
+        
+        document.addEventListener('animationend', (e) => {
+            if (e.target.classList.contains('question-item')) {
+                this.logChange(`ANIMATION END: ${e.animationName} on question item`, e.target);
+            }
+        });
+        
+        document.addEventListener('transitionstart', (e) => {
+            if (e.target.classList.contains('question-item')) {
+                this.logChange(`TRANSITION START: ${e.propertyName} on question item`, e.target);
+            }
+        });
+        
+        document.addEventListener('transitionend', (e) => {
+            if (e.target.classList.contains('question-item')) {
+                this.logChange(`TRANSITION END: ${e.propertyName} on question item`, e.target);
+            }
+        });
+    }
+    
+    compareStyles(element, index) {
+        if (!this.isDebugging) return;
+        
+        const key = `question-${index}`;
+        const oldSnapshot = this.styleSnapshots.get(key);
+        if (!oldSnapshot) return;
+        
+        const computedStyle = window.getComputedStyle(element);
+        const newSnapshot = {
+            background: computedStyle.background,
+            backgroundColor: computedStyle.backgroundColor,
+            border: computedStyle.border,
+            borderColor: computedStyle.borderColor,
+            boxShadow: computedStyle.boxShadow,
+            opacity: computedStyle.opacity,
+            transform: computedStyle.transform,
+            transition: computedStyle.transition
+        };
+        
+        // Compare and log differences
+        Object.keys(oldSnapshot).forEach(property => {
+            if (oldSnapshot[property] !== newSnapshot[property]) {
+                this.logChange(`STYLE CHANGE question ${index}: ${property} from "${oldSnapshot[property]}" to "${newSnapshot[property]}"`);
+            }
+        });
+        
+        // Update snapshot
+        this.styleSnapshots.set(key, newSnapshot);
+    }
+    
+    printChangeReport() {
+        console.group('🎬 Animation Debug Report');
+        console.log(`Total changes tracked: ${this.changeLog.length}`);
+        
+        const changesByType = {};
+        this.changeLog.forEach(entry => {
+            const type = entry.message.split(':')[0];
+            changesByType[type] = (changesByType[type] || 0) + 1;
+        });
+        
+        console.table(changesByType);
+        console.log('Detailed log:', this.changeLog);
+        console.groupEnd();
+    }
+}
+
+/**
+ * Enable debug mode for the add question button
+ * Call this in browser console: enableQuestionDebug()
+ */
+export function enableQuestionDebug() {
+    console.log('🔧 Enabling question debug mode...');
+    
+    // Find toolbar add button
+    const toolbarButton = document.getElementById('toolbar-add-question');
+    if (toolbarButton) {
+        // Replace click handler with debug version
+        const newButton = toolbarButton.cloneNode(true);
+        newButton.onclick = () => {
+            console.log('🔧 Debug button clicked');
+            addQuestionDebug();
+        };
+        toolbarButton.parentNode.replaceChild(newButton, toolbarButton);
+        
+        // Visual indicator
+        newButton.style.border = '2px solid red';
+        newButton.title = 'DEBUG MODE: Add Question with Animation Tracking';
+        
+        console.log('🔧 Debug mode enabled! Add button now has animation tracking.');
+        console.log('🔧 Look for 🎬 DEBUG messages in console when adding questions.');
+        
+        return true;
+    }
+    
+    // Fallback: replace the main add button
+    const addButton = document.getElementById('add-question');
+    if (addButton) {
+        const newButton = addButton.cloneNode(true);
+        newButton.onclick = () => {
+            console.log('🔧 Debug button clicked (main)');
+            addQuestionDebug();
+        };
+        addButton.parentNode.replaceChild(newButton, addButton);
+        
+        newButton.style.border = '2px solid red';
+        newButton.title = 'DEBUG MODE: Add Question with Animation Tracking';
+        
+        console.log('🔧 Debug mode enabled on main add button!');
+        return true;
+    }
+    
+    console.error('🔧 Could not find add question button to enable debug mode');
+    return false;
+}
+
+/**
+ * Quick test function to verify if the animation issue is fixed
+ * Call this in console: testAddQuestionFix()
+ */
+export function testAddQuestionFix() {
+    console.log('🧪 Testing add question fix...');
+    
+    const questionsContainer = document.getElementById('questions-container');
+    if (!questionsContainer) {
+        console.error('🧪 No questions container found');
+        return false;
+    }
+    
+    const initialCount = questionsContainer.children.length;
+    console.log(`🧪 Initial question count: ${initialCount}`);
+    
+    // Add a question and monitor for issues
+    console.log('🧪 Adding question...');
+    addQuestion();
+    
+    setTimeout(() => {
+        const newCount = questionsContainer.children.length;
+        console.log(`🧪 New question count: ${newCount}`);
+        
+        if (newCount === initialCount + 1) {
+            console.log('✅ Question added successfully');
+            console.log('🧪 Check visually: Did you see any flashing or glitchy animations?');
+        } else {
+            console.error('❌ Question count mismatch');
+        }
+    }, 100);
+    
+    return true;
+}
+
+/**
+ * Test add question without scrolling to isolate the issue
+ * Call this in console: testAddQuestionNoScroll()
+ */
+export function testAddQuestionNoScroll() {
+    console.log('🧪 Testing add question WITHOUT scrolling...');
+    
+    const questionsContainer = document.getElementById('questions-container');
+    if (!questionsContainer) {
+        console.error('🧪 No questions container found');
+        return false;
+    }
+    
+    const initialCount = questionsContainer.children.length;
+    console.log(`🧪 Initial question count: ${initialCount}`);
+    
+    // Add a question WITHOUT the scrolling behavior
+    console.log('🧪 Adding question (no scroll)...');
+    addQuestion();
+    
+    setTimeout(() => {
+        const newCount = questionsContainer.children.length;
+        console.log(`🧪 New question count: ${newCount}`);
+        
+        if (newCount === initialCount + 1) {
+            console.log('✅ Question added successfully');
+            console.log('🧪 NO SCROLLING - Check visually: Did you see any flashing?');
+            console.log('🧪 If no flashing, the issue is the scrolling behavior');
+            console.log('🧪 If still flashing, the issue is DOM manipulation');
+        } else {
+            console.error('❌ Question count mismatch');
+        }
+    }, 100);
+    
+    return true;
+}
+
+/**
+ * Replace toolbar button with no-scroll version for testing
+ */
+export function enableNoScrollMode() {
+    console.log('🔧 Enabling no-scroll add question mode...');
+    
+    // Find toolbar add button
+    const toolbarButton = document.getElementById('toolbar-add-question');
+    if (toolbarButton) {
+        // Replace click handler with no-scroll version
+        const newButton = toolbarButton.cloneNode(true);
+        newButton.onclick = () => {
+            console.log('🔧 No-scroll button clicked');
+            addQuestion(); // Direct call, no scrolling
+        };
+        toolbarButton.parentNode.replaceChild(newButton, toolbarButton);
+        
+        // Visual indicator
+        newButton.style.border = '2px solid green';
+        newButton.title = 'NO-SCROLL MODE: Add Question without Animation';
+        
+        console.log('🔧 No-scroll mode enabled!');
+        return true;
+    }
+    
+    console.error('🔧 Could not find toolbar button');
+    return false;
+}
+
+// Make globally available
+window.testAddQuestionNoScroll = testAddQuestionNoScroll;
+window.enableNoScrollMode = enableNoScrollMode;
+
+// Make it globally available
+window.testAddQuestionFix = testAddQuestionFix;
+
+// Make it available globally for console access
+window.enableQuestionDebug = enableQuestionDebug;
+
+// Global instance
+window.questionDebugger = new QuestionAnimationDebugger();
+
+/**
+ * Debug-enabled version of addQuestion with comprehensive tracking
+ */
+export function addQuestionDebug() {
+    console.log('🚀🎬 DEBUG: Starting addQuestionDebug()');
+    
+    // Start debugging
+    window.questionDebugger.startDebugging();
+    
+    // Pre-addition state
+    window.questionDebugger.logChange('PRE-ADDITION: Capturing state...');
+    
+    // Call the original function with step-by-step monitoring
+    const questionsContainer = document.getElementById('questions-container');
+    if (!questionsContainer) {
+        window.questionDebugger.logChange('ERROR: Questions container not found');
+        window.questionDebugger.stopDebugging();
+        return;
+    }
+    
+    const initialCount = questionsContainer.children.length;
+    window.questionDebugger.logChange(`PRE-ADDITION: ${initialCount} questions exist`);
+    
+    // Monitor existing questions during the process
+    const existingQuestions = Array.from(questionsContainer.children);
+    existingQuestions.forEach((q, i) => {
+        window.questionDebugger.compareStyles(q, i);
+    });
+    
+    // Call addQuestion with monitoring
+    window.questionDebugger.logChange('CALLING: addQuestion()...');
+    const result = addQuestion();
+    window.questionDebugger.logChange('RETURNED: addQuestion() completed');
+    
+    // Post-addition monitoring
+    setTimeout(() => {
+        const newCount = questionsContainer.children.length;
+        window.questionDebugger.logChange(`POST-ADDITION: ${newCount} questions now exist`);
+        
+        // Compare styles after all operations
+        Array.from(questionsContainer.children).forEach((q, i) => {
+            window.questionDebugger.compareStyles(q, i);
+        });
+        
+        // Stop debugging after a delay to catch any delayed animations
+        setTimeout(() => {
+            window.questionDebugger.stopDebugging();
+        }, 1000);
+    }, 100);
+    
+    return result;
 }
 
 /**

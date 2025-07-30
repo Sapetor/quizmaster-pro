@@ -110,15 +110,34 @@ export class QuizManager {
             questionData.tolerance = tolerance;
         }
         
-        // Extract image data
+        // Extract image data - check both src and dataset.url
         const imageElement = questionElement.querySelector('.question-image');
-        if (imageElement && imageElement.src) {
-            // Extract the relative path from the src URL
-            const imageSrc = imageElement.src;
-            if (imageSrc.includes('/uploads/')) {
-                questionData.image = imageSrc.substring(imageSrc.indexOf('/uploads/') + 1); // Remove leading /
-            } else if (imageSrc.startsWith('uploads/')) {
-                questionData.image = imageSrc;
+        if (imageElement) {
+            // First check dataset.url (where uploaded images are stored)
+            let imageUrl = imageElement.dataset.url || imageElement.src;
+            
+            if (imageUrl) {
+                logger.debug('Found image for question:', imageUrl);
+                
+                // Handle data URIs (base64 images)
+                if (imageUrl.startsWith('data:')) {
+                    questionData.image = imageUrl;
+                } else {
+                    // Handle file paths - extract relative path from URL
+                    if (imageUrl.includes('/uploads/')) {
+                        questionData.image = imageUrl.substring(imageUrl.indexOf('/uploads/') + 1); // Remove leading /
+                    } else if (imageUrl.startsWith('uploads/')) {
+                        questionData.image = imageUrl;
+                    } else if (imageUrl.startsWith('/')) {
+                        // Handle absolute paths by removing leading /
+                        questionData.image = imageUrl.substring(1);
+                    } else {
+                        // Assume it's already a relative path
+                        questionData.image = imageUrl;
+                    }
+                }
+                
+                logger.debug('Processed image path for quiz save:', questionData.image);
             }
         }
         
@@ -448,41 +467,29 @@ export class QuizManager {
         const hasMultipleQuestions = questionItems.length > 1;
         
         questionItems.forEach((questionItem, index) => {
-            // Update data-question attribute
-            questionItem.setAttribute('data-question', index);
-            
-            // Update the question heading with proper translation
-            const questionHeading = questionItem.querySelector('h3');
-            if (questionHeading) {
-                const questionNumber = index + 1;
-                // Set up the heading with proper translation structure
-                questionHeading.innerHTML = `<span data-translate="question">Question</span> ${questionNumber}`;
+            // Update data-question attribute only if needed
+            const currentDataQuestion = questionItem.getAttribute('data-question');
+            if (currentDataQuestion !== index.toString()) {
+                questionItem.setAttribute('data-question', index);
                 
-                // Trigger translation update for this specific element
-                translationManager.translateContainer(questionHeading);
+                // Update the question heading with proper translation
+                const questionHeading = questionItem.querySelector('h3');
+                if (questionHeading) {
+                    const questionNumber = index + 1;
+                    questionHeading.innerHTML = `<span data-translate="question">Question</span> ${questionNumber}`;
+                    translationManager.translateContainer(questionHeading);
+                }
             }
             
-            // Handle remove button
-            let removeButton = questionItem.querySelector('.remove-question');
-            
-            // If remove button doesn't exist, create it
-            if (!removeButton) {
-                removeButton = document.createElement('button');
-                removeButton.className = 'btn secondary remove-question';
-                removeButton.onclick = () => {
-                    questionItem.remove();
-                    this.updateQuestionsUI();
-                };
-                removeButton.setAttribute('data-translate', 'remove');
-                removeButton.textContent = 'Remove';
-                questionItem.appendChild(removeButton);
-            }
-            
-            // Show/hide based on number of questions
-            if (hasMultipleQuestions) {
-                removeButton.style.display = 'block';
-            } else {
-                removeButton.style.display = 'none';
+            // Handle remove button visibility efficiently
+            const removeButton = questionItem.querySelector('.remove-question');
+            if (removeButton) {
+                const shouldShow = hasMultipleQuestions ? 'block' : 'none';
+                const currentDisplay = removeButton.style.display || 'none';
+                
+                if (currentDisplay !== shouldShow) {
+                    removeButton.style.display = shouldShow;
+                }
             }
         });
         

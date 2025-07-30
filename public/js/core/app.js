@@ -253,20 +253,24 @@ export class QuizGame {
             const questionItems = document.querySelectorAll('.question-item');
             if (questionItems.length > 0) {
                 const lastQuestion = questionItems[questionItems.length - 1];
+                
+                // Use gentle scrolling that's less jarring
                 lastQuestion.scrollIntoView({ 
                     behavior: 'smooth', 
-                    block: 'center',
+                    block: 'start',
                     inline: 'nearest'
                 });
                 
-                // Add brief highlight effect
-                lastQuestion.style.background = 'rgba(37, 99, 235, 0.1)';
-                lastQuestion.style.transform = 'scale(1.02)';
+                // Add subtle highlight effect
+                lastQuestion.style.transition = 'background-color 0.5s ease';
+                lastQuestion.style.backgroundColor = 'rgba(37, 99, 235, 0.05)';
                 
                 setTimeout(() => {
-                    lastQuestion.style.background = '';
-                    lastQuestion.style.transform = '';
-                }, 1500);
+                    lastQuestion.style.backgroundColor = '';
+                    setTimeout(() => {
+                        lastQuestion.style.transition = '';
+                    }, 500);
+                }, 1000);
             }
         }, TIMING.DOM_UPDATE_DELAY);
     }
