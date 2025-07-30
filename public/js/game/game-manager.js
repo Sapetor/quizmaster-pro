@@ -3,7 +3,7 @@
  * Handles game flow, question display, player results, and game state management
  */
 
-import { translationManager, createQuestionCounter, getTrueFalseText } from '../utils/translation-manager.js';
+import { translationManager, getTranslation, createQuestionCounter, getTrueFalseText } from '../utils/translation-manager.js';
 import { TIMING, logger, UI, ANIMATION } from '../core/config.js';
 import { MathRenderer } from '../utils/math-renderer.js';
 import { mathJaxService } from '../utils/mathjax-service.js';
@@ -563,7 +563,7 @@ export class GameManager {
         if (input) {
             input.value = '';
             input.disabled = false;
-            input.placeholder = translationManager.getTranslationSync('enter_numeric_answer');
+            input.placeholder = getTranslation('enter_numeric_answer');
             
             // Remove old listeners and add new ones
             input.replaceWith(input.cloneNode(true));
@@ -577,7 +577,7 @@ export class GameManager {
         
         if (submitButton) {
             submitButton.disabled = false;
-            submitButton.textContent = translationManager.getTranslationSync('submit');
+            submitButton.textContent = getTranslation('submit');
             
             // Use tracked event listeners instead of cloning
             this.addEventListenerTracked(submitButton, 'click', () => {
@@ -637,7 +637,7 @@ export class GameManager {
         // Immediately disable button and provide visual feedback
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.textContent = translationManager.getTranslationSync('submitting');
+            submitBtn.textContent = getTranslation('submitting');
         }
         
         const checkboxes = document.querySelectorAll('#player-multiple-correct .option-checkbox:checked');
@@ -772,7 +772,7 @@ export class GameManager {
         const submitButton = document.getElementById('submit-numeric');
         if (submitButton) {
             submitButton.disabled = true;
-            submitButton.textContent = translationManager.getTranslationSync('submitted');
+            submitButton.textContent = getTranslation('submitted');
         }
     }
 
@@ -787,7 +787,7 @@ export class GameManager {
                 answerText = translationManager.getOptionLetter(answer);
             }
             
-            feedback.innerHTML = `${translationManager.getTranslationSync('answer_submitted')}: ${answerText}`;
+            feedback.innerHTML = `${getTranslation('answer_submitted')}: ${answerText}`;
             feedback.classList.add('show');
             
             // Hide after delay
@@ -821,12 +821,12 @@ export class GameManager {
             
             // Prepare feedback message
             let feedbackMessage = isCorrect 
-                ? translationManager.getTranslationSync('correct_answer_msg')
-                : translationManager.getTranslationSync('incorrect_answer_msg');
+                ? getTranslation('correct_answer_msg')
+                : getTranslation('incorrect_answer_msg');
             
             // Add total score to message if available
             if (earnedPoints > 0 && data.totalScore !== undefined) {
-                feedbackMessage += ` (+${earnedPoints} ${translationManager.getTranslationSync('points')})`;
+                feedbackMessage += ` (+${earnedPoints} ${getTranslation('points')})`;
             }
             
             // Show modal feedback instead of inline feedback
@@ -883,20 +883,20 @@ export class GameManager {
             if (Number.isInteger(answer) && answer >= 0 && answer <= 3) {
                 // Multiple choice answer - convert to letter
                 const letter = String.fromCharCode(65 + answer);
-                displayText = `${translationManager.getTranslationSync('answer_submitted')}: ${letter}`;
+                displayText = `${getTranslation('answer_submitted')}: ${letter}`;
             } else {
                 // Numeric input answer - show the actual number
-                displayText = `${translationManager.getTranslationSync('answer_submitted')}: ${answer}`;
+                displayText = `${getTranslation('answer_submitted')}: ${answer}`;
             }
         } else if (Array.isArray(answer)) {
             const letters = answer.map(a => String.fromCharCode(65 + a)).join(', ');
-            displayText = `${translationManager.getTranslationSync('answers_submitted')}: ${letters}`;
+            displayText = `${getTranslation('answer_submitted')}: ${letters}`;
         } else if (typeof answer === 'boolean') {
-            displayText = `${translationManager.getTranslationSync('answer_submitted')}: ${answer ? 'TRUE' : 'FALSE'}`;
+            displayText = `${getTranslation('answer_submitted')}: ${answer ? 'TRUE' : 'FALSE'}`;
         } else if (typeof answer === 'string') {
-            displayText = `${translationManager.getTranslationSync('answer_submitted')}: ${answer.toUpperCase()}`;
+            displayText = `${getTranslation('answer_submitted')}: ${answer.toUpperCase()}`;
         } else {
-            displayText = `${translationManager.getTranslationSync('answer_submitted')}: ${answer}`;
+            displayText = `${getTranslation('answer_submitted')}: ${answer}`;
         }
         
         // Show modal feedback with neutral state and shorter duration
@@ -986,7 +986,7 @@ export class GameManager {
         const submitButton = document.getElementById('submit-numeric');
         if (submitButton) {
             submitButton.disabled = false;
-            submitButton.textContent = translationManager.getTranslationSync('submit_answer');
+            submitButton.textContent = getTranslation('submit_answer');
         }
         
         // Reset multiple correct submit button
@@ -1129,7 +1129,7 @@ export class GameManager {
         const optionsContainer = document.getElementById('answer-options');
         if (optionsContainer) {
             optionsContainer.style.display = 'block';
-            let answerText = `✅ ${translationManager.getTranslationSync('correct_answer')}: ${correctAnswer}`;
+            let answerText = `✅ ${getTranslation('correct_answer')}: ${correctAnswer}`;
             if (tolerance) {
                 answerText += ` (±${tolerance})`;
             }
@@ -1433,7 +1433,7 @@ export class GameManager {
         }
         
         if (finalScore) {
-            finalScore.textContent = `${playerScore} ${translationManager.getTranslationSync('points')}`;
+            finalScore.textContent = `${playerScore} ${getTranslation('points')}`;
         }
         
         // Update top 3 players display
@@ -2003,7 +2003,7 @@ export class GameManager {
                 if (container) {
                     container.innerHTML = `
                         <div class="error-state">
-                            <p>⚠️ ${translationManager.getTranslationSync('question_load_error')}</p>
+                            <p>⚠️ ${getTranslation('question_load_error')}</p>
                             <p>Please wait for the next question...</p>
                         </div>
                     `;
