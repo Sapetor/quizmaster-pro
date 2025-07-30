@@ -830,7 +830,13 @@ export class GameManager {
             }
             
             // Show modal feedback instead of inline feedback
-            modalFeedback.show(isCorrect, feedbackMessage, earnedPoints, TIMING.RESULT_DISPLAY_DURATION);
+            if (isCorrect) {
+                logger.debug('🎊 CONFETTI DEBUG: Calling modalFeedback.showCorrect() for correct answer');
+                modalFeedback.showCorrect(feedbackMessage, earnedPoints, TIMING.RESULT_DISPLAY_DURATION);
+            } else {
+                logger.debug('❌ CONFETTI DEBUG: Calling modalFeedback.showIncorrect() for wrong answer');
+                modalFeedback.showIncorrect(feedbackMessage, earnedPoints, TIMING.RESULT_DISPLAY_DURATION);
+            }
             logger.debug('Modal feedback shown:', isCorrect ? 'correct' : 'incorrect');
             
             // Show correct answer if player was wrong (preserve existing functionality)
@@ -848,11 +854,7 @@ export class GameManager {
                 if (this.soundManager.isEnabled()) {
                     this.soundManager.playCorrectAnswerSound();
                 }
-                // Show confetti for correct answers (for players only)
-                if (!this.isHost) {
-                    logger.debug('Showing confetti for correct answer');
-                    this.showConfetti();
-                }
+                // Confetti is now handled by the modal feedback system with proper z-index layering
             } else {
                 logger.debug('Playing incorrect answer sound');
                 if (this.soundManager.isEnabled()) {
@@ -900,8 +902,8 @@ export class GameManager {
             displayText = `${getTranslation('answer_submitted')}: ${answer}`;
         }
         
-        // Show modal feedback with neutral state and shorter duration
-        modalFeedback.show(true, displayText, null, 2000); // 2 seconds for submission confirmation
+        // Show modal feedback with submission-specific styling
+        modalFeedback.showSubmission(displayText, 2000); // 2 seconds for submission confirmation
         
         logger.debug('Answer submission modal feedback shown:', displayText);
     }
@@ -1505,8 +1507,18 @@ export class GameManager {
                 imageContainer.appendChild(img);
             }
             
-            // Set image source and alt text with error handling
-            const imageSrc = data.image.startsWith('http') ? data.image : `/${data.image}`;
+            // Set image source and alt text with proper path handling
+            let imageSrc;
+            if (data.image.startsWith('data:')) {
+                imageSrc = data.image; // Data URI
+            } else if (data.image.startsWith('http')) {
+                imageSrc = data.image; // Full URL
+            } else {
+                // Construct proper URL from relative path
+                const baseUrl = window.location.origin;
+                const imagePath = data.image.startsWith('/') ? data.image : `/${data.image}`;
+                imageSrc = `${baseUrl}${imagePath}`;
+            }
             img.src = imageSrc;
             img.alt = 'Question Image';
             
@@ -1569,6 +1581,8 @@ export class GameManager {
      */
     showGameCompleteConfetti() {
         if (window.confetti) {
+            console.log('🎊 CONFETTI DEBUG: showGameCompleteConfetti() called - this uses global confetti and may be blurred by modal!');
+            logger.debug('🎊 CONFETTI DEBUG: Game complete confetti triggered (global confetti - may conflict with modal)');
             // Optimized confetti with timed bursts instead of continuous animation
             const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
             
@@ -1603,47 +1617,6 @@ export class GameManager {
         }
     }
 
-    /**
-     * Show simple confetti for correct answers
-     */
-    showConfetti() {
-        logger.debug('showConfetti called, confetti function available:', typeof confetti === 'function');
-        if (typeof confetti === 'function') {
-            logger.debug('Triggering confetti animation from top of screen');
-            
-            // Main center burst from top
-            confetti({
-                particleCount: ANIMATION.CONFETTI_BURST_PARTICLES + 30, // More particles for celebration
-                spread: ANIMATION.CONFETTI_SPREAD,
-                origin: { y: ANIMATION.CONFETTI_ORIGIN_Y, x: 0.5 }, // Center top
-                colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']
-            });
-            
-            // Left side burst
-            setTimeout(() => {
-                confetti({
-                    particleCount: ANIMATION.CONFETTI_BURST_PARTICLES / 2,
-                    angle: 60,
-                    spread: 55,
-                    origin: { y: ANIMATION.CONFETTI_ORIGIN_Y, x: 0.2 },
-                    colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']
-                });
-            }, 150);
-            
-            // Right side burst
-            setTimeout(() => {
-                confetti({
-                    particleCount: ANIMATION.CONFETTI_BURST_PARTICLES / 2,
-                    angle: 120,
-                    spread: 55,
-                    origin: { y: ANIMATION.CONFETTI_ORIGIN_Y, x: 0.8 },
-                    colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']
-                });
-            }, 300);
-        } else {
-            logger.debug('Confetti function not available');
-        }
-    }
 
     /**
      * Play game ending fanfare (from monolithic version)

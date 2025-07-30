@@ -79,8 +79,28 @@ export class GameDisplayManager {
             }
             
             // Set image source and alt text
-            img.src = data.image.startsWith('http') ? data.image : `/${data.image}`;
+            // Set image source with proper path handling
+            if (data.image.startsWith('data:')) {
+                img.src = data.image; // Data URI
+            } else if (data.image.startsWith('http')) {
+                img.src = data.image; // Full URL
+            } else {
+                // Construct proper URL from relative path
+                const baseUrl = window.location.origin; // http://localhost:3000
+                const imagePath = data.image.startsWith('/') ? data.image : `/${data.image}`;
+                img.src = `${baseUrl}${imagePath}`;
+            }
             img.alt = 'Question Image';
+            
+            // Add error handling for debugging
+            img.onerror = () => {
+                logger.warn('⚠️ Game question image failed to load:', data.image);
+                logger.warn('⚠️ Attempted src:', img.src);
+            };
+            
+            img.onload = () => {
+                logger.debug('✅ Game question image loaded successfully:', data.image);
+            };
             
             // Show the container
             imageContainer.style.display = 'block';

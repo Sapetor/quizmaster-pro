@@ -87,6 +87,112 @@ export class QuizGame {
         
         logger.info('QuizGame initialized successfully');
     }
+    /**
+     * Handle image upload for quiz questions
+     * @param {HTMLInputElement} inputElement - The file input element
+     */
+    async uploadImage(inputElement) {
+        try {
+            const file = inputElement.files[0];
+            if (!file) {
+                logger.debug('No file selected for upload');
+                return;
+            }
+
+            logger.debug('Uploading image:', file.name, file.type, file.size);
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+
+            // Validate file size (5MB limit)
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                alert('Image file is too large. Please select a file smaller than 5MB.');
+                return;
+            }
+
+            // Create FormData for upload
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // Show upload progress (optional UI feedback)
+            const questionItem = inputElement.closest('.question-item');
+            const imageUploadDiv = questionItem?.querySelector('.image-upload');
+            if (imageUploadDiv) {
+                imageUploadDiv.style.opacity = '0.5';
+            }
+
+            // Upload to server
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            logger.debug('Upload successful:', result);
+
+            // Update the image preview
+            this.updateImagePreview(inputElement, result.url);
+
+        } catch (error) {
+            logger.error('Image upload failed:', error);
+            alert('Failed to upload image. Please try again.');
+            
+            // Reset the file input
+            inputElement.value = '';
+            
+            // Restore UI state
+            const questionItem = inputElement.closest('.question-item');
+            const imageUploadDiv = questionItem?.querySelector('.image-upload');
+            if (imageUploadDiv) {
+                imageUploadDiv.style.opacity = '1';
+            }
+        }
+    }
+
+    /**
+     * Update image preview after successful upload
+     * @param {HTMLInputElement} inputElement - The file input element
+     * @param {string} imageUrl - The uploaded image URL
+     */
+    updateImagePreview(inputElement, imageUrl) {
+        const questionItem = inputElement.closest('.question-item');
+        if (!questionItem) {
+            logger.error('Could not find question item for image preview');
+            return;
+        }
+
+        const imagePreview = questionItem.querySelector('.image-preview');
+        const imageElement = questionItem.querySelector('.question-image');
+
+        if (!imagePreview || !imageElement) {
+            logger.error('Could not find image preview elements');
+            return;
+        }
+
+        // Set the image source and data-url attribute
+        imageElement.src = imageUrl;
+        imageElement.dataset.url = imageUrl; // This is crucial for quiz saving
+        imageElement.alt = 'Question Image';
+
+        // Show the preview
+        imagePreview.style.display = 'block';
+
+        // Restore UI state
+        const imageUploadDiv = questionItem.querySelector('.image-upload');
+        if (imageUploadDiv) {
+            imageUploadDiv.style.opacity = '1';
+        }
+
+        logger.debug('Image preview updated successfully:', imageUrl);
+    }
 
     /**
      * Initialize main event listeners
@@ -143,6 +249,7 @@ export class QuizGame {
         safeAddEventListener('join-game', 'click', () => this.joinGame());
         safeAddEventListener('new-game', 'click', () => this.newGame());
         safeAddEventListener('play-again', 'click', () => this.newGame());
+        safeAddEventListener('exit-to-main', 'click', () => this.exitToMainMenu());
 
         // Auto-save setup
         safeAddEventListener('quiz-title', 'input', () => {
@@ -441,6 +548,28 @@ export class QuizGame {
 
         // Return to main menu
         this.uiManager.showScreen('main-menu');
+    }
+
+    /**
+     * Exit current game and return to main menu
+     */
+    exitToMainMenu() {
+        // Reset game state
+        this.gameManager.resetGameState();
+        
+        // Clear any timers
+        if (this.gameManager.timer) {
+            clearInterval(this.gameManager.timer);
+            this.gameManager.timer = null;
+        }
+
+        // Keep socket connected for future games - just like newGame() does
+        // No need to disconnect as the socket can be reused for new games
+
+        // Return to main menu
+        this.uiManager.showScreen('main-menu');
+        
+        logger.debug('Exited game and returned to main menu (socket kept connected)');
     }
 
     /**

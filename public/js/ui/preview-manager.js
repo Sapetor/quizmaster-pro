@@ -506,8 +506,8 @@ export class PreviewManager {
         
         switch (questionType) {
             case 'multiple-choice':
-                // Try multiple selectors to find options - but filter out empty ones
-                const mcOptions = questionItem.querySelectorAll('.multiple-choice-options .option, .option');
+                // Use more specific selector to avoid conflicts with image uploads
+                const mcOptions = questionItem.querySelectorAll('.multiple-choice-options .options .option');
                 options = Array.from(mcOptions)
                     .map(opt => opt.value?.trim())
                     .filter(opt => opt && opt !== '' && opt !== 'Option text')  // Filter out empty/placeholder options
@@ -522,7 +522,8 @@ export class PreviewManager {
                 break;
                 
             case 'multiple-correct':
-                const mcorrOptions = questionItem.querySelectorAll('.multiple-correct-options .option, .option');
+                // Use more specific selector for multiple correct options
+                const mcorrOptions = questionItem.querySelectorAll('.multiple-correct-options .options-checkboxes .option');
                 options = Array.from(mcorrOptions)
                     .map(opt => opt.value?.trim())
                     .filter(opt => opt && opt !== '' && opt !== 'Option text')  // Filter out empty/placeholder options

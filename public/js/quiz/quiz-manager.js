@@ -125,15 +125,22 @@ export class QuizManager {
                 } else {
                     // Handle file paths - extract relative path from URL
                     if (imageUrl.includes('/uploads/')) {
-                        questionData.image = imageUrl.substring(imageUrl.indexOf('/uploads/') + 1); // Remove leading /
+                        // Extract just the filename from /uploads/filename.jpg or http://localhost:3000/uploads/filename.jpg
+                        const uploadsIndex = imageUrl.indexOf('/uploads/');
+                        questionData.image = imageUrl.substring(uploadsIndex); // Keep /uploads/filename.jpg
                     } else if (imageUrl.startsWith('uploads/')) {
-                        questionData.image = imageUrl;
+                        // Already a relative path like uploads/filename.jpg
+                        questionData.image = '/' + imageUrl; // Make it /uploads/filename.jpg
                     } else if (imageUrl.startsWith('/')) {
-                        // Handle absolute paths by removing leading /
-                        questionData.image = imageUrl.substring(1);
+                        // Already an absolute path like /uploads/filename.jpg
+                        questionData.image = imageUrl; 
+                    } else if (imageUrl.startsWith('http')) {
+                        // Full URL without uploads path - this indicates an error
+                        logger.warn('Invalid image URL format:', imageUrl);
+                        questionData.image = ''; // Clear invalid URL
                     } else {
-                        // Assume it's already a relative path
-                        questionData.image = imageUrl;
+                        // Assume it's a relative path and make it absolute
+                        questionData.image = '/' + imageUrl;
                     }
                 }
                 
