@@ -162,6 +162,7 @@ export default {
         quiz_loaded_successfully: "Quiz chargé avec succès",
         error_loading_quiz: "Erreur de chargement du quiz",
         answer_submitted: "Réponse soumise",
+        your_answer: "Votre réponse",
 
         // Answer option keys
         a_is_correct: "A est correct",

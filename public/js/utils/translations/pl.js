@@ -134,6 +134,7 @@ export default {
         please_enter_quiz_title: "Proszę wprowadź tytuł quizu",
         please_add_one_question: "Proszę dodaj co najmniej jedno pytanie",
         answer_submitted: "Odpowiedź wysłana",
+        your_answer: "Twoja odpowiedź",
         
         // Answer option keys (used in editor)
         a_is_correct: "A jest poprawne",

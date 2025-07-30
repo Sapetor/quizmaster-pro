@@ -170,6 +170,7 @@ export default {
         please_enter_quiz_title: "Please enter a quiz title",
         please_add_one_question: "Please add at least one question",
         answer_submitted: "Answer submitted",
+        your_answer: "Your answer",
         
         // Answer option keys (used in editor)
         a_is_correct: "A is correct",

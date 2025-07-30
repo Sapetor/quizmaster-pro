@@ -150,6 +150,7 @@ export default {
         quiz_loaded_successfully: "Quiz carregado com sucesso",
         error_loading_quiz: "Erro ao carregar quiz",
         answer_submitted: "Resposta enviada",
+        your_answer: "Sua resposta",
         a_is_correct: "A está correto",
         b_is_correct: "B está correto",
         c_is_correct: "C está correto",

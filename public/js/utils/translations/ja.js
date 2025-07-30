@@ -150,6 +150,7 @@ export default {
         quiz_loaded_successfully: "クイズが正常に読み込まれました",
         error_loading_quiz: "クイズ読み込みエラー",
         answer_submitted: "回答が送信されました",
+        your_answer: "あなたの回答",
         a_is_correct: "Aが正解",
         b_is_correct: "Bが正解",
         c_is_correct: "Cが正解",

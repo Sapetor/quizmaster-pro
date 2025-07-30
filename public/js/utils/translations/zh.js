@@ -150,6 +150,7 @@ export default {
         quiz_loaded_successfully: "问答加载成功",
         error_loading_quiz: "加载问答时出错",
         answer_submitted: "答案已提交",
+        your_answer: "你的答案",
         a_is_correct: "A是正确的",
         b_is_correct: "B是正确的",
         c_is_correct: "C是正确的",
