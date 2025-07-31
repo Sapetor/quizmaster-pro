@@ -765,7 +765,7 @@ export class QuizGame {
                         } catch (debugError) {
                             logger.error('Debug analysis failed:', debugError);
                         }
-                    }, TIMING.DEBUG_ANALYSIS_DELAY); // Wait for game to fully start
+                    }, TIMING.GAME_START_DELAY); // Wait for game to fully start
                     
                 } catch (startError) {
                     logger.error('Failed to start game:', startError);

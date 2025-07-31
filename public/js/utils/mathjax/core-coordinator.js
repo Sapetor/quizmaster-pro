@@ -8,7 +8,7 @@
 
 import { TIMING, logger } from '../../core/config.js';
 import { errorHandler } from '../error-handler.js';
-import { performanceMonitor } from '../performance-monitor.js';
+// Removed performance monitoring import - keeping coordinator lightweight
 import { recoveryService } from './recovery-service.js';
 import { cacheService } from './cache-service.js';
 import { RenderService } from './render-service.js';

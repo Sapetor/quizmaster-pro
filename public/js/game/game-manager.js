@@ -220,7 +220,7 @@ export class GameManager {
             
             // Update host options content
             this.updateHostOptionsContent(data, elements.hostOptionsContainer);
-        }, TIMING.HOST_QUESTION_RENDER_DELAY);
+        }, TIMING.RENDER_DELAY);
     }
 
     /**
@@ -291,7 +291,7 @@ export class GameManager {
                 mathJaxService.renderElement(hostQuestionElement, 400).catch(fallbackErr => {
                     logger.error('❌ MathJax question fallback render failed:', fallbackErr);
                 });
-            }, TIMING.HOST_FINALIZE_DELAY);
+            }, TIMING.RENDER_DELAY);
         });
     }
     
@@ -359,7 +359,7 @@ export class GameManager {
                 mathJaxService.renderElement(hostOptionsContainer, 450).catch(fallbackErr => {
                     logger.error('❌ MathJax options fallback render failed:', fallbackErr);
                 });
-            }, TIMING.HOST_OPTIONS_RENDER_DELAY);
+            }, TIMING.RENDER_DELAY);
         });
     }
 
@@ -436,7 +436,7 @@ export class GameManager {
             
             // Update player options based on question type
             this.updatePlayerOptions(data, optionsContainer);
-        }, TIMING.PLAYER_FINALIZE_DELAY);
+        }, TIMING.RENDER_DELAY);
     }
 
     /**
@@ -464,7 +464,7 @@ export class GameManager {
         this.updateQuestionImage(data, 'player-question-image');
         
         // Render MathJax for player question with appropriate delay
-        mathJaxService.renderElement(questionElement, TIMING.PLAYER_RENDER_DELAY).then(() => {
+        mathJaxService.renderElement(questionElement, TIMING.RENDER_DELAY).then(() => {
             logger.debug('MathJax rendering completed for player question');
         }).catch(err => {
             logger.error('MathJax player question render error:', err);
@@ -488,7 +488,7 @@ export class GameManager {
         }
         
         // Render MathJax for player options with appropriate delay
-        mathJaxService.renderElement(optionsContainer, TIMING.HOST_OPTIONS_RENDER_DELAY).then(() => {
+        mathJaxService.renderElement(optionsContainer, TIMING.RENDER_DELAY).then(() => {
             logger.debug('MathJax rendering completed for player options');
         }).catch(err => {
             logger.error('MathJax player options render error:', err);
@@ -1793,7 +1793,7 @@ export class GameManager {
             });
             
             // Side bursts with reduced frequency and particles
-            const burstTimes = TIMING.CONFETTI_BURST_TIMES;
+            const burstTimes = [300, 600, 900, 1200, 1500]; // Multiple confetti bursts
             logger.debug('🎊 Scheduling', burstTimes.length, 'additional confetti bursts...');
             
             burstTimes.forEach((time, index) => {

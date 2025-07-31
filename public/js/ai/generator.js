@@ -317,7 +317,7 @@ export class AIQuestionGenerator {
                 setTimeout(() => {
                     showAlert('successfully_generated_questions', [questions.length]);
                     this.isGenerating = false; // Reset flag after success message
-                }, TIMING.SCREEN_TRANSITION_DELAY);
+                }, TIMING.ANIMATION_DURATION);
             } else {
                 showAlert('error_generating');
                 this.isGenerating = false;

@@ -728,7 +728,7 @@ export class MathJaxService {
                 
                 if (attempt < maxRetries) {
                     // Wait before retry
-                    await new Promise(resolve => setTimeout(resolve, TIMING.MATHJAX_RETRY_TIMEOUT));
+                    await new Promise(resolve => setTimeout(resolve, TIMING.MATHJAX_TIMEOUT));
                 }
             }
         }

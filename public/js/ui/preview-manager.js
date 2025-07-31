@@ -20,7 +20,7 @@ export class PreviewManager {
         this.previewMode = false;
         this.manualNavigationInProgress = false;
         this.mathJaxRenderingInProgress = false; // Prevent multiple simultaneous renders
-        this.updatePreviewDebounced = this.debounce(() => this.updateSplitPreview(), TIMING.PREVIEW_UPDATE_DEBOUNCE);
+        this.updatePreviewDebounced = this.debounce(() => this.updateSplitPreview(), TIMING.ANIMATION_DURATION);
         
         // Drag functionality state
         this.isDragging = false;
@@ -1027,7 +1027,7 @@ export class PreviewManager {
                 if (window.MathJax && window.MathJax.typesetPromise && (window.mathJaxReady || document.body.classList.contains('mathjax-ready'))) {
                     callback();
                 } else {
-                    setTimeout(checkReady, TIMING.MATHJAX_CHECK_INTERVAL);
+                    setTimeout(checkReady, TIMING.DOM_UPDATE_DELAY);
                 }
             };
             
@@ -1288,7 +1288,7 @@ export class PreviewManager {
         // Show option after MathJax processing with timeout
         setTimeout(() => {
             this.showOptionAfterMathjax(optionDiv);
-        }, TIMING.MATHJAX_CHECK_INTERVAL);
+        }, TIMING.DOM_UPDATE_DELAY);
     }
 
     /**

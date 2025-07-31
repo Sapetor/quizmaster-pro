@@ -8,13 +8,7 @@ import { translationManager } from './utils/translation-manager.js';
 import { errorBoundary } from './utils/error-boundary.js';
 import { TIMING, logger } from './core/config.js';
 import './utils/globals.js'; // Import globals to make them available
-import './utils/mathjax/integration-tests.js'; // Load integration tests for development
-import './utils/mathjax/f5-corruption-simulator.js'; // Load F5 corruption testing tools
-import './utils/mathjax/performance-benchmarks.js'; // Load performance benchmarking suite
-import './utils/mathjax/browser-test-suite.js'; // Load comprehensive browser testing
-import './utils/mathjax/testing-dashboard.js'; // Load unified testing dashboard
-import { performanceMonitor } from './utils/performance-monitor.js'; // Basic performance monitoring for debugging
-import { performanceDashboard } from './utils/performance-dashboard.js'; // Performance dashboard
+// Removed testing infrastructure and performance monitoring - keeping app lightweight
 import { browserOptimizer } from './utils/browser-optimizer.js'; // Browser-specific optimizations
 import { contentDensityManager } from './utils/content-density-manager.js'; // Smart content spacing and sizing
 import { mobileLayoutManager } from './utils/mobile-layout-manager.js'; // Smart mobile layout for different content types
@@ -155,20 +149,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     logger.warn('setGlobalFontSize function not available yet');
                 }
             }, 'font-size-init');
-        }, TIMING.MATHJAX_RETRY_TIMEOUT);
+        }, TIMING.MATHJAX_TIMEOUT);
         
-        // Add performance dashboard keyboard shortcut (Ctrl+Shift+P)
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.shiftKey && e.key === 'P') {
-                e.preventDefault();
-                performanceDashboard.toggle();
-                logger.debug('Performance dashboard toggled via keyboard shortcut');
-            }
-            
-        });
-        
-        // Start performance monitoring
-        performanceMonitor.startMonitoring();
+        // Removed performance dashboard keyboard shortcut - keeping app lightweight
         
         
         // Initialize browser optimizations

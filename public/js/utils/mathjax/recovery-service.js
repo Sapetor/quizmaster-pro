@@ -7,7 +7,7 @@
 import { TIMING, logger } from '../../core/config.js';
 import { domUtils } from '../dom-utils.js';
 import { errorHandler } from '../error-handler.js';
-import { performanceMonitor } from '../performance-monitor.js';
+// Removed performance monitoring import - keeping service lightweight
 
 export class RecoveryService {
     constructor() {
@@ -409,16 +409,7 @@ export class RecoveryService {
                                 completeProgressiveLoading(element, true);
                                 this.isRecovering = false;
                                 
-                                // Track script reload recovery performance
-                                if (startTime && elementId) {
-                                    const endTime = Date.now();
-                                    performanceMonitor.trackF5Recovery('script-reload', startTime, endTime, { 
-                                        elementId, 
-                                        method: 'script-reload',
-                                        hasOtherTabs,
-                                        isChrome: this.isChrome
-                                    });
-                                }
+                                // Script reload recovery successful
                                 resolve();
                             }).catch(err => {
                                 logger.error('❌ Script reload render failed:', err);
@@ -426,17 +417,7 @@ export class RecoveryService {
                                 completeProgressiveLoading(element, false);
                                 this.isRecovering = false;
                                 
-                                // Track failed script reload recovery
-                                if (startTime && elementId) {
-                                    const endTime = Date.now();
-                                    performanceMonitor.trackF5Recovery('script-reload-failed', startTime, endTime, { 
-                                        elementId, 
-                                        method: 'script-reload',
-                                        error: err.message,
-                                        hasOtherTabs,
-                                        isChrome: this.isChrome
-                                    });
-                                }
+                                // Script reload recovery failed
                                 resolve();
                             });
                         
@@ -520,12 +501,7 @@ export class RecoveryService {
             pendingRenders.delete(element);
             completeProgressiveLoading(element, true);
             
-            // Track cache recovery performance
-            const endTime = Date.now();
-            performanceMonitor.trackF5Recovery('cache-recovery', startTime, endTime, { 
-                elementId, 
-                method: 'cache' 
-            });
+            // Cache recovery successful
             resolve();
             return;
         }

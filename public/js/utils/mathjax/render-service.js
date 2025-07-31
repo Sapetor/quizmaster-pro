@@ -6,7 +6,7 @@
 
 import { TIMING, logger } from '../../core/config.js';
 import { errorHandler } from '../error-handler.js';
-import { performanceMonitor } from '../performance-monitor.js';
+// Removed performance monitoring import - keeping service lightweight
 
 export class RenderService {
     constructor(cacheService, recoveryService) {
@@ -195,8 +195,6 @@ export class RenderService {
             // PERFORMANCE: Early exit for non-LaTeX content (like code snippets)
             if (!this.detectLatexContent(element)) {
                 // Skip MathJax processing entirely for code snippets/plain text
-                const endTime = Date.now();
-                performanceMonitor.trackMathJaxRender(elementId, startTime, endTime, true);
                 resolve();
                 return;
             }
@@ -287,9 +285,7 @@ export class RenderService {
                                         this.completeProgressiveLoading(element, true);
                                     }
                                     
-                                    // Track successful render performance
-                                    const endTime = Date.now();
-                                    performanceMonitor.trackMathJaxRender(elementId, startTime, endTime, true);
+                                    // Successful render
                                     resolve();
                                 })
                                 .catch(error => {
@@ -332,7 +328,7 @@ export class RenderService {
                                     const isMobile = this.recoveryService.isMobile;
                                     const isChrome = this.recoveryService.isChrome;
                                     
-                                    let baseDelay = attempt <= 3 ? TIMING.MATHJAX_RETRY_TIMEOUT : TIMING.MATHJAX_RETRY_TIMEOUT * 1.5;
+                                    let baseDelay = attempt <= 3 ? TIMING.MATHJAX_TIMEOUT : TIMING.MATHJAX_TIMEOUT * 1.5;
                                     
                                     // Apply mobile-specific delay multipliers
                                     if (isMobile && isChrome) {
@@ -350,9 +346,7 @@ export class RenderService {
                                     // Complete progressive loading - FAILURE
                                     this.completeProgressiveLoading(element, false);
                                     
-                                    // Track failed render performance
-                                    const endTime = Date.now();
-                                    performanceMonitor.trackMathJaxRender(elementId, startTime, endTime, false);
+                                    // Failed render
                                     reject(error);
                                 }
                             });
@@ -429,7 +423,7 @@ export class RenderService {
                         }
                         
                         // Continue retrying with progressive backoff
-                        let delay = attempt <= 3 ? TIMING.MATHJAX_RETRY_TIMEOUT : TIMING.MATHJAX_RETRY_TIMEOUT * 1.5;
+                        let delay = attempt <= 3 ? TIMING.MATHJAX_TIMEOUT : TIMING.MATHJAX_TIMEOUT * 1.5;
                         
                         // Apply mobile-specific delay multipliers for loading delays
                         if (isMobile && isChrome) {

@@ -99,7 +99,7 @@ export class UIManager {
             // Translate the new screen
             setTimeout(() => {
                 translationManager.translatePage();
-            }, TIMING.TRANSLATION_DELAY);
+            }, TIMING.DOM_UPDATE_DELAY);
         } else {
             logger.error('Screen not found:', screenId);
             // List available screens for debugging
