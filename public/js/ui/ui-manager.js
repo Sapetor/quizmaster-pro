@@ -30,28 +30,7 @@ export class UIManager {
             this.currentScreen = screenId;
             logger.debug('Successfully switched to screen:', screenId);
             
-            // DEBUG: Simple console log that should always appear
-            console.log('🐛 UI MANAGER - Screen switched to:', screenId);
-            
-            // DEBUG: Log current layout state for mobile debugging
-            console.log('🐛 SCREEN SWITCH - Layout debug for:', screenId);
-            console.log('🐛 Current screen viewport height:', window.innerHeight);
-            console.log('🐛 Document body height:', document.body.scrollHeight);
-            console.log('🐛 Document body classes:', document.body.className);
-            
-            // Look for any containers that might be causing spacing issues
-            const allContainers = document.querySelectorAll('.container, [class*="container"]');
-            console.log('🐛 Found containers during screen switch:', allContainers.length);
-            allContainers.forEach((container, index) => {
-                const rect = container.getBoundingClientRect();
-                if (rect.height > 0) {
-                    console.log(`🐛 Container ${index} (${container.className}):`, {
-                        height: rect.height,
-                        top: rect.top,
-                        element: container
-                    });
-                }
-            });
+            // Container layout handled automatically
             
             // Show/hide header elements based on screen
             const headerStartBtn = document.getElementById('start-hosting-header-small');

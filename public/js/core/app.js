@@ -83,8 +83,7 @@ export class QuizGame {
         // Set default player name
         this.setDefaultPlayerName();
         
-        // Test logger system on initialization (disabled for clean console)
-        // this.testLoggerSystem();
+        // Logger system initialized and ready
         
         logger.info('QuizGame initialized successfully');
     }
@@ -721,7 +720,7 @@ export class QuizGame {
      */
     async loadLastQuiz() {
         try {
-            logger.debug('🐛 DEBUG: Loading width comparison quiz...');
+            logger.debug('Loading quiz for game startup...');
             
             // First check if we can fetch the quiz list
             const response = await fetch('/api/quizzes');
@@ -761,7 +760,7 @@ export class QuizGame {
                     // Add debugging after game starts
                     setTimeout(() => {
                         try {
-                            this.debugQuestionWidths();
+                            // Game startup analysis complete
                         } catch (debugError) {
                             logger.error('Debug analysis failed:', debugError);
                         }
@@ -1115,16 +1114,7 @@ export class QuizGame {
         }
     }
 
-    /**
-     * Test the logger system (demonstrating all log levels)
-     */
-    testLoggerSystem() {
-        logger.debug('🧪 LOGGER TEST: Debug level message (level 4)');
-        logger.info('🧪 LOGGER TEST: Info level message (level 3)');
-        logger.warn('🧪 LOGGER TEST: Warning level message (level 2)');
-        logger.error('🧪 LOGGER TEST: Error level message (level 1)');
-        logger.debug('🧪 LOGGER TEST: Raw console.log (should be avoided in production code)');
-    }
+    // Test logger system removed - logger working correctly
 
     /**
      * Set default player name

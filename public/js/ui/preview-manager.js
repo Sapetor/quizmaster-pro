@@ -359,12 +359,12 @@ export class PreviewManager {
             }
         }
 
-        // ULTRA DEBUG: Track who called updateSplitPreview
+        // Track who called updateSplitPreview
         const stack = new Error().stack;
         const caller = stack.split('\n')[2]?.trim() || 'unknown';
         logger.debug(`UPDATE SPLIT PREVIEW: total=${totalQuestions}, current=${this.currentPreviewQuestion}, caller=${caller}`);
         
-        // DEBUG: Log all question items and their indices
+        // Log all question items and their indices
         questionItems.forEach((item, index) => {
             const questionType = item.querySelector('.question-type')?.value || 'unknown';
             const questionText = item.querySelector('.question-text')?.value?.substring(0, 30) || 'empty';
@@ -716,7 +716,7 @@ export class PreviewManager {
                                 clearTimeout(fallbackTimeout);
                             }
                             
-                            // CRITICAL DEBUG: Check actual visual state after validation
+                            // Check actual visual state after validation
                             setTimeout(() => {
                                 const computedStyle = window.getComputedStyle(element);
                                 const parentComputedStyle = window.getComputedStyle(element.parentElement);
@@ -1360,7 +1360,7 @@ export class PreviewManager {
                         clearTimeout(fallbackTimeout);
                     }
                     
-                    // CRITICAL DEBUG: Check option visual state after validation
+                    // Check option visual state after validation
                     setTimeout(() => {
                         const computedStyle = window.getComputedStyle(optionDiv);
                         const parentComputedStyle = window.getComputedStyle(optionDiv.parentElement);

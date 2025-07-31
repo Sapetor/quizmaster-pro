@@ -105,11 +105,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         mobileLayoutManager.setEnabled(window.innerWidth <= 768);
         logger.debug('Mobile layout manager initialized');
         
-        // DEBUG: Basic mobile debugging
-        console.log('🐛 MAIN.JS - App initialized');
-        console.log('🐛 Window size:', window.innerWidth, 'x', window.innerHeight);
-        console.log('🐛 Is mobile detected:', window.innerWidth <= 768);
-        console.log('🐛 gameStateManager available:', typeof window.gameStateManager);
+        // Basic mobile optimization
+        logger.debug('App initialized for mobile/desktop layout');
         
         // FOUC Prevention: Add loaded class for smooth appearance
         document.body.classList.add('loaded');
