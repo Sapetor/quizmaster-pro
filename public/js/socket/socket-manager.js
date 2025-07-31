@@ -105,8 +105,10 @@ export class SocketManager {
             logger.debug('Question ended:', data);
             this.gameManager.stopTimer();
             
-            if (data && data.leaderboard) {
-                this.gameManager.showLeaderboard(data.leaderboard);
+            // New flow: question-end now shows statistics first, not leaderboard
+            if (data && data.showStatistics) {
+                // Stay on host-game-screen to show statistics with new control buttons
+                logger.debug('Question ended - statistics ready with control buttons');
             }
         });
 
@@ -125,16 +127,22 @@ export class SocketManager {
             }
         });
 
-        this.socket.on('show-next-button', () => {
-            logger.debug('Showing next question button');
+        this.socket.on('show-next-button', (data) => {
+            logger.debug('Showing next question button', data);
+            
+            // Show buttons in leaderboard screen (original buttons)
             const nextButton = document.getElementById('next-question');
             if (nextButton) {
-                // Simply show the button and let CSS handle all styling
                 nextButton.style.display = 'block';
-                // Clear any existing onclick handler
-                nextButton.onclick = null;
                 
-                // Remove any previously set inline styles that might interfere with CSS
+                // Update button text based on whether it's the last question
+                if (data && data.isLastQuestion) {
+                    nextButton.textContent = translationManager.getTranslationSync('finish_quiz') || 'Finish Quiz';
+                } else {
+                    nextButton.textContent = translationManager.getTranslationSync('next_question') || 'Next Question';
+                }
+                // Clear any existing onclick handler and styling
+                nextButton.onclick = null;
                 nextButton.style.position = '';
                 nextButton.style.bottom = '';
                 nextButton.style.right = '';
@@ -148,38 +156,69 @@ export class SocketManager {
                 nextButton.style.cursor = '';
                 nextButton.style.boxShadow = '';
             }
+            
+            // Also show buttons in host-game-screen (for statistics phase) - now in stats header
+            const statsControls = document.querySelector('.stats-controls');
+            const nextButtonStats = document.getElementById('next-question-stats');
+            if (statsControls && nextButtonStats) {
+                statsControls.style.display = 'flex';
+                nextButtonStats.style.display = 'block';
+                
+                // Update stats button text as well
+                if (data && data.isLastQuestion) {
+                    nextButtonStats.textContent = translationManager.getTranslationSync('finish_quiz') || 'Finish Quiz';
+                } else {
+                    nextButtonStats.textContent = translationManager.getTranslationSync('next_question') || 'Next Question';
+                }
+            }
         });
 
         this.socket.on('hide-next-button', () => {
             logger.debug('Hiding next question button');
+            
+            // Hide button in leaderboard screen
             const nextButton = document.getElementById('next-question');
             if (nextButton) {
                 nextButton.style.display = 'none';
                 nextButton.onclick = null; // Clear onclick handler
             }
+            
+            // Hide buttons in host-game-screen - now in stats header
+            const statsControls = document.querySelector('.stats-controls');
+            const nextButtonStats = document.getElementById('next-question-stats');
+            if (statsControls && nextButtonStats) {
+                statsControls.style.display = 'none';
+                nextButtonStats.style.display = 'none';
+            }
         });
 
         this.socket.on('game-end', (data) => {
-            logger.debug('Game ended:', data);
+            console.log('🎉 CLIENT: game-end event received!', data);
+            logger.debug('🎉 Game ended - triggering final results:', data);
             
             // Switch to results state for leaderboard and celebration
-            gameStateManager.setState('results');
+            if (window.gameStateManager && typeof window.gameStateManager.setState === 'function') {
+                window.gameStateManager.setState('results');
+                console.log('🎉 CLIENT: Set game state to results');
+            }
             
             // Hide manual advancement button
             const nextButton = document.getElementById('next-question');
             if (nextButton) {
                 nextButton.style.display = 'none';
                 nextButton.onclick = null;
+                console.log('🎉 CLIENT: Hid next question button');
             }
             
             // Clear any remaining timers
             this.gameManager.stopTimer();
+            console.log('🎉 CLIENT: Stopped timer');
             
-            // Delay showing final results to ensure proper state
-            setTimeout(() => {
-                logger.debug('Calling showFinalResults with leaderboard:', data.finalLeaderboard);
-                this.gameManager.showFinalResults(data.finalLeaderboard);
-            }, 1000);
+            // Show final results immediately (server already has delay)
+            console.log('🎉 CLIENT: About to call showFinalResults with leaderboard:', data.finalLeaderboard);
+            logger.debug('🎉 Calling showFinalResults with leaderboard:', data.finalLeaderboard);
+            this.gameManager.showFinalResults(data.finalLeaderboard);
+            console.log('🎉 CLIENT: showFinalResults called');
         });
 
         // Player-specific events
@@ -204,6 +243,12 @@ export class SocketManager {
             logger.debug('Leaderboard updated:', data);
             this.gameManager.showLeaderboard(data.leaderboard);
             // Note: Removed fanfare from here - it should only play at final game end
+        });
+
+        // Show leaderboard (new event for improved flow)
+        this.socket.on('show-leaderboard', (data) => {
+            logger.debug('Showing leaderboard:', data);
+            this.gameManager.showLeaderboard(data.leaderboard);
         });
 
         // Answer statistics updates
@@ -456,7 +501,9 @@ export class SocketManager {
      * Request next question (manual advancement)
      */
     nextQuestion() {
+        console.log('🔥 CLIENT: socketManager.nextQuestion() called - emitting next-question event');
         this.socket.emit('next-question');
+        console.log('🔥 CLIENT: next-question event emitted');
     }
 
     /**

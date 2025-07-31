@@ -100,7 +100,7 @@
 
 /* CSS Custom Properties */
     /* Background Variables */
-    --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    --bg-primary: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
     --bg-secondary: rgba(255,255,255,0.18);
     --bg-glass: rgba(255,255,255,0.12);
     
@@ -138,8 +138,8 @@
     --bg-glass-light: rgba(255,255,255,0.1);
     
     /* Accent Colors */
-    --accent-primary: #667eea;
-    --accent-secondary-gradient: #764ba2;
+    --accent-primary: #2563eb;
+    --accent-secondary-gradient: #1d4ed8;
     
     /* === CONTENT-DENSITY AWARE SPACING SYSTEM === */
     /* Base spacing units for different content densities */

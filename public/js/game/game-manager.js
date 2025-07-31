@@ -11,6 +11,7 @@ import { domManager } from '../utils/dom-manager.js';
 import { errorBoundary } from '../utils/error-boundary.js';
 import { modalFeedback } from '../utils/modal-feedback.js';
 import { gameStateManager } from '../utils/game-state-manager.js';
+import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
 
 export class GameManager {
     constructor(socket, uiManager, soundManager, socketManager = null) {
@@ -199,6 +200,9 @@ export class GameManager {
      */
     updateHostDisplay(data, elements) {
         logger.debug('Host mode - updating display');
+        
+        // Clear previous question content to prevent flash during transition
+        this.clearPreviousQuestionContent();
         
         // Switch to host game screen when new question starts
         this.uiManager.showScreen('host-game-screen');
@@ -881,13 +885,18 @@ export class GameManager {
         
         let displayText = '';
         if (typeof answer === 'number') {
-            // Check if this is a numeric input (decimal) or multiple choice index (integer)
-            if (Number.isInteger(answer) && answer >= 0 && answer <= 3) {
+            // Check the current question type to determine how to display the answer
+            const questionType = this.currentQuestion?.type;
+            
+            if (questionType === 'numeric') {
+                // For numeric questions, always show the actual number
+                displayText = `${getTranslation('answer_submitted')}: ${answer}`;
+            } else if (Number.isInteger(answer) && answer >= 0 && answer <= 3) {
                 // Multiple choice answer - convert to letter
                 const letter = String.fromCharCode(65 + answer);
                 displayText = `${getTranslation('answer_submitted')}: ${letter}`;
             } else {
-                // Numeric input answer - show the actual number
+                // Fallback for other numeric values
                 displayText = `${getTranslation('answer_submitted')}: ${answer}`;
             }
         } else if (Array.isArray(answer)) {
@@ -999,6 +1008,44 @@ export class GameManager {
         }
         
         logger.debug('Button states reset completed');
+    }
+
+    /**
+     * Clear previous question content to prevent flash during screen transitions
+     */
+    clearPreviousQuestionContent() {
+        if (!this.isHost) return;
+        
+        // Clear host question display
+        const hostQuestionElement = document.getElementById('current-question');
+        if (hostQuestionElement) {
+            hostQuestionElement.innerHTML = `<div class="loading-question">${getTranslation('loading_next_question')}</div>`;
+        }
+        
+        // Clear any numeric correct answer display
+        const existingAnswer = document.querySelector('.numeric-correct-answer-display');
+        if (existingAnswer) {
+            existingAnswer.remove();
+        }
+        
+        // Clear image display
+        const questionImageDisplay = document.getElementById('question-image-display');
+        if (questionImageDisplay) {
+            questionImageDisplay.style.display = 'none';
+        }
+        
+        // Clear host options container
+        const hostOptionsContainer = document.getElementById('answer-options');
+        if (hostOptionsContainer) {
+            hostOptionsContainer.innerHTML = '';
+            hostOptionsContainer.style.display = 'none';
+        }
+        
+        // Remove numeric question type class for fresh start
+        const hostMultipleChoice = document.getElementById('host-multiple-choice');
+        if (hostMultipleChoice) {
+            hostMultipleChoice.classList.remove('numeric-question-type');
+        }
     }
 
     /**
@@ -1117,33 +1164,49 @@ export class GameManager {
     }
 
     /**
-     * Show numeric correct answer (original monolithic style) 
+     * Show numeric correct answer in top frame 
      */
     showNumericCorrectAnswer(correctAnswer, tolerance) {
         if (!this.isHost) return;
         
         // Remove any existing correct answer display
-        const existingAnswer = document.querySelector('.correct-answer-display');
+        const existingAnswer = document.querySelector('.numeric-correct-answer-display');
         if (existingAnswer) {
             existingAnswer.remove();
         }
         
-        // Show the answer in the options container for numeric questions
-        const optionsContainer = document.getElementById('answer-options');
-        if (optionsContainer) {
-            optionsContainer.style.display = 'block';
-            let answerText = `✅ ${getTranslation('correct_answer')}: ${correctAnswer}`;
+        // Show the answer in the question display area (top frame)
+        const questionDisplay = document.getElementById('host-question-display');
+        if (questionDisplay) {
+            let answerText = `${getTranslation('correct_answer')}: ${correctAnswer}`;
             if (tolerance) {
                 answerText += ` (±${tolerance})`;
             }
             
-            optionsContainer.innerHTML = `
-                <div class="correct-answer-display numeric-answer-display">
-                    <div class="correct-answer-banner">
-                        <strong>${answerText}</strong>
-                    </div>
+            // Create the correct answer display
+            const correctAnswerDiv = document.createElement('div');
+            correctAnswerDiv.className = 'numeric-correct-answer-display';
+            correctAnswerDiv.innerHTML = `
+                <div class="numeric-correct-answer-content">
+                    <div class="correct-icon">✅</div>
+                    <div class="correct-text">${answerText}</div>
                 </div>
             `;
+            
+            // Insert after the question content
+            questionDisplay.appendChild(correctAnswerDiv);
+        }
+        
+        // Hide the bottom options container for numeric questions
+        const optionsContainer = document.getElementById('answer-options');
+        if (optionsContainer) {
+            optionsContainer.style.display = 'none';
+        }
+        
+        // Add class to hide the entire host-multiple-choice frame for numeric questions
+        const hostMultipleChoice = document.getElementById('host-multiple-choice');
+        if (hostMultipleChoice) {
+            hostMultipleChoice.classList.add('numeric-question-type');
         }
     }
 
@@ -1201,6 +1264,8 @@ export class GameManager {
                 logger.debug(`True/False counts: true=${trueCount}, false=${falseCount}`);
                 this.updateStatItem(0, trueCount, data.answeredPlayers || 0);
                 this.updateStatItem(1, falseCount, data.answeredPlayers || 0);
+            } else if (questionType === 'numeric') {
+                this.showNumericStatistics(data.answerCounts);
             }
         }
     }
@@ -1212,6 +1277,9 @@ export class GameManager {
     showMultipleChoiceStatistics(optionCount) {
         const statsContent = document.getElementById('stats-grid');
         if (!statsContent) return;
+        
+        // Remove numeric statistics display if it exists
+        this.clearNumericStatisticsDisplay();
         
         // Update existing stat item labels for multiple choice
         for (let i = 0; i < 4; i++) {
@@ -1240,6 +1308,9 @@ export class GameManager {
     showTrueFalseStatistics() {
         const statsContent = document.getElementById('stats-grid');
         if (!statsContent) return;
+        
+        // Remove numeric statistics display if it exists
+        this.clearNumericStatisticsDisplay();
         
         // Update existing stat items for true/false - show only first 2
         for (let i = 0; i < 4; i++) {
@@ -1270,6 +1341,102 @@ export class GameManager {
                     statItem.style.display = 'none';
                 }
             }
+        }
+    }
+
+    /**
+     * Show statistics for numeric questions
+     */
+    showNumericStatistics(answerCounts) {
+        const statsContent = document.getElementById('stats-grid');
+        if (!statsContent) return;
+
+        // Convert answer counts to array format for display
+        const answers = Object.keys(answerCounts || {});
+        const sortedAnswers = answers.sort((a, b) => parseFloat(a) - parseFloat(b)); // Sort numerically
+
+        // Hide all stat items first
+        for (let i = 0; i < 4; i++) {
+            const statItem = document.getElementById(`stat-item-${i}`);
+            if (statItem) {
+                statItem.style.display = 'none';
+            }
+        }
+
+        // Show a custom numeric statistics display
+        this.createNumericStatisticsDisplay(answerCounts, sortedAnswers);
+    }
+
+    /**
+     * Create custom statistics display for numeric answers
+     */
+    createNumericStatisticsDisplay(answerCounts, sortedAnswers) {
+        const statsContent = document.getElementById('stats-grid');
+        if (!statsContent) return;
+
+        // Create or update numeric stats display
+        let numericStatsDiv = document.getElementById('numeric-stats-display');
+        if (!numericStatsDiv) {
+            numericStatsDiv = document.createElement('div');
+            numericStatsDiv.id = 'numeric-stats-display';
+            numericStatsDiv.className = 'numeric-stats-display';
+            statsContent.appendChild(numericStatsDiv);
+        }
+
+        // Clear previous content
+        numericStatsDiv.innerHTML = '';
+
+        if (sortedAnswers.length === 0) {
+            numericStatsDiv.innerHTML = `<div class="no-answers">${getTranslation('no_answers_yet')}</div>`;
+            return;
+        }
+
+        // Show up to 6 most common answers
+        const maxDisplay = 6;
+        const totalAnswers = Object.values(answerCounts).reduce((sum, count) => sum + count, 0);
+        
+        // Sort by count (descending) then by value (ascending)
+        const sortedByCount = sortedAnswers.sort((a, b) => {
+            const countDiff = answerCounts[b] - answerCounts[a];
+            return countDiff !== 0 ? countDiff : parseFloat(a) - parseFloat(b);
+        });
+
+        const displayAnswers = sortedByCount.slice(0, maxDisplay);
+        
+        numericStatsDiv.innerHTML = `
+            <div class="numeric-stats-header">
+                <h4>${getTranslation('player_answers')}</h4>
+            </div>
+            <div class="numeric-answers-list">
+                ${displayAnswers.map(answer => {
+                    const count = answerCounts[answer];
+                    const percentage = totalAnswers > 0 ? Math.round((count / totalAnswers) * 100) : 0;
+                    return `
+                        <div class="numeric-answer-item">
+                            <span class="answer-value">${answer}</span>
+                            <div class="answer-bar-container">
+                                <div class="answer-bar" style="width: ${percentage}%"></div>
+                                <span class="answer-count">${count}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+                ${sortedAnswers.length > maxDisplay ? `
+                    <div class="more-answers">
+                        +${sortedAnswers.length - maxDisplay} ${getTranslation('more_answers')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
+     * Clear numeric statistics display when switching to non-numeric questions
+     */
+    clearNumericStatisticsDisplay() {
+        const numericStatsDiv = document.getElementById('numeric-stats-display');
+        if (numericStatsDiv) {
+            numericStatsDiv.remove();
         }
     }
 
@@ -1331,11 +1498,12 @@ export class GameManager {
      * Show final results
      */
     showFinalResults(leaderboard) {
-        logger.debug('Showing final results:', leaderboard);
+        logger.debug('🎉 showFinalResults called with leaderboard:', leaderboard);
+        logger.debug('🎉 isHost:', this.isHost, 'fanfarePlayed:', this.fanfarePlayed);
         
         // Prevent multiple fanfare plays
         if (this.fanfarePlayed) {
-            logger.debug('Fanfare already played, skipping');
+            logger.debug('🎉 Fanfare already played, skipping');
             return;
         }
         this.fanfarePlayed = true;
@@ -1344,9 +1512,12 @@ export class GameManager {
         this.updateLeaderboardDisplay(leaderboard);
         
         if (this.isHost) {
+            logger.debug('🎉 HOST: Showing final results with confetti');
+            
             // Host gets full celebration with confetti and sounds
             const finalResults = document.getElementById('final-results');
             if (finalResults) {
+                logger.debug('🎉 HOST: final-results element found, showing animation');
                 finalResults.classList.remove('hidden');
                 finalResults.classList.add('game-complete-animation');
                 
@@ -1354,24 +1525,42 @@ export class GameManager {
                 setTimeout(() => {
                     finalResults.classList.remove('game-complete-animation');
                 }, 2000);
+            } else {
+                logger.error('🎉 HOST: final-results element NOT FOUND!');
             }
             
-            // Show confetti celebration
-            this.showGameCompleteConfetti();
+            // Switch to leaderboard screen first to ensure proper display context
+            logger.debug('🎉 HOST: Switching to leaderboard-screen');
+            this.uiManager.showScreen('leaderboard-screen');
+            
+            // Show confetti celebration after screen switch with small delay
+            setTimeout(() => {
+                logger.debug('🎉 HOST: Triggering confetti...');
+                this.showGameCompleteConfetti();
+            }, 200);
             
             // Play special game ending fanfare
+            logger.debug('🎉 HOST: Playing fanfare...');
             this.playGameEndingFanfare();
             
-            this.uiManager.showScreen('leaderboard-screen');
+            // Show simple results downloader
+            setTimeout(() => {
+                logger.debug('🎉 HOST: Initializing results downloader...');
+                simpleResultsDownloader.showDownloadTool();
+            }, 1000); // Wait for animations to settle
+            
         } else {
+            logger.debug('🎉 PLAYER: Showing player final screen with confetti');
+            
             // Players get a dedicated final screen with special ending sound
-            logger.debug('Player final screen - leaderboard:', leaderboard);
+            logger.debug('🎉 PLAYER: Player final screen - leaderboard:', leaderboard);
             this.playGameEndingFanfare();
             this.showPlayerFinalScreen(leaderboard);
         }
         
         // Mark game as ended
         this.gameEnded = true;
+        logger.debug('🎉 Final results display completed');
     }
 
     /**
@@ -1580,13 +1769,22 @@ export class GameManager {
      * Show game complete confetti (from monolithic version)
      */
     showGameCompleteConfetti() {
-        if (window.confetti) {
-            console.log('🎊 CONFETTI DEBUG: showGameCompleteConfetti() called - this uses global confetti and may be blurred by modal!');
-            logger.debug('🎊 CONFETTI DEBUG: Game complete confetti triggered (global confetti - may conflict with modal)');
-            // Optimized confetti with timed bursts instead of continuous animation
-            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
-            
+        logger.debug('🎊 showGameCompleteConfetti called');
+        
+        if (!window.confetti) {
+            logger.error('🎊 ERROR: Confetti library not loaded! Cannot show confetti.');
+            return;
+        }
+        
+        logger.debug('🎊 Confetti library loaded, starting celebration...');
+        console.log('🎊 CONFETTI DEBUG: showGameCompleteConfetti() called');
+        
+        // Optimized confetti with timed bursts instead of continuous animation
+        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+        
+        try {
             // Initial big burst
+            logger.debug('🎊 Firing initial confetti burst...');
             confetti({
                 particleCount: ANIMATION.CONFETTI_PARTICLE_COUNT,
                 spread: ANIMATION.CONFETTI_SPREAD,
@@ -1596,8 +1794,11 @@ export class GameManager {
             
             // Side bursts with reduced frequency and particles
             const burstTimes = TIMING.CONFETTI_BURST_TIMES;
-            burstTimes.forEach(time => {
+            logger.debug('🎊 Scheduling', burstTimes.length, 'additional confetti bursts...');
+            
+            burstTimes.forEach((time, index) => {
                 setTimeout(() => {
+                    logger.debug(`🎊 Firing confetti burst ${index + 1}/${burstTimes.length} at ${time}ms`);
                     confetti({
                         particleCount: ANIMATION.CONFETTI_BURST_PARTICLES,
                         angle: 60,
@@ -1614,6 +1815,10 @@ export class GameManager {
                     });
                 }, time);
             });
+            
+            logger.debug('🎊 All confetti bursts scheduled successfully!');
+        } catch (error) {
+            logger.error('🎊 ERROR: Failed to show confetti:', error);
         }
     }
 

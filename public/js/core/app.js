@@ -17,6 +17,7 @@ import { addQuestion, createQuestionElement, randomizeAnswers, shuffleArray } fr
 import { translationManager, showErrorAlert, createQuestionCounter } from '../utils/translation-manager.js';
 import { connectionStatus } from '../utils/connection-status.js';
 import { keyboardShortcuts } from '../utils/keyboard-shortcuts.js';
+import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
 
 export class QuizGame {
     constructor() {
@@ -250,6 +251,13 @@ export class QuizGame {
         safeAddEventListener('new-game', 'click', () => this.newGame());
         safeAddEventListener('play-again', 'click', () => this.newGame());
         safeAddEventListener('exit-to-main', 'click', () => this.exitToMainMenu());
+        
+        // Statistics phase control buttons  
+        safeAddEventListener('next-question-stats', 'click', (e) => {
+            e.preventDefault();
+            this.nextQuestion();
+        });
+        safeAddEventListener('exit-to-main-stats', 'click', () => this.exitToMainMenu());
 
         // Auto-save setup
         safeAddEventListener('quiz-title', 'input', () => {
@@ -522,14 +530,20 @@ export class QuizGame {
      * Request next question (manual advancement)
      */
     nextQuestion() {
+        console.log('🔥 CLIENT: Next Question button clicked!');
+        
         // Debounce to prevent double calls
-        if (this.nextQuestionCalled) return;
+        if (this.nextQuestionCalled) {
+            console.log('🔥 CLIENT: Debounced - ignoring click');
+            return;
+        }
         this.nextQuestionCalled = true;
         
         setTimeout(() => {
             this.nextQuestionCalled = false;
         }, TIMING.DEBOUNCE_DELAY);
         
+        console.log('🔥 CLIENT: Calling socketManager.nextQuestion()');
         this.socketManager.nextQuestion();
     }
 
@@ -671,7 +685,8 @@ export class QuizGame {
             { id: 'toolbar-preview', handler: () => this.togglePreviewMode() },
             { id: 'toolbar-ai-gen', handler: () => this.openAIGeneratorModal() },
             { id: 'toolbar-import', handler: () => this.quizManager.importQuiz() },
-            { id: 'toolbar-preview-settings', handler: () => this.togglePreviewSettings() },
+            { id: 'toolbar-export', handler: () => this.quizManager.exportQuiz() },
+            { id: 'toolbar-results', handler: () => simpleResultsDownloader.showDownloadTool() },
             { id: 'toolbar-top', handler: () => this.scrollToTop() },
             { id: 'toolbar-bottom', handler: () => this.scrollToBottom() },
         ];
@@ -1048,16 +1063,6 @@ export class QuizGame {
     }
 
     /**
-     * Toggle preview settings (wrapper for global function)
-     */
-    togglePreviewSettings() {
-        if (window.togglePreviewSettings) {
-            window.togglePreviewSettings();
-        }
-    }
-
-
-    /**
      * Scroll to top (wrapper for global function)
      */
     scrollToTop() {
@@ -1071,21 +1076,42 @@ export class QuizGame {
      */
     scrollToBottom() {
         logger.info('Scroll to bottom function called');
+        const hostContainer = document.querySelector('.host-container');
         const quizEditor = document.querySelector('.quiz-editor-section');
+        const isPreviewMode = hostContainer && hostContainer.classList.contains('split-screen');
+        
+        logger.debug('Preview mode:', isPreviewMode);
+        
         if (quizEditor) {
-            logger.debug('Scrolling editor section to bottom, scrollHeight:', quizEditor.scrollHeight);
-            quizEditor.scrollTo({ top: quizEditor.scrollHeight, behavior: 'smooth' });
-            logger.debug('Editor scroll to bottom command sent');
+            logger.debug('Quiz editor found, scrollHeight:', quizEditor.scrollHeight, 'clientHeight:', quizEditor.clientHeight);
+            
+            if (isPreviewMode) {
+                // In split-screen mode, scroll the editor section directly
+                logger.debug('Scrolling editor section in split-screen mode');
+                quizEditor.scrollTo({ top: quizEditor.scrollHeight, behavior: 'smooth' });
+            } else {
+                // In single-screen mode, need to scroll the main container or window
+                logger.debug('Scrolling in single-screen mode');
+                
+                // Try scrolling the host container first
+                if (hostContainer && hostContainer.scrollHeight > hostContainer.clientHeight) {
+                    logger.debug('Scrolling host container');
+                    hostContainer.scrollTo({ top: hostContainer.scrollHeight, behavior: 'smooth' });
+                } else {
+                    // Fallback to window scroll
+                    logger.debug('Scrolling window');
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }
+                
+                // Also try scrolling the editor section itself in case it's scrollable
+                if (quizEditor.scrollHeight > quizEditor.clientHeight) {
+                    logger.debug('Also scrolling editor section');
+                    quizEditor.scrollTo({ top: quizEditor.scrollHeight, behavior: 'smooth' });
+                }
+            }
         } else {
             logger.warn('Editor section not found, using window scroll');
-            // Fallback to window scroll
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        }
-        
-        // Also try scrolling any parent containers
-        const hostContainer = document.querySelector('.host-container');
-        if (hostContainer) {
-            hostContainer.scrollTo({ top: hostContainer.scrollHeight, behavior: 'smooth' });
         }
     }
 

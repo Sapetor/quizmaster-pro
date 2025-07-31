@@ -215,6 +215,127 @@ app.post('/api/save-results', (req, res) => {
   }
 });
 
+// Get list of saved quiz results endpoint
+app.get('/api/results', (req, res) => {
+  console.log('📊 API: /api/results endpoint called');
+  try {
+    if (!fs.existsSync('results')) {
+      console.log('📊 API: results directory does not exist');
+      return res.json([]);
+    }
+    
+    const files = fs.readdirSync('results')
+      .filter(file => file.startsWith('results_') && file.endsWith('.json'))
+      .map(filename => {
+        try {
+          const filePath = path.join('results', filename);
+          const stats = fs.statSync(filePath);
+          const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+          
+          return {
+            filename,
+            quizTitle: data.quizTitle || 'Untitled Quiz',
+            gamePin: data.gamePin,
+            participantCount: data.results?.length || 0,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            saved: data.saved || stats.mtime.toISOString(),
+            fileSize: stats.size
+          };
+        } catch (error) {
+          console.error(`Error reading result file ${filename}:`, error);
+          return null;
+        }
+      })
+      .filter(result => result !== null)
+      .sort((a, b) => new Date(b.saved) - new Date(a.saved)); // Sort by most recent first
+    
+    console.log(`📊 API: Found ${files.length} result files`);
+    res.json(files);
+  } catch (error) {
+    console.error('Error listing results:', error);
+    res.status(500).json({ error: 'Failed to list results' });
+  }
+});
+
+// Get specific quiz result file endpoint
+app.get('/api/results/:filename', (req, res) => {
+  try {
+    const filename = req.params.filename;
+    
+    // Validate filename to prevent directory traversal
+    if (!filename.match(/^results_\d+_\d+\.json$/)) {
+      return res.status(400).json({ error: 'Invalid filename format' });
+    }
+    
+    const filePath = path.join('results', filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Result file not found' });
+    }
+    
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    res.json(data);
+  } catch (error) {
+    console.error('Error retrieving result file:', error);
+    res.status(500).json({ error: 'Failed to retrieve result file' });
+  }
+});
+
+// Export quiz results in different formats endpoint
+app.get('/api/results/:filename/export/:format', (req, res) => {
+  try {
+    const { filename, format } = req.params;
+    
+    // Validate filename
+    if (!filename.match(/^results_\d+_\d+\.json$/)) {
+      return res.status(400).json({ error: 'Invalid filename format' });
+    }
+    
+    // Validate format
+    if (!['csv', 'json'].includes(format.toLowerCase())) {
+      return res.status(400).json({ error: 'Unsupported export format. Use csv or json.' });
+    }
+    
+    const filePath = path.join('results', filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Result file not found' });
+    }
+    
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    
+    if (format.toLowerCase() === 'csv') {
+      // Generate CSV format
+      let csv = 'Quiz Title,Game PIN,Player Name,Score,Start Time,End Time\n';
+      
+      data.results.forEach(player => {
+        const row = [
+          `"${data.quizTitle || 'Untitled Quiz'}"`,
+          data.gamePin,
+          `"${player.name}"`,
+          player.score,
+          data.startTime,
+          data.endTime
+        ].join(',');
+        csv += row + '\n';
+      });
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="quiz_results_${data.gamePin}.csv"`);
+      res.send(csv);
+    } else {
+      // Return JSON format with proper headers for download
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="quiz_results_${data.gamePin}.json"`);
+      res.json(data);
+    }
+  } catch (error) {
+    console.error('Error exporting result file:', error);
+    res.status(500).json({ error: 'Failed to export result file' });
+  }
+});
+
 // Get list of active games endpoint
 app.get('/api/active-games', (req, res) => {
   try {
@@ -451,11 +572,22 @@ class Game {
     const nextQuestionIndex = this.currentQuestion + 1;
     const hasMore = nextQuestionIndex < this.quiz.questions.length;
     
+    console.log('🔍 nextQuestion() DEBUG:', {
+      currentQuestion: this.currentQuestion,
+      nextQuestionIndex: nextQuestionIndex,
+      totalQuestions: this.quiz.questions.length,
+      hasMore: hasMore,
+      gamePin: this.pin
+    });
+    
     if (hasMore) {
       this.currentQuestion = nextQuestionIndex;
       this.gameState = 'question';
       this.questionTimer = null;
       this.advanceTimer = null;
+      console.log('🔍 Advanced to question', this.currentQuestion + 1);
+    } else {
+      console.log('🔍 NO MORE QUESTIONS - should end game');
     }
     
     return hasMore;
@@ -651,23 +783,27 @@ function advanceToNextQuestion(game, io) {
     }
     
     game.updateLeaderboard();
+    
+    // Send question-end event without leaderboard - show statistics first
     io.to(`game-${game.pin}`).emit('question-end', {
-      leaderboard: game.leaderboard.slice(0, 5)
+      showStatistics: true // Signal to show statistics, not leaderboard yet
     });
     
     // Check if manual advancement is enabled AND there are more questions
     const hasMoreQuestions = (game.currentQuestion + 1) < game.quiz.questions.length;
     
-    if (game.manualAdvancement && hasMoreQuestions) {
-      // Show next question button for host and wait for manual trigger
-      io.to(game.hostId).emit('show-next-button');
+    if (game.manualAdvancement) {
+      // Show next question button for host in manual mode (both more questions and last question)
+      io.to(game.hostId).emit('show-next-button', {
+        isLastQuestion: !hasMoreQuestions
+      });
       game.isAdvancing = false; // Reset for manual mode
-    } else if (game.manualAdvancement && !hasMoreQuestions) {
-      // Manual mode but no more questions - end the game
-      game.isAdvancing = false;
-      endGame(game, io);
     } else {
-      // Auto-advance to next question
+      // Auto-advance: show leaderboard first, then next question
+      io.to(`game-${game.pin}`).emit('show-leaderboard', {
+        leaderboard: game.leaderboard.slice(0, 5)
+      });
+      
       game.advanceTimer = setTimeout(() => {
         if (game.gameState === 'finished') {
           game.isAdvancing = false;
@@ -681,17 +817,21 @@ function advanceToNextQuestion(game, io) {
           endGame(game, io);
         }
         game.isAdvancing = false; // Reset after auto-advance
-      }, CONFIG.TIMING.AUTO_ADVANCE_DELAY);
+      }, 3000); // 3 seconds to view leaderboard
     }
   }, CONFIG.TIMING.LEADERBOARD_DISPLAY_TIME);
 }
 
 function endGame(game, io) {
+  console.log('🔍 endGame() called for game:', game.pin);
+  
   // Prevent multiple game endings
   if (game.gameState === 'finished') {
+    console.log('🔍 Game already finished, skipping endGame');
     return;
   }
   
+  console.log('🔍 Setting game state to finished');
   game.gameState = 'finished';
   game.endTime = new Date().toISOString();
   
@@ -710,17 +850,27 @@ function endGame(game, io) {
   
   // CRITICAL: Hide manual advancement button immediately when game ends
   io.to(game.hostId).emit('hide-next-button');
+  console.log('🔍 Hid next button for host');
   
+  console.log('🔍 Updating leaderboard and saving results...');
   game.updateLeaderboard();
   game.saveResults();
   
+  console.log('🔍 Final leaderboard:', game.leaderboard);
+  
   // Add longer delay to ensure all previous events are processed completely
   setTimeout(() => {
+    console.log('🔍 1 second passed, about to emit game-end event');
     // Double-check game is still finished (race condition protection)
     if (game.gameState === 'finished') {
+      console.log('🔍 EMITTING game-end event to all players in game-' + game.pin);
       io.to(`game-${game.pin}`).emit('game-end', {
         finalLeaderboard: game.leaderboard
       });
+      console.log('🔍 game-end event emitted successfully!');
+      console.log('🔍 Players in room game-' + game.pin + ':', io.sockets.adapter.rooms.get(`game-${game.pin}`)?.size || 0);
+    } else {
+      console.log('🔍 Game state changed, not emitting game-end event');
     }
   }, 1000); // Increased delay from 500ms to 1000ms
 }
@@ -1040,19 +1190,38 @@ io.on('connection', (socket) => {
   });
 
   socket.on('next-question', () => {
-    const game = Array.from(games.values()).find(g => g.hostId === socket.id);
-    if (!game || game.isAdvancing) {
+    try {
+      console.log('🔥🔥🔥🔥🔥 SERVER: NEXT-QUESTION EVENT RECEIVED 🔥🔥🔥🔥🔥');
+      console.log('🔍 NEXT-QUESTION event received from host');
+      const game = Array.from(games.values()).find(g => g.hostId === socket.id);
+    
+    if (!game) {
+      console.log('🔍 No game found for host');
       return;
     }
     
+    if (game.isAdvancing) {
+      console.log('🔍 Game already advancing, ignoring');
+      return;
+    }
+    
+    console.log('🔍 Game state before next-question:', {
+      gameState: game.gameState,
+      currentQuestion: game.currentQuestion,
+      totalQuestions: game.quiz.questions.length,
+      gamePin: game.pin
+    });
+    
     // CRITICAL: Prevent manual advancement if game is already finished
     if (game.gameState === 'finished') {
+      console.log('🔍 Game already finished, hiding next button');
       io.to(game.hostId).emit('hide-next-button');
       return;
     }
 
     // Set advancing flag to prevent race conditions
     game.isAdvancing = true;
+    console.log('🔍 Set advancing flag to true');
 
     // Clear any pending auto-advance timers
     if (game.advanceTimer) {
@@ -1062,17 +1231,37 @@ io.on('connection', (socket) => {
     
     // Hide the next question button immediately
     io.to(game.hostId).emit('hide-next-button');
+    console.log('🔍 Hid next question button');
     
-    // Move to next question manually
-    if (game.nextQuestion()) {
-      startQuestion(game, io);
-    } else {
-      // No more questions - end the game
-      endGame(game, io);
+    // Show leaderboard first for 3 seconds
+    io.to(`game-${game.pin}`).emit('show-leaderboard', {
+      leaderboard: game.leaderboard.slice(0, 5)
+    });
+    console.log('🔍 Showed leaderboard, waiting 3 seconds...');
+    
+    // Then advance to next question after leaderboard display
+    setTimeout(() => {
+      console.log('🔍 3 seconds passed, calling game.nextQuestion()...');
+      const hasMoreQuestions = game.nextQuestion();
+      console.log('🔍 game.nextQuestion() returned:', hasMoreQuestions);
+      
+      if (hasMoreQuestions) {
+        console.log('🔍 Starting next question...');
+        startQuestion(game, io);
+      } else {
+        console.log('🔍 NO MORE QUESTIONS - calling endGame()...');
+        endGame(game, io);
+      }
+      
+      // Reset advancing flag
+      game.isAdvancing = false;
+      console.log('🔍 Reset advancing flag to false');
+    }, 3000); // 3 seconds to view leaderboard
+    
+    } catch (error) {
+      console.error('🔥🔥🔥 SERVER ERROR in next-question handler:', error);
+      console.error('Error stack:', error.stack);
     }
-    
-    // Reset advancing flag
-    game.isAdvancing = false;
   });
 
   socket.on('disconnect', () => {
@@ -1101,10 +1290,17 @@ io.on('connection', (socket) => {
       games.delete(hostedGame.pin);
     }
     
-    // Clean up games with no players
+    // Clean up games with no players AND no host (only if host is also gone)
     games.forEach((game, pin) => {
       if (game.players.size === 0 && game.gameState === 'lobby') {
-        games.delete(pin);
+        // Only delete if the host socket is also disconnected
+        // Check if host socket still exists by trying to find it in connected sockets
+        const hostSocket = io.sockets.sockets.get(game.hostId);
+        if (!hostSocket) {
+          // Host is also gone, safe to delete
+          games.delete(pin);
+        }
+        // If host is still connected, keep the game alive for players to rejoin
       }
     });
 

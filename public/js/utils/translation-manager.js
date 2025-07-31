@@ -318,6 +318,11 @@ class TranslationManager {
         if (success) {
             this.translatePage();
             this.updateGameTranslations();
+            
+            // Update connection status translations
+            if (window.connectionStatus) {
+                window.connectionStatus.refreshTranslations();
+            }
         }
         return success;
     }

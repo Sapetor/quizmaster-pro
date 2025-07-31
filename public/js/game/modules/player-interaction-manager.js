@@ -60,7 +60,7 @@ export class PlayerInteractionManager {
         const selectedOption = document.querySelector(`[data-answer="${answer}"]`);
         if (selectedOption) {
             selectedOption.classList.add('selected');
-            selectedOption.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            selectedOption.style.background = 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%)';
             selectedOption.style.border = '3px solid #fff';
             selectedOption.style.transform = 'scale(1.02)';
             selectedOption.style.transition = 'all 0.2s ease';

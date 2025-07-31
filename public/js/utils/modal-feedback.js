@@ -180,7 +180,8 @@ export class ModalFeedback {
      */
     triggerModalConfetti() {
         if (typeof confetti === 'function') {
-            logger.debug('🎊 Triggering modal confetti animation');
+            logger.debug('🎊 CONFETTI DEBUG: Starting modal confetti animation with z-index 99999');
+            console.log('🎊 CONFETTI DEBUG: Modal confetti triggered!');
             
             // Create confetti canvas that sits above everything
             const confettiCanvas = document.createElement('canvas');
@@ -189,12 +190,18 @@ export class ModalFeedback {
             confettiCanvas.style.left = '0';
             confettiCanvas.style.width = '100vw';
             confettiCanvas.style.height = '100vh';
-            confettiCanvas.style.zIndex = '99999'; // Much higher than modal to be clearly visible
+            confettiCanvas.style.zIndex = '2147483647'; // Maximum possible z-index to ensure it's above everything including backdrop-filter
             confettiCanvas.style.pointerEvents = 'none';
             confettiCanvas.style.background = 'transparent';
             
-            // Append to body with maximum z-index for ultimate visibility
-            document.body.appendChild(confettiCanvas);
+            // Try appending to modal overlay to inherit correct stacking context
+            if (this.overlay && this.overlay.classList.contains('active')) {
+                this.overlay.appendChild(confettiCanvas);
+                console.log('🎊 CONFETTI DEBUG: Canvas appended to modal overlay to avoid backdrop-filter blur');
+            } else {
+                document.body.appendChild(confettiCanvas);
+                console.log('🎊 CONFETTI DEBUG: Canvas appended to body (fallback) with z-index:', confettiCanvas.style.zIndex);
+            }
             
             // Create confetti instance targeting our canvas
             const confettiInstance = confetti.create(confettiCanvas, {
@@ -266,6 +273,71 @@ export class ModalFeedback {
      */
     showIncorrect(message = null, score = null, autoDismissTime = 3000) {
         this.show(false, message, score, autoDismissTime);
+    }
+
+    /**
+     * Show answer submission feedback with neutral styling
+     * @param {string} message - Submission message (required)
+     * @param {number} autoDismissTime - Auto-dismiss time in ms (default: 2000)
+     */
+    showSubmission(message, autoDismissTime = 2000) {
+        if (!this.overlay || !this.modal) {
+            logger.error('❌ Cannot show modal feedback - elements not initialized');
+            return;
+        }
+
+        // Clear any existing timer
+        if (this.currentTimer) {
+            clearTimeout(this.currentTimer);
+            this.currentTimer = null;
+        }
+
+        // Set modal state - neutral styling
+        this.modal.className = 'feedback-modal submission';
+
+        // Set submission-specific content
+        this.updateSubmissionContent(message);
+
+        // Show modal with animation
+        this.overlay.classList.add('active');
+
+        // Prevent body scrolling when modal is open
+        document.body.style.overflow = 'hidden';
+
+        // Auto-dismiss after specified time
+        if (autoDismissTime > 0) {
+            this.currentTimer = setTimeout(() => {
+                this.hide();
+            }, autoDismissTime);
+        }
+
+        logger.debug(`🎭 Modal submission feedback shown: ${message}`);
+    }
+
+    /**
+     * Update modal content for submission feedback
+     * @param {string} message - Submission message
+     */
+    updateSubmissionContent(message) {
+        // Set exciting submission icon - rotate through different ones for variety
+        if (this.feedbackIcon) {
+            const submissionIcons = ['🚀', '⚡', '🎯', '💫', '✨', '🔥'];
+            const randomIcon = submissionIcons[Math.floor(Math.random() * submissionIcons.length)];
+            this.feedbackIcon.textContent = randomIcon; // Random exciting icon for answer submission!
+            // Force remove any animation classes
+            this.feedbackIcon.style.animation = 'none';
+            this.feedbackIcon.style.transform = 'none';
+        }
+
+        // Set submission message
+        if (this.feedbackText) {
+            this.feedbackText.textContent = message;
+        }
+
+        // Hide score display for submissions
+        if (this.scoreDisplay) {
+            this.scoreDisplay.style.display = 'none';
+        }
     }
 
     /**

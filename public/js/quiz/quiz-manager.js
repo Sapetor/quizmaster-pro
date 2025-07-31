@@ -252,6 +252,9 @@ export class QuizManager {
             logger.error('Load quiz modal not found');
             return;
         }
+
+        // Set up modal event handlers
+        this.setupLoadQuizModalHandlers(modal);
         
         // Load quizzes list
         try {
@@ -309,6 +312,55 @@ export class QuizManager {
         const modal = document.getElementById('load-quiz-modal');
         if (modal) {
             modal.style.display = 'none';
+            
+            // Clean up event handlers
+            this.cleanupLoadQuizModalHandlers(modal);
+        }
+    }
+
+    /**
+     * Set up event handlers for load quiz modal
+     */
+    setupLoadQuizModalHandlers(modal) {
+        // Store handler references for cleanup
+        if (!this.loadQuizModalHandlers) {
+            this.loadQuizModalHandlers = {};
+        }
+
+        // Click outside to close
+        this.loadQuizModalHandlers.modalClick = (e) => {
+            if (e.target === modal) {
+                this.hideLoadQuizModal();
+            }
+        };
+
+        // Escape key to close
+        this.loadQuizModalHandlers.keydown = (e) => {
+            if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
+                this.hideLoadQuizModal();
+            }
+        };
+
+        // Add event listeners
+        modal.addEventListener('click', this.loadQuizModalHandlers.modalClick);
+        document.addEventListener('keydown', this.loadQuizModalHandlers.keydown);
+    }
+
+    /**
+     * Clean up event handlers for load quiz modal
+     */
+    cleanupLoadQuizModalHandlers(modal) {
+        if (this.loadQuizModalHandlers) {
+            // Remove event listeners
+            if (this.loadQuizModalHandlers.modalClick) {
+                modal.removeEventListener('click', this.loadQuizModalHandlers.modalClick);
+            }
+            if (this.loadQuizModalHandlers.keydown) {
+                document.removeEventListener('keydown', this.loadQuizModalHandlers.keydown);
+            }
+            
+            // Clear handler references
+            this.loadQuizModalHandlers = null;
         }
     }
 

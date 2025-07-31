@@ -794,11 +794,22 @@
 }
 
 .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
     margin-bottom: 24px;
     align-items: stretch;
+}
+
+/* When statistics are shown (end of question), make layout more horizontal */
+.answer-stats .stats-grid {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: 12px;
+    max-width: 100%;
 }
 
 .stat-item {
@@ -813,6 +824,38 @@
     justify-content: space-between;
     text-align: center;
     min-height: 120px;
+}
+
+/* More compact stat items for horizontal statistics display */
+.answer-stats .stat-item {
+    flex: 1;
+    min-width: 150px;
+    max-width: 200px;
+    padding: 16px 12px;
+    min-height: 100px;
+}
+
+/* Responsive design for statistics display */
+@media (max-width: 768px) {
+    .answer-stats .stats-grid {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .answer-stats .stat-item {
+        min-width: 100%;
+        max-width: 100%;
+    }
+    
+    .stats-header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    
+    .stats-controls {
+        justify-content: center;
+    }
 }
 
 .stat-item:hover {
@@ -1354,6 +1397,272 @@
 
 .leaderboard-header h2 {
     margin-bottom: 0; /* Remove default margin since we handle spacing with the header container */
+}
+
+.leaderboard-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Statistics header with controls */
+.stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.stats-header h3 {
+    margin: 0;
+    flex: 1;
+}
+
+/* Statistics controls (buttons in header) */
+.stats-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Visual separation between statistics and alternatives */
+.answer-stats + .player-answer-type {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 2px solid var(--glass-border);
+}
+
+/* Alternative section styling when placed after statistics - hide for numeric */
+.answer-stats + .player-answer-type::before {
+    content: "Question Alternatives";
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+/* Hide entire "Question Alternatives" frame when answer-options is hidden (numeric questions) */
+#host-multiple-choice {
+    /* Will be overridden by JavaScript for numeric questions */
+}
+
+/* Hide the frame and its pseudo-element when it contains hidden answer-options */
+.answer-stats + #host-multiple-choice.numeric-question-type {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+.answer-stats + #host-multiple-choice.numeric-question-type::before {
+    display: none !important;
+}
+
+/* === NUMERIC STATISTICS DISPLAY === */
+.numeric-stats-display {
+    width: 100%;
+    margin: 16px 0;
+}
+
+.numeric-stats-header {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.numeric-stats-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.numeric-answers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.numeric-answer-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--glass-light);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-medium);
+    transition: all 0.2s ease;
+}
+
+.numeric-answer-item:hover {
+    background: var(--glass-medium);
+    transform: translateY(-1px);
+}
+
+.answer-value {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary);
+    min-width: 60px;
+    text-align: right;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.answer-bar-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.answer-bar {
+    height: 20px;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-color-hover));
+    border-radius: var(--border-radius-small);
+    transition: width 0.3s ease;
+    min-width: 2px;
+}
+
+.answer-count {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    min-width: 30px;
+    text-align: right;
+}
+
+.no-answers {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 20px;
+}
+
+.more-answers {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-style: italic;
+    padding: 8px;
+    border-top: 1px solid var(--glass-border);
+    margin-top: 8px;
+}
+
+/* Mobile responsive for numeric statistics */
+@media (max-width: 768px) {
+    .numeric-answer-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+    
+    .answer-value {
+        text-align: center;
+        min-width: auto;
+    }
+    
+    .answer-bar-container {
+        width: 100%;
+    }
+}
+
+/* === NUMERIC CORRECT ANSWER DISPLAY (TOP FRAME) === */
+.numeric-correct-answer-display {
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.numeric-correct-answer-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, 
+        rgba(16, 185, 129, 0.1) 0%, 
+        rgba(16, 185, 129, 0.05) 100%);
+    border: 2px solid rgba(16, 185, 129, 0.3);
+    border-radius: var(--border-radius-large);
+    backdrop-filter: var(--blur-medium);
+    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+    transition: all 0.3s ease;
+}
+
+.numeric-correct-answer-content:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+.correct-icon {
+    font-size: 1.5rem;
+    filter: drop-shadow(0 2px 4px rgba(16, 185, 129, 0.3));
+}
+
+.correct-text {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    line-height: 1.4;
+}
+
+/* Animation for correct answer appearance */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Mobile responsive for numeric correct answer */
+@media (max-width: 768px) {
+    .numeric-correct-answer-content {
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px 16px;
+        text-align: center;
+    }
+    
+    .correct-text {
+        font-size: 1.1rem;
+    }
+}
+
+/* === LOADING QUESTION DISPLAY === */
+.loading-question {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    opacity: 0.7;
+    padding: 20px 0;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+}
+
+/* Legacy game controls (for backward compatibility) */
+.game-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 24px;
+    padding: 16px;
 }
 
 /* Next Question Button (Manual Advancement) - Now in leaderboard header */
@@ -1952,10 +2261,22 @@
     box-shadow: 0 20px 60px rgba(16, 185, 129, 0.4);
 }
 
+.feedback-modal.submission {
+    border-color: var(--color-primary-500);
+    box-shadow: 0 20px 60px rgba(59, 130, 246, 0.3);
+}
+
 .feedback-modal.correct::before {
     background: linear-gradient(135deg, 
         rgba(16, 185, 129, 0.2) 0%, 
         rgba(5, 150, 105, 0.1) 100%);
+    opacity: 1;
+}
+
+.feedback-modal.submission::before {
+    background: linear-gradient(135deg, 
+        rgba(59, 130, 246, 0.15) 0%, 
+        rgba(37, 99, 235, 0.1) 100%);
     opacity: 1;
 }
 
@@ -2000,6 +2321,14 @@
     color: var(--color-success-500);
 }
 
+.feedback-modal.submission .feedback-message {
+    color: var(--color-primary-500);
+}
+
+.feedback-modal.submission .feedback-icon {
+    color: var(--color-primary-500);
+}
+
 .feedback-modal.incorrect .feedback-message {
     color: var(--color-error-500);
 }
@@ -2042,14 +2371,6 @@
     overflow: visible;
 }
 
-.feedback-modal.correct::after {
-    content: '🎉';
-    position: absolute;
-    font-size: 1.5rem;
-    animation: confettiFloat 2s ease-out infinite;
-    opacity: 0.8;
-}
-
 @keyframes confettiFloat {
     0% {
         transform: translateY(0) rotate(0deg);
@@ -2080,6 +2401,11 @@
 [data-theme="dark"] .feedback-modal.correct .feedback-message,
 [data-theme="dark"] .feedback-modal.correct .feedback-icon {
     color: #22c55e;
+}
+
+[data-theme="dark"] .feedback-modal.submission .feedback-message,
+[data-theme="dark"] .feedback-modal.submission .feedback-icon {
+    color: #60a5fa;
 }
 
 [data-theme="dark"] .feedback-modal.incorrect .feedback-message,
@@ -2118,6 +2444,11 @@
 [data-theme="light"] .feedback-modal.correct .feedback-message,
 [data-theme="light"] .feedback-modal.correct .feedback-icon {
     color: #059669;
+}
+
+[data-theme="light"] .feedback-modal.submission .feedback-message,
+[data-theme="light"] .feedback-modal.submission .feedback-icon {
+    color: #2563eb;
 }
 
 [data-theme="light"] .feedback-modal.incorrect .feedback-message,

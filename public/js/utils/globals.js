@@ -434,34 +434,6 @@ export function scrollToTop() {
     }
 }
 
-export function togglePreviewSettings() {
-    logger.debug('🔧 Toggle preview settings called');
-    const panel = document.getElementById('preview-settings-panel');
-    const button = document.getElementById('preview-settings-btn');
-    
-    logger.debug('Elements found:', {
-        panel: !!panel,
-        button: !!button,
-        panelDisplay: panel ? panel.style.display : 'N/A'
-    });
-    
-    if (panel) {
-        const isVisible = panel.style.display === 'block';
-        logger.debug('Settings panel current display:', panel.style.display, 'isVisible:', isVisible);
-        panel.style.display = isVisible ? 'none' : 'block';
-        logger.debug('Settings panel new display:', panel.style.display);
-        
-        // Update button state
-        if (button) {
-            button.style.backgroundColor = isVisible ? '' : 'var(--color-primary)';
-        }
-    } else {
-        logger.error('❌ Preview settings panel not found');
-        // Try to find all elements with similar IDs
-        const allElements = document.querySelectorAll('[id*="preview"], [id*="settings"]');
-        logger.debug('Available elements:', Array.from(allElements).map(el => el.id));
-    }
-}
 
 
 // Global font size control - much simpler!
@@ -504,39 +476,6 @@ export function setGlobalFontSize(scale) {
     logger.debug('Global font size updated via CSS custom properties:', { scale, scaleValue });
 }
 
-export function updatePreviewSpacing(value) {
-    logger.debug('Update preview spacing called:', value);
-    const previewContent = document.getElementById('preview-content-split');
-    if (previewContent) {
-        // Apply spacing to various elements within preview
-        previewContent.style.setProperty('--preview-spacing', `${value}px`);
-        previewContent.style.gap = `${value}px`;
-        
-        // Also apply to options containers
-        const optionsContainers = previewContent.querySelectorAll('.player-options, .player-checkbox-options, .true-false-options');
-        optionsContainers.forEach(container => {
-            container.style.gap = `${value}px`;
-        });
-        
-        // Apply to individual options (excluding checkbox options to maintain consistent sizing)
-        const options = previewContent.querySelectorAll('.player-option, .preview-option, .tf-option');
-        options.forEach(option => {
-            option.style.marginBottom = `${value}px`;
-        });
-        
-        // Keep checkbox options at consistent margin from config
-        const checkboxOptions = previewContent.querySelectorAll('.checkbox-option');
-        checkboxOptions.forEach(option => {
-            option.style.marginBottom = `${UI.CHECKBOX_MARGIN_BOTTOM}px`;
-        });
-    }
-    
-    // Update display
-    const display = document.getElementById('spacing-display');
-    if (display) {
-        display.textContent = `${value}px`;
-    }
-}
 
 export function toggleTheme() {
     logger.debug('Global theme toggle function called');
@@ -658,14 +597,12 @@ const globalFunctions = {
     
     // UI control functions
     togglePreviewMode,
-    togglePreviewSettings,
     toggleToolbar,
     toggleTheme,
     
     // Font and spacing functions
     toggleGlobalFontSize,
     setGlobalFontSize,
-    updatePreviewSpacing,
     
     // Question and content functions
     updateQuestionType,
@@ -705,7 +642,6 @@ window.togglePreviewMode = togglePreviewMode;
 window.openAIGeneratorModal = openAIGeneratorModal;
 window.removeImage = removeImage;
 window.scrollToTop = scrollToTop;
-window.togglePreviewSettings = togglePreviewSettings;
 window.toggleGlobalFontSize = toggleGlobalFontSize;
 window.setGlobalFontSize = setGlobalFontSize;
 window.toggleTheme = toggleTheme;

@@ -4,6 +4,7 @@
  */
 
 import { logger } from '../core/config.js';
+import { translationManager } from './translation-manager.js';
 
 export class ConnectionStatus {
     constructor() {
@@ -212,11 +213,11 @@ export class ConnectionStatus {
         if (this.isOnline) {
             dot.className = `connection-dot ${this.connectionQuality}`;
             text.setAttribute('data-translate', 'connected');
-            text.textContent = 'Connected';
+            text.textContent = translationManager.getTranslationSync('connected');
         } else {
             dot.className = 'connection-dot offline';
             text.setAttribute('data-translate', 'offline');
-            text.textContent = 'Offline';
+            text.textContent = translationManager.getTranslationSync('offline');
         }
 
         // Update details
@@ -306,8 +307,19 @@ export class ConnectionStatus {
             ping: this.lastPingTime
         };
     }
+
+    /**
+     * Refresh the display with current translations (called when language changes)
+     */
+    refreshTranslations() {
+        this.updateUI();
+    }
 }
 
 // Create singleton instance
 export const connectionStatus = new ConnectionStatus();
+
+// Make globally available for translation updates
+window.connectionStatus = connectionStatus;
+
 export default connectionStatus;
