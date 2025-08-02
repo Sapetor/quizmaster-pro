@@ -16,6 +16,43 @@ export class SimpleResultsDownloader {
     }
 
     /**
+     * Fetch with retry logic for handling temporary server issues
+     */
+    async fetchWithRetry(url, maxRetries = 3, delay = 1000) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                logger.debug(`📊 Fetch attempt ${attempt}/${maxRetries} for ${url}`);
+                const response = await fetch(url);
+                
+                if (response.ok) {
+                    logger.debug(`📊 Fetch successful on attempt ${attempt}`);
+                    return response;
+                }
+                
+                // If it's a 404 and we have more attempts, wait and retry
+                if (response.status === 404 && attempt < maxRetries) {
+                    logger.warn(`📊 404 error on attempt ${attempt}, retrying in ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    continue;
+                }
+                
+                // Return the response for other status codes or last attempt
+                return response;
+                
+            } catch (error) {
+                logger.error(`📊 Fetch attempt ${attempt} failed:`, error);
+                
+                if (attempt === maxRetries) {
+                    throw error;
+                }
+                
+                // Wait before retrying
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    }
+
+    /**
      * Initialize the dropdown with available results
      */
     async initializeDropdown() {
@@ -33,9 +70,9 @@ export class SimpleResultsDownloader {
             // Clear existing options except the first placeholder
             dropdown.innerHTML = '<option value="" data-translate="select_results">Select results to download...</option>';
             
-            // Fetch available results
+            // Fetch available results with retry logic
             logger.debug('📊 Fetching results from /api/results...');
-            const response = await fetch('/api/results');
+            const response = await this.fetchWithRetry('/api/results', 3, 1000);
             logger.debug('📊 Response status:', response.status, 'Response OK:', response.ok);
             if (!response.ok) {
                 const errorText = await response.text();
@@ -172,10 +209,13 @@ export class SimpleResultsDownloader {
      * Show the download tool (called when final results are shown)
      */
     async showDownloadTool() {
+        logger.debug('📊 showDownloadTool called');
         const downloadSection = document.querySelector('.download-results');
         if (downloadSection) {
             downloadSection.style.display = 'block';
             await this.initializeDropdown();
+        } else {
+            logger.error('📊 Download section not found in DOM');
         }
     }
 

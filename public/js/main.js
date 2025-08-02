@@ -97,6 +97,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.game = new QuizGame();
         logger.debug('QuizGame instance created successfully');
         
+        // Check for QR code URL parameters and auto-fill PIN
+        const urlParams = new URLSearchParams(window.location.search);
+        const pinFromURL = urlParams.get('pin');
+        if (pinFromURL) {
+            logger.debug('PIN found in URL:', pinFromURL);
+            // Navigate to join screen and pre-fill the PIN
+            setTimeout(() => {
+                const pinInput = document.getElementById('game-pin-input');
+                if (pinInput) {
+                    pinInput.value = pinFromURL;
+                    logger.debug('PIN pre-filled from QR code URL');
+                    
+                    // Show the join screen
+                    if (window.game && window.game.showScreen) {
+                        window.game.showScreen('join-screen');
+                        logger.debug('Switched to join screen for QR code PIN');
+                    }
+                }
+            }, 100); // Small delay to ensure DOM is ready
+        }
+        
         // Initialize content density manager for smart spacing
         contentDensityManager.initialize();
         logger.debug('Content density manager initialized');

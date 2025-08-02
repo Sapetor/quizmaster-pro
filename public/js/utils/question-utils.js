@@ -526,7 +526,7 @@ export function addQuestion() {
  * Debug function to monitor DOM and style changes during question addition
  */
 function debugQuestionChanges() {
-    console.log('🔍 DEBUG: Setting up question change monitoring...');
+    logger.debug('DEBUG: Setting up question change monitoring...');
     
     const questionsContainer = document.getElementById('questions-container');
     if (!questionsContainer) return;
@@ -537,29 +537,29 @@ function debugQuestionChanges() {
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 if (mutation.type === 'attributes') {
-                    console.log(`🎨 DEBUG: Question ${index} - Attribute "${mutation.attributeName}" changed`);
+                    logger.debug(`DEBUG: Question ${index} - Attribute "${mutation.attributeName}" changed`);
                     if (mutation.attributeName === 'style') {
-                        console.log(`🎨 DEBUG: Question ${index} - Style changed to:`, item.style.cssText);
+                        logger.debug(`DEBUG: Question ${index} - Style changed to:`, item.style.cssText);
                     }
                     if (mutation.attributeName === 'data-question') {
-                        console.log(`🎨 DEBUG: Question ${index} - data-question changed to:`, item.getAttribute('data-question'));
+                        logger.debug(`DEBUG: Question ${index} - data-question changed to:`, item.getAttribute('data-question'));
                     }
                 }
                 if (mutation.type === 'childList') {
-                    console.log(`🎨 DEBUG: Question ${index} - Child nodes changed`);
+                    logger.debug(`DEBUG: Question ${index} - Child nodes changed`);
                     mutation.addedNodes.forEach(node => {
                         if (node.nodeType === Node.ELEMENT_NODE) {
-                            console.log(`🎨 DEBUG: Question ${index} - Added element:`, node.tagName, node.className);
+                            logger.debug(`DEBUG: Question ${index} - Added element:`, node.tagName, node.className);
                         }
                     });
                     mutation.removedNodes.forEach(node => {
                         if (node.nodeType === Node.ELEMENT_NODE) {
-                            console.log(`🎨 DEBUG: Question ${index} - Removed element:`, node.tagName, node.className);
+                            logger.debug(`DEBUG: Question ${index} - Removed element:`, node.tagName, node.className);
                         }
                     });
                 }
                 if (mutation.type === 'characterData') {
-                    console.log(`🎨 DEBUG: Question ${index} - Text content changed to:`, mutation.target.textContent);
+                    logger.debug(`DEBUG: Question ${index} - Text content changed to:`, mutation.target.textContent);
                 }
             });
         });
@@ -582,7 +582,7 @@ function debugQuestionChanges() {
         mutations.forEach((mutation) => {
             mutation.addedNodes.forEach(node => {
                 if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('question-item')) {
-                    console.log(`📝 DEBUG: New question item added to container`);
+                    logger.debug(`DEBUG: New question item added to container`);
                 }
             });
         });
@@ -597,7 +597,7 @@ function debugQuestionChanges() {
  * Enhanced addQuestion with comprehensive debugging
  */
 export function addQuestionWithDebugging() {
-    console.log('🚀🔍 DEBUG: addQuestionWithDebugging() started');
+    logger.debug('DEBUG: addQuestionWithDebugging() started');
     
     // Monitor existing questions before changes
     debugQuestionChanges();
@@ -608,7 +608,7 @@ export function addQuestionWithDebugging() {
     // Monitor after changes
     setTimeout(() => {
         debugQuestionChanges();
-        console.log('🚀🔍 DEBUG: Post-addition monitoring setup complete');
+        logger.debug('DEBUG: Post-addition monitoring setup complete');
     }, 100);
     
     return result;
@@ -625,7 +625,7 @@ class QuestionAnimationDebugger {
     }
     
     startDebugging() {
-        console.log('🎬 DEBUG: Starting animation debugging...');
+        logger.debug('DEBUG: Starting animation debugging...');
         this.isDebugging = true;
         this.changeLog = [];
         this.addVisualDebugger();
@@ -634,7 +634,7 @@ class QuestionAnimationDebugger {
     }
     
     stopDebugging() {
-        console.log('🎬 DEBUG: Stopping animation debugging...');
+        logger.debug('DEBUG: Stopping animation debugging...');
         this.isDebugging = false;
         this.removeVisualDebugger();
         this.printChangeReport();
@@ -677,7 +677,7 @@ class QuestionAnimationDebugger {
         const logEntry = { timestamp, message, element };
         this.changeLog.push(logEntry);
         
-        console.log(`🎬 ${message}`);
+        logger.debug(`${message}`);
         
         // Update visual debugger
         const debugLog = document.getElementById('debug-log');
@@ -779,7 +779,7 @@ class QuestionAnimationDebugger {
     
     printChangeReport() {
         console.group('🎬 Animation Debug Report');
-        console.log(`Total changes tracked: ${this.changeLog.length}`);
+        logger.debug(`Total changes tracked: ${this.changeLog.length}`);
         
         const changesByType = {};
         this.changeLog.forEach(entry => {
@@ -788,7 +788,7 @@ class QuestionAnimationDebugger {
         });
         
         console.table(changesByType);
-        console.log('Detailed log:', this.changeLog);
+        logger.debug('Detailed log:', this.changeLog);
         console.groupEnd();
     }
 }

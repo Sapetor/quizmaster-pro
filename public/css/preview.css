@@ -309,10 +309,23 @@
 .preview-option.correct-preview,
 .preview-checkbox.correct-preview,
 .preview-tf.correct-preview {
-    background: rgba(46, 213, 115, 0.2) !important;
+    background: rgba(46, 213, 115, 0.8) !important;
     border: 2px solid #2ed573 !important;
     color: #fff !important;
     font-weight: 600;
+}
+
+/* Override colorful checkbox styling for correct answers with maximum specificity */
+.checkbox-option.preview-checkbox.correct-preview[data-option="0"],
+.checkbox-option.preview-checkbox.correct-preview[data-option="1"],
+.checkbox-option.preview-checkbox.correct-preview[data-option="2"],
+.checkbox-option.preview-checkbox.correct-preview[data-option="3"],
+.checkbox-option.preview-checkbox.correct-preview[data-option="4"],
+.checkbox-option.preview-checkbox.correct-preview[data-option="5"] {
+    background: rgba(46, 213, 115, 0.8) !important;
+    border: 2px solid #2ed573 !important;
+    color: #fff !important;
+    box-shadow: 0 4px 20px rgba(46, 213, 115, 0.3) !important;
 }
 
 .preview-content .player-options,

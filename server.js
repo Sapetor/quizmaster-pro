@@ -8,6 +8,37 @@ const cors = require('cors');
 const multer = require('multer');
 const QRCode = require('qrcode');
 const os = require('os');
+const { CORSValidationService } = require('./services/cors-validation-service');
+
+// Server-side logging utility
+const DEBUG = {
+    ENABLED: true, // Set to false for production
+    LEVELS: { ERROR: 1, WARN: 2, INFO: 3, DEBUG: 4 },
+    CURRENT_LEVEL: 4 // Show all logs (1=errors only, 2=+warnings, 3=+info, 4=+debug)
+};
+
+const logger = {
+    error: (message, ...args) => {
+        if (DEBUG.ENABLED && DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.ERROR) {
+            console.error(`❌ [SERVER] ${message}`, ...args);
+        }
+    },
+    warn: (message, ...args) => {
+        if (DEBUG.ENABLED && DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.WARN) {
+            console.warn(`⚠️ [SERVER] ${message}`, ...args);
+        }
+    },
+    info: (message, ...args) => {
+        if (DEBUG.ENABLED && DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.INFO) {
+            console.log(`ℹ️ [SERVER] ${message}`, ...args);
+        }
+    },
+    debug: (message, ...args) => {
+        if (DEBUG.ENABLED && DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.DEBUG) {
+            console.log(`🔧 [SERVER] ${message}`, ...args);
+        }
+    }
+};
 
 // Import configuration constants
 const CONFIG = {
@@ -38,30 +69,19 @@ const CONFIG = {
 
 const app = express();
 const server = http.createServer(app);
+
+// Initialize CORS validation service
+const corsValidator = new CORSValidationService();
+corsValidator.logConfiguration();
 const io = socketIo(server, {
-  cors: {
-    origin: function (origin, callback) {
-      // Allow localhost and local network origins
-      if (!origin || 
-          origin.includes('localhost') || 
-          origin.includes('127.0.0.1') || 
-          origin.includes('192.168.') || 
-          origin.includes('10.') || 
-          origin.includes('172.')) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS policy'));
-      }
-    },
-    methods: ["GET", "POST"]
-  },
+  cors: corsValidator.getSocketIOCorsConfig(),
   pingTimeout: CONFIG.NETWORK.PING_TIMEOUT,
   pingInterval: CONFIG.NETWORK.PING_INTERVAL,
   upgradeTimeout: CONFIG.NETWORK.UPGRADE_TIMEOUT,
   allowUpgrades: true
 });
 
-app.use(cors());
+app.use(cors(corsValidator.getExpressCorsConfig()));
 app.use(express.json());
 
 // Disable caching for development
@@ -110,7 +130,7 @@ app.post('/upload', upload.single('image'), (req, res) => {
     }
     res.json({ filename: req.file.filename, url: `/uploads/${req.file.filename}` });
   } catch (error) {
-    console.error('Upload error:', error);
+    logger.error('Upload error:', error);
     res.status(500).json({ error: 'Upload failed' });
   }
 });
@@ -136,7 +156,7 @@ app.post('/api/save-quiz', (req, res) => {
     fs.writeFileSync(path.join('quizzes', filename), JSON.stringify(quizData, null, 2));
     res.json({ success: true, filename, id: quizData.id });
   } catch (error) {
-    console.error('Save quiz error:', error);
+    logger.error('Save quiz error:', error);
     res.status(500).json({ error: 'Failed to save quiz' });
   }
 });
@@ -156,14 +176,14 @@ app.get('/api/quizzes', (req, res) => {
           id: data.id
         };
       } catch (err) {
-        console.error('Error reading quiz file:', file, err);
+        logger.error('Error reading quiz file:', file, err);
         return null;
       }
     }).filter(Boolean);
     
     res.json(quizzes);
   } catch (error) {
-    console.error('Load quizzes error:', error);
+    logger.error('Load quizzes error:', error);
     res.status(500).json({ error: 'Failed to load quizzes' });
   }
 });
@@ -184,7 +204,7 @@ app.get('/api/quiz/:filename', (req, res) => {
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     res.json(data);
   } catch (error) {
-    console.error('Load quiz error:', error);
+    logger.error('Load quiz error:', error);
     res.status(500).json({ error: 'Failed to load quiz' });
   }
 });
@@ -210,17 +230,17 @@ app.post('/api/save-results', (req, res) => {
     fs.writeFileSync(path.join('results', filename), JSON.stringify(resultsData, null, 2));
     res.json({ success: true, filename });
   } catch (error) {
-    console.error('Save results error:', error);
+    logger.error('Save results error:', error);
     res.status(500).json({ error: 'Failed to save results' });
   }
 });
 
 // Get list of saved quiz results endpoint
 app.get('/api/results', (req, res) => {
-  console.log('📊 API: /api/results endpoint called');
+  logger.info('API: /api/results endpoint called');
   try {
     if (!fs.existsSync('results')) {
-      console.log('📊 API: results directory does not exist');
+      logger.info('API: results directory does not exist');
       return res.json([]);
     }
     
@@ -243,17 +263,17 @@ app.get('/api/results', (req, res) => {
             fileSize: stats.size
           };
         } catch (error) {
-          console.error(`Error reading result file ${filename}:`, error);
+          logger.error(`Error reading result file ${filename}:`, error);
           return null;
         }
       })
       .filter(result => result !== null)
       .sort((a, b) => new Date(b.saved) - new Date(a.saved)); // Sort by most recent first
     
-    console.log(`📊 API: Found ${files.length} result files`);
+    logger.info(`API: Found ${files.length} result files`);
     res.json(files);
   } catch (error) {
-    console.error('Error listing results:', error);
+    logger.error('Error listing results:', error);
     res.status(500).json({ error: 'Failed to list results' });
   }
 });
@@ -277,7 +297,7 @@ app.get('/api/results/:filename', (req, res) => {
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     res.json(data);
   } catch (error) {
-    console.error('Error retrieving result file:', error);
+    logger.error('Error retrieving result file:', error);
     res.status(500).json({ error: 'Failed to retrieve result file' });
   }
 });
@@ -331,7 +351,7 @@ app.get('/api/results/:filename/export/:format', (req, res) => {
       res.json(data);
     }
   } catch (error) {
-    console.error('Error exporting result file:', error);
+    logger.error('Error exporting result file:', error);
     res.status(500).json({ error: 'Failed to export result file' });
   }
 });
@@ -361,7 +381,7 @@ app.get('/api/active-games', (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Active games fetch error:', error);
+    logger.error('Active games fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch active games' });
   }
 });
@@ -421,7 +441,7 @@ app.get('/api/qr/:pin', async (req, res) => {
       pin: pin
     });
   } catch (error) {
-    console.error('QR code generation error:', error);
+    logger.error('QR code generation error:', error);
     res.status(500).json({ error: 'Failed to generate QR code' });
   }
 });
@@ -447,7 +467,7 @@ app.get('/api/ollama/models', async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Ollama models fetch error:', error);
+    logger.error('Ollama models fetch error:', error);
     res.status(500).json({ error: 'Failed to connect to Ollama' });
   }
 });
@@ -487,7 +507,7 @@ app.post('/api/claude/generate', async (req, res) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Claude API error:', response.status);
+      logger.error('Claude API error:', response.status);
       
       let errorMessage = `Claude API error: ${response.status}`;
       if (response.status === 401) {
@@ -507,7 +527,7 @@ app.post('/api/claude/generate', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    console.error('Claude proxy error:', error.message);
+    logger.error('Claude proxy error:', error.message);
     res.status(500).json({ 
       error: 'Failed to connect to Claude API',
       details: error.message
@@ -572,7 +592,7 @@ class Game {
     const nextQuestionIndex = this.currentQuestion + 1;
     const hasMore = nextQuestionIndex < this.quiz.questions.length;
     
-    console.log('🔍 nextQuestion() DEBUG:', {
+    logger.debug('nextQuestion() DEBUG:', {
       currentQuestion: this.currentQuestion,
       nextQuestionIndex: nextQuestionIndex,
       totalQuestions: this.quiz.questions.length,
@@ -585,9 +605,9 @@ class Game {
       this.gameState = 'question';
       this.questionTimer = null;
       this.advanceTimer = null;
-      console.log('🔍 Advanced to question', this.currentQuestion + 1);
+      logger.debug('Advanced to question', this.currentQuestion + 1);
     } else {
-      console.log('🔍 NO MORE QUESTIONS - should end game');
+      logger.debug('NO MORE QUESTIONS - should end game');
     }
     
     return hasMore;
@@ -611,7 +631,7 @@ class Game {
       const filename = `results_${this.pin}_${Date.now()}.json`;
       fs.writeFileSync(path.join('results', filename), JSON.stringify(results, null, 2));
     } catch (error) {
-      console.error('Error saving game results:', error);
+      logger.error('Error saving game results:', error);
     }
   }
 
@@ -823,15 +843,15 @@ function advanceToNextQuestion(game, io) {
 }
 
 function endGame(game, io) {
-  console.log('🔍 endGame() called for game:', game.pin);
+  logger.debug('endGame() called for game:', game.pin);
   
   // Prevent multiple game endings
   if (game.gameState === 'finished') {
-    console.log('🔍 Game already finished, skipping endGame');
+    logger.debug('Game already finished, skipping endGame');
     return;
   }
   
-  console.log('🔍 Setting game state to finished');
+  logger.debug('Setting game state to finished');
   game.gameState = 'finished';
   game.endTime = new Date().toISOString();
   
@@ -850,27 +870,27 @@ function endGame(game, io) {
   
   // CRITICAL: Hide manual advancement button immediately when game ends
   io.to(game.hostId).emit('hide-next-button');
-  console.log('🔍 Hid next button for host');
+  logger.debug('Hid next button for host');
   
-  console.log('🔍 Updating leaderboard and saving results...');
+  logger.debug('Updating leaderboard and saving results...');
   game.updateLeaderboard();
   game.saveResults();
   
-  console.log('🔍 Final leaderboard:', game.leaderboard);
+  logger.debug('Final leaderboard:', game.leaderboard);
   
   // Add longer delay to ensure all previous events are processed completely
   setTimeout(() => {
-    console.log('🔍 1 second passed, about to emit game-end event');
+    logger.debug('1 second passed, about to emit game-end event');
     // Double-check game is still finished (race condition protection)
     if (game.gameState === 'finished') {
-      console.log('🔍 EMITTING game-end event to all players in game-' + game.pin);
+      logger.debug('EMITTING game-end event to all players in game-' + game.pin);
       io.to(`game-${game.pin}`).emit('game-end', {
         finalLeaderboard: game.leaderboard
       });
-      console.log('🔍 game-end event emitted successfully!');
-      console.log('🔍 Players in room game-' + game.pin + ':', io.sockets.adapter.rooms.get(`game-${game.pin}`)?.size || 0);
+      logger.debug('game-end event emitted successfully!');
+      logger.debug('Players in room game-' + game.pin + ':', io.sockets.adapter.rooms.get(`game-${game.pin}`)?.size || 0);
     } else {
-      console.log('🔍 Game state changed, not emitting game-end event');
+      logger.debug('Game state changed, not emitting game-end event');
     }
   }, 1000); // Increased delay from 500ms to 1000ms
 }
@@ -1191,21 +1211,21 @@ io.on('connection', (socket) => {
 
   socket.on('next-question', () => {
     try {
-      console.log('🔥🔥🔥🔥🔥 SERVER: NEXT-QUESTION EVENT RECEIVED 🔥🔥🔥🔥🔥');
-      console.log('🔍 NEXT-QUESTION event received from host');
+      logger.debug('SERVER: NEXT-QUESTION EVENT RECEIVED');
+      logger.debug('NEXT-QUESTION event received from host');
       const game = Array.from(games.values()).find(g => g.hostId === socket.id);
     
     if (!game) {
-      console.log('🔍 No game found for host');
+      logger.debug('No game found for host');
       return;
     }
     
     if (game.isAdvancing) {
-      console.log('🔍 Game already advancing, ignoring');
+      logger.debug('Game already advancing, ignoring');
       return;
     }
     
-    console.log('🔍 Game state before next-question:', {
+    logger.debug('Game state before next-question:', {
       gameState: game.gameState,
       currentQuestion: game.currentQuestion,
       totalQuestions: game.quiz.questions.length,
@@ -1214,14 +1234,14 @@ io.on('connection', (socket) => {
     
     // CRITICAL: Prevent manual advancement if game is already finished
     if (game.gameState === 'finished') {
-      console.log('🔍 Game already finished, hiding next button');
+      logger.debug('Game already finished, hiding next button');
       io.to(game.hostId).emit('hide-next-button');
       return;
     }
 
     // Set advancing flag to prevent race conditions
     game.isAdvancing = true;
-    console.log('🔍 Set advancing flag to true');
+    logger.debug('Set advancing flag to true');
 
     // Clear any pending auto-advance timers
     if (game.advanceTimer) {
@@ -1231,36 +1251,36 @@ io.on('connection', (socket) => {
     
     // Hide the next question button immediately
     io.to(game.hostId).emit('hide-next-button');
-    console.log('🔍 Hid next question button');
+    logger.debug('Hid next question button');
     
     // Show leaderboard first for 3 seconds
     io.to(`game-${game.pin}`).emit('show-leaderboard', {
       leaderboard: game.leaderboard.slice(0, 5)
     });
-    console.log('🔍 Showed leaderboard, waiting 3 seconds...');
+    logger.debug('Showed leaderboard, waiting 3 seconds...');
     
     // Then advance to next question after leaderboard display
     setTimeout(() => {
-      console.log('🔍 3 seconds passed, calling game.nextQuestion()...');
+      logger.debug('3 seconds passed, calling game.nextQuestion()...');
       const hasMoreQuestions = game.nextQuestion();
-      console.log('🔍 game.nextQuestion() returned:', hasMoreQuestions);
+      logger.debug('game.nextQuestion() returned:', hasMoreQuestions);
       
       if (hasMoreQuestions) {
-        console.log('🔍 Starting next question...');
+        logger.debug('Starting next question...');
         startQuestion(game, io);
       } else {
-        console.log('🔍 NO MORE QUESTIONS - calling endGame()...');
+        logger.debug('NO MORE QUESTIONS - calling endGame()...');
         endGame(game, io);
       }
       
       // Reset advancing flag
       game.isAdvancing = false;
-      console.log('🔍 Reset advancing flag to false');
+      logger.debug('Reset advancing flag to false');
     }, 3000); // 3 seconds to view leaderboard
     
     } catch (error) {
-      console.error('🔥🔥🔥 SERVER ERROR in next-question handler:', error);
-      console.error('Error stack:', error.stack);
+      logger.error('SERVER ERROR in next-question handler:', error);
+      logger.error('Error stack:', error.stack);
     }
   });
 
@@ -1317,7 +1337,7 @@ server.listen(PORT, '0.0.0.0', () => {
   if (NETWORK_IP) {
     // Use manually specified IP
     localIP = NETWORK_IP;
-    console.log(`Using manual IP: ${localIP}`);
+    logger.info(`Using manual IP: ${localIP}`);
   } else {
     // Try to detect network IP, preferring 192.168.x.x for local networks
     const networkInterfaces = os.networkInterfaces();
@@ -1340,33 +1360,33 @@ server.listen(PORT, '0.0.0.0', () => {
     )?.address || 'localhost';
   }
   
-  console.log(`Network access: http://${localIP}:${PORT}`);
-  console.log(`Local access: http://localhost:${PORT}`);
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Network access: http://${localIP}:${PORT}`);
+  logger.info(`Local access: http://localhost:${PORT}`);
+  logger.info(`Server running on port ${PORT}`);
   
   // WSL specific instructions
   if (localIP.startsWith('172.')) {
-    console.log('');
-    console.log('🔧 WSL DETECTED: If you can\'t connect from your phone:');
-    console.log('1. Find your Windows IP: run "ipconfig" in Windows Command Prompt');
-    console.log('2. Look for "Wireless LAN adapter Wi-Fi" or "Ethernet adapter"');
-    console.log('3. Use that IP address instead of the one shown above');
-    console.log('4. Or restart with: NETWORK_IP=your.windows.ip npm start');
-    console.log('');
+    logger.info('');
+    logger.info('WSL DETECTED: If you can\'t connect from your phone:');
+    logger.info('1. Find your Windows IP: run "ipconfig" in Windows Command Prompt');
+    logger.info('2. Look for "Wireless LAN adapter Wi-Fi" or "Ethernet adapter"');
+    logger.info('3. Use that IP address instead of the one shown above');
+    logger.info('4. Or restart with: NETWORK_IP=your.windows.ip npm start');
+    logger.info('');
   }
 });
 
 // Graceful shutdown handling
 const gracefulShutdown = (signal) => {
-  console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
+  logger.info(`\nReceived ${signal}. Shutting down gracefully...`);
   
   // Stop accepting new connections
   server.close(() => {
-    console.log('✅ HTTP server closed');
+    logger.info('HTTP server closed');
     
     // Close all socket connections
     io.close(() => {
-      console.log('✅ Socket.IO server closed');
+      logger.info('Socket.IO server closed');
       
       // Clear all game timers
       games.forEach(game => {
@@ -1378,15 +1398,15 @@ const gracefulShutdown = (signal) => {
         }
       });
       
-      console.log('✅ All timers cleared');
-      console.log('👋 Server shutdown complete');
+      logger.info('All timers cleared');
+      logger.info('Server shutdown complete');
       process.exit(0);
     });
   });
   
   // Force close after 10 seconds
   setTimeout(() => {
-    console.log('⚠️  Forcing server shutdown after 10 seconds...');
+    logger.warn('Forcing server shutdown after 10 seconds...');
     process.exit(1);
   }, 10000);
 };
@@ -1398,13 +1418,13 @@ process.on('SIGQUIT', () => gracefulShutdown('SIGQUIT')); // Quit signal
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught Exception:', error);
+  logger.error('Uncaught Exception:', error);
   gracefulShutdown('uncaughtException');
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
   gracefulShutdown('unhandledRejection');
 });
 

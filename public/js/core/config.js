@@ -116,16 +116,20 @@ export const AI = {
     OLLAMA_DEFAULT_MODEL: 'llama3.2:latest',
     OPENAI_MODEL: 'gpt-3.5-turbo',
     
-    // Content detection patterns (simplified)
-    MATH_INDICATORS: /\$.*\$|\\\\w+{.*}|\\begin{|\\end{|\\frac|\\sqrt|\\sum|\\int/,
-    PROGRAMMING_INDICATORS: /def\s+\w+\(/,
+    // Content detection patterns
+    MATH_INDICATORS: /\$.*\$|\\\\w+{.*}|\\begin{|\\end{|\\frac|\\sqrt|\\sum|\\int|equation|formula|algebra|calculus|geometry/i,
+    PROGRAMMING_INDICATORS: /def\s+\w+\(|function\s+\w+|class\s+\w+|import\s+|from\s+\w+|console\.log|print\(|var\s+|let\s+|const\s+/i,
+    PHYSICS_INDICATORS: /velocity|acceleration|force|energy|momentum|gravity|mass|physics|newton|joule|meter|kilogram/i,
+    CHEMISTRY_INDICATORS: /molecule|atom|element|compound|reaction|chemistry|periodic|electron|proton|neutron|bond|chemical/i,
 };
 
 // Animation settings (simplified)
 export const ANIMATION = {
-    CONFETTI_PARTICLE_COUNT: 100,
+    CONFETTI_PARTICLE_COUNT: 80, // Reduced from 100 for better performance
+    CONFETTI_BURST_PARTICLES: 35, // Added missing definition, moderate count
     CONFETTI_SPREAD: 70,
     CONFETTI_ORIGIN_Y: 0.1,
+    PERCENTAGE_CALCULATION_BASE: 100, // For statistics calculations
 };
 
 // API endpoints

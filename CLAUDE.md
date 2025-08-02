@@ -4,17 +4,52 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Status & Recent Changes
 
-**Major Refactoring Completed (2025-01):**
+**Phase 1 - Initial Cleanup Completed (2025-01):**
 - ✅ **Removed testing bloat**: Eliminated 150KB+ of unnecessary testing infrastructure (12 files)
 - ✅ **Simplified configuration**: Reduced config.js from 226 to 161 lines (29% smaller)
 - ✅ **Dead code cleanup**: Removed 300+ lines of debug functions and obsolete code
 - **Result**: 37% fewer JavaScript files, significantly cleaner and more maintainable codebase
 
+**Phase 2 - Advanced Modularization Completed (2025-08):**
+- ✅ **GameManager Modular Extraction**: Reduced from 1,983 → 1,686 lines (15.0% reduction)
+  - ✅ Extracted QuestionRenderer module (476 lines) for question display logic
+  - ✅ Fixed DOM structure preservation and event handling
+  - ✅ Maintained full functionality with proper delegation
+- ✅ **MathJax System Simplification**: Reduced from ~2,900 → ~200 lines (94% reduction)
+  - ✅ Replaced over-engineered system with SimpleMathJaxService
+  - ✅ Fixed main menu button failures and initialization issues
+  - ✅ Bulletproof error handling prevents app breakage
+- ✅ **Results Management System**: Complete implementation
+  - ✅ Automatic results saving on game completion
+  - ✅ CSV export functionality working correctly
+  - ✅ Quiz title and timing capture integrated
+
+**Phase 3 - Architecture & Security Hardening Completed (2025-08):**
+- ✅ **Service Layer Architecture**: Professional service-oriented design
+  - ✅ NavigationService for UI decoupling and centralized routing
+  - ✅ DOMService with element caching for performance optimization
+  - ✅ SecureStorageService with AES-GCM encryption for API keys
+  - ✅ ErrorHandlingService with standardized patterns and retry logic
+  - ✅ CORSValidationService with proper IP range validation
+- ✅ **Security Enhancements**: Production-ready security measures
+  - ✅ Encrypted API key storage using Web Crypto API
+  - ✅ Robust CORS validation with regex patterns for local networks
+  - ✅ Automatic migration from plaintext to encrypted storage
+- ✅ **Error Handling Standardization**: Comprehensive error management
+  - ✅ Categorized error types (network, validation, system, etc.)
+  - ✅ Severity levels with appropriate user feedback
+  - ✅ Automatic retry logic with exponential backoff
+  - ✅ Error analytics and frequency monitoring
+  - ✅ AI Generator content type detection fixes
+
 **Current Architecture:**
-- **Modular ES6 structure** with proper imports/exports
+- **Modular ES6 structure** with proper imports/exports and focused responsibilities
+- **Service-oriented architecture** with dedicated services for common operations
 - **Centralized configuration** in `public/js/core/config.js`
 - **Professional logging system** using structured logger instead of console statements
-- **Clean separation** between core functionality and debugging code
+- **Standardized error handling** with categorized errors and automatic retry logic
+- **Encrypted security layer** for sensitive data storage and network validation
+- **Clean separation** between core functionality, display logic, and debugging code
 
 ## Commands
 
@@ -59,6 +94,11 @@ When removing code during cleanup:
 - **Always verify exports** match imports when modifying utility files
 - **Use proper ES6 exports**: `export function functionName()` not `window.functionName =`
 
+### DOM Structure Preservation
+- **CRITICAL**: Never clear parent container innerHTML that contains required child elements
+- **Example**: `host-multiple-choice` contains `answer-options` - clearing innerHTML destroys the structure
+- **Always check HTML hierarchy** before DOM manipulation
+
 ## Server Management
 
 ### Server Restart Guidelines
@@ -73,50 +113,74 @@ When removing code during cleanup:
 - Server runs on port 3000 by default
 - **No hot reload** - refresh browser after JavaScript changes
 - **CSS changes** may require browser cache clear (Ctrl+F5)
+- **WSL/Windows**: Server can run in either WSL or Windows, ensure proper networking
 
 ## Architecture Overview
 
-### Core Modules (Largest Files)
-- `public/js/game/game-manager.js` (2,300+ lines) - Main game logic and state management
-- `public/js/ui/preview-manager.js` (1,800+ lines) - Quiz preview and split-view functionality
+### Core Modules (Current State)
+- `public/js/game/game-manager.js` (1,686 lines) - Main game logic and state management **[15% reduced]**
+- `public/js/game/modules/question-renderer.js` (476 lines) - **[NEW]** Question display and rendering logic
+- `public/js/ui/preview-manager.js` (747 lines) - Quiz preview and split-view **[58% reduced via previous extraction]**
 - `public/js/quiz/quiz-manager.js` (1,400+ lines) - Quiz creation, editing, save/load
 - `public/js/core/app.js` (1,100+ lines) - Application initialization and coordination
 
-### Key Utilities
+### Key Utilities & Services
 - `public/js/core/config.js` - Centralized configuration constants
 - `public/js/utils/question-utils.js` - Question creation and manipulation utilities
 - `public/js/utils/translation-manager.js` - Multi-language support
-- `public/js/utils/mathjax-service.js` - LaTeX/mathematical equation rendering
+- `public/js/utils/simple-mathjax-service.js` - Simplified LaTeX/mathematical equation rendering
+- `public/js/utils/simple-results-downloader.js` - Results management and CSV export
 
-### Recent Cleanup Areas
-- **Removed**: Performance monitoring, testing dashboards, debug utilities
-- **Simplified**: Timing constants, audio settings, animation configurations
-- **Cleaned**: Debug comments, excessive logging, obsolete functions
+### Service Layer (Phase 3)
+- `public/js/services/navigation-service.js` - **[NEW]** Centralized UI navigation and routing
+- `public/js/services/dom-service.js` - **[NEW]** DOM manipulation with element caching
+- `public/js/services/secure-storage-service.js` - **[NEW]** AES-GCM encrypted localStorage
+- `public/js/services/error-handling-service.js` - **[NEW]** Standardized error patterns with retry logic
+- `services/cors-validation-service.js` - **[NEW]** Server-side CORS validation with IP range support
+
+### Recent Modularization (Phase 2)
+- **GameManager Modules**:
+  - `public/js/game/modules/question-renderer.js` - Question content rendering and DOM manipulation
+  - `public/js/game/modules/game-display-manager.js` - Display coordination and MathJax integration
+  - `public/js/game/modules/game-state-manager.js` - Game state management
+  - `public/js/game/modules/player-interaction-manager.js` - Player interaction handling
+  - `public/js/game/modules/timer-manager.js` - Timer functionality
+- **MathJax Simplification**:
+  - Removed over-engineered recovery mechanisms and complex coordinators
+  - Implemented bulletproof error handling with non-blocking operations
+  - Fixed main menu button failures and initialization issues
 
 ## Security Notes
 
 - Application designed for **local network use only**
 - **No authentication system** - suitable for classroom/educational use
-- **CORS configured** for local network access patterns
-- **API keys stored** in localStorage (encrypted storage pending)
+- **CORS configured** for local network access patterns with robust IP range validation
+- **API keys encrypted** using AES-GCM encryption via Web Crypto API ✅
 - **File uploads** restricted to images with size limits
+- **Automatic security migration** from plaintext to encrypted storage
 
-## Known Technical Debt
+## Current Technical Debt
 
-### High Priority (Performance Impact)
-- Large module files need refactoring into focused components
-- MathJax service has over-engineered recovery mechanisms
-- Some tight coupling between UI and game logic modules
+### High Priority (Performance Impact) - **COMPLETED** ✅
+- ✅ ~~Large module files need refactoring~~ **[GameManager and PreviewManager significantly reduced]**
+- ✅ ~~MathJax service has over-engineered recovery mechanisms~~ **[Simplified to 200 lines]**
+- ✅ ~~Tight coupling between UI and game logic modules~~ **[NavigationService and DOMService implemented]**
 
-### Medium Priority (Maintainability)
-- API key storage should be encrypted
-- CORS validation could be more robust
-- Some legacy jQuery-style DOM manipulation patterns
+### Medium Priority (Maintainability) - **COMPLETED** ✅
+- ✅ ~~API key storage should be encrypted~~ **[AES-GCM encryption implemented]**
+- ✅ ~~CORS validation could be more robust~~ **[Proper IP range validation implemented]**
+- ✅ ~~Legacy jQuery-style DOM manipulation patterns~~ **[DOMService with modern patterns]**
+- ✅ ~~Standardize error handling patterns~~ **[ErrorHandlingService with retry logic]**
 
-### Low Priority (Polish)
-- Reduce configuration complexity further
-- Standardize error handling patterns
-- Optimize bundle size for production
+### Low Priority (Polish) - **PARTIALLY ADDRESSED**
+- ✅ ~~Reduce configuration complexity further~~ **[MathJax config simplified]**
+- **Remaining**: Optimize bundle size for production
+
+### Next Phase Candidates (Optional Future Improvements)
+- **ResultsManager extraction** from GameManager (leaderboard, statistics, final results display)
+- **AnswerProcessor extraction** (answer validation, submission handling)
+- **Quiz creation workflow optimization** (quiz-manager.js is still 1,400+ lines)
+- **App.js modularization** (startup, routing, screen management)
 
 ## Development Best Practices
 
@@ -125,19 +189,38 @@ When removing code during cleanup:
 - **Prefer logger over console** for all debugging output
 - **Keep functions focused** on single responsibilities
 - **Document complex algorithms** and business logic
+- **Preserve DOM structure** - avoid clearing innerHTML of containers with required children
 
 ### File Organization
 - **Core modules** in `/core/` for app initialization
 - **Feature modules** in `/game/`, `/quiz/`, `/ui/` directories
+- **Modular extractions** in `/modules/` subdirectories for focused functionality
 - **Utilities** in `/utils/` for shared functionality
 - **Keep modules under 500 lines** when possible (refactor larger files)
 
-### Error Prevention
+### Error Prevention & Handling
+- **Use ErrorHandlingService** for all async operations and error management
 - **Test imports** after refactoring utility files
 - **Verify server startup** after major changes
 - **Check browser console** for JavaScript errors
-- **Use proper error boundaries** for graceful degradation
+- **Leverage error categories** (network, validation, system, user input) for appropriate handling
+- **Use retry logic** for network operations and transient failures
+- **Test DOM element references** after structural changes
+
+## Results Management
+
+### Game Results System
+- **Automatic saving**: Results are saved to server on game completion via `/api/save-results`
+- **Data captured**: Quiz title, game PIN, player results, start/end times
+- **Storage location**: `results/` directory with JSON files
+- **Export functionality**: CSV download via `/api/results/{filename}/export/csv`
+- **Management UI**: Download tool appears on leaderboard screen after game completion
+
+### API Endpoints
+- `GET /api/results` - List all saved game results
+- `POST /api/save-results` - Save new game results
+- `GET /api/results/{filename}/export/csv` - Export specific results as CSV
 
 ---
 
-*Last updated: January 2025 - Post major cleanup and refactoring*
+*Last updated: August 2025 - Post Phase 3 architecture hardening and service layer implementation*

@@ -554,7 +554,7 @@ export class ErrorBoundary {
                     cursor: pointer;
                     font-size: 16px;
                 ">Refresh Page</button>
-                <button onclick="try { document.getElementById('critical-error-overlay').remove(); window.errorBoundary.reset(); console.log('Error boundary reset successfully'); } catch(e) { console.error('Failed to reset:', e); location.reload(); }" style="
+                <button onclick="try { document.getElementById('critical-error-overlay').remove(); window.errorBoundary.reset(); logger.info('Error boundary reset successfully'); } catch(e) { logger.error('Failed to reset:', e); location.reload(); }" style="
                     margin-top: 10px;
                     padding: 8px 16px;
                     background: #ff9800;

@@ -3,6 +3,8 @@
  * Intelligently adjusts spacing and sizing based on content type and complexity
  */
 
+import { logger } from '../core/config.js';
+
 export class ContentDensityManager {
     constructor() {
         this.initialized = false;
@@ -20,7 +22,7 @@ export class ContentDensityManager {
         this.analyzeExistingContent();
         this.initialized = true;
         
-        console.debug('🎯 Content Density Manager: Initialized smart spacing and sizing system');
+        logger.debug('Content Density Manager: Initialized smart spacing and sizing system');
     }
 
     /**
@@ -278,7 +280,7 @@ export class ContentDensityManager {
             this.optimizeOptionContainer(element, analysis);
         }
 
-        console.debug('🎯 Content Density Applied:', {
+        logger.debug('Content Density Applied:', {
             element: element.className,
             score: analysis.densityScore,
             hasLatex: analysis.hasLatex,
@@ -313,7 +315,7 @@ export class ContentDensityManager {
     refresh() {
         this.contentAnalysis.clear();
         this.analyzeExistingContent();
-        console.debug('🎯 Content Density Manager: Refreshed all content analysis');
+        logger.debug('Content Density Manager: Refreshed all content analysis');
     }
 
     /**
@@ -333,7 +335,7 @@ export class ContentDensityManager {
         this.observers.clear();
         this.contentAnalysis.clear();
         this.initialized = false;
-        console.debug('🎯 Content Density Manager: Destroyed');
+        logger.debug('Content Density Manager: Destroyed');
     }
 }
 

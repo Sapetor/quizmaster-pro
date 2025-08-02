@@ -11,51 +11,29 @@
  */
 
 import { TIMING, logger } from '../core/config.js';
-import { coreCoordinator } from './mathjax/core-coordinator.js';
+import { simpleMathJaxService } from './simple-mathjax-service.js';
 
 export class MathRenderer {
     constructor() {
         this.mathJaxRenderTimeout = null;
         this.processingElements = new Set();
-        // Delegate to Core Coordinator for MathJax readiness
-        this.mathJaxReady = false;
+        this.mathJaxService = simpleMathJaxService;
         
-        // Initialize with Core Coordinator
-        this.coreCoordinator = coreCoordinator;
-        
-        logger.debug('🔄 MathRenderer: Delegating to Core Coordinator system');
+        logger.debug('🔄 MathRenderer: Using simplified MathJax service');
     }
 
     /**
-     * Wait for MathJax to be ready before executing callback
+     * Wait for MathJax to be ready before executing callback (simplified)
      * @param {Function} callback - Function to execute when MathJax is ready
      */
     waitForMathJaxReady(callback) {
-        // Check both instance flag and global indicators for maximum compatibility
-        if (window.MathJax && window.MathJax.typesetPromise && 
-            (this.mathJaxReady || window.mathJaxReady || document.body.classList.contains('mathjax-ready'))) {
+        // Use simplified service - always call callback to prevent blocking
+        if (this.mathJaxService.isAvailable()) {
             callback();
         } else {
-            // Wait with polling and event listening
-            const checkReady = () => {
-                if (window.MathJax && window.MathJax.typesetPromise && 
-                    (this.mathJaxReady || window.mathJaxReady || document.body.classList.contains('mathjax-ready'))) {
-                    this.mathJaxReady = true;
-                    callback();
-                } else {
-                    setTimeout(checkReady, TIMING.DOM_UPDATE_DELAY);
-                }
-            };
-            
-            // Also listen for the mathjax-ready event in case we missed it
-            const readyHandler = () => {
-                this.mathJaxReady = true;
-                document.removeEventListener('mathjax-ready', readyHandler);
-                callback();
-            };
-            
-            document.addEventListener('mathjax-ready', readyHandler);
-            checkReady();
+            // Don't block execution - call callback anyway
+            logger.debug('MathJax not ready, proceeding without LaTeX rendering');
+            callback();
         }
     }
 
@@ -67,8 +45,8 @@ export class MathRenderer {
         if (!element) return;
         
         try {
-            // Delegate to Core Coordinator for consistent, efficient rendering
-            await this.coreCoordinator.render(element);
+            // Use simplified MathJax service
+            await this.mathJaxService.render([element]);
             
             // Ensure proper display styling after rendering
             const containers = element.querySelectorAll('.mjx-container');
@@ -82,7 +60,7 @@ export class MathRenderer {
             });
             
         } catch (err) {
-            logger.warn('MathJax rendering failed via Core Coordinator:', err);
+            logger.warn('MathJax rendering failed (non-blocking):', err);
         }
     }
 
@@ -120,10 +98,10 @@ export class MathRenderer {
             
             logger.debug('🧮 Global MathJax rendering for', mathElements.length, 'elements');
             
-            // Delegate to Core Coordinator for batch rendering
-            await this.coreCoordinator.renderBatch(mathElements);
+            // Use simplified MathJax service for batch rendering
+            await this.mathJaxService.render(mathElements);
             
-            logger.debug('✅ Global MathJax rendering completed via Core Coordinator');
+            logger.debug('✅ Global MathJax rendering completed');
             
         } catch (err) {
             logger.error('❌ Global MathJax rendering failed:', err);
@@ -160,10 +138,10 @@ export class MathRenderer {
             
             logger.debug('🧮 Editor MathJax rendering for', elementsWithMath.length, 'elements (avoiding game elements)');
             
-            // Delegate to Core Coordinator for consistent processing
-            await this.coreCoordinator.renderBatch(elementsWithMath, { fastMode: true });
+            // Use simplified MathJax service for editor rendering
+            await this.mathJaxService.render(elementsWithMath);
             
-            logger.debug('✅ Editor MathJax rendering completed via Core Coordinator');
+            logger.debug('✅ Editor MathJax rendering completed');
             
         } catch (err) {
             logger.error('❌ Editor MathJax rendering failed:', err);
@@ -217,11 +195,11 @@ export class MathRenderer {
     }
 
     /**
-     * Check if MathJax is available and ready
+     * Check if MathJax is available and ready (delegated to service)
      * @returns {boolean} - Whether MathJax is ready
      */
     isMathJaxReady() {
-        return window.MathJax && window.MathJax.typesetPromise;
+        return this.mathJaxService.isAvailable();
     }
 
     /**

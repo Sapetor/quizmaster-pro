@@ -181,7 +181,7 @@ export class ModalFeedback {
     triggerModalConfetti() {
         if (typeof confetti === 'function') {
             logger.debug('🎊 CONFETTI DEBUG: Starting modal confetti animation with z-index 99999');
-            console.log('🎊 CONFETTI DEBUG: Modal confetti triggered!');
+            logger.debug('CONFETTI DEBUG: Modal confetti triggered!');
             
             // Create confetti canvas that sits above everything
             const confettiCanvas = document.createElement('canvas');
@@ -197,10 +197,10 @@ export class ModalFeedback {
             // Try appending to modal overlay to inherit correct stacking context
             if (this.overlay && this.overlay.classList.contains('active')) {
                 this.overlay.appendChild(confettiCanvas);
-                console.log('🎊 CONFETTI DEBUG: Canvas appended to modal overlay to avoid backdrop-filter blur');
+                logger.debug('CONFETTI DEBUG: Canvas appended to modal overlay to avoid backdrop-filter blur');
             } else {
                 document.body.appendChild(confettiCanvas);
-                console.log('🎊 CONFETTI DEBUG: Canvas appended to body (fallback) with z-index:', confettiCanvas.style.zIndex);
+                logger.debug('CONFETTI DEBUG: Canvas appended to body (fallback) with z-index:', confettiCanvas.style.zIndex);
             }
             
             // Create confetti instance targeting our canvas

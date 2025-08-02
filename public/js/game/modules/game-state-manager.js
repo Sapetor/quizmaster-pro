@@ -12,12 +12,12 @@ export class GameStateManager {
         this.isHost = false;
         this.playerName = '';
         this.currentQuestion = null;
-        this.timer = null;
         this.gamePin = null;
         this.selectedAnswer = null;
         this.playerAnswers = new Map();
         this.gameEnded = false;
         this.resultShown = false;
+        this.answerSubmitted = false;
     }
 
     /**
@@ -29,9 +29,9 @@ export class GameStateManager {
         this.currentQuestion = data;
         this.selectedAnswer = null;
         this.resultShown = false;
+        this.answerSubmitted = false;
         
-        // Clear any existing timer
-        this.stopTimer();
+        // Timer management is now handled by TimerManager
         
         // Set host/player mode based on player name
         if (this.playerName && this.playerName !== 'Host' && this.isHost !== false) {
@@ -42,41 +42,7 @@ export class GameStateManager {
         logger.debug('Game state initialized for question:', data.questionNumber);
     }
 
-    /**
-     * Start countdown timer
-     */
-    startTimer(duration, onTick, onComplete) {
-        this.stopTimer(); // Clear any existing timer
-        
-        let timeLeft = duration;
-        // logger.debug('Starting timer:', timeLeft, 'seconds');
-        
-        this.timer = setInterval(() => {
-            timeLeft--;
-            
-            if (onTick) {
-                onTick(timeLeft);
-            }
-            
-            if (timeLeft <= 0) {
-                this.stopTimer();
-                if (onComplete) {
-                    onComplete();
-                }
-            }
-        }, 1000);
-    }
-
-    /**
-     * Stop the current timer
-     */
-    stopTimer() {
-        if (this.timer) {
-            clearInterval(this.timer);
-            this.timer = null;
-            // logger.debug('Timer stopped');
-        }
-    }
+    // Timer functionality moved to TimerManager
 
     /**
      * Set selected answer
@@ -97,7 +63,7 @@ export class GameStateManager {
             selectedAnswer: this.selectedAnswer,
             gameEnded: this.gameEnded,
             resultShown: this.resultShown,
-            hasTimer: !!this.timer
+            answerSubmitted: this.answerSubmitted
         };
     }
 
@@ -130,7 +96,7 @@ export class GameStateManager {
      */
     endGame() {
         this.gameEnded = true;
-        this.stopTimer();
+        // Timer cleanup is now handled by TimerManager
         logger.debug('Game ended');
     }
 
@@ -143,10 +109,18 @@ export class GameStateManager {
     }
 
     /**
+     * Mark answer as submitted (to prevent double submission)
+     */
+    markAnswerSubmitted() {
+        this.answerSubmitted = true;
+        logger.debug('Answer marked as submitted');
+    }
+
+    /**
      * Reset game state
      */
     reset() {
-        this.stopTimer();
+        // Timer cleanup is now handled by TimerManager
         this.isHost = false;
         this.playerName = '';
         this.currentQuestion = null;
@@ -155,6 +129,7 @@ export class GameStateManager {
         this.playerAnswers.clear();
         this.gameEnded = false;
         this.resultShown = false;
+        this.answerSubmitted = false;
         logger.debug('Game state reset');
     }
 

@@ -89,6 +89,64 @@ export class SoundManager {
         }
     }
 
+    playEnhancedSound(frequency, duration, type = 'sine', volume = 0.1) {
+        if (!this.soundsEnabled) return;
+        
+        // Create AudioContext on first use (after user interaction)
+        if (!this.audioContext && this.audioContextClass) {
+            try {
+                this.audioContext = new this.audioContextClass();
+                logger.debug('AudioContext created on first use for enhanced sound');
+            } catch (e) {
+                logger.debug('Failed to create AudioContext for enhanced sound:', e);
+                this.soundsEnabled = false;
+                return;
+            }
+        }
+        
+        if (!this.audioContext) return;
+        
+        try {
+            // Validate parameters
+            if (!isFinite(frequency) || frequency <= 0) {
+                logger.debug('Invalid frequency:', frequency);
+                return;
+            }
+            if (!isFinite(duration) || duration <= 0) {
+                logger.debug('Invalid duration:', duration);
+                return;
+            }
+            
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+            oscillator.type = type;
+            
+            // Enhanced volume envelope for smoother, more pleasant sounds
+            const startTime = this.audioContext.currentTime;
+            const endTime = startTime + duration;
+            
+            // Quick fade in
+            gainNode.gain.setValueAtTime(0, startTime);
+            gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.01);
+            
+            // Sustain
+            gainNode.gain.setValueAtTime(volume, endTime - 0.1);
+            
+            // Smooth fade out
+            gainNode.gain.exponentialRampToValueAtTime(0.001, endTime);
+            
+            oscillator.start(startTime);
+            oscillator.stop(endTime);
+        } catch (e) {
+            logger.debug('Enhanced sound playback failed:', e);
+        }
+    }
+
     playVictorySound() {
         if (!this.soundsEnabled) return;
         
@@ -99,19 +157,17 @@ export class SoundManager {
         if (!this.audioContext) return;
         
         try {
-            // Play a victory melody
+            // Simplified victory melody - fewer notes for better performance
             const notes = [
-                { freq: 523, time: 0 },     // C
-                { freq: 659, time: 0.15 },  // E
-                { freq: 784, time: 0.3 },   // G
-                { freq: 1047, time: 0.45 }, // C (higher)
-                { freq: 784, time: 0.6 },   // G
-                { freq: 1047, time: 0.75 }  // C (higher)
+                { freq: 523, time: 0, duration: 0.3 },     // C
+                { freq: 659, time: 0.15, duration: 0.3 },  // E
+                { freq: 784, time: 0.3, duration: 0.4 },   // G
+                { freq: 1047, time: 0.5, duration: 0.5 }   // C (higher) - finale
             ];
             
             notes.forEach(note => {
                 setTimeout(() => {
-                    this.playSound(note.freq, 0.2);
+                    this.playEnhancedSound(note.freq, note.duration, 'triangle', 0.12);
                 }, note.time * 1000);
             });
         } catch (e) {
@@ -170,27 +226,52 @@ export class SoundManager {
 
     // Convenience methods for common sound effects
     playQuestionStartSound() {
-        this.playSound(800, 0.3); // Question start frequency and duration
+        // Attention-getting but pleasant question start sound
+        this.playEnhancedSound(800, 0.25, 'triangle', 0.1); // Warmer triangle wave
     }
 
     playAnswerSubmissionSound() {
-        this.playSound(600, 0.2); // Answer submission sound
+        // Pleasant confirmation sound for answer submission
+        this.playEnhancedSound(600, 0.15, 'sine', 0.12); // Softer, shorter confirmation
     }
 
     playCorrectAnswerSound() {
-        logger.debug('🔊 Playing correct answer sound (original ascending notes: C-E-G)');
-        // Original correct answer chord progression (ascending notes)
-        // Play C-E-G chord progression
-        this.playSound(AUDIO.SUCCESS_FREQUENCIES[0], AUDIO.STANDARD_DURATION);
-        setTimeout(() => this.playSound(AUDIO.SUCCESS_FREQUENCIES[1], AUDIO.STANDARD_DURATION), 150);
-        setTimeout(() => this.playSound(AUDIO.SUCCESS_FREQUENCIES[2], AUDIO.STANDARD_DURATION), 300);
+        logger.debug('🔊 Playing correct answer sound (pleasant ascending melody)');
+        // Beautiful correct answer melody - uplifting and rewarding
+        // Play a pleasant ascending melody with harmonics
+        const correctMelody = [
+            { freq: 523, time: 0, duration: 0.25, type: 'sine' },      // C4
+            { freq: 659, time: 0.1, duration: 0.25, type: 'sine' },    // E4
+            { freq: 784, time: 0.2, duration: 0.4, type: 'sine' },     // G4
+            { freq: 1047, time: 0.35, duration: 0.5, type: 'triangle' } // C5 (octave higher)
+        ];
+        
+        correctMelody.forEach(note => {
+            setTimeout(() => {
+                this.playEnhancedSound(note.freq, note.duration, note.type, 0.15);
+            }, note.time * 1000);
+        });
+        
+        // Add a subtle harmonic accompaniment
+        setTimeout(() => {
+            this.playEnhancedSound(523, 0.6, 'triangle', 0.08); // Bass C
+        }, 100);
     }
 
     playIncorrectAnswerSound() {
-        logger.debug('🔊 Playing incorrect answer sound (original descending sawtooth)');
-        // Original incorrect answer descending tones
-        this.playSound(400, 0.2, 'sawtooth');
-        setTimeout(() => this.playSound(AUDIO.WRONG_ANSWER_FREQ, AUDIO.STANDARD_DURATION, 'sawtooth'), 200);
+        logger.debug('🔊 Playing incorrect answer sound (gentle disappointed tone)');
+        // Gentle incorrect answer sound - not harsh, just mildly disappointed
+        // Two-tone descending pattern that's informative but not punishing
+        const incorrectTones = [
+            { freq: 400, time: 0, duration: 0.3, type: 'sine' },       // F4 (softer than original)
+            { freq: 350, time: 0.2, duration: 0.4, type: 'triangle' }  // F3 (gentler descent)
+        ];
+        
+        incorrectTones.forEach(note => {
+            setTimeout(() => {
+                this.playEnhancedSound(note.freq, note.duration, note.type, 0.12);
+            }, note.time * 1000);
+        });
     }
 
     // Utility methods

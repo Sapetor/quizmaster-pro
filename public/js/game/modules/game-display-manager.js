@@ -7,7 +7,7 @@
 import { translationManager, getTranslation } from '../../utils/translation-manager.js';
 import { logger } from '../../core/config.js';
 import { MathRenderer } from '../../utils/math-renderer.js';
-import { mathJaxService } from '../../utils/mathjax-service.js';
+import { simpleMathJaxService } from '../../utils/simple-mathjax-service.js';
 
 export class GameDisplayManager {
     constructor(uiManager) {
@@ -22,7 +22,7 @@ export class GameDisplayManager {
         return {
             hostQuestionElement: document.getElementById('current-question'),
             questionElement: document.getElementById('player-question-text'),
-            hostOptionsContainer: document.getElementById('host-options-container')
+            hostOptionsContainer: document.getElementById('answer-options')
         };
     }
 
@@ -120,7 +120,7 @@ export class GameDisplayManager {
         if (!element) return;
         
         try {
-            await mathJaxService.renderElement(element, delay);
+            await simpleMathJaxService.render([element]);
             logger.debug('MathJax rendering completed for question');
         } catch (err) {
             logger.error('MathJax question render error:', err);
@@ -140,62 +140,7 @@ export class GameDisplayManager {
         this.renderQuestionMath(element, 200);
     }
 
-    /**
-     * Show answer submitted feedback
-     */
-    showAnswerSubmitted(answer) {
-        logger.debug('Showing answer submitted feedback for:', answer);
-        
-        // Create feedback element
-        const feedback = document.createElement('div');
-        feedback.className = 'answer-submitted-feedback';
-        feedback.innerHTML = `
-            <div class="feedback-content">
-                <div class="feedback-icon">✓</div>
-                <div class="feedback-text">${getTranslation('answer_submitted')}</div>
-                <div class="feedback-answer">${getTranslation('your_answer')}: ${answer}</div>
-            </div>
-        `;
-        
-        // Style the feedback
-        Object.assign(feedback.style, {
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            background: 'rgba(46, 204, 113, 0.95)',
-            color: 'white',
-            padding: '20px',
-            borderRadius: '12px',
-            textAlign: 'center',
-            zIndex: '10000',
-            backdropFilter: 'blur(10px)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
-        });
-        
-        document.body.appendChild(feedback);
-        
-        // Animate in
-        feedback.style.opacity = '0';
-        feedback.style.transform = 'translate(-50%, -50%) scale(0.8)';
-        
-        requestAnimationFrame(() => {
-            feedback.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-            feedback.style.opacity = '1';
-            feedback.style.transform = 'translate(-50%, -50%) scale(1)';
-        });
-        
-        // Remove after delay
-        setTimeout(() => {
-            feedback.style.opacity = '0';
-            feedback.style.transform = 'translate(-50%, -50%) scale(0.8)';
-            setTimeout(() => {
-                if (feedback.parentNode) {
-                    feedback.parentNode.removeChild(feedback);
-                }
-            }, 300);
-        }, 2000);
-    }
+    // Answer submission feedback now handled by original modal system in GameManager
 
     /**
      * Clear question display

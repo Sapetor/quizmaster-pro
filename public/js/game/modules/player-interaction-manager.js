@@ -34,8 +34,9 @@ export class PlayerInteractionManager {
         this.gameStateManager.setSelectedAnswer(answer);
         this.highlightSelectedAnswer(answer);
         
-        // Auto-submit for multiple choice
-        if (gameState.currentQuestion && gameState.currentQuestion.type === 'multiple-choice') {
+        // Auto-submit for multiple choice and true-false
+        if (gameState.currentQuestion && 
+            (gameState.currentQuestion.type === 'multiple-choice' || gameState.currentQuestion.type === 'true-false')) {
             this.submitAnswer(answer);
         }
         
@@ -56,18 +57,16 @@ export class PlayerInteractionManager {
             option.style.transform = '';
         });
         
-        // Highlight current selection
+        // Highlight current selection with subtle border
         const selectedOption = document.querySelector(`[data-answer="${answer}"]`);
         if (selectedOption) {
             selectedOption.classList.add('selected');
-            selectedOption.style.background = 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%)';
-            selectedOption.style.border = '3px solid #fff';
-            selectedOption.style.transform = 'scale(1.02)';
+            selectedOption.style.border = '3px solid var(--color-primary-500)';
             selectedOption.style.transition = 'all 0.2s ease';
             
             // Play selection sound
-            if (this.soundManager && this.soundManager.isEnabled()) {
-                this.soundManager.playClickSound();
+            if (this.soundManager && this.soundManager.soundsEnabled) {
+                this.soundManager.playEnhancedSound(800, 0.1, 'sine', 0.1);
             }
             
             logger.debug('Answer highlighted successfully');
@@ -78,8 +77,12 @@ export class PlayerInteractionManager {
      * Submit multiple correct answer
      */
     submitMultipleCorrectAnswer() {
-        const selectedCheckboxes = document.querySelectorAll('.checkbox-option input[type="checkbox"]:checked');
-        const selectedAnswers = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+        const selectedCheckboxes = document.querySelectorAll('.option-checkbox:checked');
+        const selectedAnswers = Array.from(selectedCheckboxes).map(cb => {
+            // Get the data-option from the parent .checkbox-option element
+            const parentLabel = cb.closest('.checkbox-option');
+            return parseInt(parentLabel.getAttribute('data-option'));
+        });
         
         if (selectedAnswers.length === 0) {
             this.showError(getTranslation('please_select_at_least_one'));
@@ -116,8 +119,8 @@ export class PlayerInteractionManager {
     submitAnswer(answer) {
         const gameState = this.gameStateManager.getGameState();
         
-        if (gameState.isHost || gameState.resultShown) {
-            logger.debug('Cannot submit answer - host mode or result already shown');
+        if (gameState.isHost || gameState.answerSubmitted) {
+            logger.debug('Cannot submit answer - host mode or answer already submitted');
             return;
         }
 
@@ -128,8 +131,8 @@ export class PlayerInteractionManager {
 
         logger.debug('Submitting answer:', answer);
         
-        // Mark result as shown to prevent double submission
-        this.gameStateManager.markResultShown();
+        // Mark answer as submitted to prevent double submission
+        this.gameStateManager.markAnswerSubmitted();
         
         // Store answer locally
         this.gameStateManager.storePlayerAnswer(gameState.playerName, answer);
@@ -137,12 +140,11 @@ export class PlayerInteractionManager {
         // Send to server
         this.socketManager.submitAnswer(answer);
         
-        // Show feedback
-        this.gameDisplayManager.showAnswerSubmitted(this.formatAnswerForDisplay(answer));
+        // Feedback will be shown by the socket event response (original system)
         
         // Play submission sound
-        if (this.soundManager && this.soundManager.isEnabled()) {
-            this.soundManager.playSubmitSound();
+        if (this.soundManager && this.soundManager.soundsEnabled) {
+            this.soundManager.playEnhancedSound(1000, 0.2, 'sine', 0.15);
         }
     }
 
@@ -276,15 +278,42 @@ export class PlayerInteractionManager {
      * Reset player interaction state
      */
     reset() {
-        // Clear selections
-        document.querySelectorAll('.player-option, .tf-option, .checkbox-option input').forEach(element => {
-            element.classList.remove('selected');
+        // Clear selections and all styling - comprehensive approach
+        document.querySelectorAll('.player-option, .tf-option, .checkbox-option input, .checkbox-option, .player-checkbox-option').forEach(element => {
+            // Remove all possible state classes
+            element.classList.remove('selected', 'correct', 'incorrect', 'true-btn', 'false-btn');
+            
             if (element.type === 'checkbox') {
                 element.checked = false;
             }
-            element.style.background = '';
-            element.style.border = '';
-            element.style.transform = '';
+            
+            // Clear all possible inline style attributes that might cause highlighting/transforms
+            element.style.cssText = ''; // Nuclear option - clears ALL inline styles
+            
+            // Force remove any lingering transform/animation effects by setting them explicitly to defaults
+            element.style.transform = 'none';
+            element.style.animation = 'none';
+            element.style.filter = 'none';
+            element.style.transition = 'none';
+        });
+        
+        // Also clear any data-answer elements that might have styling
+        document.querySelectorAll('[data-answer]').forEach(element => {
+            element.classList.remove('selected', 'correct', 'incorrect');
+            element.style.cssText = ''; // Nuclear option - clears ALL inline styles
+            element.style.transform = 'none';
+            element.style.animation = 'none';
+            element.style.filter = 'none';
+            element.style.transition = 'none';
+        });
+        
+        // Clear any elements with option-display class (host side)
+        document.querySelectorAll('.option-display').forEach(element => {
+            element.classList.remove('selected', 'correct', 'incorrect');
+            element.style.cssText = '';
+            element.style.transform = 'none';
+            element.style.animation = 'none';
+            element.style.filter = 'none';
         });
         
         // Clear numeric input
@@ -293,6 +322,12 @@ export class PlayerInteractionManager {
             numericInput.value = '';
         }
         
-        logger.debug('Player interaction state reset');
+        // Force a repaint to ensure styles are cleared
+        if (typeof window !== 'undefined') {
+            // Trigger reflow to ensure all styling changes take effect
+            document.body.offsetHeight;
+        }
+        
+        logger.debug('Player interaction state reset - all highlighting, transforms, and animations cleared');
     }
 }

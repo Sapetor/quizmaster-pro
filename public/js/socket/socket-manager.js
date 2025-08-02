@@ -136,7 +136,13 @@ export class SocketManager {
                 nextButton.style.display = 'block';
                 
                 // Update button text based on whether it's the last question
-                if (data && data.isLastQuestion) {
+                // Check both data.isLastQuestion and current question number vs total questions
+                const gameState = this.gameManager.stateManager.getGameState();
+                const currentQuestion = gameState.currentQuestion;
+                const isLastQuestion = (data && data.isLastQuestion) || 
+                                     (currentQuestion && currentQuestion.questionNumber >= currentQuestion.totalQuestions);
+                
+                if (isLastQuestion) {
                     nextButton.textContent = translationManager.getTranslationSync('finish_quiz') || 'Finish Quiz';
                 } else {
                     nextButton.textContent = translationManager.getTranslationSync('next_question') || 'Next Question';
@@ -193,13 +199,13 @@ export class SocketManager {
         });
 
         this.socket.on('game-end', (data) => {
-            console.log('🎉 CLIENT: game-end event received!', data);
+            logger.debug('CLIENT: game-end event received!', data);
             logger.debug('🎉 Game ended - triggering final results:', data);
             
             // Switch to results state for leaderboard and celebration
             if (window.gameStateManager && typeof window.gameStateManager.setState === 'function') {
                 window.gameStateManager.setState('results');
-                console.log('🎉 CLIENT: Set game state to results');
+                logger.debug('CLIENT: Set game state to results');
             }
             
             // Hide manual advancement button
@@ -207,18 +213,18 @@ export class SocketManager {
             if (nextButton) {
                 nextButton.style.display = 'none';
                 nextButton.onclick = null;
-                console.log('🎉 CLIENT: Hid next question button');
+                logger.debug('CLIENT: Hid next question button');
             }
             
             // Clear any remaining timers
             this.gameManager.stopTimer();
-            console.log('🎉 CLIENT: Stopped timer');
+            logger.debug('CLIENT: Stopped timer');
             
             // Show final results immediately (server already has delay)
-            console.log('🎉 CLIENT: About to call showFinalResults with leaderboard:', data.finalLeaderboard);
+            logger.debug('CLIENT: About to call showFinalResults with leaderboard:', data.finalLeaderboard);
             logger.debug('🎉 Calling showFinalResults with leaderboard:', data.finalLeaderboard);
             this.gameManager.showFinalResults(data.finalLeaderboard);
-            console.log('🎉 CLIENT: showFinalResults called');
+            logger.debug('CLIENT: showFinalResults called');
         });
 
         // Player-specific events
@@ -465,6 +471,12 @@ export class SocketManager {
     createGame(quizData) {
         logger.debug('SocketManager.createGame called with:', quizData);
         logger.debug('Socket connected:', this.socket.connected);
+        
+        // Set quiz title in GameManager for results saving
+        if (quizData?.quiz?.title && this.gameManager) {
+            this.gameManager.setQuizTitle(quizData.quiz.title);
+        }
+        
         try {
             this.socket.emit('host-join', quizData);
             logger.debug('Emitted host-join event successfully');
@@ -479,6 +491,12 @@ export class SocketManager {
     startGame() {
         logger.debug('Attempting to start game...');
         logger.debug('Socket connected:', this.socket.connected);
+        
+        // Mark game start time in GameManager for results saving
+        if (this.gameManager) {
+            this.gameManager.markGameStartTime();
+        }
+        
         try {
             this.socket.emit('start-game');
             logger.debug('Emitted start-game event successfully');
@@ -501,9 +519,9 @@ export class SocketManager {
      * Request next question (manual advancement)
      */
     nextQuestion() {
-        console.log('🔥 CLIENT: socketManager.nextQuestion() called - emitting next-question event');
+        logger.debug('CLIENT: socketManager.nextQuestion() called - emitting next-question event');
         this.socket.emit('next-question');
-        console.log('🔥 CLIENT: next-question event emitted');
+        logger.debug('CLIENT: next-question event emitted');
     }
 
     /**

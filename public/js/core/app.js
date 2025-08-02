@@ -54,7 +54,7 @@ export class QuizGame {
         this.socketManager = new SocketManager(this.socket, this.gameManager, this.uiManager, this.soundManager);
         
         // Update GameManager with SocketManager reference
-        this.gameManager.socketManager = this.socketManager;
+        this.gameManager.setSocketManager(this.socketManager);
         
         // Initialize connection status monitoring
         connectionStatus.setSocket(this.socket);
@@ -247,8 +247,14 @@ export class QuizGame {
             this.nextQuestion();
         });
         safeAddEventListener('join-game', 'click', () => this.joinGame());
-        safeAddEventListener('new-game', 'click', () => this.newGame());
-        safeAddEventListener('play-again', 'click', () => this.newGame());
+        safeAddEventListener('new-game', 'click', () => {
+            logger.debug('New Game button clicked!');
+            this.newGame();
+        });
+        safeAddEventListener('play-again', 'click', () => {
+            logger.debug('Play Again button clicked!');
+            this.newGame();
+        });
         safeAddEventListener('exit-to-main', 'click', () => this.exitToMainMenu());
         
         // Statistics phase control buttons  
@@ -529,11 +535,11 @@ export class QuizGame {
      * Request next question (manual advancement)
      */
     nextQuestion() {
-        console.log('🔥 CLIENT: Next Question button clicked!');
+        logger.debug('CLIENT: Next Question button clicked!');
         
         // Debounce to prevent double calls
         if (this.nextQuestionCalled) {
-            console.log('🔥 CLIENT: Debounced - ignoring click');
+            logger.debug('CLIENT: Debounced - ignoring click');
             return;
         }
         this.nextQuestionCalled = true;
@@ -542,7 +548,7 @@ export class QuizGame {
             this.nextQuestionCalled = false;
         }, TIMING.DEBOUNCE_DELAY);
         
-        console.log('🔥 CLIENT: Calling socketManager.nextQuestion()');
+        logger.debug('CLIENT: Calling socketManager.nextQuestion()');
         this.socketManager.nextQuestion();
     }
 
@@ -550,17 +556,33 @@ export class QuizGame {
      * Start a new game
      */
     newGame() {
-        // Reset game state
-        this.gameManager.resetGameState();
-        
-        // Clear any timers
-        if (this.gameManager.timer) {
-            clearInterval(this.gameManager.timer);
-            this.gameManager.timer = null;
-        }
+        try {
+            logger.debug('New Game button clicked - starting reset');
+            
+            // Reset game state
+            this.gameManager.resetGameState();
+            logger.debug('Game state reset completed');
+            
+            // Clear any timers
+            if (this.gameManager.timer) {
+                clearInterval(this.gameManager.timer);
+                this.gameManager.timer = null;
+                logger.debug('Game timer cleared');
+            }
 
-        // Return to main menu
-        this.uiManager.showScreen('main-menu');
+            // Return to main menu
+            logger.debug('Switching to main menu');
+            this.uiManager.showScreen('main-menu');
+            logger.debug('New Game process completed successfully');
+        } catch (error) {
+            logger.error('Error in newGame():', error);
+            // Fallback - try to at least show main menu
+            try {
+                this.uiManager.showScreen('main-menu');
+            } catch (fallbackError) {
+                logger.error('Fallback showScreen also failed:', fallbackError);
+            }
+        }
     }
 
     /**
@@ -791,56 +813,7 @@ export class QuizGame {
     /**
      * Debug function to analyze question width styles
      */
-    debugQuestionWidths() {
-        logger.debug('🔎 WIDTH DEBUG: Analyzing question display styles...');
-        
-        const questionDisplay = document.querySelector('.question-display');
-        const gameContainer = document.querySelector('.game-container');
-        const currentQuestion = document.querySelector('#current-question');
-        
-        if (questionDisplay) {
-            const styles = window.getComputedStyle(questionDisplay);
-            logger.debug('📏 .question-display styles:', {
-                'max-width': styles.maxWidth,
-                'width': styles.width,
-                'margin-left': styles.marginLeft,
-                'margin-right': styles.marginRight,
-                'padding': styles.padding,
-                'box-sizing': styles.boxSizing
-            });
-            
-            // Check for :has(pre) detection
-            const hasPreElements = questionDisplay.querySelectorAll('pre').length > 0;
-            const hasCodeClass = questionDisplay.classList.contains('has-code');
-            logger.debug('📝 Code detection:', {
-                'has <pre> elements': hasPreElements,
-                'has .has-code class': hasCodeClass,
-                'classes': Array.from(questionDisplay.classList)
-            });
-        }
-        
-        if (gameContainer) {
-            const styles = window.getComputedStyle(gameContainer);
-            logger.debug('📏 .game-container styles:', {
-                'max-width': styles.maxWidth,
-                'width': styles.width,
-                'margin': styles.margin
-            });
-        }
-        
-        if (currentQuestion) {
-            const hasCode = currentQuestion.innerHTML.includes('<pre>');
-            const questionText = currentQuestion.textContent.substring(0, 50) + '...';
-            logger.debug('📄 Current question:', {
-                'text': questionText,
-                'contains code': hasCode,
-                'innerHTML length': currentQuestion.innerHTML.length
-            });
-        }
-        
-        // Log all CSS rules that might affect width
-        logger.debug('📋 CSS Debug: Check browser DevTools > Elements > Computed styles for detailed CSS rules');
-    }
+
 
     /**
      * Load quiz directly as fallback

@@ -11,8 +11,9 @@
  */
 
 import { logger, AI, TIMING } from '../core/config.js';
-
 import { translationManager, showAlert } from '../utils/translation-manager.js';
+import { secureStorage } from '../services/secure-storage-service.js';
+import { errorHandler, ErrorHandlingService } from '../services/error-handling-service.js';
 
 export class AIQuestionGenerator {
     constructor() {
@@ -46,6 +47,31 @@ export class AIQuestionGenerator {
         this.isGenerating = false; // Flag to prevent multiple simultaneous generations
         this.eventHandlers = {}; // Store event handler references for cleanup
         this.initializeEventListeners();
+        this.initializeSecureStorage();
+    }
+
+    /**
+     * Initialize secure storage and migrate existing API keys
+     */
+    async initializeSecureStorage() {
+        return await errorHandler.wrapAsyncOperation(async () => {
+            // Check if Web Crypto API is supported
+            if (!secureStorage.constructor.isSupported()) {
+                logger.warn('Web Crypto API not supported - API keys will not be encrypted');
+                return;
+            }
+
+            // Migrate existing API keys to secure storage
+            await secureStorage.migrateApiKeys();
+            logger.debug('Secure storage initialized and API keys migrated');
+        }, {
+            errorType: ErrorHandlingService.ErrorTypes.SYSTEM,
+            severity: ErrorHandlingService.Severity.LOW,
+            context: 'secure-storage-initialization',
+            userMessage: null, // Silent failure for initialization
+            retryable: false,
+            fallback: null
+        });
     }
 
     initializeEventListeners() {
@@ -95,12 +121,24 @@ export class AIQuestionGenerator {
             this.closeModal();
         };
 
-        this.eventHandlers.apiKeyBlur = (e) => {
-            const provider = document.getElementById('ai-provider')?.value;
-            if (provider && e.target.value.trim()) {
-                localStorage.setItem(`ai_api_key_${provider}`, e.target.value.trim());
-                logger.debug(`API key saved for provider: ${provider}`);
-            }
+        this.eventHandlers.apiKeyBlur = async (e) => {
+            await errorHandler.wrapAsyncOperation(async () => {
+                const provider = document.getElementById('ai-provider')?.value;
+                if (provider && e.target.value.trim()) {
+                    const success = await secureStorage.setSecureItem(`api_key_${provider}`, e.target.value.trim());
+                    if (success) {
+                        logger.debug(`API key securely saved for provider: ${provider}`);
+                    } else {
+                        throw new Error(`Failed to save API key for provider: ${provider}`);
+                    }
+                }
+            }, {
+                errorType: ErrorHandlingService.ErrorTypes.SYSTEM,
+                severity: ErrorHandlingService.Severity.LOW,
+                context: 'api-key-storage',
+                userMessage: 'Failed to save API key securely. Please try again.',
+                retryable: false
+            });
         };
 
         // Add event listeners
@@ -219,119 +257,131 @@ export class AIQuestionGenerator {
     }
 
     async generateQuestions() {
-        // Prevent multiple simultaneous generations
-        if (this.isGenerating) {
-            logger.debug('Generation already in progress, ignoring request');
-            return;
-        }
-        
-        this.isGenerating = true;
-        
-        const provider = document.getElementById('ai-provider')?.value;
-        const content = document.getElementById('source-content')?.value?.trim();
-        const questionCount = parseInt(document.getElementById('question-count')?.value) || 1;
-        const difficulty = document.getElementById('difficulty-level')?.value || 'medium';
-        
-        // Get selected question types
-        const selectedTypes = [];
-        if (document.getElementById('type-multiple-choice')?.checked) {
-            selectedTypes.push('multiple-choice');
-        }
-        if (document.getElementById('type-true-false')?.checked) {
-            selectedTypes.push('true-false');
-        }
-        if (document.getElementById('type-multiple-correct')?.checked) {
-            selectedTypes.push('multiple-correct');
-        }
-        if (document.getElementById('type-numeric')?.checked) {
-            selectedTypes.push('numeric');
-        }
-        
-        logger.debug('Selected question types:', selectedTypes);
-        
-        // Validate that at least one type is selected
-        if (selectedTypes.length === 0) {
-            showAlert('Please select at least one question type');
-            this.isGenerating = false;
-            return;
-        }
-        
-        // Store the requested count for use throughout the process
-        this.requestedQuestionCount = questionCount;
-        
-        if (!content) {
-            showAlert('please_provide_source_material');
-            this.isGenerating = false;
-            return;
-        }
-
-        // Check for API key if required
-        const needsApiKey = this.providers[provider]?.apiKey;
-        if (needsApiKey) {
-            const apiKey = localStorage.getItem(`ai_api_key_${provider}`);
-            if (!apiKey) {
-                showAlert('please_enter_api_key');
+        return await errorHandler.wrapAsyncOperation(async () => {
+            // Prevent multiple simultaneous generations
+            if (this.isGenerating) {
+                logger.debug('Generation already in progress, ignoring request');
+                return;
+            }
+            
+            this.isGenerating = true;
+            
+            // Validation wrapper for input validation
+            const validationResult = errorHandler.wrapValidation(() => {
+                const provider = document.getElementById('ai-provider')?.value;
+                const content = document.getElementById('source-content')?.value?.trim();
+                const questionCount = parseInt(document.getElementById('question-count')?.value) || 1;
+                const difficulty = document.getElementById('difficulty-level')?.value || 'medium';
+                
+                // Get selected question types
+                const selectedTypes = [];
+                if (document.getElementById('type-multiple-choice')?.checked) {
+                    selectedTypes.push('multiple-choice');
+                }
+                if (document.getElementById('type-true-false')?.checked) {
+                    selectedTypes.push('true-false');
+                }
+                if (document.getElementById('type-multiple-correct')?.checked) {
+                    selectedTypes.push('multiple-correct');
+                }
+                if (document.getElementById('type-numeric')?.checked) {
+                    selectedTypes.push('numeric');
+                }
+                
+                logger.debug('Selected question types:', selectedTypes);
+                
+                // Validate required fields
+                errorHandler.validateRequired(provider, 'AI Provider');
+                errorHandler.validateRequired(content, 'Source content');
+                
+                if (selectedTypes.length === 0) {
+                    throw new Error('Please select at least one question type');
+                }
+                
+                return { provider, content, questionCount, difficulty, selectedTypes };
+            }, { context: 'input-validation' });
+            
+            if (!validationResult) {
                 this.isGenerating = false;
                 return;
             }
-        }
-
-        // Show loading state
-        const generateBtn = document.getElementById('generate-questions');
-        const statusDiv = document.getElementById('generation-status');
-        
-        if (generateBtn) generateBtn.disabled = true;
-        if (statusDiv) statusDiv.style.display = 'block';
-
-        try {
-            // Build prompt based on content type and settings, including selected question types
-            const prompt = this.buildPrompt(content, questionCount, difficulty, selectedTypes);
             
-            let questions = [];
-            switch (provider) {
-                case 'ollama':
-                    questions = await this.generateWithOllama(prompt);
-                    break;
-                case 'huggingface':
-                    questions = await this.generateWithHuggingFace();
-                    break;
-                case 'openai':
-                    questions = await this.generateWithOpenAI(prompt);
-                    break;
-                case 'claude':
-                    questions = await this.generateWithClaude(prompt);
-                    break;
+            const { provider, content, questionCount, difficulty, selectedTypes } = validationResult;
+            
+            // Store the requested count for use throughout the process
+            this.requestedQuestionCount = questionCount;
+
+            // Check for API key if required
+            const needsApiKey = this.providers[provider]?.apiKey;
+            if (needsApiKey) {
+                const apiKey = await secureStorage.getSecureItem(`api_key_${provider}`);
+                if (!apiKey) {
+                    showAlert('please_enter_api_key');
+                    this.isGenerating = false;
+                    return;
+                }
             }
 
-            if (questions && questions.length > 0) {
-                // Double-check the count one more time before processing
-                if (questions.length > this.requestedQuestionCount) {
-                    questions = questions.slice(0, this.requestedQuestionCount);
+            // Show loading state
+            const generateBtn = document.getElementById('generate-questions');
+            const statusDiv = document.getElementById('generation-status');
+            
+            if (generateBtn) generateBtn.disabled = true;
+            if (statusDiv) statusDiv.style.display = 'block';
+
+            try {
+                // Build prompt based on content type and settings, including selected question types
+                const prompt = this.buildPrompt(content, questionCount, difficulty, selectedTypes);
+                
+                let questions = [];
+                switch (provider) {
+                    case 'ollama':
+                        questions = await this.generateWithOllama(prompt);
+                        break;
+                    case 'huggingface':
+                        questions = await this.generateWithHuggingFace();
+                        break;
+                    case 'openai':
+                        questions = await this.generateWithOpenAI(prompt);
+                        break;
+                    case 'claude':
+                        questions = await this.generateWithClaude(prompt);
+                        break;
                 }
-                
-                // Process questions without showing alerts from within
-                await this.processGeneratedQuestions(questions, false); // Pass flag to suppress alerts
-                this.closeModal();
-                
-                // Show single success message after processing is complete
-                setTimeout(() => {
-                    showAlert('successfully_generated_questions', [questions.length]);
-                    this.isGenerating = false; // Reset flag after success message
-                }, TIMING.ANIMATION_DURATION);
-            } else {
-                showAlert('error_generating');
+
+                if (questions && questions.length > 0) {
+                    // Double-check the count one more time before processing
+                    if (questions.length > this.requestedQuestionCount) {
+                        questions = questions.slice(0, this.requestedQuestionCount);
+                    }
+                    
+                    // Process questions without showing alerts from within
+                    await this.processGeneratedQuestions(questions, false);
+                    this.closeModal();
+                    
+                    // Show single success message after processing is complete
+                    setTimeout(() => {
+                        showAlert('successfully_generated_questions', [questions.length]);
+                        this.isGenerating = false;
+                    }, TIMING.ANIMATION_DURATION);
+                } else {
+                    throw new Error('No questions generated by AI provider');
+                }
+
+            } finally {
+                // Reset UI
+                if (generateBtn) generateBtn.disabled = false;
+                if (statusDiv) statusDiv.style.display = 'none';
                 this.isGenerating = false;
             }
-
-        } catch (error) {
-            logger.error('Generation error:', error);
-            showAlert('error_generating_questions_detail', [error.message]);
-            this.isGenerating = false;
-        } finally {
-            // Reset UI
-            if (generateBtn) generateBtn.disabled = false;
-            if (statusDiv) statusDiv.style.display = 'none';
-        }
+        }, {
+            errorType: ErrorHandlingService.ErrorTypes.SYSTEM,
+            severity: ErrorHandlingService.Severity.MEDIUM,
+            context: 'question-generation',
+            userMessage: 'Failed to generate questions. Please check your settings and try again.',
+            retryable: false,
+            fallback: null
+        });
     }
 
     buildPrompt(content, questionCount, difficulty, selectedTypes) {
@@ -401,11 +451,11 @@ CRITICAL REQUIREMENTS:
 
 
     async generateWithOllama(prompt) {
-        const model = localStorage.getItem('ollama_selected_model') || AI.OLLAMA_DEFAULT_MODEL;
-        const timestamp = Date.now();
-        const randomSeed = Math.floor(Math.random() * 10000);
-        
-        try {
+        return await errorHandler.wrapNetworkRequest(async () => {
+            const model = localStorage.getItem('ollama_selected_model') || AI.OLLAMA_DEFAULT_MODEL;
+            const timestamp = Date.now();
+            const randomSeed = Math.floor(Math.random() * 10000);
+            
             const enhancedPrompt = `[Session: ${timestamp}-${randomSeed}] ${prompt}
 
             Please respond with only valid JSON. Do not include explanations or additional text.`;
@@ -438,42 +488,50 @@ CRITICAL REQUIREMENTS:
 
             const data = await response.json();
             return this.parseAIResponse(data.response);
-        } catch (error) {
-            logger.error('Ollama generation error:', error);
-            
-            if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                throw new Error('Cannot connect to Ollama. Make sure Ollama is running on localhost:11434');
-            }
-            
-            throw error;
-        }
+        }, {
+            context: 'ollama-generation',
+            userMessage: 'Failed to generate questions with Ollama. Please ensure Ollama is running and try again.',
+            retryable: true
+        });
     }
 
     async generateWithOpenAI(prompt) {
-        const apiKey = localStorage.getItem('ai_api_key_openai');
-        
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model: AI.OPENAI_MODEL,
-                messages: [{
-                    role: 'user',
-                    content: prompt
-                }],
-                temperature: AI.DEFAULT_TEMPERATURE
-            })
+        return await errorHandler.wrapNetworkRequest(async () => {
+            const apiKey = await secureStorage.getSecureItem('api_key_openai');
+            
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: AI.OPENAI_MODEL,
+                    messages: [{
+                        role: 'user',
+                        content: prompt
+                    }],
+                    temperature: AI.DEFAULT_TEMPERATURE
+                })
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    throw new Error('Invalid OpenAI API key. Please check your credentials.');
+                } else if (response.status === 429) {
+                    throw new Error('OpenAI rate limit exceeded. Please try again later.');
+                } else {
+                    throw new Error(`OpenAI error: ${response.status}`);
+                }
+            }
+
+            const data = await response.json();
+            return this.parseAIResponse(data.choices[0].message.content);
+        }, {
+            context: 'openai-generation',
+            userMessage: 'Failed to generate questions with OpenAI. Please check your API key and try again.',
+            retryable: true
         });
-
-        if (!response.ok) {
-            throw new Error(`OpenAI error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return this.parseAIResponse(data.choices[0].message.content);
     }
 
     async generateWithHuggingFace() {
@@ -482,9 +540,9 @@ CRITICAL REQUIREMENTS:
     }
 
     async generateWithClaude(prompt) {
-        const apiKey = localStorage.getItem('ai_api_key_claude');
-        
-        try {
+        return await errorHandler.wrapNetworkRequest(async () => {
+            const apiKey = await secureStorage.getSecureItem('api_key_claude');
+            
             const response = await fetch('/api/claude/generate', {
                 method: 'POST',
                 headers: {
@@ -497,7 +555,13 @@ CRITICAL REQUIREMENTS:
             });
 
             if (!response.ok) {
-                throw new Error(`Claude API error: ${response.status}`);
+                if (response.status === 401) {
+                    throw new Error('Invalid Claude API key. Please check your credentials.');
+                } else if (response.status === 429) {
+                    throw new Error('Claude rate limit exceeded. Please try again later.');
+                } else {
+                    throw new Error(`Claude API error: ${response.status}`);
+                }
             }
 
             const data = await response.json();
@@ -514,10 +578,11 @@ CRITICAL REQUIREMENTS:
             }
             
             return this.parseAIResponse(content);
-        } catch (error) {
-            logger.error('Claude generation error:', error);
-            throw error;
-        }
+        }, {
+            context: 'claude-generation',
+            userMessage: 'Failed to generate questions with Claude. Please check your API key and try again.',
+            retryable: true
+        });
     }
 
     parseAIResponse(responseText) {
@@ -642,109 +707,129 @@ CRITICAL REQUIREMENTS:
     detectContentType(content) {
         if (!content) return 'general';
         
-        // Mathematics indicators
-        if (AI.MATH_INDICATORS.test(content)) {
-            return 'mathematics';
+        try {
+            // Mathematics indicators
+            if (AI.MATH_INDICATORS && AI.MATH_INDICATORS.test(content)) {
+                return 'mathematics';
+            }
+            
+            // Programming indicators  
+            if (AI.PROGRAMMING_INDICATORS && AI.PROGRAMMING_INDICATORS.test(content)) {
+                return 'programming';
+            }
+            
+            // Physics indicators
+            if (AI.PHYSICS_INDICATORS && AI.PHYSICS_INDICATORS.test(content)) {
+                return 'physics';
+            }
+            
+            // Chemistry indicators
+            if (AI.CHEMISTRY_INDICATORS && AI.CHEMISTRY_INDICATORS.test(content)) {
+                return 'chemistry';
+            }
+            
+            return 'general';
+        } catch (error) {
+            logger.warn('Content type detection failed:', error.message);
+            return 'general';
         }
-        
-        // Programming indicators  
-        if (AI.PROGRAMMING_INDICATORS.test(content) || /function\s+\w+\(/.test(content) || /class\s+\w+/.test(content)) {
-            return 'programming';
-        }
-        
-        // Physics indicators
-        if (AI.PHYSICS_INDICATORS.test(content)) {
-            return 'physics';
-        }
-        
-        // Chemistry indicators
-        if (AI.CHEMISTRY_INDICATORS.test(content)) {
-            return 'chemistry';
-        }
-        
-        return 'general';
     }
 
     async handleProviderChange(provider) {
-        // Prevent multiple simultaneous calls
-        if (this.isChangingProvider) {
-            logger.debug('HandleProviderChange - Already changing provider, ignoring call for:', provider);
-            return;
-        }
-        
-        this.isChangingProvider = true;
-        logger.debug('HandleProviderChange called with provider:', provider);
-        
-        try {
-            const apiKeySection = document.getElementById('api-key-section');
-            const modelSelection = document.getElementById('model-selection');
-            
-            logger.debug('HandleProviderChange - Elements found:', { apiKeySection: !!apiKeySection, modelSelection: !!modelSelection });
-            
-            if (!apiKeySection || !modelSelection) return;
-            
-            const needsApiKey = this.providers[provider]?.apiKey;
-            
-            if (needsApiKey) {
-                apiKeySection.style.display = 'block';
-                // Load saved API key if exists
-                const savedKey = localStorage.getItem(`ai_api_key_${provider}`);
-                const apiKeyInput = document.getElementById('ai-api-key');
-                if (savedKey && apiKeyInput) {
-                    apiKeyInput.value = savedKey;
-                }
-            } else {
-                apiKeySection.style.display = 'none';
+        return await errorHandler.wrapAsyncOperation(async () => {
+            // Prevent multiple simultaneous calls
+            if (this.isChangingProvider) {
+                logger.debug('HandleProviderChange - Already changing provider, ignoring call for:', provider);
+                return;
             }
             
-            // Model selection visibility and loading
-            if (provider === 'ollama') {
-                logger.debug('HandleProviderChange - Showing model selection for Ollama');
-                // Make sure it's visible (remove hidden class if it exists)
-                modelSelection.classList.remove('hidden');
-                modelSelection.style.display = 'block';
+            this.isChangingProvider = true;
+            logger.debug('HandleProviderChange called with provider:', provider);
+            
+            try {
+                const apiKeySection = document.getElementById('api-key-section');
+                const modelSelection = document.getElementById('model-selection');
                 
-                // Load the models
-                await this.loadOllamaModels();
-            } else {
-                logger.debug('HandleProviderChange - Hiding model selection for provider:', provider);
-                modelSelection.classList.add('hidden');
+                logger.debug('HandleProviderChange - Elements found:', { apiKeySection: !!apiKeySection, modelSelection: !!modelSelection });
+                
+                if (!apiKeySection || !modelSelection) return;
+                
+                const needsApiKey = this.providers[provider]?.apiKey;
+                
+                if (needsApiKey) {
+                    apiKeySection.style.display = 'block';
+                    // Load saved API key if exists
+                    const savedKey = await secureStorage.getSecureItem(`api_key_${provider}`);
+                    const apiKeyInput = document.getElementById('ai-api-key');
+                    if (savedKey && apiKeyInput) {
+                        apiKeyInput.value = savedKey;
+                    }
+                } else {
+                    apiKeySection.style.display = 'none';
+                }
+                
+                // Model selection visibility and loading
+                if (provider === 'ollama') {
+                    logger.debug('HandleProviderChange - Showing model selection for Ollama');
+                    // Make sure it's visible (remove hidden class if it exists)
+                    modelSelection.classList.remove('hidden');
+                    modelSelection.style.display = 'block';
+                    
+                    // Load the models
+                    await this.loadOllamaModels();
+                } else {
+                    logger.debug('HandleProviderChange - Hiding model selection for provider:', provider);
+                    modelSelection.classList.add('hidden');
+                }
+            } finally {
+                this.isChangingProvider = false;
             }
-        } finally {
-            this.isChangingProvider = false;
-        }
+        }, {
+            errorType: ErrorHandlingService.ErrorTypes.SYSTEM,
+            severity: ErrorHandlingService.Severity.LOW,
+            context: 'provider-change',
+            userMessage: null, // Silent failure for UI operations
+            retryable: false,
+            fallback: () => {
+                this.isChangingProvider = false; // Ensure flag is reset on error
+            }
+        });
     }
 
     async loadOllamaModels() {
-        const modelSelect = document.getElementById('ollama-model');
-        const modelSelection = document.getElementById('model-selection');
-        
-        if (!modelSelect) {
-            logger.debug('LoadOllamaModels - Model select element not found');
-            return;
-        }
+        return await errorHandler.wrapAsyncOperation(async () => {
+            const modelSelect = document.getElementById('ollama-model');
+            const modelSelection = document.getElementById('model-selection');
+            
+            if (!modelSelect) {
+                logger.debug('LoadOllamaModels - Model select element not found');
+                return;
+            }
 
-        logger.debug('LoadOllamaModels - Starting model loading');
-        
-        // Ensure the parent div is visible first
-        if (modelSelection) {
-            modelSelection.classList.remove('hidden');
-            modelSelection.style.display = 'block';
-            logger.debug('LoadOllamaModels - Ensured model selection div is visible');
-        }
-        
-        // Set initial loading state and disable the select element
-        modelSelect.innerHTML = '<option value="">🔄 Loading models...</option>';
-        modelSelect.disabled = true;
-        
-        try {
-            logger.debug('LoadOllamaModels - Fetching from:', AI.OLLAMA_TAGS_ENDPOINT);
+            logger.debug('LoadOllamaModels - Starting model loading');
             
-            const response = await fetch(AI.OLLAMA_TAGS_ENDPOINT);
+            // Ensure the parent div is visible first
+            if (modelSelection) {
+                modelSelection.classList.remove('hidden');
+                modelSelection.style.display = 'block';
+                logger.debug('LoadOllamaModels - Ensured model selection div is visible');
+            }
             
-            logger.debug('LoadOllamaModels - Fetch response status:', response.status);
+            // Set initial loading state and disable the select element
+            modelSelect.innerHTML = '<option value="">🔄 Loading models...</option>';
+            modelSelect.disabled = true;
             
-            if (response.ok) {
+            try {
+                logger.debug('LoadOllamaModels - Fetching from:', AI.OLLAMA_TAGS_ENDPOINT);
+                
+                const response = await fetch(AI.OLLAMA_TAGS_ENDPOINT);
+                
+                logger.debug('LoadOllamaModels - Fetch response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
                 const data = await response.json();
                 logger.debug('LoadOllamaModels - Response data:', data);
                 
@@ -783,48 +868,54 @@ CRITICAL REQUIREMENTS:
                 
                 logger.debug('LoadOllamaModels - Final select options count:', modelSelect.options.length);
                 
-            } else {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-        } catch (error) {
-            logger.error('LoadOllamaModels - Error:', error);
-            modelSelect.innerHTML = `<option value="">❌ Ollama not available (${error.message})</option>`;
-            
-            // Try loading fallback models from the provider config
-            logger.debug('LoadOllamaModels - Trying fallback models');
-            const fallbackModels = this.providers.ollama.models;
-            if (fallbackModels && fallbackModels.length > 0) {
-                logger.debug('LoadOllamaModels - Loading fallback models:', fallbackModels);
-                modelSelect.innerHTML = '';
-                fallbackModels.forEach(modelName => {
-                    const option = document.createElement('option');
-                    option.value = modelName;
-                    option.textContent = `${modelName} (fallback)`;
-                    modelSelect.appendChild(option);
-                });
+            } finally {
+                modelSelect.disabled = false;
                 
-                // Set first fallback as default
-                modelSelect.value = fallbackModels[0];
-                localStorage.setItem('ollama_selected_model', fallbackModels[0]);
-                logger.debug('LoadOllamaModels - Set fallback default:', fallbackModels[0]);
+                // Force visibility again after loading
+                if (modelSelection) {
+                    modelSelection.classList.remove('hidden');
+                    modelSelection.style.display = 'block';
+                    logger.debug('LoadOllamaModels - Final visibility enforcement');
+                }
+                
+                logger.debug('LoadOllamaModels - Enabled select, final state:', {
+                    optionsCount: modelSelect.options.length,
+                    selectedValue: modelSelect.value,
+                    disabled: modelSelect.disabled,
+                    parentVisible: modelSelection ? window.getComputedStyle(modelSelection).display : 'unknown'
+                });
             }
-        } finally {
-            modelSelect.disabled = false;
-            
-            // Force visibility again after loading
-            if (modelSelection) {
-                modelSelection.classList.remove('hidden');
-                modelSelection.style.display = 'block';
-                logger.debug('LoadOllamaModels - Final visibility enforcement');
+        }, {
+            errorType: ErrorHandlingService.ErrorTypes.NETWORK,
+            severity: ErrorHandlingService.Severity.LOW,
+            context: 'ollama-model-loading',
+            userMessage: null, // Don't show alert for model loading failures
+            retryable: false,
+            fallback: () => {
+                // Load fallback models on failure
+                const modelSelect = document.getElementById('ollama-model');
+                if (modelSelect) {
+                    logger.debug('LoadOllamaModels - Loading fallback models');
+                    const fallbackModels = this.providers.ollama.models;
+                    if (fallbackModels && fallbackModels.length > 0) {
+                        modelSelect.innerHTML = '';
+                        fallbackModels.forEach(modelName => {
+                            const option = document.createElement('option');
+                            option.value = modelName;
+                            option.textContent = `${modelName} (fallback)`;
+                            modelSelect.appendChild(option);
+                        });
+                        
+                        // Set first fallback as default
+                        modelSelect.value = fallbackModels[0];
+                        localStorage.setItem('ollama_selected_model', fallbackModels[0]);
+                        logger.debug('LoadOllamaModels - Set fallback default:', fallbackModels[0]);
+                    } else {
+                        modelSelect.innerHTML = '<option value="">❌ Ollama not available</option>';
+                    }
+                }
             }
-            
-            logger.debug('LoadOllamaModels - Enabled select, final state:', {
-                optionsCount: modelSelect.options.length,
-                selectedValue: modelSelect.value,
-                disabled: modelSelect.disabled,
-                parentVisible: modelSelection ? window.getComputedStyle(modelSelection).display : 'unknown'
-            });
-        }
+        });
     }
 
     handleFileUpload(file) {

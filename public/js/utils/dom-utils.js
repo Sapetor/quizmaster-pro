@@ -3,6 +3,8 @@
  * Optimized DOM operations to replace O(n) queries with O(1) cached operations
  */
 
+import { logger } from '../core/config.js';
+
 export class DOMUtils {
     constructor() {
         // Cache tracked elements for efficient cleanup
@@ -136,7 +138,7 @@ export class DOMUtils {
             this.observers.clear();
             
         } catch (error) {
-            console.warn('Error during DOM cleanup:', error);
+            logger.warn('Error during DOM cleanup:', error);
         }
     }
 
