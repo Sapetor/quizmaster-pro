@@ -48,8 +48,8 @@
         }
     </style>
     <link rel="stylesheet" href="css/main.css?v=modular-9.32-progressive-loading">
-    <!-- Removed problematic polyfill.io CDN - MathJax handles ES6 polyfills automatically -->
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Local MathJax - no external CDN dependencies for better remote client compatibility -->
+    <script id="MathJax-script" async src="/libs/mathjax/tex-mml-chtml.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script>
         // FOUC Prevention: Set font scale and theme immediately from localStorage
@@ -198,6 +198,7 @@
                 matchFontHeight: false,
                 displayAlign: 'center',
                 displayIndent: '0em',
+                // Use CDN fonts for better compatibility across devices
                 fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2'
             },
             startup: {
@@ -377,6 +378,44 @@
             <div class="menu-options">
                 <button id="host-btn" class="btn primary" data-translate="host_game">Host a Game</button>
                 <button id="join-btn" class="btn secondary" data-translate="join_game">Join Game</button>
+            </div>
+            
+            <div class="user-manual">
+                <h3 data-translate="quick_start_guide">📚 Quick Start Guide</h3>
+                
+                <div class="manual-sections">
+                    <div class="manual-section">
+                        <h4 data-translate="host_steps_title">🎯 To Host a Quiz:</h4>
+                        <ol class="manual-steps">
+                            <li data-translate="host_step_1">Click 'Host a Game'</li>
+                            <li data-translate="host_step_2">Create questions or use AI Generator</li>
+                            <li data-translate="host_step_3">Share the Game PIN with players</li>
+                            <li data-translate="host_step_4">Start the game when ready</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="manual-section">
+                        <h4 data-translate="join_steps_title">🎮 To Join a Quiz:</h4>
+                        <ol class="manual-steps">
+                            <li data-translate="join_step_1">Click 'Join Game'</li>
+                            <li data-translate="join_step_2">Enter the 6-digit Game PIN or scan QR code</li>
+                            <li data-translate="join_step_3">Enter your name and join game</li>
+                            <li data-translate="join_step_4">Or browse and select from open lobbies</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="manual-section features">
+                        <h4 data-translate="features_title">✨ Key Features:</h4>
+                        <div class="features-grid">
+                            <span class="feature-item">🤖 <span data-translate="feature_ai">AI question generation</span></span>
+                            <span class="feature-item">⚡ <span data-translate="feature_realtime">Real-time multiplayer</span></span>
+                            <span class="feature-item">📐 <span data-translate="feature_math">LaTeX math support</span></span>
+                            <span class="feature-item">🖼️ <span data-translate="feature_images">Image questions</span></span>
+                            <span class="feature-item">🌍 <span data-translate="feature_multilang">Multi-language support</span></span>
+                            <span class="feature-item">📝 <span data-translate="feature_types">Multiple question types</span></span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1063,6 +1102,106 @@
                 <div class="modal-actions">
                     <button id="cancel-ai-generator" class="btn secondary" data-translate="cancel">Cancel</button>
                     <button id="generate-questions" class="btn primary" data-translate="generate_questions_btn">Generate Questions</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Viewing Modal -->
+    <div id="results-viewing-modal" class="modal" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>📊 <span data-translate="view_quiz_results">Quiz Results History</span></h3>
+                <button id="close-results-viewer" class="close-btn">&times;</button>
+            </div>
+            
+            <div class="results-content">
+                <div class="results-summary">
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <span class="stat-number" id="total-quizzes">0</span>
+                            <span class="stat-label" data-translate="total_quizzes">Total Quizzes</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="total-participants">0</span>
+                            <span class="stat-label" data-translate="total_participants">Total Participants</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="avg-score">0%</span>
+                            <span class="stat-label" data-translate="avg_score">Average Score</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="results-filters">
+                    <div class="filter-group">
+                        <input type="text" id="search-results" class="input-field" placeholder="Search by quiz title..." data-translate-placeholder="search_quiz_title">
+                        <select id="sort-results" class="input-field">
+                            <option value="date-desc" data-translate="sort_newest_first">Newest First</option>
+                            <option value="date-asc" data-translate="sort_oldest_first">Oldest First</option>
+                            <option value="title-asc" data-translate="sort_title_az">Title A-Z</option>
+                            <option value="participants-desc" data-translate="sort_most_participants">Most Participants</option>
+                        </select>
+                        <button id="refresh-results" class="btn secondary refresh-btn" data-translate="refresh" title="Refresh results list">
+                            ↻ Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="results-list" id="results-list">
+                    <div class="loading-message" id="results-loading">
+                        <span>Loading quiz results...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <!-- Actions can be added here if needed in the future -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Detail Modal -->
+    <div id="result-detail-modal" class="modal" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="result-detail-title">Quiz Results Detail</h3>
+                <button id="close-result-detail" class="close-btn">&times;</button>
+            </div>
+            
+            <div class="result-detail-content">
+                <div class="result-summary-card">
+                    <div class="summary-row">
+                        <span class="label" data-translate="quiz_title">Quiz Title:</span>
+                        <span id="detail-quiz-title">-</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label" data-translate="game_pin">Game PIN:</span>
+                        <span id="detail-game-pin">-</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label" data-translate="date_completed">Date:</span>
+                        <span id="detail-date">-</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label" data-translate="participants">Participants:</span>
+                        <span id="detail-participants">-</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label" data-translate="avg_score">Average Score:</span>
+                        <span id="detail-avg-score">-</span>
+                    </div>
+                </div>
+                
+                <div class="participant-results" id="participant-results">
+                    <!-- Participant results will be populated here -->
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <div class="action-group">
+                    <button id="download-result-csv" class="btn primary" data-translate="download_csv">📥 Download CSV</button>
+                    <button id="delete-result" class="btn danger" data-translate="delete_result">🗑️ Delete Result</button>
                 </div>
             </div>
         </div>

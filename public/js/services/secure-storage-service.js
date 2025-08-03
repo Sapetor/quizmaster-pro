@@ -10,9 +10,17 @@ export class SecureStorageService {
         this.keyPrefix = 'secure_';
         this.algorithm = 'AES-GCM';
         this.keyLength = 256;
+        this.isSupported = this.constructor.isSupported();
         
-        // Generate or retrieve master key for encryption
-        this.initializeMasterKey();
+        // Only initialize encryption if Web Crypto API is supported
+        if (this.isSupported) {
+            this.initializeMasterKey().catch(error => {
+                logger.error('Failed to initialize secure storage:', error);
+                this.isSupported = false;
+            });
+        } else {
+            logger.warn('Web Crypto API not supported - API keys will not be encrypted');
+        }
     }
 
     /**
@@ -60,6 +68,13 @@ export class SecureStorageService {
      */
     async setSecureItem(key, data) {
         try {
+            // If encryption is not supported, store as plaintext with warning
+            if (!this.isSupported) {
+                logger.warn(`Storing API key as plaintext (encryption not supported): ${key}`);
+                localStorage.setItem(this.keyPrefix + key + '_plaintext', data);
+                return true;
+            }
+
             if (!this.masterKey) {
                 await this.initializeMasterKey();
             }
@@ -101,12 +116,28 @@ export class SecureStorageService {
      */
     async getSecureItem(key) {
         try {
+            // If encryption is not supported, try to get plaintext version
+            if (!this.isSupported) {
+                const plaintextData = localStorage.getItem(this.keyPrefix + key + '_plaintext');
+                if (plaintextData) {
+                    logger.debug(`Retrieved plaintext item: ${key}`);
+                    return plaintextData;
+                }
+                return null;
+            }
+
             if (!this.masterKey) {
                 await this.initializeMasterKey();
             }
 
             const storedData = localStorage.getItem(this.keyPrefix + key);
             if (!storedData) {
+                // Try fallback to plaintext if encrypted version doesn't exist
+                const plaintextData = localStorage.getItem(this.keyPrefix + key + '_plaintext');
+                if (plaintextData) {
+                    logger.debug(`Retrieved fallback plaintext item: ${key}`);
+                    return plaintextData;
+                }
                 return null;
             }
 
@@ -131,6 +162,12 @@ export class SecureStorageService {
             return result;
         } catch (error) {
             logger.error('Failed to retrieve secure item:', error);
+            // Try fallback to plaintext on decryption error
+            const plaintextData = localStorage.getItem(this.keyPrefix + key + '_plaintext');
+            if (plaintextData) {
+                logger.debug(`Retrieved fallback plaintext item after error: ${key}`);
+                return plaintextData;
+            }
             return null;
         }
     }

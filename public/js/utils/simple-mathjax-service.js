@@ -20,6 +20,7 @@ export class SimpleMathJaxService {
 
     /**
      * Initialize MathJax - simple and clean (non-blocking)
+     * FIXED: No longer loads MathJax script since it's loaded in index.html
      */
     initializeMathJax() {
         // Make initialization completely asynchronous to not block main thread
@@ -30,14 +31,16 @@ export class SimpleMathJaxService {
                 }
                 this.initializationAttempted = true;
 
-                // Check if MathJax is already loaded
-                if (window.MathJax) {
+                // Check if MathJax is already loaded (from index.html)
+                if (window.MathJax && window.MathJax.startup) {
                     this.handleMathJaxReady();
                     return;
                 }
 
-                // Load MathJax if not present (asynchronously)
-                this.loadMathJaxScript();
+                // Listen for MathJax ready event from index.html configuration
+                document.addEventListener('mathjax-ready', () => {
+                    this.handleMathJaxReady();
+                });
                 
             } catch (error) {
                 logger.warn('MathJax initialization error (non-blocking):', error);
@@ -47,83 +50,22 @@ export class SimpleMathJaxService {
     }
 
     /**
-     * Load MathJax script dynamically (with comprehensive error handling)
-     */
-    loadMathJaxScript() {
-        try {
-            // Set up MathJax configuration before loading
-            window.MathJax = {
-                tex: {
-                    inlineMath: [['$', '$']],
-                    displayMath: [['$$', '$$']],
-                    processEscapes: true
-                },
-                options: {
-                    ignoreHtmlClass: 'tex2jax_ignore',
-                    processHtmlClass: 'tex2jax_process'
-                },
-                startup: {
-                    ready: () => {
-                        try {
-                            window.MathJax.startup.defaultReady();
-                            this.handleMathJaxReady();
-                        } catch (error) {
-                            logger.warn('MathJax startup error (non-blocking):', error);
-                        }
-                    }
-                }
-            };
-
-            // Load MathJax script with comprehensive error handling
-            const script = document.createElement('script');
-            script.src = 'https://polyfill.io/v3/polyfill.min.js?features=es6';
-            
-            script.onload = () => {
-                try {
-                    const mathJaxScript = document.createElement('script');
-                    mathJaxScript.id = 'MathJax-script';
-                    mathJaxScript.async = true;
-                    mathJaxScript.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-                    
-                    mathJaxScript.onerror = () => {
-                        logger.warn('Failed to load MathJax script - app will continue without LaTeX support');
-                    };
-                    
-                    document.head.appendChild(mathJaxScript);
-                } catch (error) {
-                    logger.warn('Error creating MathJax script (non-blocking):', error);
-                }
-            };
-            
-            script.onerror = () => {
-                logger.warn('Failed to load MathJax polyfill - app will continue without LaTeX support');
-            };
-            
-            document.head.appendChild(script);
-            
-        } catch (error) {
-            logger.warn('Error in loadMathJaxScript (non-blocking):', error);
-        }
-    }
-
-    /**
      * Handle MathJax ready state (with error handling)
      */
     handleMathJaxReady() {
-        try {
-            this.isReady = true;
-            
-            if (document.body) {
-                document.body.classList.add('mathjax-ready');
-            }
-            
-            window.mathJaxReady = true;
-            logger.debug('MathJax ready for rendering');
-        } catch (error) {
-            logger.warn('Error in handleMathJaxReady (non-blocking):', error);
-            // Still mark as ready to prevent blocking
-            this.isReady = true;
-            window.mathJaxReady = true;
+        this.isReady = true;
+        if (document.body) {
+            document.body.classList.add('mathjax-ready');
+        }
+        
+        // Validate MathJax functionality
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            logger.debug('MathJax ready for rendering with typesetPromise support');
+        } else if (window.MathJax) {
+            logger.warn('MathJax loaded but missing typesetPromise - rendering may fail silently');
+        } else {
+            logger.error('MathJax object missing despite ready event');
+            this.isReady = false;
         }
     }
 
@@ -131,10 +73,7 @@ export class SimpleMathJaxService {
      * Check if MathJax is available for rendering
      */
     isAvailable() {
-        return this.isReady && 
-               window.MathJax && 
-               window.MathJax.typesetPromise && 
-               typeof window.MathJax.typesetPromise === 'function';
+        return this.isReady && window.MathJax;
     }
 
     /**
@@ -165,18 +104,17 @@ export class SimpleMathJaxService {
                 return Promise.resolve();
             }
 
-            // Double-check that typesetPromise exists and is a function
-            if (!window.MathJax.typesetPromise || typeof window.MathJax.typesetPromise !== 'function') {
-                logger.warn('MathJax.typesetPromise not available, skipping render');
-                return Promise.resolve();
-            }
-
             this.renderingInProgress = true;
             
-            // Use MathJax to render the elements with additional safety
-            await window.MathJax.typesetPromise(validElements);
+            // Simple MathJax rendering with better error detection
+            if (window.MathJax.typesetPromise) {
+                logger.debug(`Rendering MathJax for ${validElements.length} elements`);
+                await window.MathJax.typesetPromise(validElements);
+                logger.debug('MathJax rendering completed successfully');
+            } else {
+                logger.error('MathJax.typesetPromise not available - rendering failed');
+            }
             
-            logger.debug('MathJax rendering completed for', validElements.length, 'elements');
             return Promise.resolve();
             
         } catch (error) {
