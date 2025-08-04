@@ -165,6 +165,26 @@ export default {
         error_loading_quiz: "Erreur de chargement du quiz",
         answer_submitted: "Réponse soumise",
         your_answer: "Votre réponse",
+        
+        // User Manual
+        quick_start_guide: "📚 Guide de Démarrage Rapide",
+        host_steps_title: "🎯 Pour Créer un Quiz :",
+        host_step_1: "Cliquez sur 'Créer un Jeu'",
+        host_step_2: "Créez des questions ou utilisez le Générateur IA",
+        host_step_3: "Partagez le Code PIN avec les joueurs",
+        host_step_4: "Commencez le jeu quand vous êtes prêt",
+        join_steps_title: "🎮 Pour Rejoindre un Quiz :",
+        join_step_1: "Cliquez sur 'Rejoindre le Jeu'",
+        join_step_2: "Entrez le Code PIN à 6 chiffres ou scannez le code QR",
+        join_step_3: "Entrez votre nom et rejoignez le jeu",
+        join_step_4: "Ou parcourez et sélectionnez des lobbies ouverts",
+        features_title: "✨ Fonctionnalités Principales :",
+        feature_ai: "Génération de questions par IA",
+        feature_realtime: "Multijoueur en temps réel",
+        feature_math: "Support des mathématiques LaTeX",
+        feature_images: "Questions avec images",
+        feature_multilang: "Support multilingue",
+        feature_types: "Plusieurs types de questions",
 
         // Answer option keys
         a_is_correct: "A est correct",

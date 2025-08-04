@@ -142,6 +142,26 @@ export default {
         answer_submitted: "Respuesta enviada",
         your_answer: "Tu respuesta",
         
+        // User Manual
+        quick_start_guide: "📚 Guía de Inicio Rápido",
+        host_steps_title: "🎯 Para Crear un Quiz:",
+        host_step_1: "Haz clic en 'Crear Juego'",
+        host_step_2: "Crea preguntas o usa el Generador IA",
+        host_step_3: "Comparte el PIN del juego con los jugadores",
+        host_step_4: "Inicia el juego cuando esté listo",
+        join_steps_title: "🎮 Para Unirse a un Quiz:",
+        join_step_1: "Haz clic en 'Unirse al Juego'",
+        join_step_2: "Ingresa el PIN de 6 dígitos o escanea el código QR",
+        join_step_3: "Ingresa tu nombre y únete al juego",
+        join_step_4: "O explora y selecciona salas abiertas",
+        features_title: "✨ Características Principales:",
+        feature_ai: "Generación de preguntas con IA",
+        feature_realtime: "Multijugador en tiempo real",
+        feature_math: "Soporte para matemáticas LaTeX",
+        feature_images: "Preguntas con imágenes",
+        feature_multilang: "Soporte multiidioma",
+        feature_types: "Múltiples tipos de preguntas",
+        
         // Answer option keys (used in editor)
         a_is_correct: "A es correcto",
         b_is_correct: "B es correcto",
