@@ -264,5 +264,15 @@ export default {
         // Simple download tool keys
         download_results: "Pobierz Wyniki",
         select_results: "Wybierz wyniki do pobrania...",
-        finish_quiz: "Zakończ Quiz"
+        finish_quiz: "Zakończ Quiz",
+        
+        // Game UI text
+        question_will_appear_here: "Pytanie pojawi się tutaj",
+        question_alternatives: "Alternatywy Pytania",
+        players_have_answered: "graczy odpowiedziało",
+        exit_to_main: "Powrót do Menu Głównego",
+        
+        // Additional tooltips
+        adjust_font_size_tooltip: "Dostosuj rozmiar czcionki",
+        manual_advancement_tooltip: "Ręczne przechodzenie jest teraz domyślne. Odznacz dla automatycznego przechodzenia opartego na timerze",
 };

@@ -168,6 +168,8 @@ export default {
         start_quiz_tooltip: "Start the quiz with current questions",
         toggle_fullscreen_tooltip: "Toggle fullscreen mode",
         toggle_dark_mode_tooltip: "Toggle dark/light theme",
+        adjust_font_size_tooltip: "Adjust font size",
+        manual_advancement_tooltip: "Manual advancement is now the default. Uncheck for automatic timer-based advancement",
         add_question_tooltip: "Add a new question",
         save_quiz_tooltip: "Save the current quiz",
         load_quiz_tooltip: "Load a saved quiz",
@@ -321,4 +323,9 @@ export default {
         download_csv: "Download CSV",
         delete_result: "Delete Result",
         close: "Close",
+        
+        // Game UI text
+        question_will_appear_here: "Question will appear here",
+        question_alternatives: "Question Alternatives",
+        players_have_answered: "players have answered",
 };

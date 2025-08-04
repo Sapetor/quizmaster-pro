@@ -62,6 +62,7 @@ export default {
         game_finished: "Juego Terminado",
         play_again: "Jugar de Nuevo",
         new_game: "Nuevo Juego",
+        exit_to_main: "Salir al Menú Principal",
         question_x_of_y: "Pregunta {0} de {1}",
         option_letter_a: "A",
         option_letter_b: "B",
@@ -269,4 +270,13 @@ export default {
         download_results: "Descargar Resultados",
         select_results: "Seleccionar resultados para descargar...",
         finish_quiz: "Finalizar Quiz",
+        
+        // Game UI text
+        question_will_appear_here: "La pregunta aparecerá aquí",
+        question_alternatives: "Alternativas de Pregunta",
+        players_have_answered: "jugadores han respondido",
+        
+        // Additional tooltips
+        adjust_font_size_tooltip: "Ajustar tamaño de fuente",
+        manual_advancement_tooltip: "El avance manual ahora es predeterminado. Desmarque para avance automático basado en temporizador",
 };

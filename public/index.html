@@ -364,7 +364,7 @@
                 
                 <!-- Global Font Size Control -->
                 <div class="font-size-control">
-                    <button id="font-size-toggle" class="theme-toggle" data-translate-title="adjust_font_size" onclick="toggleGlobalFontSize();" title="Font Size">
+                    <button id="font-size-toggle" class="theme-toggle" data-translate-title="adjust_font_size_tooltip" onclick="toggleGlobalFontSize();">
                         <span id="font-size-icon">A</span>
                     </button>
                 </div>
@@ -449,7 +449,7 @@
                         </div>
                         <div class="advanced-options">
                             <label class="manual-advancement-option" style="border: 2px solid #4299e1; border-radius: 8px; padding: 8px; background: rgba(66, 153, 225, 0.1);">
-                                <input type="checkbox" id="manual-advancement" checked data-translate-title="manual_advancement_desc" title="Manual advancement is now the default. Uncheck for automatic timer-based advancement"> <strong>🎮 <span data-translate="manual_advancement">Manual question advancement (host control)</span></strong>
+                                <input type="checkbox" id="manual-advancement" checked data-translate-title="manual_advancement_tooltip"> <strong>🎮 <span data-translate="manual_advancement">Manual question advancement (host control)</span></strong>
                             </label>
                         </div>
                         
@@ -758,7 +758,7 @@
                     <div id="question-image-display" class="question-image-container" style="display: none;">
                         <img id="host-question-image" src="" alt="Question Image">
                     </div>
-                    <h3 id="current-question">Question will appear here</h3>
+                    <h3 id="current-question" data-translate="question_will_appear_here">Question will appear here</h3>
                 </div>
                 
                     <!-- Real-time Answer Statistics -->
@@ -803,13 +803,14 @@
                             </div>
                         </div>
                         <div class="response-summary" id="response-summary">
-                            <span id="responses-count">0</span> of <span id="total-players">0</span> players have answered
+                            <span id="responses-count">0</span> <span data-translate="of">of</span> <span id="total-players">0</span> <span data-translate="players_have_answered">players have answered</span>
                         </div>
                     </div>
                 
                 <!-- Use client-style options -->
                 <!-- Moved below statistics for better information hierarchy -->
                 <div id="host-multiple-choice" class="player-answer-type">
+                    <div class="question-alternatives-header" data-translate="question_alternatives">Question Alternatives</div>
                     <div id="answer-options" class="player-options">
                         <div class="player-option" data-option="0">A</div>
                         <div class="player-option" data-option="1">B</div>
@@ -893,7 +894,7 @@
                     <div id="player-question-image" class="question-image-container" style="display: none;">
                         <img id="player-question-img" src="" alt="Question Image">
                     </div>
-                    <h3 id="player-question-text">Question will appear here</h3>
+                    <h3 id="player-question-text" data-translate="question_will_appear_here">Question will appear here</h3>
                 </div>
                 
                 <div id="player-multiple-choice" class="player-answer-type">

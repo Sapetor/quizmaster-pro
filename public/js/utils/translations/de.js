@@ -62,6 +62,7 @@ export default {
         game_finished: "Spiel beendet",
         play_again: "Nochmal spielen",
         new_game: "Neues Spiel",
+        exit_to_main: "Zurück zum Hauptmenü",
         question_x_of_y: "Frage {0} von {1}",
         option_letter_a: "A",
         option_letter_b: "B",
@@ -279,5 +280,14 @@ export default {
         // Simple download tool keys
         download_results: "Ergebnisse Herunterladen",
         select_results: "Ergebnisse zum Herunterladen auswählen...",
-        finish_quiz: "Quiz Beenden"
+        finish_quiz: "Quiz Beenden",
+        
+        // Game UI text
+        question_will_appear_here: "Frage wird hier erscheinen",
+        question_alternatives: "Frage-Alternativen",
+        players_have_answered: "Spieler haben geantwortet",
+        
+        // Additional tooltips
+        adjust_font_size_tooltip: "Schriftgröße anpassen",
+        manual_advancement_tooltip: "Manueller Fortschritt ist jetzt Standard. Deaktivieren Sie für automatischen zeitbasierten Fortschritt",
 };

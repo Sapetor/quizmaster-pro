@@ -1435,8 +1435,8 @@
 }
 
 /* Alternative section styling when placed after statistics - hide for numeric */
-.answer-stats + .player-answer-type::before {
-    content: "Question Alternatives";
+/* Replaced with HTML element for translation support */
+.question-alternatives-header {
     display: block;
     font-size: 1.1rem;
     font-weight: 600;
