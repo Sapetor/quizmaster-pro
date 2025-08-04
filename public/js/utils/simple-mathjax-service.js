@@ -19,7 +19,7 @@ export class SimpleMathJaxService {
     }
 
     /**
-     * Initialize MathJax - simple and clean (non-blocking)
+     * Initialize MathJax - enhanced with F5 refresh handling
      * FIXED: No longer loads MathJax script since it's loaded in index.html
      */
     initializeMathJax() {
@@ -31,22 +31,54 @@ export class SimpleMathJaxService {
                 }
                 this.initializationAttempted = true;
 
-                // Check if MathJax is already loaded (from index.html)
-                if (window.MathJax && window.MathJax.startup) {
-                    this.handleMathJaxReady();
-                    return;
-                }
-
-                // Listen for MathJax ready event from index.html configuration
-                document.addEventListener('mathjax-ready', () => {
-                    this.handleMathJaxReady();
-                });
+                // Enhanced readiness check for F5 refresh scenarios
+                this.checkMathJaxReadiness();
                 
             } catch (error) {
                 logger.warn('MathJax initialization error (non-blocking):', error);
                 // Don't fail - the app works fine without MathJax
             }
         }, 100); // Small delay to let the main app initialize first
+    }
+
+    /**
+     * Enhanced MathJax readiness checking for F5 refresh scenarios
+     */
+    checkMathJaxReadiness() {
+        // Check if MathJax is already fully ready (common after F5)
+        if (window.MathJax && window.MathJax.typesetPromise && window.mathJaxReady) {
+            logger.debug('MathJax already fully ready (F5 refresh scenario)');
+            this.handleMathJaxReady();
+            return;
+        }
+
+        // Check if MathJax startup is complete but event not fired yet
+        if (window.MathJax && window.MathJax.startup && window.MathJax.startup.document) {
+            logger.debug('MathJax startup complete, triggering ready state');
+            this.handleMathJaxReady();
+            return;
+        }
+
+        // Listen for MathJax ready event from index.html configuration
+        document.addEventListener('mathjax-ready', () => {
+            this.handleMathJaxReady();
+        });
+
+        // Fallback polling for F5 refresh edge cases (with timeout)
+        let attempts = 0;
+        const maxAttempts = 20; // 2 seconds max
+        const pollInterval = setInterval(() => {
+            attempts++;
+            
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                logger.debug(`MathJax ready detected via polling (attempt ${attempts})`);
+                clearInterval(pollInterval);
+                this.handleMathJaxReady();
+            } else if (attempts >= maxAttempts) {
+                logger.warn('MathJax readiness polling timeout - continuing without MathJax');
+                clearInterval(pollInterval);
+            }
+        }, 100);
     }
 
     /**
@@ -70,14 +102,14 @@ export class SimpleMathJaxService {
     }
 
     /**
-     * Check if MathJax is available for rendering
+     * Check if MathJax is available for rendering - enhanced for F5 scenarios
      */
     isAvailable() {
-        return this.isReady && window.MathJax;
+        return this.isReady && window.MathJax && window.MathJax.typesetPromise;
     }
 
     /**
-     * Render LaTeX in specified elements
+     * Render LaTeX in specified elements - enhanced with retry for F5 scenarios
      * @param {Element|Element[]} elements - Element(s) to render
      * @returns {Promise} Rendering promise
      */
@@ -98,16 +130,20 @@ export class SimpleMathJaxService {
                 return Promise.resolve();
             }
 
-            // If MathJax isn't available, just resolve - don't block execution
+            // Enhanced availability check with retry for F5 refresh scenarios
             if (!this.isAvailable()) {
-                logger.debug('MathJax not available, skipping render');
-                return Promise.resolve();
+                // Try to wait a bit for MathJax to become ready (F5 refresh edge case)
+                const ready = await this.waitForMathJax(1000); // Wait up to 1 second
+                if (!ready) {
+                    logger.debug('MathJax not available after waiting, skipping render');
+                    return Promise.resolve();
+                }
             }
 
             this.renderingInProgress = true;
             
-            // Simple MathJax rendering with better error detection
-            if (window.MathJax.typesetPromise) {
+            // Enhanced MathJax rendering with better error detection
+            if (window.MathJax && window.MathJax.typesetPromise) {
                 logger.debug(`Rendering MathJax for ${validElements.length} elements`);
                 await window.MathJax.typesetPromise(validElements);
                 logger.debug('MathJax rendering completed successfully');
@@ -123,6 +159,33 @@ export class SimpleMathJaxService {
         } finally {
             this.renderingInProgress = false;
         }
+    }
+
+    /**
+     * Wait for MathJax to become available (for F5 refresh scenarios)
+     * @param {number} timeout - Timeout in milliseconds
+     * @returns {Promise<boolean>} Whether MathJax became available
+     */
+    async waitForMathJax(timeout = 1000) {
+        return new Promise((resolve) => {
+            const startTime = Date.now();
+            
+            const checkReady = () => {
+                if (this.isAvailable()) {
+                    resolve(true);
+                    return;
+                }
+                
+                if (Date.now() - startTime >= timeout) {
+                    resolve(false);
+                    return;
+                }
+                
+                setTimeout(checkReady, 50);
+            };
+            
+            checkReady();
+        });
     }
 
     /**
