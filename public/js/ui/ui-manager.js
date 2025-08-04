@@ -43,6 +43,9 @@ export class UIManager {
                 
                 // Set editing state for quiz creation
                 gameStateManager.setState('editing');
+                
+                // Initialize first question if questions container is empty
+                this.initializeQuizEditor();
             } else {
                 // Hide toolbar and start button for other screens
                 if (headerStartBtn) headerStartBtn.style.display = 'none';
@@ -53,6 +56,14 @@ export class UIManager {
             switch (screenId) {
                 case 'main-menu':
                     gameStateManager.setState('lobby');
+                    // Force retranslation of main menu to ensure Quick Start Guide is translated
+                    setTimeout(() => {
+                        const mainMenuScreen = document.getElementById('main-menu');
+                        if (mainMenuScreen) {
+                            translationManager.translateContainer(mainMenuScreen);
+                            logger.debug('🔄 Force translated main menu screen');
+                        }
+                    }, 50);
                     break;
                 case 'host-lobby':
                 case 'player-lobby':
@@ -84,6 +95,28 @@ export class UIManager {
             // List available screens for debugging
             const availableScreens = Array.from(document.querySelectorAll('.screen')).map(s => s.id);
             logger.debug('Available screens:', availableScreens);
+        }
+    }
+
+    /**
+     * Initialize quiz editor with first question if empty
+     */
+    initializeQuizEditor() {
+        const questionsContainer = document.getElementById('questions-container');
+        if (questionsContainer && questionsContainer.children.length === 0) {
+            // Add first question only if container is empty
+            if (window.game && window.game.addQuestion) {
+                window.game.addQuestion();
+                logger.debug('Initialized quiz editor with first question');
+                
+                // Ensure remove button visibility is properly set for initial question
+                setTimeout(() => {
+                    if (window.game.quizManager && window.game.quizManager.updateQuestionsUI) {
+                        logger.debug('Running updateQuestionsUI after initial question creation');
+                        window.game.quizManager.updateQuestionsUI();
+                    }
+                }, 100);
+            }
         }
     }
 

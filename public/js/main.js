@@ -83,6 +83,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             translationManager.translatePage();
             logger.debug('Page translated with language:', savedLanguage);
             
+            // Ensure main menu is translated specifically (fixes Quick Start Guide translation)
+            setTimeout(() => {
+                const mainMenuScreen = document.getElementById('main-menu');
+                if (mainMenuScreen) {
+                    translationManager.translateContainer(mainMenuScreen);
+                    logger.debug('🔄 Main menu screen translated specifically');
+                }
+            }, 100);
+            
             // Update language dropdown display to show current language
             updateLanguageDropdownDisplay(savedLanguage);
             
