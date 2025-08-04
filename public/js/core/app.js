@@ -15,9 +15,11 @@ import { MathRenderer } from '../utils/math-renderer.js';
 import { AIQuestionGenerator } from '../ai/generator.js';
 import { addQuestion, createQuestionElement, randomizeAnswers, shuffleArray } from '../utils/question-utils.js';
 import { translationManager, showErrorAlert, createQuestionCounter } from '../utils/translation-manager.js';
+import { toastNotifications } from '../utils/toast-notifications.js';
 import { connectionStatus } from '../utils/connection-status.js';
 import { keyboardShortcuts } from '../utils/keyboard-shortcuts.js';
 import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
+import { resultsViewer } from '../utils/results-viewer.js';
 
 export class QuizGame {
     constructor() {
@@ -707,7 +709,7 @@ export class QuizGame {
             { id: 'toolbar-ai-gen', handler: () => this.openAIGeneratorModal() },
             { id: 'toolbar-import', handler: () => this.quizManager.importQuiz() },
             { id: 'toolbar-export', handler: () => this.quizManager.exportQuiz() },
-            { id: 'toolbar-results', handler: () => simpleResultsDownloader.showDownloadTool() },
+            { id: 'toolbar-results', handler: () => resultsViewer.showModal() },
             { id: 'toolbar-top', handler: () => this.scrollToTop() },
             { id: 'toolbar-bottom', handler: () => this.scrollToBottom() },
         ];
@@ -824,7 +826,7 @@ export class QuizGame {
             const filename = 'advanced_quiz_with_latex_images.json';
             this.quizManager.loadQuiz(filename);
             
-            translationManager.showAlert('success', 'Debug: Loading LaTeX quiz - starting in 2 seconds...');
+            toastNotifications.info('Debug: Loading LaTeX quiz - starting in 2 seconds...');
             
             setTimeout(() => {
                 logger.debug('Auto-starting quiz via fallback method...');
@@ -859,7 +861,7 @@ export class QuizGame {
                 // Use the quiz manager to populate the form
                 this.quizManager.populateQuizForm(quizData.quiz);
                 
-                translationManager.showAlert('success', `Debug: Loaded "${quizData.quiz.title}" - starting game...`);
+                toastNotifications.info(`Debug: Loaded "${quizData.quiz.title}" - starting game...`);
                 
                 // Wait for form to populate, then start game
                 setTimeout(() => {

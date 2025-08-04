@@ -5,6 +5,7 @@
  */
 
 import { logger } from '../core/config.js';
+import { toastNotifications } from './toast-notifications.js';
 
 class TranslationManager {
     constructor() {
@@ -225,10 +226,19 @@ class TranslationManager {
 
     /**
      * Show alert with translation
+     * Success alerts now use non-intrusive toast notifications
      */
-    showAlert(translationKey, ...params) {
-        const message = this.getTranslationSync(translationKey, params);
-        alert(message);
+    showAlert(type, message) {
+        if (type === 'success') {
+            // Use toast notification for success messages
+            toastNotifications.success(message);
+        } else if (type === 'error') {
+            // Use toast notification for error messages too
+            toastNotifications.error(message);
+        } else {
+            // Fallback to regular alert for other types (rare)
+            alert(message);
+        }
     }
 
     /**
@@ -520,17 +530,19 @@ export function getOptionLetter(index) {
 
 // Common utility functions for translation patterns
 /**
- * Show translated alert with error styling
+ * Show translated alert with error styling (now uses toast notifications)
  */
 export function showErrorAlert(key, params = []) {
-    translationManager.showAlert('error', translationManager.getTranslationSync(key, params));
+    const message = translationManager.getTranslationSync(key, params);
+    toastNotifications.error(message);
 }
 
 /**
- * Show translated alert with success styling
+ * Show translated alert with success styling (now uses toast notifications)
  */
 export function showSuccessAlert(key, params = []) {
-    translationManager.showAlert('success', translationManager.getTranslationSync(key, params));
+    const message = translationManager.getTranslationSync(key, params);
+    toastNotifications.success(message);
 }
 
 /**
@@ -563,10 +575,20 @@ export function getThemeToggleTitles() {
 }
 
 /**
- * Show plain alert with translated text
+ * Show plain alert with translated text (now uses toast notifications for success/error)
  */
 export function showAlert(key, params = []) {
-    alert(translationManager.getTranslationSync(key, params));
+    const message = translationManager.getTranslationSync(key, params);
+    
+    // Use toast for known success/error message keys
+    if (key.includes('success') || key.includes('loaded') || key.includes('saved') || key.includes('exported') || key.includes('generated')) {
+        toastNotifications.success(message);
+    } else if (key.includes('error') || key.includes('failed') || key.includes('invalid')) {
+        toastNotifications.error(message);
+    } else {
+        // Fallback to regular alert for other message types
+        alert(message);
+    }
 }
 
 export default translationManager;

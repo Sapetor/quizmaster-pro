@@ -30,6 +30,9 @@
 /* Left toolbar - Navigation and tools */
 @import './toolbar.css?v=9.3';
 
+/* Toast notifications - Non-intrusive notifications */
+@import './toasts.css?v=10.0';
+
 /* Responsive design - Media queries and mobile optimizations */
 @import './responsive.css?v=9.3';
 
