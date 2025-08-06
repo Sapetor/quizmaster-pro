@@ -45,8 +45,8 @@ body:not(.loaded) * {
     font-display: swap; /* Use fallback immediately, swap when Inter loads */
 }
 
-/* LaTeX rendering - hide until ready */
-/* Hide LaTeX content initially, but show after timeout as fallback */
+/* LaTeX rendering - Simple approach to prevent flashing */
+/* Hide LaTeX content until MathJax processes it */
 .tex2jax_process:not(.MathJax_Processed) {
     visibility: hidden;
 }
@@ -62,6 +62,7 @@ body:not(.loaded) * {
     to { visibility: visible; }
 }
 
+/* Simple fade-in for processed MathJax */
 .MathJax_Processed {
     animation: mathFadeIn 0.2s ease-in;
 }
@@ -313,16 +314,6 @@ blockquote {
     opacity: 0.9;
 }
 
-/* LaTeX Processing States - Critical for math rendering */
-.processing-math {
-    opacity: 0.7;
-    transition: opacity 0.3s ease;
-}
-
-.math-ready {
-    opacity: 1;
-    transition: opacity 0.3s ease;
-}
 
 /* Ensure MathJax elements don't break layout */
 .mjx-container {

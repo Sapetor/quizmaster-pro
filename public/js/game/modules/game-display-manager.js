@@ -116,22 +116,19 @@ export class GameDisplayManager {
     /**
      * Render MathJax for question content with enhanced F5 handling
      */
-    async renderQuestionMath(element, delay = 200) {
+    async renderQuestionMath(element, delay = 0) {
         if (!element) return;
         
         try {
-            // Add a small delay to allow DOM settling, especially after screen transitions
-            if (delay > 0) {
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
+            // No delay - render immediately for faster LaTeX display
             
-            // Check if element still exists in DOM (might have been removed during delay)
+            // Check if element still exists in DOM
             if (!document.contains(element)) {
                 logger.debug('Element removed from DOM before MathJax rendering, skipping');
                 return;
             }
             
-            // Use the enhanced SimpleMathJaxService which handles queuing and retries
+            // Use the simplified SimpleMathJaxService
             await simpleMathJaxService.render([element]);
             logger.debug('MathJax rendering completed for question');
             
@@ -150,8 +147,8 @@ export class GameDisplayManager {
         element.innerHTML = this.mathRenderer.formatCodeBlocks(questionText);
         logger.debug('Question text displayed');
         
-        // Render MathJax after content update
-        this.renderQuestionMath(element, 200);
+        // Render MathJax immediately after content update
+        this.renderQuestionMath(element);
     }
 
     // Answer submission feedback now handled by original modal system in GameManager
