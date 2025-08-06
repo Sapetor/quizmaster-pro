@@ -270,6 +270,15 @@ export class QuestionRenderer {
         // Format and display question text using display manager
         this.displayManager.displayQuestionText(questionElement, data.question);
         
+        // Add instruction for multiple correct questions
+        if (data.type === 'multiple-correct') {
+            const instruction = document.createElement('div');
+            instruction.className = 'multiple-correct-instruction';
+            instruction.innerHTML = `<em>💡 ${translationManager.getTranslationSync('multiple_correct_instruction')}</em>`;
+            instruction.style.cssText = 'margin: 10px 0; padding: 8px 12px; background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 0.9em; color: #1e40af;';
+            questionElement.appendChild(instruction);
+        }
+        
         // Add question type indicator for styling
         questionElement.className = `question-display player-question ${data.type}-question`;
         
@@ -432,6 +441,11 @@ export class QuestionRenderer {
         
         // Use display manager to clear question display
         this.displayManager.clearQuestionDisplay();
+        
+        // Clear any multiple correct instructions
+        document.querySelectorAll('.multiple-correct-instruction').forEach(instruction => {
+            instruction.remove();
+        });
         
         // Clear any additional question-specific content
         this.clearAnswerSelections();

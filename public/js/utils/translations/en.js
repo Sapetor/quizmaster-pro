@@ -131,6 +131,7 @@ export default {
         multiple_choice: "Multiple Choice",
         true_false: "True/False", 
         multiple_correct: "Multiple Correct Answers",
+        multiple_correct_instruction: "Select all correct answers - more than one option may be correct!",
         numeric: "Numeric Answer",
         
         // Difficulty dropdown keys (used in editor)

@@ -105,6 +105,7 @@ export default {
         multiple_choice: "Multiple Choice",
         true_false: "Wahr/Falsch",
         multiple_correct: "Mehrere richtige Antworten",
+        multiple_correct_instruction: "Wählen Sie alle richtigen Antworten - mehr als eine Option kann richtig sein!",
         numeric: "Numerische Antwort",
         easy: "Einfach",
         medium: "Mittel",
