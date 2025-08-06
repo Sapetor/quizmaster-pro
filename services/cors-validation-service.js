@@ -15,6 +15,9 @@ class CORSValidationService {
             'https://127.0.0.1:3000'
         ]);
 
+        // Track logged origins to prevent spam
+        this.loggedOrigins = new Set();
+
         // IP range patterns for local networks (properly constrained)
         this.localNetworkPatterns = [
             /^http:\/\/localhost(:\d+)?$/,
@@ -99,7 +102,12 @@ class CORSValidationService {
         return {
             origin: (origin, callback) => {
                 if (this.isOriginAllowed(origin)) {
-                    logger.debug && logger.debug(`CORS: Allowed origin: ${origin || 'same-origin'}`);
+                    // Only log the first time we see a new origin
+                    const originKey = origin || 'same-origin';
+                    if (!this.loggedOrigins.has(originKey)) {
+                        this.loggedOrigins.add(originKey);
+                        logger.info(`CORS: New allowed origin: ${originKey}`);
+                    }
                     callback(null, true);
                 } else {
                     logger.warn(`CORS: Blocked origin: ${origin}`);
@@ -121,7 +129,12 @@ class CORSValidationService {
         return {
             origin: (origin, callback) => {
                 if (this.isOriginAllowed(origin)) {
-                    logger.debug && logger.debug(`Socket.IO CORS: Allowed origin: ${origin || 'same-origin'}`);
+                    // Only log the first time we see a new origin for Socket.IO
+                    const originKey = `socketio:${origin || 'same-origin'}`;
+                    if (!this.loggedOrigins.has(originKey)) {
+                        this.loggedOrigins.add(originKey);
+                        logger.info(`Socket.IO CORS: New allowed origin: ${origin || 'same-origin'}`);
+                    }
                     callback(null, true);
                 } else {
                     logger.warn(`Socket.IO CORS: Blocked origin: ${origin}`);

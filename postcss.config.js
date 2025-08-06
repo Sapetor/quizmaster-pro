@@ -1,5 +1,10 @@
 module.exports = {
   plugins: [
+    // Process @import statements first to bundle CSS files
+    require('postcss-import')({
+      // Resolve imports relative to the CSS file
+      path: ['public/css'],
+    }),
     require('autoprefixer')({
       // Support browsers from the last 2 versions and browsers with >1% market share
       // Perfect for LAN environments with potentially older browsers

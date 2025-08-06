@@ -8,6 +8,7 @@ const cors = require('cors');
 const multer = require('multer');
 const QRCode = require('qrcode');
 const os = require('os');
+const compression = require('compression');
 const { CORSValidationService } = require('./services/cors-validation-service');
 
 // Server-side logging utility
@@ -36,6 +37,30 @@ const logger = {
     debug: (message, ...args) => {
         if (DEBUG.ENABLED && DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.DEBUG) {
             console.log(`🔧 [SERVER] ${message}`, ...args);
+        }
+    }
+};
+
+// WSL Performance monitoring utility
+const WSLMonitor = {
+    // Track slow file operations (>100ms indicates WSL filesystem issues)
+    trackFileOperation: async (operation, operationName) => {
+        const startTime = Date.now();
+        try {
+            const result = await operation();
+            const duration = Date.now() - startTime;
+            
+            if (duration > 100) {
+                logger.warn(`⚠️ Slow file operation detected: ${operationName} took ${duration}ms (WSL filesystem delay)`);
+            } else if (duration > 50) {
+                logger.debug(`📊 File operation: ${operationName} took ${duration}ms`);
+            }
+            
+            return result;
+        } catch (error) {
+            const duration = Date.now() - startTime;
+            logger.error(`❌ File operation failed: ${operationName} after ${duration}ms:`, error.message);
+            throw error;
         }
     }
 };
@@ -82,6 +107,29 @@ const io = socketIo(server, {
 });
 
 app.use(cors(corsValidator.getExpressCorsConfig()));
+
+// Add compression middleware for better mobile performance
+app.use(compression({
+  // Enable compression for all requests
+  filter: (req, res) => {
+    // Don't compress responses if the request includes a cache-busting parameter
+    // (This helps avoid compressing already optimized content)
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    
+    // Use the default compression filter for everything else
+    return compression.filter(req, res);
+  },
+  // Optimize compression for mobile devices
+  level: 6, // Good balance between compression and CPU usage (1-9, 6 is default)
+  threshold: 1024, // Only compress if larger than 1KB
+  // Add response headers to help with caching
+  chunkSize: 16 * 1024, // 16KB chunks
+  windowBits: 15,
+  memLevel: 8
+}));
+
 app.use(express.json());
 
 // Disable caching for development
@@ -92,7 +140,54 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.static('public'));
+// Static file serving with mobile-optimized caching headers
+app.use(express.static('public', {
+  // Balanced caching for mobile and WSL performance
+  maxAge: process.env.NODE_ENV === 'production' ? '1y' : '4h', // Increased dev cache for mobile
+  etag: true,           // Enable ETags for efficient cache validation
+  lastModified: true,   // Include Last-Modified headers
+  cacheControl: true,   // Enable Cache-Control headers
+  
+  // Mobile-optimized headers
+  setHeaders: (res, path, stat) => {
+    const userAgent = res.req.headers['user-agent'] || '';
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    
+    // Longer caching for JS/CSS files, especially on mobile
+    if (path.endsWith('.js') || path.endsWith('.css')) {
+      const maxAge = isMobile ? 172800 : 86400; // 48 hours mobile, 24 hours desktop
+      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
+      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+    }
+    
+    // Optimize image caching for mobile bandwidth
+    if (path.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      const maxAge = isMobile ? 7200 : 3600; // 2 hours mobile, 1 hour desktop
+      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
+    }
+    
+    // Special handling for index.html - shorter cache but with validation
+    if (path.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate'); // 5 minutes with validation
+      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+    }
+    
+    // Enable compression for text-based files
+    if (path.match(/\.(js|css|html|json|svg|txt)$/i)) {
+      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+    }
+    
+    // Mobile-specific optimizations
+    if (isMobile) {
+      // Add mobile-friendly headers
+      res.setHeader('X-Mobile-Optimized', 'true');
+      
+      // Enable keep-alive for mobile connections
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Keep-Alive', 'timeout=30, max=100');
+    }
+  }
+}));
 
 // Ensure directories exist
 if (!fs.existsSync('quizzes')) {
@@ -136,7 +231,7 @@ app.post('/upload', upload.single('image'), (req, res) => {
 });
 
 // Save quiz endpoint
-app.post('/api/save-quiz', (req, res) => {
+app.post('/api/save-quiz', async (req, res) => {
   try {
     const { title, questions } = req.body;
     if (!title || !questions || !Array.isArray(questions)) {
@@ -153,7 +248,17 @@ app.post('/api/save-quiz', (req, res) => {
       id: uuidv4()
     };
     
-    fs.writeFileSync(path.join('quizzes', filename), JSON.stringify(quizData, null, 2));
+    // Async file write with WSL performance monitoring
+    await WSLMonitor.trackFileOperation(
+      () => fs.promises.writeFile(
+        path.join('quizzes', filename), 
+        JSON.stringify(quizData, null, 2),
+        'utf8'
+      ),
+      `Quiz save: ${filename}`
+    );
+    
+    logger.debug(`Quiz saved successfully: ${filename}`);
     res.json({ success: true, filename, id: quizData.id });
   } catch (error) {
     logger.error('Save quiz error:', error);
@@ -162,12 +267,18 @@ app.post('/api/save-quiz', (req, res) => {
 });
 
 // Load quiz endpoint
-app.get('/api/quizzes', (req, res) => {
+app.get('/api/quizzes', async (req, res) => {
   try {
-    const files = fs.readdirSync('quizzes').filter(f => f.endsWith('.json'));
-    const quizzes = files.map(file => {
+    // Async directory read with WSL performance monitoring
+    const files = (await WSLMonitor.trackFileOperation(
+      () => fs.promises.readdir('quizzes'),
+      'Quiz directory listing'
+    )).filter(f => f.endsWith('.json'));
+    
+    // Process files in parallel for better performance
+    const quizPromises = files.map(async (file) => {
       try {
-        const data = JSON.parse(fs.readFileSync(path.join('quizzes', file), 'utf8'));
+        const data = JSON.parse(await fs.promises.readFile(path.join('quizzes', file), 'utf8'));
         return {
           filename: file,
           title: data.title,
@@ -179,8 +290,10 @@ app.get('/api/quizzes', (req, res) => {
         logger.error('Error reading quiz file:', file, err);
         return null;
       }
-    }).filter(Boolean);
+    });
     
+    const quizzes = (await Promise.all(quizPromises)).filter(Boolean);
+    logger.debug(`Loaded ${quizzes.length} quizzes from ${files.length} files`);
     res.json(quizzes);
   } catch (error) {
     logger.error('Load quizzes error:', error);
@@ -210,7 +323,7 @@ app.get('/api/quiz/:filename', (req, res) => {
 });
 
 // Save quiz results endpoint
-app.post('/api/save-results', (req, res) => {
+app.post('/api/save-results', async (req, res) => {
   try {
     const { quizTitle, gamePin, results, startTime, endTime, questions } = req.body;
     if (!quizTitle || !gamePin || !results) {
@@ -232,7 +345,14 @@ app.post('/api/save-results', (req, res) => {
       resultsData.questions = questions;
     }
     
-    fs.writeFileSync(path.join('results', filename), JSON.stringify(resultsData, null, 2));
+    // Async file write to prevent UI blocking on WSL filesystem delays
+    await fs.promises.writeFile(
+      path.join('results', filename), 
+      JSON.stringify(resultsData, null, 2),
+      'utf8'
+    );
+    
+    logger.debug(`Results saved successfully: ${filename}`);
     res.json({ success: true, filename });
   } catch (error) {
     logger.error('Save results error:', error);
@@ -582,8 +702,56 @@ app.get('/api/active-games', (req, res) => {
   }
 });
 
-// Generate QR code endpoint
+
+function getCachedLocalIP() {
+  const now = Date.now();
+  
+  // Return cached IP if still valid
+  if (cachedLocalIP && ipCacheTimestamp && (now - ipCacheTimestamp < IP_CACHE_DURATION)) {
+    return cachedLocalIP;
+  }
+  
+  // Detect and cache new IP
+  let localIP = 'localhost';
+  const NETWORK_IP = process.env.NETWORK_IP;
+  
+  if (NETWORK_IP) {
+    localIP = NETWORK_IP;
+    logger.debug('Using manual IP from environment:', localIP);
+  } else {
+    const networkInterfaces = os.networkInterfaces();
+    const interfaces = Object.values(networkInterfaces).flat();
+    
+    // Prefer 192.168.x.x (typical home network) over 172.x.x.x (WSL internal)
+    localIP = interfaces.find(iface => 
+      iface.family === 'IPv4' && 
+      !iface.internal && 
+      iface.address.startsWith('192.168.')
+    )?.address ||
+    interfaces.find(iface => 
+      iface.family === 'IPv4' && 
+      !iface.internal && 
+      iface.address.startsWith('10.')
+    )?.address ||
+    interfaces.find(iface => 
+      iface.family === 'IPv4' && 
+      !iface.internal
+    )?.address || 'localhost';
+    
+    logger.debug('Detected network IP:', localIP);
+  }
+  
+  // Update cache
+  cachedLocalIP = localIP;
+  ipCacheTimestamp = now;
+  
+  return localIP;
+}
+
+// Generate QR code endpoint with caching optimization
 app.get('/api/qr/:pin', async (req, res) => {
+  const startTime = Date.now();
+  
   try {
     const { pin } = req.params;
     const game = games.get(pin);
@@ -592,33 +760,39 @@ app.get('/api/qr/:pin', async (req, res) => {
       return res.status(404).json({ error: 'Game not found' });
     }
     
-    // Use the same IP detection logic as server startup
-    let localIP = 'localhost';
-    const NETWORK_IP = process.env.NETWORK_IP;
+    // Track performance stats
+    qrPerformanceStats.totalRequests++;
     
-    if (NETWORK_IP) {
-      localIP = NETWORK_IP;
-    } else {
-      const networkInterfaces = os.networkInterfaces();
-      const interfaces = Object.values(networkInterfaces).flat();
+    // Check QR code cache first
+    const cacheKey = `qr_${pin}`;
+    const cachedQR = qrCodeCache.get(cacheKey);
+    const now = Date.now();
+    
+    if (cachedQR && (now - cachedQR.timestamp < QR_CACHE_DURATION)) {
+      const responseTime = Date.now() - startTime;
+      qrPerformanceStats.cacheHits++;
       
-      // Prefer 192.168.x.x (typical home network) over 172.x.x.x (WSL internal)
-      localIP = interfaces.find(iface => 
-        iface.family === 'IPv4' && 
-        !iface.internal && 
-        iface.address.startsWith('192.168.')
-      )?.address ||
-      interfaces.find(iface => 
-        iface.family === 'IPv4' && 
-        !iface.internal && 
-        iface.address.startsWith('10.')
-      )?.address ||
-      interfaces.find(iface => 
-        iface.family === 'IPv4' && 
-        !iface.internal
-      )?.address || 'localhost';
+      // Update average response time
+      qrPerformanceStats.responseTimeHistory.push(responseTime);
+      if (qrPerformanceStats.responseTimeHistory.length > 100) {
+        qrPerformanceStats.responseTimeHistory.shift();
+      }
+      qrPerformanceStats.avgResponseTime = Math.round(
+        qrPerformanceStats.responseTimeHistory.reduce((a, b) => a + b, 0) / 
+        qrPerformanceStats.responseTimeHistory.length
+      );
+      
+      logger.debug(`QR code served from cache for PIN ${pin} in ${responseTime}ms`);
+      
+      // Add cache headers for mobile optimization
+      res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutes
+      res.setHeader('ETag', `"qr-${pin}-${cachedQR.timestamp}"`);
+      
+      return res.json(cachedQR.data);
     }
     
+    // Generate new QR code
+    const localIP = getCachedLocalIP();
     const port = process.env.PORT || 3000;
     const gameUrl = `http://${localIP}:${port}?pin=${pin}`;
     
@@ -628,16 +802,58 @@ app.get('/api/qr/:pin', async (req, res) => {
       color: {
         dark: '#000000',
         light: '#FFFFFF'
-      }
+      },
+      // Optimize for mobile loading
+      quality: 0.92,
+      type: 'image/png'
     });
     
-    res.json({ 
+    const responseData = { 
       qrCode: qrCodeDataUrl,
       gameUrl: gameUrl,
       pin: pin
+    };
+    
+    // Cache the result
+    qrCodeCache.set(cacheKey, {
+      data: responseData,
+      timestamp: now
     });
+    
+    // Clean old cache entries periodically
+    if (qrCodeCache.size > 50) {
+      const cutoffTime = now - QR_CACHE_DURATION;
+      for (const [key, value] of qrCodeCache.entries()) {
+        if (value.timestamp < cutoffTime) {
+          qrCodeCache.delete(key);
+        }
+      }
+    }
+    
+    const responseTime = Date.now() - startTime;
+    
+    // Update average response time
+    qrPerformanceStats.responseTimeHistory.push(responseTime);
+    if (qrPerformanceStats.responseTimeHistory.length > 100) {
+      qrPerformanceStats.responseTimeHistory.shift();
+    }
+    qrPerformanceStats.avgResponseTime = Math.round(
+      qrPerformanceStats.responseTimeHistory.reduce((a, b) => a + b, 0) / 
+      qrPerformanceStats.responseTimeHistory.length
+    );
+    
+    logger.debug(`QR code generated for PIN ${pin} in ${responseTime}ms`);
+    
+    // Add mobile-optimized cache headers
+    res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutes
+    res.setHeader('ETag', `"qr-${pin}-${now}"`);
+    res.setHeader('Vary', 'User-Agent'); // Vary by user agent for mobile optimization
+    
+    res.json(responseData);
+    
   } catch (error) {
-    logger.error('QR code generation error:', error);
+    const responseTime = Date.now() - startTime;
+    logger.error(`QR code generation error for PIN ${req.params.pin} after ${responseTime}ms:`, error);
     res.status(500).json({ error: 'Failed to generate QR code' });
   }
 });
@@ -740,14 +956,49 @@ app.post('/api/claude/generate', async (req, res) => {
   }
 });
 
-// Simple ping endpoint for connection status monitoring
+
+// Simple ping endpoint for connection status monitoring with performance info
 app.get('/api/ping', (req, res) => {
+  const userAgent = req.headers['user-agent'] || '';
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    server: 'QuizMaster Pro'
+    server: 'QuizMaster Pro',
+    clientType: isMobile ? 'mobile' : 'desktop',
+    performance: {
+      qrGeneration: {
+        totalRequests: qrPerformanceStats.totalRequests,
+        cacheHitRate: qrPerformanceStats.totalRequests > 0 
+          ? Math.round((qrPerformanceStats.cacheHits / qrPerformanceStats.totalRequests) * 100) 
+          : 0,
+        avgResponseTime: qrPerformanceStats.avgResponseTime
+      },
+      networkIP: {
+        cached: cachedLocalIP !== null,
+        lastUpdated: ipCacheTimestamp ? new Date(ipCacheTimestamp).toISOString() : null
+      }
+    }
   });
 });
+
+// Performance monitoring for QR code generation (moved to top for availability)
+const qrPerformanceStats = {
+  totalRequests: 0,
+  cacheHits: 0,
+  avgResponseTime: 0,
+  responseTimeHistory: []
+};
+
+// Cache for network IP detection (moved to top for availability)
+let cachedLocalIP = null;
+let ipCacheTimestamp = null;
+const IP_CACHE_DURATION = 300000; // 5 minutes
+
+// Cache for QR codes to avoid regeneration (moved to top for availability)
+const qrCodeCache = new Map();
+const QR_CACHE_DURATION = 600000; // 10 minutes
 
 const games = new Map();
 const players = new Map();
