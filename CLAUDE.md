@@ -53,6 +53,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
   - ✅ Maintained 100% functionality with zero breaking changes
   - ✅ Application tested and verified working correctly
 
+**Phase 5 - Cross-Tab LaTeX Rendering Fix Completed (2025-08):**
+- ✅ **Critical Multi-Tab Issue Resolution**: Fixed fundamental browser caching problem
+  - ✅ **Root Cause**: Browser-cached MathJax instances were non-functional in new tabs
+  - ✅ **Solution**: Cache-busting with fresh MathJax script reload for reliability
+  - ✅ **CSS Timing Fix**: Proper DOM readiness and stylesheet preparation for MathJax initialization
+  - ✅ **Production Ready**: Clean, minimal implementation without debug bloat
+- ✅ **Script Interaction Improvements**: Enhanced coordination between initialization systems
+  - ✅ Conditional MathJax configuration prevents config overwrite of working instances
+  - ✅ SimpleMathJaxService simplified with proper event-driven initialization
+  - ✅ DOM readiness detection ensures CSS rule insertion works correctly
+  - ✅ Consolidated configuration object eliminates code duplication
+- ✅ **Multi-Tab Functionality Verified**: Host/client scenarios working correctly
+  - ✅ LaTeX renders properly across all tabs (host + multiple clients)
+  - ✅ F5 refresh functionality maintained without breaking LaTeX
+  - ✅ Game functionality fully operational in multi-tab environment
+
 **Current Architecture:**
 - **Modular ES6 structure** with proper imports/exports and focused responsibilities
 - **Service-oriented architecture** with dedicated services for common operations
@@ -90,6 +106,184 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 - Set `DEBUG.ENABLED = false` for production builds to remove all debug output
 - Adjust `DEBUG.CURRENT_LEVEL` to filter log verbosity (1=errors only, 4=all logs)
 - **IMPORTANT**: Always use logger for new debugging code, never raw console statements
+
+## WSL Development Environment Considerations
+
+### ⚠️ WSL/Windows File Serving Issues - CRITICAL
+
+**Problem Identified (August 2025)**: Running the server from Windows terminal while the codebase is in WSL created significant file serving issues that manifested as "MathJax loading problems" and led to multiple false fixes.
+
+### Root Cause Analysis
+- **WSL filesystem mounting** creates delays when Windows processes access WSL files
+- **Path translation** between Windows and Linux filesystems causes race conditions
+- **Local file serving** becomes unreliable compared to CDN sources
+- **Mixed loading** (local JS + CDN assets) creates timing mismatches
+
+### Symptoms of WSL-Related Issues
+- ✅ **Intermittent failures after F5 refresh** - files load sometimes, fail other times
+- ✅ **"Works on first load, breaks on reload"** patterns
+- ✅ **Race conditions in script initialization** - timing-dependent behavior
+- ✅ **"MathJax not available after waiting"** despite correct service code
+- ✅ **External libraries loading inconsistently** from local paths
+
+### False Fixes We Applied (Lessons Learned)
+1. **Complex polling and retry mechanisms** → Real issue was slow/unreliable file serving
+2. **"Browser compatibility" local file switches** → Made the problem worse
+3. **Over-engineered recovery systems** → Compensating for simple infrastructure issue
+4. **Timeout increases and fallback logic** → Treating symptoms, not the cause
+
+### Best Practices for WSL Development
+
+#### CDN vs Local Files Decision Matrix
+| Asset Type | WSL Environment | Pure Linux | Windows Native |
+|------------|----------------|------------|----------------|
+| **External Libraries** (MathJax, jQuery, etc.) | ✅ **Use CDN** | Local OK | Local OK |
+| **Application Assets** (CSS, images) | Local OK | Local OK | Local OK |
+| **Large Dependencies** (>100KB) | ✅ **Prefer CDN** | Local OK | Local OK |
+
+#### Development Environment Setup
+- **Prefer CDN** for external libraries when developing in WSL
+- **Test thoroughly** on the actual WSL → Windows server setup
+- **Monitor network tab** in browser dev tools for slow/failed local file requests
+- **Use browser cache disable** during development to catch file serving issues
+
+#### Debugging WSL-Specific Problems
+1. **Check file serving times**: Open browser dev tools → Network tab → Look for slow local file requests
+2. **Compare CDN vs local**: Switch temporarily to CDN to isolate filesystem issues
+3. **Monitor for 404s or timeouts**: Failed file requests often appear intermittently
+4. **Test from different browsers**: Some browsers handle WSL file serving differently
+
+### Infrastructure Recommendations
+- **Production deployment**: CDN or proper static file server (not WSL)
+- **Development**: Use CDN for external dependencies, local for application code
+- **CI/CD**: Deploy to Linux environments, not WSL-based systems
+
+### Lesson Learned
+**"When you see complex, intermittent issues that require increasingly sophisticated workarounds, step back and examine the infrastructure fundamentals first."**
+
+The MathJax "regression" was never a code problem - it was a WSL filesystem serving problem that cascaded into multiple false fixes adding unnecessary complexity.
+
+## Cross-Tab LaTeX Rendering Architecture
+
+### ⚠️ Browser MathJax Caching Issue - CRITICAL FIX (August 2025)
+
+**Problem Identified**: MathJax CDN caching created **unreliable cross-tab behavior** where:
+- **First tab**: Fresh MathJax initialization → LaTeX renders correctly ✅
+- **Subsequent tabs**: Cached MathJax instance → LaTeX fails to render ❌ 
+- **After delay**: Browser cache expires → Fresh initialization → Works again ✅
+
+### Root Cause Analysis: Script Interaction Problems
+
+**Browser Caching Behavior:**
+```javascript
+// Tab 1 (works): Fresh MathJax from CDN
+window.MathJax = undefined → CDN loads → startup.ready() → functional
+
+// Tab 2 (broken): Cached MathJax instance  
+window.MathJax = {...cached...} → startup.ready() never fires → non-functional
+```
+
+**The Issue**: Cached MathJax appeared available (`typesetPromise` exists) but was missing internal initialization state required for proper CSS rule insertion and LaTeX rendering.
+
+### Solution Architecture: Cache-Busting Strategy
+
+**File**: `public/index.html` (Lines 195-230)
+
+```javascript
+// 1. Detect cached MathJax
+if (window.MathJax) {
+    // 2. Clear corrupted cache
+    delete window.MathJax;
+    window.mathJaxReady = false;
+    
+    // 3. Remove cached script tag
+    document.getElementById('MathJax-script')?.remove();
+    
+    // 4. Force fresh script reload with cache buster
+    const newScript = document.createElement('script');
+    newScript.src = `https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js?v=${Date.now()}`;
+    
+    // 5. Apply fresh configuration
+    window.MathJax = mathJaxConfig;
+    document.head.appendChild(newScript);
+}
+```
+
+### Critical Script Coordination Fixes
+
+**1. DOM Readiness Detection** (`public/index.html:217-222`)
+```javascript
+// Prevent CSS insertion errors by ensuring DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', reloadMathJax);
+} else {
+    setTimeout(reloadMathJax, 100); // Wait for stylesheets
+}
+```
+
+**2. CSS Rule Insertion Preparation** (`public/index.html:207-213`)
+```javascript
+// Create dedicated stylesheet for MathJax CSS rules
+if (!document.querySelector('style[id*="MathJax"]')) {
+    const mathJaxStyle = document.createElement('style');
+    mathJaxStyle.id = 'MathJax-styles';
+    document.head.appendChild(mathJaxStyle);
+}
+```
+
+**3. Consolidated Configuration Object** (`public/index.html:154-193`)
+```javascript
+// Single config object prevents duplication and ensures consistency
+const mathJaxConfig = {
+    tex: { /* LaTeX parsing settings */ },
+    chtml: { /* CSS HTML output settings */ },
+    startup: {
+        ready: () => {
+            MathJax.startup.defaultReady();
+            setTimeout(markMathJaxReady, 100);
+        }
+    }
+    // ... other settings
+};
+```
+
+**4. SimpleMathJaxService Event Coordination** (`public/js/utils/simple-mathjax-service.js:37-42`)
+```javascript
+// Listen for mathjax-ready event from HTML initialization
+document.addEventListener('mathjax-ready', () => {
+    if (!this.isReady) {
+        this.handleMathJaxReady();
+    }
+});
+```
+
+### Integration Points Between Scripts
+
+**HTML → SimpleMathJaxService Flow:**
+1. `index.html` detects cached MathJax and triggers fresh reload
+2. Fresh MathJax calls `startup.ready()` → `markMathJaxReady()`  
+3. `markMathJaxReady()` dispatches `'mathjax-ready'` event
+4. `SimpleMathJaxService` receives event → sets `isReady = true`
+5. Application can now call `render()` successfully
+
+**Key Timing Dependencies:**
+- **MathJax config must be set BEFORE script tag insertion**
+- **DOM must be ready BEFORE MathJax CSS rule insertion**
+- **Event dispatch must happen AFTER MathJax.startup.defaultReady()**
+- **Service ready state must be set BEFORE first render() call**
+
+### Production Deployment Considerations
+
+**Multi-Device Testing Verified:**
+- ✅ **Host/Client Scenarios**: Multiple tabs work reliably across devices
+- ✅ **F5 Refresh Handling**: LaTeX rendering maintained after page refresh  
+- ✅ **Network Reliability**: CDN cache-busting ensures consistent behavior
+- ✅ **CSS Performance**: Dedicated stylesheet prevents insertion conflicts
+
+**Browser Compatibility:**
+- **Modern Browsers**: Full cache-busting and DOM readiness support
+- **IE11+ Support**: Fallback CSS preparation handles older browsers
+- **Mobile Devices**: DOM timing fixes ensure proper mobile initialization
 
 ## Critical Refactoring Guidelines
 
@@ -239,6 +433,31 @@ When removing code during cleanup:
 - **Leverage error categories** (network, validation, system, user input) for appropriate handling
 - **Use retry logic** for network operations and transient failures
 - **Test DOM element references** after structural changes
+
+## Production Deployment Checklist
+
+### ⚠️ CRITICAL: Pre-Production Configuration
+Before deploying to production environments, ensure these settings are configured:
+
+**Debug Configuration (MANDATORY):**
+- Set `DEBUG.ENABLED = false` in `/public/js/core/config.js` to disable all debug logging
+- Set `DEBUG.CURRENT_LEVEL = 1` to show only critical errors in production
+- Verify no `console.log` statements remain in production code (use logger instead)
+
+**Performance Optimization:**
+- Run `npm run build` to process CSS with autoprefixer and minification
+- Verify bundle size is optimized (should be ~400KB total after Phase 4 reductions)
+- Test MathJax rendering on target deployment browsers
+
+**Security Verification:**
+- Confirm API keys are encrypted using AES-GCM (automatic with Web Crypto API support)
+- Verify CORS validation is properly configured for target network ranges
+- Ensure no sensitive data is logged or exposed in client-side code
+
+**Network Configuration:**
+- Configure server to run on appropriate port for production environment
+- Update CORS settings in `services/cors-validation-service.js` if needed for production network
+- Test WebSocket connectivity for real-time multiplayer functionality
 
 ## Results Management
 

@@ -47,15 +47,14 @@
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
     </style>
-    <link rel="stylesheet" href="css/main.css?v=modular-9.32-progressive-loading">
-    <!-- Local MathJax - no external CDN dependencies for better remote client compatibility -->
-    <script id="MathJax-script" async src="/libs/mathjax/tex-mml-chtml.js"></script>
+    <link rel="stylesheet" href="css/main.css">
+    <!-- CDN MathJax with fallback for WSL/Windows environment -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+            onerror="console.warn('MathJax CDN failed, app will function without LaTeX rendering')"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script>
         // FOUC Prevention: Set font scale and theme immediately from localStorage
         (function() {
-            // DEBUG: Start tracking loading sequence
-            console.log('🚨 DEBUG: Starting loading sequence...', performance.now());
             
             const savedFontSize = localStorage.getItem('globalFontSize') || 'medium';
             const scaleValues = { small: 0.9, medium: 1.0, large: 1.3, xlarge: 1.6 };
@@ -64,65 +63,15 @@
             // Apply theme immediately to prevent color shift
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
-            console.log('🎨 DEBUG: Theme applied to documentElement:', savedTheme, performance.now());
-            
-            // DEBUG: Track CSS loading
-            const cssLink = document.querySelector('link[href*="main.css"]');
-            if (cssLink) {
-                cssLink.addEventListener('load', () => {
-                    console.log('📁 DEBUG: CSS file loaded', performance.now());
-                    // Check backgrounds after CSS loads
-                    setTimeout(() => {
-                        const bodyStyle = window.getComputedStyle(document.body);
-                        console.log('🎨 DEBUG: Body background after CSS load:', bodyStyle.background);
-                    }, 10);
-                });
-                cssLink.addEventListener('error', () => {
-                    console.log('❌ DEBUG: CSS file failed to load', performance.now());
-                });
-            }
             
             // Set theme and update icons when DOM is ready
             document.addEventListener('DOMContentLoaded', () => {
-                console.log('📄 DEBUG: DOM Content Loaded', performance.now());
-                
                 if (document.body) {
                     document.body.setAttribute('data-theme', savedTheme);
                     // Ensure both html and body have the same theme for consistent CSS matching
                     document.documentElement.setAttribute('data-theme', savedTheme);
-                    console.log('💼 DEBUG: Theme applied to body:', savedTheme, performance.now());
-                    
-                    // DEBUG: Check current background values
-                    const bodyStyle = window.getComputedStyle(document.body);
-                    const htmlStyle = window.getComputedStyle(document.documentElement);
-                    console.log('🎨 DEBUG: Body background:', bodyStyle.background);
-                    console.log('🎨 DEBUG: HTML background:', htmlStyle.background);
-                    
-                    // DEBUG: Check if body::before pseudo-element exists
-                    setTimeout(() => {
-                        const beforeStyle = window.getComputedStyle(document.body, '::before');
-                        console.log('👻 DEBUG: body::before background:', beforeStyle.background);
-                        console.log('👻 DEBUG: body::before display:', beforeStyle.display);
-                    }, 100);
                 }
                 
-                // Enhanced data URI fetch interceptor to identify problematic requests
-                const originalFetch = window.fetch;
-                window.fetch = function(...args) {
-                    const url = args[0];
-                    if (typeof url === 'string' && url.startsWith('data:')) {
-                        // Log data URI fetch attempts with stack trace for debugging
-                        console.warn('🚨 Data URI fetch detected (should not be fetched):', {
-                            url: url.substring(0, 100) + '...',
-                            stack: new Error().stack,
-                            arguments: args
-                        });
-                        
-                        // Return a rejected promise to prevent the fetch
-                        return Promise.reject(new Error('Data URIs should not be fetched - use directly as src'));
-                    }
-                    return originalFetch.apply(this, args);
-                };
                 
                 const themeToggle = document.getElementById('theme-toggle');
                 const fontIcon = document.getElementById('font-size-icon');
@@ -179,7 +128,30 @@
         
         // REMOVED: F5 prevention was causing infinite reload loop
         
-        window.MathJax = {
+        // Function to mark MathJax as ready for our application
+        function markMathJaxReady() {
+            window.mathJaxReady = true;
+            
+            // FOUC Prevention: Add ready class and remove loading
+            const addReadyClass = () => {
+                if (document.body) {
+                    document.body.classList.remove('loading');
+                    document.body.classList.add('mathjax-ready');
+                }
+            };
+            
+            if (document.body) {
+                addReadyClass();
+            } else {
+                document.addEventListener('DOMContentLoaded', addReadyClass);
+            }
+            
+            // Dispatch custom event for SimpleMathJaxService
+            document.dispatchEvent(new CustomEvent('mathjax-ready'));
+        }
+        
+        // MathJax configuration object
+        const mathJaxConfig = {
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
@@ -198,33 +170,12 @@
                 matchFontHeight: false,
                 displayAlign: 'center',
                 displayIndent: '0em',
-                // Use CDN fonts for better compatibility across devices
                 fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2'
             },
             startup: {
                 ready: () => {
-                    console.log('MathJax is ready for QuizMaster Pro');
                     MathJax.startup.defaultReady();
-                    
-                    // Mark as ready for our application
-                    window.mathJaxReady = true;
-                    
-                    // Browser and platform-specific delays
-                    const isWindows = navigator.platform.toLowerCase().includes('win') || 
-                                    navigator.userAgent.toLowerCase().includes('windows');
-                    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-                    
-                    // Chrome needs extra time for proper MathJax initialization after F5
-                    const delay = (isWindows && isChrome) ? 250 : (isWindows ? 150 : (isChrome ? 200 : 0));
-                    
-                    setTimeout(() => {
-                        // FOUC Prevention: Add ready class and remove loading
-                        document.body.classList.remove('loading');
-                        document.body.classList.add('mathjax-ready');
-                        
-                        // Dispatch custom event for modules that need to know
-                        document.dispatchEvent(new CustomEvent('mathjax-ready'));
-                    }, delay);
+                    setTimeout(markMathJaxReady, 100);
                 }
             },
             options: {
@@ -233,14 +184,65 @@
                 processHtmlClass: 'tex2jax_process',
                 ignoreHtmlClass: 'tex2jax_ignore',
                 renderActions: {
-                    addMenu: [0, '', '']  // Disable MathJax context menu for game performance
+                    addMenu: [0, '', '']
                 }
             },
             loader: {
                 load: ['[tex]/ams', '[tex]/newcommand', '[tex]/configmacros']
             }
         };
+        
+        // Handle cached MathJax - force fresh reload for reliability
+        if (window.MathJax) {
+            // Clear cached MathJax and reload fresh
+            delete window.MathJax;
+            window.mathJaxReady = false;
+            
+            // Remove existing script
+            const existingScript = document.getElementById('MathJax-script');
+            if (existingScript) existingScript.remove();
+            
+            // Wait for DOM to be fully ready before reloading MathJax
+            const reloadMathJax = () => {
+                // Ensure there's a stylesheet for MathJax to insert CSS rules into
+                if (!document.querySelector('style[id*="MathJax"]')) {
+                    const mathJaxStyle = document.createElement('style');
+                    mathJaxStyle.id = 'MathJax-styles';
+                    mathJaxStyle.textContent = '/* MathJax CSS insertion point */';
+                    document.head.appendChild(mathJaxStyle);
+                }
+                
+                const newScript = document.createElement('script');
+                newScript.id = 'MathJax-script';
+                newScript.async = true;
+                newScript.src = `https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js?v=${Date.now()}`;
+                
+                window.MathJax = mathJaxConfig;
+                document.head.appendChild(newScript);
+            };
+            
+            // Ensure DOM and stylesheets are ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', reloadMathJax);
+            } else {
+                // DOM is ready, but wait a moment for stylesheets
+                setTimeout(reloadMathJax, 100);
+            }
+            
+        } else {
+            // Fresh MathJax initialization
+            window.MathJax = mathJaxConfig;
+        }
+        
+        // Fallback: Ensure content is visible even if MathJax fails
+        setTimeout(() => {
+            if (!document.body.classList.contains('mathjax-ready')) {
+                document.body.classList.add('mathjax-ready');
+            }
+        }, 3000);
     </script>
+    
+    
     <style>
         /* FOUC Prevention Styles */
         .mathjax-loading {
@@ -1219,8 +1221,12 @@
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- Socket.IO CDN for better WSL compatibility - fallback to local if CDN fails -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" 
+            crossorigin="anonymous"
+            onerror="this.onerror=null; this.src='/socket.io/socket.io.js';">
+    </script>
     <!-- Modular ES6 Structure -->
-<script type="module" src="js/main.js?consolidated=true&time=1752268883"></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
