@@ -114,16 +114,30 @@ export class GameDisplayManager {
     }
 
     /**
-     * Render MathJax for question content
+     * Render MathJax for question content with enhanced F5 handling
      */
     async renderQuestionMath(element, delay = 200) {
         if (!element) return;
         
         try {
+            // Add a small delay to allow DOM settling, especially after screen transitions
+            if (delay > 0) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+            
+            // Check if element still exists in DOM (might have been removed during delay)
+            if (!document.contains(element)) {
+                logger.debug('Element removed from DOM before MathJax rendering, skipping');
+                return;
+            }
+            
+            // Use the enhanced SimpleMathJaxService which handles queuing and retries
             await simpleMathJaxService.render([element]);
             logger.debug('MathJax rendering completed for question');
+            
         } catch (err) {
-            logger.error('MathJax question render error:', err);
+            logger.warn('MathJax question render error (non-blocking):', err);
+            // Don't throw - let the game continue without LaTeX rendering
         }
     }
 

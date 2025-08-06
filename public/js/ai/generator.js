@@ -315,7 +315,14 @@ export class AIQuestionGenerator {
             const needsApiKey = this.providers[provider]?.apiKey;
             if (needsApiKey) {
                 const apiKey = await secureStorage.getSecureItem(`api_key_${provider}`);
-                if (!apiKey) {
+                logger.debug(`API key validation for ${provider}:`, {
+                    exists: !!apiKey,
+                    length: apiKey?.length || 0,
+                    type: typeof apiKey
+                });
+                
+                if (!apiKey || apiKey.trim().length === 0) {
+                    logger.warn(`Missing or empty API key for provider: ${provider}`);
                     showAlert('please_enter_api_key');
                     this.isGenerating = false;
                     return;
@@ -456,9 +463,16 @@ CRITICAL REQUIREMENTS:
             const timestamp = Date.now();
             const randomSeed = Math.floor(Math.random() * 10000);
             
+            // Enhanced prompt specifically for Ollama to ensure 4 options
             const enhancedPrompt = `[Session: ${timestamp}-${randomSeed}] ${prompt}
 
-            Please respond with only valid JSON. Do not include explanations or additional text.`;
+OLLAMA SPECIFIC REQUIREMENTS:
+- For multiple-choice questions: You MUST provide exactly 4 options in the "options" array
+- NEVER generate multiple-choice questions with 3 or fewer options
+- If you cannot think of 4 good options, create plausible distractors related to the content
+- Example: "options": ["Correct answer", "Related but wrong", "Plausible distractor", "Another distractor"]
+
+Please respond with only valid JSON. Do not include explanations or additional text.`;
 
             const response = await fetch(AI.OLLAMA_ENDPOINT, {
                 method: 'POST',
@@ -1012,7 +1026,35 @@ CRITICAL REQUIREMENTS:
         
         // Type-specific validation
         if (question.type === 'multiple-choice') {
+            // Auto-fix: Ensure exactly 4 options for multiple-choice questions
+            if (question.options && Array.isArray(question.options) && question.options.length < 4) {
+                logger.debug('🔧 ValidateGeneratedQuestion - Auto-fixing: padding options to 4');
+                const originalLength = question.options.length;
+                
+                // Add generic distractors to reach 4 options
+                const genericDistractors = [
+                    'None of the above',
+                    'All of the above', 
+                    'Not applicable',
+                    'Cannot be determined',
+                    'Not mentioned in the content',
+                    'More information needed'
+                ];
+                
+                while (question.options.length < 4) {
+                    // Find a distractor that's not already in the options
+                    let distractor = genericDistractors.find(d => !question.options.includes(d));
+                    if (!distractor) {
+                        distractor = `Option ${question.options.length + 1}`;
+                    }
+                    question.options.push(distractor);
+                }
+                
+                logger.debug(`🔧 Padded options from ${originalLength} to ${question.options.length}`);
+            }
+            
             if (!question.options || !Array.isArray(question.options) || 
+                question.options.length !== 4 ||
                 question.correctAnswer === undefined || 
                 question.correctAnswer < 0 || 
                 question.correctAnswer >= question.options.length) {

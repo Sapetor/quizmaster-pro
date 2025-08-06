@@ -46,8 +46,20 @@ body:not(.loaded) * {
 }
 
 /* LaTeX rendering - hide until ready */
+/* Hide LaTeX content initially, but show after timeout as fallback */
 .tex2jax_process:not(.MathJax_Processed) {
     visibility: hidden;
+}
+
+/* Show LaTeX content after 1 second even if MathJax fails (F5 recovery) */
+.mathjax-ready .tex2jax_process:not(.MathJax_Processed) {
+    visibility: visible;
+    animation: latexFallbackShow 0.3s ease-in 1s forwards;
+}
+
+@keyframes latexFallbackShow {
+    from { visibility: hidden; }
+    to { visibility: visible; }
 }
 
 .MathJax_Processed {

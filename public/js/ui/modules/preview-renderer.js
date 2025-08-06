@@ -57,7 +57,7 @@ export class PreviewRenderer {
     }
 
     /**
-     * Render text with LaTeX support and fallback handling
+     * Render text with LaTeX support and enhanced F5 handling
      */
     renderSplitTextWithLatex(element, text) {
         if (!element || !text) {
@@ -81,23 +81,27 @@ export class PreviewRenderer {
         // Check for LaTeX content
         const hasLatex = this.mathJaxService.hasLatex(formattedContent);
         
+        // Always show content immediately - don't wait for MathJax
+        element.style.opacity = '1';
+        
         if (hasLatex) {
-            logger.debug('LaTeX content detected, rendering with MathJax');
+            logger.debug('LaTeX content detected in preview, rendering with enhanced MathJax service');
             element.classList.add('tex2jax_process');
             
-            // Use simplified MathJax service
+            // Use enhanced MathJax service with queue and retry logic (non-blocking)
             this.mathJaxService.render([element]).then(() => {
-                element.style.opacity = '1';
-                logger.debug('MathJax rendering completed successfully');
+                logger.debug('Preview MathJax rendering completed successfully');
+                // Add visual feedback that LaTeX is rendered
+                element.classList.add('mathjax-rendered');
             }).catch(error => {
-                logger.warn('MathJax rendering failed, showing fallback:', error);
-                this.showSplitFallbackText(element);
+                logger.warn('Preview MathJax rendering failed, content still visible:', error);
+                // Add class to indicate LaTeX failed but content is visible
+                element.classList.add('mathjax-failed');
             });
             
         } else {
-            // No LaTeX, show directly
-            element.style.opacity = '1';
-            logger.debug('Plain text rendering completed');
+            logger.debug('Plain text preview rendering completed');
+            element.classList.add('plain-text-rendered');
         }
     }
 
@@ -142,13 +146,75 @@ export class PreviewRenderer {
 
     /**
      * Set image source with data URI or path handling
+     * Enhanced with WSL-aware retry logic for file serving delays
      */
     setSplitImageSource(img, imageData) {
+        if (!imageData || imageData.trim() === '') {
+            logger.warn('Empty image data provided to setSplitImageSource');
+            return;
+        }
+
         if (imageData.startsWith('data:')) {
             img.src = imageData;
         } else {
-            img.src = `/uploads/${imageData}`;
+            // Clean up the image path to avoid double /uploads/ issue
+            let cleanPath;
+            if (imageData.startsWith('/uploads/')) {
+                // Already has /uploads/ prefix
+                cleanPath = imageData;
+            } else if (imageData.startsWith('uploads/')) {
+                // Missing leading slash
+                cleanPath = '/' + imageData;
+            } else {
+                // Just filename, add full path
+                cleanPath = `/uploads/${imageData}`;
+            }
+            
+            logger.debug(`Setting image source: ${imageData} → ${cleanPath}`);
+            // Use retry logic for uploaded images to handle WSL file serving delays
+            this.loadImageWithRetry(img, cleanPath, 3, 1, img.closest('#preview-question-image-split'));
         }
+    }
+
+    /**
+     * Load image with retry logic for WSL environments
+     * @param {HTMLImageElement} img - Image element
+     * @param {string} src - Image source URL
+     * @param {number} maxRetries - Maximum retry attempts
+     * @param {number} attempt - Current attempt number
+     * @param {HTMLElement} imageDisplay - Image container for error handling
+     */
+    loadImageWithRetry(img, src, maxRetries = 3, attempt = 1, imageDisplay = null) {
+        img.onload = () => {
+            logger.debug(`Preview image loaded successfully on attempt ${attempt}: ${src}`);
+            if (imageDisplay) {
+                imageDisplay.classList.remove('loading');
+                // Clear any previous error messages
+                const errorMsg = imageDisplay.querySelector('.image-error');
+                if (errorMsg) {
+                    errorMsg.remove();
+                }
+            }
+        };
+        
+        img.onerror = () => {
+            if (attempt < maxRetries) {
+                logger.warn(`Preview image load failed, retrying (${attempt}/${maxRetries}): ${src}`);
+                // Progressive delay: 100ms, 200ms, 300ms for WSL file system delays
+                setTimeout(() => {
+                    this.loadImageWithRetry(img, src, maxRetries, attempt + 1, imageDisplay);
+                }, 100 * attempt);
+            } else {
+                logger.error(`Preview image failed to load after ${maxRetries} attempts: ${src}`);
+                if (imageDisplay) {
+                    // Extract filename from src for error display
+                    const filename = src.split('/').pop();
+                    this.showSplitImageError(imageDisplay, filename);
+                }
+            }
+        };
+        
+        img.src = src;
     }
 
     /**
@@ -497,17 +563,16 @@ export class PreviewRenderer {
     renderLatexOption(optionDiv, formattedContent, container) {
         optionDiv.innerHTML = formattedContent;
         optionDiv.classList.add('tex2jax_process');
-        optionDiv.style.opacity = '0';
-        
         container.appendChild(optionDiv);
         
-        // Use simplified MathJax service for option rendering
+        // Always show option content immediately
+        optionDiv.style.opacity = '1';
+        
+        // Use simplified MathJax service for option rendering (non-blocking)
         this.mathJaxService.render([optionDiv]).then(() => {
-            optionDiv.style.opacity = '1';
             logger.debug('Option MathJax rendering completed');
         }).catch(error => {
-            logger.warn('MathJax option rendering error:', error);
-            optionDiv.style.opacity = '1'; // Show anyway
+            logger.warn('MathJax option rendering error, content still visible:', error);
         });
     }
 
@@ -534,7 +599,7 @@ export class PreviewRenderer {
     }
 
     /**
-     * Render MathJax for preview elements (simplified)
+     * Render MathJax for preview elements with enhanced F5 handling
      */
     renderMathJaxForPreview() {
         if (this.mathJaxRenderingInProgress) {
@@ -545,10 +610,23 @@ export class PreviewRenderer {
         this.mathJaxRenderingInProgress = true;
         
         try {
-            // Use simplified service to render all preview elements
-            this.mathJaxService.renderAll(document.querySelector('.preview-content-split')).finally(() => {
+            // Find specific preview elements that need MathJax rendering
+            const previewContainer = document.querySelector('.preview-content-split');
+            if (!previewContainer) {
+                logger.debug('Preview container not found, skipping MathJax rendering');
+                this.mathJaxRenderingInProgress = false;
+                return;
+            }
+            
+            // Use enhanced service with queue and retry logic
+            this.mathJaxService.renderAll(previewContainer).then(() => {
+                logger.debug('Preview MathJax rendering completed successfully');
+            }).catch(error => {
+                logger.warn('Preview MathJax rendering failed, content still visible:', error);
+            }).finally(() => {
                 this.mathJaxRenderingInProgress = false;
             });
+            
         } catch (error) {
             logger.warn('Preview MathJax rendering error:', error);
             this.mathJaxRenderingInProgress = false;

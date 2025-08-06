@@ -433,6 +433,8 @@ export class SocketManager {
      */
     joinGame(pin, playerName) {
         logger.debug('Attempting to join game with PIN:', pin, 'Name:', playerName);
+        
+        
         this.socket.emit('player-join', {
             pin: pin,
             name: playerName
@@ -477,6 +479,11 @@ export class SocketManager {
             this.gameManager.setQuizTitle(quizData.quiz.title);
         }
         
+        // Set full quiz data for detailed analytics export
+        if (quizData?.quiz && this.gameManager) {
+            this.gameManager.setQuizData(quizData.quiz);
+        }
+        
         try {
             this.socket.emit('host-join', quizData);
             logger.debug('Emitted host-join event successfully');
@@ -496,6 +503,7 @@ export class SocketManager {
         if (this.gameManager) {
             this.gameManager.markGameStartTime();
         }
+        
         
         try {
             this.socket.emit('start-game');

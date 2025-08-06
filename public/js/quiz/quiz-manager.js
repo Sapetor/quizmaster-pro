@@ -116,7 +116,8 @@ export class QuizManager {
             // First check dataset.url (where uploaded images are stored)
             let imageUrl = imageElement.dataset.url || imageElement.src;
             
-            if (imageUrl) {
+            // Validate that we have a meaningful image URL
+            if (imageUrl && imageUrl.trim() !== '' && !imageUrl.endsWith('/') && imageUrl !== window.location.origin && imageUrl !== window.location.origin + '/') {
                 logger.debug('Found image for question:', imageUrl);
                 
                 // Handle data URIs (base64 images)
@@ -131,7 +132,7 @@ export class QuizManager {
                     } else if (imageUrl.startsWith('uploads/')) {
                         // Already a relative path like uploads/filename.jpg
                         questionData.image = '/' + imageUrl; // Make it /uploads/filename.jpg
-                    } else if (imageUrl.startsWith('/')) {
+                    } else if (imageUrl.startsWith('/uploads/')) {
                         // Already an absolute path like /uploads/filename.jpg
                         questionData.image = imageUrl; 
                     } else if (imageUrl.startsWith('http')) {
@@ -140,10 +141,15 @@ export class QuizManager {
                         questionData.image = ''; // Clear invalid URL
                     } else {
                         // Assume it's a relative path and make it absolute
-                        questionData.image = '/' + imageUrl;
+                        questionData.image = '/uploads/' + imageUrl;
                     }
                 }
-                
+            } else if (imageUrl) {
+                logger.warn('Invalid image URL format:', imageUrl);
+                questionData.image = ''; // Clear invalid URL
+            }
+            
+            if (questionData.image) {
                 logger.debug('Processed image path for quiz save:', questionData.image);
             }
         }
@@ -700,6 +706,8 @@ export class QuizManager {
         const questionItems = questionsContainer.querySelectorAll('.question-item');
         const hasMultipleQuestions = questionItems.length > 1;
         
+        logger.debug(`updateQuestionsUI: Found ${questionItems.length} questions, hasMultipleQuestions: ${hasMultipleQuestions}`);
+        
         questionItems.forEach((questionItem, index) => {
             // Update data-question attribute only if needed
             const currentDataQuestion = questionItem.getAttribute('data-question');
@@ -715,15 +723,18 @@ export class QuizManager {
                 }
             }
             
-            // Handle remove button visibility efficiently
+            // Handle remove button visibility - show only when multiple questions exist
             const removeButton = questionItem.querySelector('.remove-question');
             if (removeButton) {
                 const shouldShow = hasMultipleQuestions ? 'block' : 'none';
-                const currentDisplay = removeButton.style.display || 'none';
                 
-                if (currentDisplay !== shouldShow) {
-                    removeButton.style.display = shouldShow;
-                }
+                logger.debug(`Question ${index + 1}: removeButton found, setting display to "${shouldShow}"`);
+                
+                // Always set the display style, don't check if it's different
+                removeButton.style.display = shouldShow;
+                logger.debug(`Question ${index + 1}: Set removeButton display to "${shouldShow}"`);
+            } else {
+                logger.warn(`Question ${index + 1}: removeButton NOT found!`);
             }
         });
         
@@ -758,7 +769,7 @@ export class QuizManager {
                 questionItem.appendChild(removeButton);
             }
             
-            // Show/hide based on number of questions
+            // Show remove button only when multiple questions exist
             if (hasMultipleQuestions) {
                 removeButton.style.display = 'block';
             } else {

@@ -62,6 +62,8 @@ function updateLanguageDropdownDisplay(languageCode) {
 
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
+    const timestamp = new Date().toISOString();
+    console.log(`🟠 [${timestamp}] main.js DOMContentLoaded event fired`);
     logger.debug('QuizMaster Pro - Initializing modular application...');
     
     // FOUC Prevention: Apply saved font size immediately (should already be done in HTML head)
@@ -103,7 +105,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         // Initialize the main application
+        const appInitTimestamp = new Date().toISOString();
+        console.log(`🟠 [${appInitTimestamp}] Creating QuizGame instance`);
         window.game = new QuizGame();
+        const appCreatedTimestamp = new Date().toISOString();
+        console.log(`🟠 [${appCreatedTimestamp}] QuizGame instance created successfully`);
         logger.debug('QuizGame instance created successfully');
         
         // Check for QR code URL parameters and auto-fill PIN
@@ -132,11 +138,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         logger.debug('Content density manager initialized');
         
         // Initialize mobile layout manager for content-aware layouts
+        const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         mobileLayoutManager.setEnabled(window.innerWidth <= 768);
         logger.debug('Mobile layout manager initialized');
         
-        // Basic mobile optimization
-        logger.debug('App initialized for mobile/desktop layout');
+        // Enhanced mobile initialization for better Android/iOS compatibility
+        if (isMobile) {
+            logger.info(`📱 Mobile device detected: ${navigator.userAgent.substring(0, 50)}...`);
+            
+            // Add mobile-specific class for CSS optimizations
+            document.body.classList.add('mobile-device');
+            
+            // Mobile devices benefit from longer initialization delay
+            setTimeout(() => {
+                document.body.classList.add('mobile-ready');
+                logger.debug('📱 Mobile initialization complete');
+            }, 300);
+        }
+        
+        logger.debug(`App initialized for ${isMobile ? 'mobile' : 'desktop'} layout`);
         
         // FOUC Prevention: Add loaded class for smooth appearance
         document.body.classList.add('loaded');

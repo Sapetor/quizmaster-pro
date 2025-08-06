@@ -12,7 +12,7 @@ export const DEBUG = {
         INFO: 3,
         DEBUG: 4
     },
-    CURRENT_LEVEL: 4 // Show all logs (1=errors only, 2=+warnings, 3=+info, 4=+debug)
+    CURRENT_LEVEL: 2 // Show errors and warnings only (1=errors only, 2=+warnings, 3=+info, 4=+debug)
 };
 
 // Debug utility functions
@@ -56,7 +56,11 @@ export const TIMING = {
     // MathJax rendering (simplified)
     MATHJAX_TIMEOUT: 100,
     MATHJAX_LOADING_TIMEOUT: 10000,
-    RENDER_DELAY: 200, // Standard delay for rendering operations
+    RENDER_DELAY: (() => {
+        // Android-friendly render delay - balance between speed and compatibility
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        return isAndroid ? 400 : 200; // Android needs extra time for DOM and MathJax processing
+    })()
 };
 
 export const SCORING = {

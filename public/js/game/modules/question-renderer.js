@@ -110,7 +110,7 @@ export class QuestionRenderer {
         // Translate any dynamic content in the options container
         translationManager.translateContainer(hostOptionsContainer);
         
-        // Use GameDisplayManager for MathJax rendering
+        // Use GameDisplayManager for MathJax rendering - host needs more time after F5
         this.displayManager.renderQuestionMath(hostOptionsContainer, 350);
     }
 
@@ -285,11 +285,12 @@ export class QuestionRenderer {
      */
     updatePlayerOptions(data, optionsContainer) {
         if (!optionsContainer) {
-            logger.warn('Player options container not found');
+            logger.error('Player options container not found - critical DOM issue');
             return;
         }
         
         logger.debug('Setting up player options for type:', data.type);
+        logger.debug('Options container element:', optionsContainer.tagName, optionsContainer.id, optionsContainer.className);
         
         if (data.type === 'multiple-choice') {
             this.setupPlayerMultipleChoiceOptions(data, optionsContainer);
@@ -310,8 +311,22 @@ export class QuestionRenderer {
      */
     setupPlayerMultipleChoiceOptions(data, optionsContainer) {
         const existingButtons = optionsContainer.querySelectorAll('.player-option');
+        
+        // Debug Android DOM issues
+        logger.debug(`Found ${existingButtons.length} player option buttons, need ${data.options.length}`);
+        if (existingButtons.length === 0) {
+            logger.error('No .player-option elements found - DOM structure missing!');
+            return;
+        }
+        
         existingButtons.forEach((button, index) => {
             if (index < data.options.length) {
+                // Ensure button exists and is valid DOM element
+                if (!button || button.innerHTML === undefined) {
+                    logger.error(`Button ${index} is invalid:`, button);
+                    return;
+                }
+                
                 button.innerHTML = `<span class="option-letter">${translationManager.getOptionLetter(index)}:</span> ${this.displayManager.mathRenderer.formatCodeBlocks(data.options[index])}`;
                 button.setAttribute('data-answer', index.toString());
                 button.classList.remove('selected', 'disabled');

@@ -23,6 +23,8 @@ import { resultsViewer } from '../utils/results-viewer.js';
 
 export class QuizGame {
     constructor() {
+        const timestamp = new Date().toISOString();
+        console.log(`🟣 [${timestamp}] QuizGame constructor called`);
         logger.info('Initializing QuizGame...');
         
         // Initialize socket connection
@@ -49,7 +51,13 @@ export class QuizGame {
         
         this.soundManager = new SoundManager();
         this.uiManager = new UIManager();
+        
+        const mathRendererTimestamp = new Date().toISOString();
+        console.log(`🟣 [${mathRendererTimestamp}] Creating MathRenderer (which creates SimpleMathJaxService)`);
         this.mathRenderer = new MathRenderer();
+        const mathRendererCreatedTimestamp = new Date().toISOString();
+        console.log(`🟣 [${mathRendererCreatedTimestamp}] MathRenderer created`);
+        
         this.previewManager = new PreviewManager(this.mathRenderer);
         this.gameManager = new GameManager(this.socket, this.uiManager, this.soundManager);
         this.quizManager = new QuizManager(this.uiManager);

@@ -485,6 +485,7 @@ export function addQuestion() {
     }
     
     const questionCount = questionsContainer.children.length;
+    logger.debug(`Current question count before adding: ${questionCount}`);
     
     const questionDiv = document.createElement('div');
     questionDiv.className = 'question-item';
@@ -492,31 +493,37 @@ export function addQuestion() {
     
     questionDiv.innerHTML = questionUtils.generateQuestionHTML(questionCount);
     
-    // Pre-create the remove button to avoid later DOM manipulation
-    const removeButton = document.createElement('button');
-    removeButton.className = 'btn secondary remove-question';
-    removeButton.onclick = () => {
-        questionDiv.remove();
-        // Use setTimeout to prevent immediate reflow issues
-        setTimeout(() => {
-            if (window.game && window.game.quizManager && window.game.quizManager.updateQuestionsUI) {
-                window.game.quizManager.updateQuestionsUI();
-            }
-        }, 10);
-    };
-    removeButton.setAttribute('data-translate', 'remove');
-    removeButton.textContent = 'Remove';
-    removeButton.style.display = 'none'; // Hidden initially
-    questionDiv.appendChild(removeButton);
-    
     questionsContainer.appendChild(questionDiv);
+    
+    const newQuestionCount = questionsContainer.children.length;
+    logger.debug(`Question added, new count: ${newQuestionCount}`);
     
     // Translate the newly added question element
     translationManager.translateContainer(questionDiv);
     
-    // Update questions UI in single operation to prevent visual glitches
+    // Update remove button visibility for ALL questions
+    const allQuestions = questionsContainer.querySelectorAll('.question-item');
+    const hasMultipleQuestions = allQuestions.length > 1;
+    
+    logger.debug(`Updating remove buttons for ${allQuestions.length} questions, hasMultipleQuestions: ${hasMultipleQuestions}`);
+    
+    allQuestions.forEach((questionItem, index) => {
+        const removeButton = questionItem.querySelector('.remove-question');
+        if (removeButton) {
+            const shouldShow = hasMultipleQuestions ? 'block' : 'none';
+            removeButton.style.display = shouldShow;
+            logger.debug(`Question ${index + 1}: Set remove button display to "${shouldShow}"`);
+        } else {
+            logger.warn(`Question ${index + 1}: Remove button not found!`);
+        }
+    });
+    
+    // Also call the quiz manager's update function if available
     if (window.game && window.game.quizManager && window.game.quizManager.updateQuestionsUI) {
+        logger.debug('Calling updateQuestionsUI after adding question');
         window.game.quizManager.updateQuestionsUI();
+    } else {
+        logger.warn('updateQuestionsUI not available');
     }
     
     return questionDiv;

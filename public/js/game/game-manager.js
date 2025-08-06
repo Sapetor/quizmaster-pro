@@ -1406,6 +1406,15 @@ export class GameManager {
     }
 
     /**
+     * Set quiz data for results export
+     */
+    setQuizData(quiz) {
+        logger.debug('setQuizData called - questions:', quiz?.questions?.length);
+        this.currentQuiz = quiz;
+        logger.debug('currentQuiz set successfully');
+    }
+
+    /**
      * Mark game start time for results saving
      */
     markGameStartTime() {
@@ -1702,6 +1711,29 @@ export class GameManager {
                 startTime: this.gameStartTime || new Date().toISOString(),
                 endTime: new Date().toISOString()
             };
+
+            // Debug: Check what quiz data we have
+            logger.debug('📊 Quiz data debug:', {
+                hasCurrentQuiz: !!this.currentQuiz,
+                currentQuizKeys: this.currentQuiz ? Object.keys(this.currentQuiz) : null,
+                hasQuestions: !!(this.currentQuiz && this.currentQuiz.questions),
+                questionsLength: this.currentQuiz?.questions?.length,
+                sampleQuestion: this.currentQuiz?.questions?.[0]
+            });
+
+            // Add questions data if available for detailed analytics
+            if (this.currentQuiz && this.currentQuiz.questions) {
+                logger.debug('📊 Including questions data for analytics:', this.currentQuiz.questions.length, 'questions');
+                resultsData.questions = this.currentQuiz.questions.map((q, index) => ({
+                    questionNumber: index + 1,
+                    text: q.question || q.text,
+                    type: q.type || 'multiple-choice',
+                    correctAnswer: q.correctAnswer || q.correctAnswers,
+                    difficulty: q.difficulty || 'medium'
+                }));
+            } else {
+                logger.debug('📊 No questions data available - CSV will use basic format');
+            }
 
             logger.debug('📊 Saving game results:', {
                 quizTitle: resultsData.quizTitle,
