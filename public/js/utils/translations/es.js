@@ -141,6 +141,7 @@ export default {
         error_loading_quiz: "Error cargando quiz",
         please_enter_quiz_title: "Por favor introduce un título de quiz",
         please_add_one_question: "Por favor añade al menos una pregunta",
+        please_select_at_least_one: "Por favor selecciona al menos una respuesta",
         answer_submitted: "Respuesta enviada",
         your_answer: "Tu respuesta",
         

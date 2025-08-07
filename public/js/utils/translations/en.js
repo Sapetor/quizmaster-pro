@@ -97,6 +97,7 @@ export default {
         name_max_twenty_chars: "Name must be 20 characters or less",
         not_connected_refresh: "Not connected to server. Please refresh the page.",
         please_enter_valid_number: "Please enter a valid number",
+        please_select_at_least_one: "Please select at least one answer",
         please_select_csv_json: "Please select a CSV or JSON file",
         
         // User Manual

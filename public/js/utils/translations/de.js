@@ -93,6 +93,7 @@ export default {
         name_max_twenty_chars: "Name muss 20 Zeichen oder weniger haben",
         not_connected_refresh: "Nicht mit Server verbunden. Bitte Seite aktualisieren.",
         please_enter_valid_number: "Bitte geben Sie eine gültige Zahl ein",
+        please_select_at_least_one: "Bitte wählen Sie mindestens eine Antwort aus",
         please_select_csv_json: "Bitte wählen Sie eine CSV- oder JSON-Datei",
         invalid_file_format: "Ungültiges Dateiformat. Bitte überprüfen Sie die Dateistruktur.",
         error_importing_file: "Fehler beim Importieren der Datei. Bitte überprüfen Sie das Dateiformat.",

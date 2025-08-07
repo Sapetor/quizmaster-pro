@@ -85,6 +85,7 @@ export default {
         enter_question_preview: "Entrez votre question ci-dessus pour voir l'aperçu",
         add_question_preview: "Ajoutez une question pour voir l'aperçu",
         please_enter_quiz_title: "Veuillez entrer un titre de quiz",
+        please_select_at_least_one: "Veuillez sélectionner au moins une réponse",
         please_add_one_question: "Veuillez ajouter au moins une question",
         question_missing_text: "La question {0} n'a pas de texte",
         question_needs_two_options: "La question {0} nécessite au moins 2 options valides",
@@ -107,6 +108,7 @@ export default {
         multiple_choice: "Choix Multiple",
         true_false: "Vrai/Faux",
         multiple_correct: "Réponses Multiples Correctes",
+        multiple_correct_instruction: "Sélectionnez toutes les bonnes réponses - plusieurs options peuvent être correctes !",
         numeric: "Réponse Numérique",
 
         // Difficulty dropdown keys
