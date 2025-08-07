@@ -13,6 +13,26 @@
     transition: opacity 0.2s ease-in-out;
 }
 
+/* Multiple Correct Question Instruction */
+.multiple-correct-instruction {
+    margin: 8px 0 12px 0;
+    padding: 4px 8px;
+    font-style: italic;
+    opacity: 0.75;
+    font-size: 0.85em;
+    text-align: center;
+}
+
+/* Light mode styling */
+.multiple-correct-instruction {
+    color: var(--text-secondary);
+}
+
+/* Dark mode styling */
+[data-theme="dark"] .multiple-correct-instruction {
+    color: var(--text-muted);
+}
+
 /* Lobby Styles */
 .lobby-info {
     text-align: center;

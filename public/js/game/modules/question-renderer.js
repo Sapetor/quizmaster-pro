@@ -270,12 +270,11 @@ export class QuestionRenderer {
         // Format and display question text using display manager
         this.displayManager.displayQuestionText(questionElement, data.question);
         
-        // Add instruction for multiple correct questions
+        // Add subtle instruction for multiple correct questions
         if (data.type === 'multiple-correct') {
             const instruction = document.createElement('div');
             instruction.className = 'multiple-correct-instruction';
-            instruction.innerHTML = `<em>💡 ${translationManager.getTranslationSync('multiple_correct_instruction')}</em>`;
-            instruction.style.cssText = 'margin: 10px 0; padding: 8px 12px; background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 0.9em; color: #1e40af;';
+            instruction.innerHTML = `<small>💡 ${translationManager.getTranslationSync('multiple_correct_instruction')}</small>`;
             questionElement.appendChild(instruction);
         }
         
