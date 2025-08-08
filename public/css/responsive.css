@@ -440,3 +440,33 @@
         max-height: 40vh;
     }
 }
+
+/* Mobile Performance Optimizations */
+@media (max-width: 768px) {
+    /* Optimize animations for mobile devices */
+    .modal, .modal-content {
+        /* Reduce animation complexity on mobile for better performance */
+        animation-duration: 0.2s !important;
+        transition-duration: 0.2s !important;
+    }
+    
+    /* Prevent unnecessary repaints during modal operations */
+    .modal-content {
+        transform: translate3d(0, 0, 0); /* Force hardware acceleration */
+    }
+    
+    /* Optimize touch interactions */
+    .quiz-item.clickable {
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation; /* Prevent zoom on double-tap */
+    }
+    
+    /* Reduce backdrop blur complexity on older mobile devices */
+    @supports not (backdrop-filter: blur(12px)) {
+        .modal {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background: rgba(0, 0, 0, 0.7) !important;
+        }
+    }
+}

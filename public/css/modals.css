@@ -19,6 +19,9 @@
     animation: modalFadeIn 0.3s ease-out forwards;
     padding: 20px;
     box-sizing: border-box;
+    /* Performance optimizations for mobile and older devices */
+    will-change: opacity;
+    contain: layout style paint;
 }
 
 @keyframes modalFadeIn {
@@ -43,6 +46,9 @@
     animation: modalSlideIn 0.4s ease-out forwards;
     position: relative;
     margin: auto;
+    /* Performance optimizations for smooth animations */
+    will-change: transform, opacity;
+    backface-visibility: hidden;
 }
 
 [data-theme="dark"] .modal-content {

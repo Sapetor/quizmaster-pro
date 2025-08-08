@@ -262,14 +262,20 @@ export class QuizManager {
         // Set up modal event handlers
         this.setupLoadQuizModalHandlers(modal);
         
-        // Load quizzes list
+        // Cache quiz list element for better performance
+        if (!this.cachedQuizListElement) {
+            this.cachedQuizListElement = document.getElementById('quiz-list');
+        }
+        const quizList = this.cachedQuizListElement;
+        
+        // Load quizzes list with performance optimization
         try {
             const response = await fetch('/api/quizzes');
             const data = await response.json();
             
-            const quizList = document.getElementById('quiz-list');
             if (quizList) {
-                quizList.innerHTML = '';
+                // Use DocumentFragment for better performance with multiple DOM operations
+                const fragment = document.createDocumentFragment();
                 
                 // Check if data is directly an array or has a quizzes property
                 const quizzes = Array.isArray(data) ? data : data.quizzes;
@@ -286,19 +292,21 @@ export class QuizManager {
                                 <p>${quiz.questionCount} ${translationManager.getTranslationSync('questions')} • ${translationManager.getTranslationSync('created')}: ${new Date(quiz.created).toLocaleDateString()}</p>
                             </div>
                         `;
-                        quizList.appendChild(quizItem);
+                        fragment.appendChild(quizItem);
                     });
                 } else {
-                    quizList.innerHTML = `
-                        <div class="no-quizzes">
-                            <p>${translationManager.getTranslationSync('no_saved_quizzes')}</p>
-                        </div>
-                    `;
+                    const noQuizzesDiv = document.createElement('div');
+                    noQuizzesDiv.className = 'no-quizzes';
+                    noQuizzesDiv.innerHTML = `<p>${translationManager.getTranslationSync('no_saved_quizzes')}</p>`;
+                    fragment.appendChild(noQuizzesDiv);
                 }
+                
+                // Batch DOM update for better performance
+                quizList.innerHTML = '';
+                quizList.appendChild(fragment);
             }
         } catch (error) {
             this.errorHandler.log(error, { operation: 'loadQuizzes' });
-            const quizList = document.getElementById('quiz-list');
             if (quizList) {
                 quizList.innerHTML = `
                     <div class="no-quizzes">
@@ -308,8 +316,11 @@ export class QuizManager {
             }
         }
         
-        modal.style.display = 'flex';
-        modal.style.visibility = 'visible'; // Reset visibility that might have been set to 'hidden'
+        // Show modal with requestAnimationFrame for smooth transition
+        requestAnimationFrame(() => {
+            modal.style.display = 'flex';
+            modal.style.visibility = 'visible'; // Reset visibility that might have been set to 'hidden'
+        });
     }
 
     /**
