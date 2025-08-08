@@ -1,0 +1,104 @@
+{
+  "title": "Diagnósitco 1 MIN215",
+  "questions": [
+    {
+      "question": "¿Cuál de las siguientes afirmaciones sobre las ecuaciones diferenciales lineales es VERDADERA?",
+      "type": "multiple-choice",
+      "time": 20,
+      "difficulty": "medium",
+      "options": [
+        "Las ecuaciones diferenciales lineales siempre tienen soluciones únicas",
+        "Las ecuaciones diferenciales lineales no pueden resolverse usando transformada de Laplace",
+        "Las ecuaciones diferenciales lineales no tienen aplicaciones en el análisis de sistemas de control",
+        "Las ecuaciones diferenciales lineales son más sencillas de resolver que las ecuaciones diferenciales no lineales"
+      ],
+      "correctAnswer": 3,
+      "image": ""
+    },
+    {
+      "question": "La transformada de Laplace es una herramienta importante en el análisis de sistemas de control.",
+      "type": "true-false",
+      "time": 20,
+      "difficulty": "medium",
+      "correctAnswer": true,
+      "image": ""
+    },
+    {
+      "question": "¿Cuáles de las siguientes afirmaciones sobre el álgebra lineal son CORRECTAS? (Selecciona todas las que apliquen)",
+      "type": "multiple-correct",
+      "time": 20,
+      "difficulty": "medium",
+      "options": [
+        "El álgebra lineal es fundamental para el análisis de sistemas de control",
+        "El álgebra lineal no tiene aplicaciones en la teoría de sistemas de control",
+        "Las matrices y los espacios vectoriales son conceptos clave en el álgebra lineal",
+        "El álgebra lineal no se utiliza en el análisis de estabilidad de sistemas de control"
+      ],
+      "correctAnswers": [
+        0,
+        2
+      ],
+      "image": ""
+    },
+    {
+      "question": "¿En qué año se introdujo por primera vez el concepto de lugar de las raíces (root locus) en el análisis de sistemas de control?",
+      "type": "numeric",
+      "time": 20,
+      "difficulty": "medium",
+      "correctAnswer": 1948,
+      "tolerance": 0,
+      "image": ""
+    },
+    {
+      "question": "¿Cuál de las siguientes propiedades de las ecuaciones diferenciales lineales es FALSA?",
+      "type": "multiple-choice",
+      "time": 20,
+      "difficulty": "medium",
+      "options": [
+        "Las ecuaciones diferenciales lineales tienen soluciones expresadas como combinaciones lineales de funciones exponenciales y funciones trigonométricas",
+        "Las ecuaciones diferenciales lineales pueden resolverse usando el método de los coeficientes indeterminados",
+        "Las ecuaciones diferenciales lineales siempre tienen soluciones únicas y analíticas",
+        "Las ecuaciones diferenciales lineales pueden resolverse usando transformada de Laplace"
+      ],
+      "correctAnswer": 2,
+      "image": ""
+    },
+    {
+      "question": "La teoría de control automático se basa en el análisis de sistemas dinámicos.",
+      "type": "true-false",
+      "time": 20,
+      "difficulty": "medium",
+      "correctAnswer": true,
+      "image": ""
+    },
+    {
+      "question": "¿Cuáles de las siguientes técnicas se utilizan en el análisis de estabilidad de sistemas de control? (Selecciona todas las que apliquen)",
+      "type": "multiple-correct",
+      "time": 20,
+      "difficulty": "medium",
+      "options": [
+        "Criterio de Routh-Hurwitz",
+        "Análisis de Fourier",
+        "Método del lugar de las raíces",
+        "Análisis de Bode"
+      ],
+      "correctAnswers": [
+        0,
+        2,
+        3
+      ],
+      "image": ""
+    },
+    {
+      "question": "¿Cuántos tipos de sistemas de control en lazo cerrado existen?",
+      "type": "numeric",
+      "time": 20,
+      "difficulty": "medium",
+      "correctAnswer": 2,
+      "tolerance": 0,
+      "image": ""
+    }
+  ],
+  "created": "2025-08-08T20:16:37.392Z",
+  "id": "6d72e4d3-73ed-4ac7-95c9-cd400c8b4a3b"
+}

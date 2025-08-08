@@ -1,0 +1,115 @@
+{
+  "title": "Diagnóstico 2 MIN215",
+  "questions": [
+    {
+      "question": "¿Cuál de las siguientes propiedades de las ecuaciones diferenciales lineales es CIERTA?",
+      "type": "multiple-choice",
+      "time": 20,
+      "difficulty": "medium",
+      "options": [
+        "La superposición de soluciones es una propiedad de las ecuaciones diferenciales lineales",
+        "Las ecuaciones diferenciales lineales siempre tienen soluciones explícitas",
+        "Las ecuaciones diferenciales lineales siempre tienen soluciones únicas",
+        "Las ecuaciones diferenciales lineales solo se pueden resolver con transformada de Laplace"
+      ],
+      "correctAnswer": 0,
+      "image": ""
+    },
+    {
+      "question": "¿Cuáles de las siguientes características son propias de la transformada de Laplace? (Selecciona todas las que apliquen)",
+      "type": "multiple-correct",
+      "time": 20,
+      "difficulty": "medium",
+      "options": [
+        "Convierte ecuaciones diferenciales en ecuaciones algebraicas",
+        "Solo se puede aplicar a funciones continuas",
+        "Facilita la resolución de ecuaciones diferenciales lineales",
+        "Permite trabajar con funciones discontinuas"
+      ],
+      "correctAnswers": [
+        0,
+        2
+      ],
+      "image": ""
+    },
+    {
+      "question": "¿En qué año se publicó por primera vez el artículo que introdujo el concepto de transformada de Laplace?",
+      "type": "numeric",
+      "time": 20,
+      "difficulty": "medium",
+      "correctAnswer": 1813,
+      "tolerance": 0,
+      "image": ""
+    },
+    {
+      "question": "¿Cuál de los siguientes es un ejemplo de una matriz cuadrada?",
+      "type": "multiple-choice",
+      "time": 20,
+      "difficulty": "medium",
+      "options": [
+        "Una matriz 3x4",
+        "Una matriz 2x2",
+        "Una matriz 4x3",
+        "Una matriz 5x5"
+      ],
+      "correctAnswer": 3,
+      "image": ""
+    },
+    {
+      "question": "¿Cuáles de estas propiedades son características de los valores propios y vectores propios en álgebra lineal? (Selecciona todas las que apliquen)",
+      "type": "multiple-correct",
+      "time": 20,
+      "difficulty": "medium",
+      "options": [
+        "Los valores propios representan cambios de escala en la dirección de los vectores propios",
+        "Los vectores propios son linealmente independientes",
+        "Los valores propios siempre son números reales",
+        "Los vectores propios siempre son perpendiculares entre sí"
+      ],
+      "correctAnswers": [
+        0,
+        1
+      ],
+      "image": ""
+    },
+    {
+      "question": "¿Cuál de las siguientes afirmaciones sobre las raíces de un polinomio es CIERTA?",
+      "type": "multiple-choice",
+      "time": 20,
+      "difficulty": "medium",
+      "options": [
+        "Las raíces complejas de un polinomio siempre aparecen en pares conjugados",
+        "Las raíces reales de un polinomio siempre son números enteros",
+        "Un polinomio de grado n tiene exactamente n raíces",
+        "Las raíces de un polinomio siempre son números racionales"
+      ],
+      "correctAnswer": 0,
+      "image": ""
+    },
+    {
+      "question": "¿Cuántas raíces reales puede tener un polinomio de grado 3?",
+      "type": "numeric",
+      "time": 20,
+      "difficulty": "medium",
+      "correctAnswer": 3,
+      "tolerance": 0,
+      "image": ""
+    },
+    {
+      "question": "¿Cuál de las siguientes afirmaciones sobre los valores propios y vectores propios es FALSA?",
+      "type": "multiple-choice",
+      "time": 20,
+      "difficulty": "medium",
+      "options": [
+        "Los valores propios representan los cambios de escala en la dirección de los vectores propios",
+        "Los vectores propios siempre son linealmente independientes",
+        "Los valores propios pueden ser números complejos",
+        "Los vectores propios siempre son perpendiculares entre sí"
+      ],
+      "correctAnswer": 3,
+      "image": ""
+    }
+  ],
+  "created": "2025-08-08T20:18:40.217Z",
+  "id": "56f3dcad-fb55-4b7f-bfc8-b37a1388552a"
+}
