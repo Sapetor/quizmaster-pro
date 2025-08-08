@@ -465,6 +465,7 @@ app.get('/api/results/:filename', (req, res) => {
 app.get('/api/results/:filename/export/:format', (req, res) => {
   try {
     const { filename, format } = req.params;
+    const exportType = req.query.type || 'analytics'; // 'analytics' or 'simple'
     
     // Validate filename
     if (!filename.match(/^results_\d+_\d+\.json$/)) {
@@ -474,6 +475,11 @@ app.get('/api/results/:filename/export/:format', (req, res) => {
     // Validate format
     if (!['csv', 'json'].includes(format.toLowerCase())) {
       return res.status(400).json({ error: 'Unsupported export format. Use csv or json.' });
+    }
+    
+    // Validate export type
+    if (!['analytics', 'simple'].includes(exportType)) {
+      return res.status(400).json({ error: 'Invalid export type. Use analytics or simple.' });
     }
     
     const filePath = path.join('results', filename);
@@ -487,8 +493,54 @@ app.get('/api/results/:filename/export/:format', (req, res) => {
     if (format.toLowerCase() === 'csv') {
       let csv = '';
       
-      // Enhanced question-centric format for better analytics
-      if (data.questions && data.questions.length > 0) {
+      if (exportType === 'simple') {
+        // Simple player-centric format matching example_new_format.csv
+        csv = 'Player Name,Question #,Question Text,Player Answer,Correct Answer,Is Correct,Time (seconds),Points\n';
+        
+        const players = data.results || [];
+        const questions = data.questions || [];
+        
+        players.forEach(player => {
+          if (player.answers && Array.isArray(player.answers)) {
+            player.answers.forEach((answer, qIndex) => {
+              if (answer) {
+                const question = questions[qIndex];
+                const questionText = question ? (question.text || question.question || `Question ${qIndex + 1}`) : `Question ${qIndex + 1}`;
+                let correctAnswer = question ? question.correctAnswer : 'Unknown';
+                let playerAnswer = answer.answer;
+                
+                // Handle array answers
+                if (Array.isArray(correctAnswer)) {
+                  correctAnswer = correctAnswer.join(', ');
+                }
+                if (Array.isArray(playerAnswer)) {
+                  playerAnswer = playerAnswer.join(', ');
+                }
+                
+                const isCorrectText = answer.isCorrect ? 'Yes' : 'No';
+                const timeSeconds = Math.round(answer.timeMs / 1000);
+                const points = answer.points || 0;
+                
+                const row = [
+                  `"${player.name || 'Anonymous'}"`,
+                  qIndex + 1,
+                  `"${questionText.replace(/"/g, '""')}"`,
+                  `"${playerAnswer || 'No Answer'}"`,
+                  `"${correctAnswer}"`,
+                  `"${isCorrectText}"`,
+                  timeSeconds,
+                  points
+                ].join(',');
+                
+                csv += row + '\n';
+              }
+            });
+          }
+        });
+        
+      } else {
+        // Enhanced question-centric format for better analytics
+        if (data.questions && data.questions.length > 0) {
         // Build header row with player columns
         const players = data.results || [];
         let header = ['Question', 'Correct Answer', 'Difficulty'];
@@ -658,8 +710,12 @@ app.get('/api/results/:filename/export/:format', (req, res) => {
       }
       
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="quiz_analytics_${data.gamePin}.csv"`);
+      const csvFilename = exportType === 'simple' 
+        ? `quiz_results_simple_${data.gamePin}.csv`
+        : `quiz_results_analytics_${data.gamePin}.csv`;
+      res.setHeader('Content-Disposition', `attachment; filename="${csvFilename}"`);
       res.send(csv);
+      } // End CSV processing
     } else {
       // Return JSON format with proper headers for download
       res.setHeader('Content-Type', 'application/json');

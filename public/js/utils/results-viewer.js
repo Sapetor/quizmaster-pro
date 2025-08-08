@@ -6,16 +6,73 @@
 import { translationManager, showErrorAlert, showSuccessAlert } from './translation-manager.js';
 import { errorHandler } from './error-handler.js';
 import { logger } from '../core/config.js';
+import { resultsManagerService } from '../services/results-manager-service.js';
 
 export class ResultsViewer {
     constructor() {
-        this.resultsCache = null;
         this.filteredResults = null;
-        this.isLoading = false;
         this.currentDetailResult = null;
+        this.currentExportFormat = 'analytics';
         
         this.initializeEventListeners();
+        
+        // Listen to results service updates
+        resultsManagerService.addListener((event, data) => {
+            this.handleServiceUpdate(event, data);
+        });
+        
         logger.debug('🔧 ResultsViewer initialized');
+    }
+
+    /**
+     * Handle updates from the results manager service
+     */
+    handleServiceUpdate(event, data) {
+        switch (event) {
+            case 'loadingStart':
+                this.showLoading();
+                break;
+            case 'loadingEnd':
+                this.hideLoading();
+                break;
+            case 'resultsUpdated':
+                this.onResultsUpdated(data);
+                break;
+            case 'error':
+                this.showError('Failed to load quiz results: ' + data.message);
+                break;
+            case 'downloadComplete':
+                showSuccessAlert(`Downloaded: ${data.downloadFilename}`);
+                break;
+            case 'resultDeleted':
+                this.onResultDeleted(data);
+                break;
+        }
+    }
+
+    /**
+     * Handle results update from service
+     */
+    onResultsUpdated(results) {
+        this.filteredResults = [...results];
+        this.updateSummaryStats();
+        this.filterResults();
+    }
+
+    /**
+     * Handle result deletion from service
+     */
+    onResultDeleted(filename) {
+        if (this.filteredResults) {
+            this.filteredResults = this.filteredResults.filter(r => r.filename !== filename);
+            this.updateSummaryStats();
+            this.renderResults();
+        }
+        
+        // Close detail modal if we're viewing the deleted result
+        if (this.currentDetailResult && this.currentDetailResult.filename === filename) {
+            this.hideDetailModal();
+        }
     }
 
     /**
@@ -59,6 +116,15 @@ export class ResultsViewer {
         const deleteBtn = document.getElementById('delete-result');
         if (deleteBtn) {
             deleteBtn.addEventListener('click', () => this.deleteCurrentResult());
+        }
+
+        // Format selection for downloads
+        const formatSelect = document.getElementById('export-format-select');
+        if (formatSelect) {
+            formatSelect.addEventListener('change', (e) => {
+                this.currentExportFormat = e.target.value;
+                logger.debug(`📊 Export format changed to: ${this.currentExportFormat}`);
+            });
         }
 
         // Modal overlay click to close
@@ -164,37 +230,16 @@ export class ResultsViewer {
     }
 
     /**
-     * Load and display results
+     * Load and display results using the service
      */
     async loadResults() {
-        this.isLoading = true;
-        this.showLoading();
-
         try {
-            logger.debug('📊 Fetching results from /api/results...');
-            const response = await this.fetchWithRetry('/api/results', 3, 1000);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                logger.error('📊 Error response:', errorText);
-                throw new Error(`Failed to fetch results: ${response.status} - ${errorText}`);
-            }
-            
-            const results = await response.json();
-            this.resultsCache = results;
-            this.filteredResults = [...results];
-            
-            logger.debug(`📊 Loaded ${results.length} results`);
-            
-            this.updateSummaryStats();
-            this.filterResults();
-            
+            const results = await resultsManagerService.fetchResults();
+            // Results are already handled via service listeners
+            logger.debug(`📊 Loaded ${results.length} results via service`);
         } catch (error) {
-            logger.error('❌ Error loading results:', error);
+            logger.error('❌ Error loading results via service:', error);
             this.showError('Failed to load quiz results');
-        } finally {
-            this.isLoading = false;
-            this.hideLoading();
         }
     }
 
@@ -202,8 +247,13 @@ export class ResultsViewer {
      * Refresh results data
      */
     async refreshResults() {
-        await this.loadResults();
-        showSuccessAlert('Results refreshed successfully');
+        try {
+            await resultsManagerService.fetchResults(true); // Force refresh
+            showSuccessAlert('Results refreshed successfully');
+        } catch (error) {
+            logger.error('❌ Error refreshing results:', error);
+            showErrorAlert('Failed to refresh results');
+        }
     }
 
     /**
@@ -246,29 +296,13 @@ export class ResultsViewer {
      * Update summary statistics
      */
     updateSummaryStats() {
-        if (!this.resultsCache) return;
+        if (!this.filteredResults) return;
 
-        const totalQuizzes = this.resultsCache.length;
-        let totalParticipants = 0;
-        let totalScore = 0;
-        let totalPossibleScore = 0;
-
-        this.resultsCache.forEach(result => {
-            if (result.results && Array.isArray(result.results)) {
-                totalParticipants += result.results.length;
-                
-                result.results.forEach(player => {
-                    totalScore += player.score || 0;
-                    totalPossibleScore += player.maxScore || 0;
-                });
-            }
-        });
-
-        const avgScore = totalPossibleScore > 0 ? Math.round((totalScore / totalPossibleScore) * 100) : 0;
-
-        this.updateStatElement('total-quizzes', totalQuizzes);
-        this.updateStatElement('total-participants', totalParticipants);
-        this.updateStatElement('avg-score', `${avgScore}%`);
+        const stats = resultsManagerService.calculateSummaryStats(this.filteredResults);
+        
+        this.updateStatElement('total-quizzes', stats.totalQuizzes);
+        this.updateStatElement('total-participants', stats.totalParticipants);
+        this.updateStatElement('avg-score', `${stats.averageScore}%`);
     }
 
     /**
@@ -285,35 +319,13 @@ export class ResultsViewer {
      * Filter and sort results based on user input
      */
     filterResults() {
-        if (!this.resultsCache) return;
+        const allResults = Array.from(resultsManagerService.resultsCache.values());
+        if (!allResults.length) return;
 
         const searchTerm = document.getElementById('search-results')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sort-results')?.value || 'date-desc';
 
-        // Filter by search term
-        let filtered = this.resultsCache.filter(result => {
-            return result.quizTitle?.toLowerCase().includes(searchTerm);
-        });
-
-        // Sort results
-        filtered.sort((a, b) => {
-            switch (sortBy) {
-                case 'date-desc':
-                    return new Date(b.saved || 0) - new Date(a.saved || 0);
-                case 'date-asc':
-                    return new Date(a.saved || 0) - new Date(b.saved || 0);
-                case 'title-asc':
-                    return (a.quizTitle || '').localeCompare(b.quizTitle || '');
-                case 'participants-desc':
-                    const aParticipants = a.results?.length || 0;
-                    const bParticipants = b.results?.length || 0;
-                    return bParticipants - aParticipants;
-                default:
-                    return 0;
-            }
-        });
-
-        this.filteredResults = filtered;
+        this.filteredResults = resultsManagerService.filterResults(allResults, searchTerm, sortBy);
         this.renderResults();
     }
 
@@ -352,9 +364,11 @@ export class ResultsViewer {
                         </div>
                     </div>
                     <div class="result-actions">
-                        <button class="result-action-btn download" onclick="resultsViewer.quickDownload('${result.filename}')">
-                            💾 Download
-                        </button>
+                        <div class="download-options">
+                            <button class="result-action-btn download" onclick="resultsViewer.showDownloadOptions('${result.filename}')">
+                                💾 Download
+                            </button>
+                        </div>
                         <button class="result-action-btn delete" onclick="resultsViewer.quickDelete('${result.filename}')">
                             🗑️ Delete
                         </button>
@@ -508,34 +522,16 @@ export class ResultsViewer {
     /**
      * Quick download functionality
      */
-    async quickDownload(filename) {
+    async quickDownload(filename, format = null) {
         try {
             logger.debug(`📊 Quick downloading result: ${filename}`);
             
-            const response = await fetch(`/api/results/${filename}/export/csv`);
-            if (!response.ok) {
-                throw new Error(`Failed to export result: ${response.status}`);
-            }
+            const exportFormat = format || this.currentExportFormat;
+            logger.debug(`📊 Using ${exportFormat} format for download`);
             
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            
-            const gamePin = filename.match(/results_(\d+)_/)?.[1] || 'unknown';
-            const downloadFilename = `quiz_results_${gamePin}.csv`;
-            
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = downloadFilename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            window.URL.revokeObjectURL(url);
-            
-            showSuccessAlert('Result downloaded successfully');
-            logger.debug(`📊 Result downloaded successfully as ${downloadFilename}`);
-            
-        } catch (error) {
+            await resultsManagerService.downloadResult(filename, exportFormat, 'csv');
+            return; // Service handles the download, so exit early
+            } catch (error) {
             logger.error('❌ Error downloading result:', error);
             showErrorAlert('Failed to download result');
         }
@@ -551,27 +547,8 @@ export class ResultsViewer {
 
         try {
             logger.debug(`📊 Deleting result: ${filename}`);
-            logger.debug(`📊 Delete URL: /api/results/${filename}`);
             
-            const response = await fetch(`/api/results/${filename}`, {
-                method: 'DELETE'
-            });
-            
-            logger.debug(`📊 Delete response status: ${response.status}`);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                logger.error(`📊 Delete error response: ${errorText}`);
-                throw new Error(`Failed to delete result: ${response.status}`);
-            }
-            
-            // Remove from cache and refresh display
-            this.resultsCache = this.resultsCache.filter(r => r.filename !== filename);
-            this.updateSummaryStats();
-            this.filterResults();
-            
-            showSuccessAlert('Result deleted successfully');
-            logger.debug(`📊 Result deleted successfully: ${filename}`);
+            await resultsManagerService.deleteResult(filename);
             
         } catch (error) {
             logger.error('❌ Error deleting result:', error);
@@ -596,6 +573,102 @@ export class ResultsViewer {
             await this.quickDelete(this.currentDetailResult.filename);
             this.hideDetailModal();
         }
+    }
+
+    /**
+     * Show download options for a specific result
+     */
+    async showDownloadOptions(filename) {
+        const result = this.filteredResults?.find(r => r.filename === filename);
+        if (!result) {
+            logger.error(`Result not found: ${filename}`);
+            return;
+        }
+
+        // Get available formats for this result
+        const formats = resultsManagerService.getAvailableFormats(result);
+        
+        if (formats.length <= 1) {
+            // Only one format available, download directly
+            await this.quickDownload(filename, formats[0]?.key || 'analytics');
+            return;
+        }
+
+        // Show format selection modal/dropdown
+        this.showFormatSelectionModal(filename, formats);
+    }
+
+    /**
+     * Show format selection modal
+     */
+    showFormatSelectionModal(filename, formats) {
+        // Create a simple modal for format selection
+        const modal = document.createElement('div');
+        modal.className = 'format-selection-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 300px;
+            max-width: 500px;
+        `;
+
+        content.innerHTML = `
+            <h3>Select Export Format</h3>
+            <p>Choose how you'd like to download the results:</p>
+            <div class="format-options" style="margin: 15px 0;">
+                ${formats.map(format => `
+                    <label style="display: block; margin: 8px 0; cursor: pointer;">
+                        <input type="radio" name="export-format" value="${format.key}" 
+                               ${format.key === this.currentExportFormat ? 'checked' : ''}>
+                        <strong>${format.name}</strong><br>
+                        <small style="color: #666; margin-left: 20px;">${format.description}</small>
+                    </label>
+                `).join('')}
+            </div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button id="format-cancel-btn" style="margin-right: 10px; padding: 8px 16px;">Cancel</button>
+                <button id="format-download-btn" style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px;">Download</button>
+            </div>
+        `;
+
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+
+        // Add event listeners
+        const cancelBtn = content.querySelector('#format-cancel-btn');
+        const downloadBtn = content.querySelector('#format-download-btn');
+
+        cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+
+        downloadBtn.addEventListener('click', async () => {
+            const selectedFormat = content.querySelector('input[name="export-format"]:checked')?.value || 'analytics';
+            document.body.removeChild(modal);
+            await this.quickDownload(filename, selectedFormat);
+        });
+
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        });
     }
 }
 
