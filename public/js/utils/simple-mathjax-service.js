@@ -78,6 +78,14 @@ export class SimpleMathJaxService {
     }
 
     /**
+     * Check if content contains LaTeX syntax
+     */
+    containsLaTeX(content) {
+        if (!content) return false;
+        return /\$.*?\$|\\[a-zA-Z]+|\\[{}[\]()]/.test(content);
+    }
+
+    /**
      * Render LaTeX in specified elements
      */
     async render(elements) {
@@ -93,8 +101,19 @@ export class SimpleMathJaxService {
                 return Promise.resolve();
             }
 
+            // Add mobile-friendly LaTeX classes for FOUC prevention
+            validElements.forEach(element => {
+                if (this.containsLaTeX(element.textContent || element.innerHTML)) {
+                    element.classList.add('has-math');
+                    // Remove rendered class to show loading indicator on mobile
+                    element.classList.remove('rendered');
+                }
+            });
+
             if (!this.isAvailable()) {
                 logger.debug('MathJax not available, content will show without LaTeX rendering');
+                // Mark as rendered even without MathJax to show content
+                validElements.forEach(el => el.classList.add('rendered'));
                 return Promise.resolve();
             }
 
@@ -109,6 +128,11 @@ export class SimpleMathJaxService {
                 logger.debug(`Rendering MathJax for ${validElements.length} elements`);
                 await window.MathJax.typesetPromise(validElements);
                 logger.debug('MathJax rendering completed');
+                
+                // Mark elements as rendered to hide loading indicators
+                validElements.forEach(element => {
+                    element.classList.add('rendered');
+                });
             }
             
             return Promise.resolve();

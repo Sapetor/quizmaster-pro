@@ -63,6 +63,36 @@
         *:not(mjx-container):not(mjx-container *):not(.MathJax):not(.MathJax *) { 
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
+        
+        /* Mobile LaTeX FOUC Prevention */
+        .latex-content, .math-content, .has-math {
+            min-height: 1.2em;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        /* Show LaTeX content when MathJax is ready */
+        body.mathjax-ready .latex-content,
+        body.mathjax-ready .math-content,
+        body.mathjax-ready .has-math {
+            opacity: 1;
+        }
+        
+        /* Mobile-specific LaTeX loading indicator */
+        @media (max-width: 768px) {
+            .latex-content:not(.rendered)::after,
+            .math-content:not(.rendered)::after {
+                content: "⏳";
+                opacity: 0.6;
+                font-size: 0.8em;
+                animation: pulse 1.5s infinite;
+            }
+            
+            @keyframes pulse {
+                0%, 100% { opacity: 0.3; }
+                50% { opacity: 0.8; }
+            }
+        }
     </style>
     <!-- CSS loaded via preload above for better performance -->
     <!-- CDN MathJax with fallback for WSL/Windows environment -->
@@ -182,17 +212,23 @@
                 }
             },
             chtml: {
-                scale: 1,
+                scale: window.innerWidth <= 768 ? 0.9 : 1, // Smaller scale on mobile for better fit
                 minScale: 0.5,
                 matchFontHeight: false,
                 displayAlign: 'center',
                 displayIndent: '0em',
-                fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2'
+                fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2',
+                // Mobile optimizations
+                adaptiveCSS: true,
+                mathmlSpacing: false,
+                exFactor: window.innerWidth <= 768 ? 0.45 : 0.5 // Tighter spacing on mobile
             },
             startup: {
                 ready: () => {
                     MathJax.startup.defaultReady();
-                    setTimeout(markMathJaxReady, 100);
+                    // Faster ready signal on mobile, slower on desktop for stability
+                    const readyDelay = window.innerWidth <= 768 ? 50 : 100;
+                    setTimeout(markMathJaxReady, readyDelay);
                 }
             },
             options: {

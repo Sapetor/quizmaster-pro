@@ -6,7 +6,7 @@
 
 import { translationManager, getTranslation, getTrueFalseText } from '../../utils/translation-manager.js';
 import { logger, TIMING } from '../../core/config.js';
-import { domManager } from '../../utils/dom-manager.js';
+import { dom } from '../../utils/dom.js';
 
 export class QuestionRenderer {
     constructor(displayManager, stateManager, uiManager, gameManager) {

@@ -5,7 +5,7 @@
  */
 
 import { logger } from '../core/config.js';
-import { domManager } from './dom-manager.js';
+import { dom } from './dom.js';
 
 export class GameStateManager {
     constructor() {

@@ -6,7 +6,7 @@
 import { translationManager, getTranslation, createQuestionCounter, getTrueFalseText } from '../utils/translation-manager.js';
 import { TIMING, logger, UI, ANIMATION } from '../core/config.js';
 // MathRenderer and mathJaxService now handled by GameDisplayManager
-import { domManager } from '../utils/dom-manager.js';
+import { dom } from '../utils/dom.js';
 import { errorBoundary } from '../utils/error-boundary.js';
 import { modalFeedback } from '../utils/modal-feedback.js';
 import { gameStateManager } from '../utils/game-state-manager.js';
@@ -17,7 +17,6 @@ import { PlayerInteractionManager } from './modules/player-interaction-manager.j
 import { TimerManager } from './modules/timer-manager.js';
 import { QuestionRenderer } from './modules/question-renderer.js';
 import { NavigationService } from '../services/navigation-service.js';
-import { domService } from '../services/dom-service.js';
 
 export class GameManager {
     constructor(socket, uiManager, soundManager, socketManager = null) {
@@ -34,7 +33,7 @@ export class GameManager {
         this.navigationService = new NavigationService(uiManager);
         
         // Initialize DOM Manager with common game elements
-        domManager.initializeGameElements();
+        dom.initializeGameElements();
         
         // Keep these specific to GameManager for now
         this.lastDisplayQuestionTime = 0; // Prevent rapid successive displayQuestion calls
@@ -230,7 +229,7 @@ export class GameManager {
         logger.debug('Player mode - setting up containers');
         
         // Hide all answer type containers
-        domService.querySelectorAll('.player-answer-type').forEach(type => type.style.display = 'none');
+        dom.queryAll('.player-answer-type').forEach(type => type.style.display = 'none');
         
         const containerMap = {
             'multiple-choice': {
@@ -257,7 +256,7 @@ export class GameManager {
             return null;
         }
         
-        const container = domManager.get(config.containerId);
+        const container = dom.get(config.containerId);
         logger.debug(`${config.containerId} found:`, !!container);
         
         if (container) {
@@ -543,7 +542,7 @@ export class GameManager {
         this.selectedAnswer = null;
         
         // Reset multiple choice options
-        const options = domService.querySelectorAll('.player-option');
+        const options = dom.queryAll('.player-option');
         options.forEach(option => {
             option.disabled = false;
             option.classList.remove('selected', 'disabled', 'correct-answer');
@@ -552,7 +551,7 @@ export class GameManager {
         });
         
         // Reset true/false options
-        const tfOptions = domService.querySelectorAll('.true-btn, .false-btn');
+        const tfOptions = dom.queryAll('.true-btn, .false-btn');
         tfOptions.forEach(option => {
             option.disabled = false;
             option.classList.remove('selected', 'correct-answer');
@@ -561,7 +560,7 @@ export class GameManager {
         });
         
         // Reset multiple correct checkboxes
-        const checkboxes = domService.querySelectorAll('.multiple-correct-option');
+        const checkboxes = dom.queryAll('.multiple-correct-option');
         checkboxes.forEach(checkbox => {
             checkbox.disabled = false;
             checkbox.checked = false;
@@ -609,17 +608,17 @@ export class GameManager {
         }
         
         // Clear image display
-        const questionImageDisplay = domService.getElementById('question-image-display');
+        const questionImageDisplay = dom.get('question-image-display');
         if (questionImageDisplay) {
             questionImageDisplay.style.display = 'none';
         }
         
         // Clear host options container
-        domService.clearContent('answer-options');
-        domService.setVisibility('answer-options', false);
+        dom.clearContent('answer-options');
+        dom.setVisibility('answer-options', false);
         
         // Remove numeric question type class for fresh start
-        const hostMultipleChoice = domService.getElementById('host-multiple-choice');
+        const hostMultipleChoice = dom.get('host-multiple-choice');
         if (hostMultipleChoice) {
             hostMultipleChoice.classList.remove('numeric-question-type');
         }
@@ -813,8 +812,8 @@ export class GameManager {
             statisticsContainer.style.display = 'block';
             
             // Update response counts
-            domService.updateContent('responses-count', data.answeredPlayers || 0);
-            domService.updateContent('total-players', data.totalPlayers || 0);
+            dom.setContent('responses-count', data.answeredPlayers || 0);
+            dom.setContent('total-players', data.totalPlayers || 0);
             
             // Update individual answer statistics
             const questionType = data.questionType || data.type;
@@ -1138,10 +1137,10 @@ export class GameManager {
      * Update leaderboard display (from monolithic version)
      */
     updateLeaderboardDisplay(leaderboard) {
-        const leaderboardList = domService.getElementById('leaderboard-list');
+        const leaderboardList = dom.get('leaderboard-list');
         if (!leaderboardList) return;
         
-        domService.clearContent('leaderboard-list');
+        dom.clearContent('leaderboard-list');
         
         leaderboard.forEach((player, index) => {
             const item = document.createElement('div');
@@ -1189,9 +1188,9 @@ export class GameManager {
         
         // Update final position display
         if (playerPosition > 0) {
-            domService.updateContent('final-position', `#${playerPosition}`);
+            dom.setContent('final-position', `#${playerPosition}`);
         }
-        domService.updateContent('final-score', `${playerScore} ${getTranslation('points')}`);
+        dom.setContent('final-score', `${playerScore} ${getTranslation('points')}`);
         
         // Update top 3 players display
         this.updateFinalLeaderboard(leaderboard.slice(0, 3));
@@ -1333,7 +1332,7 @@ export class GameManager {
         });
         
         // Update player count
-        domService.updateContent('player-count', players.length);
+        dom.setContent('player-count', players.length);
     }
 
     /**

@@ -15,26 +15,26 @@ export const DEBUG = {
     CURRENT_LEVEL: 2 // Show errors and warnings only (1=errors only, 2=+warnings, 3=+info, 4=+debug)
 };
 
-// Debug utility functions
+// Simplified logger - removes emoji overhead and reduces complexity
 export const logger = {
     error: (message, ...args) => {
         if (DEBUG.ENABLED && DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.ERROR) {
-            console.error(`❌ ${message}`, ...args);
+            console.error(message, ...args);
         }
     },
     warn: (message, ...args) => {
         if (DEBUG.ENABLED && DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.WARN) {
-            console.warn(`⚠️ ${message}`, ...args);
+            console.warn(message, ...args);
         }
     },
     info: (message, ...args) => {
         if (DEBUG.ENABLED && DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.INFO) {
-            console.log(`ℹ️ ${message}`, ...args);
+            console.log(message, ...args);
         }
     },
     debug: (message, ...args) => {
         if (DEBUG.ENABLED && DEBUG.CURRENT_LEVEL >= DEBUG.LEVELS.DEBUG) {
-            console.log(`🔧 ${message}`, ...args);
+            console.log(message, ...args);
         }
     }
 };
@@ -57,9 +57,11 @@ export const TIMING = {
     MATHJAX_TIMEOUT: 100,
     MATHJAX_LOADING_TIMEOUT: 10000,
     RENDER_DELAY: (() => {
-        // Android-friendly render delay - balance between speed and compatibility
+        // Optimized render delay with mobile LaTeX improvements
         const isAndroid = /Android/i.test(navigator.userAgent);
-        return isAndroid ? 400 : 200; // Android needs extra time for DOM and MathJax processing
+        const isMobile = window.innerWidth <= 768;
+        // Reduced delays due to LaTeX FOUC prevention and loading indicators
+        return isAndroid ? 250 : (isMobile ? 150 : 100);
     })()
 };
 

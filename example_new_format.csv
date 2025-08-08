@@ -1,0 +1,5 @@
+Player Name,Question #,Question Text,Player Answer,Correct Answer,Is Correct,Time (seconds),Points
+"Alice",1,"What is 2+2?","4","4","Yes",5,100
+"Alice",2,"What is the capital of France?","London","Paris","No",8,0
+"Bob",1,"What is 2+2?","3","4","No",12,0
+"Bob",2,"What is the capital of France?","Paris","Paris","Yes",3,150
