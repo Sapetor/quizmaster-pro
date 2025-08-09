@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     
     <!-- Preload critical CSS -->
-    <link rel="preload" href="css/main.css?v=modular-4.1" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="css/main.css?v=modular-4.1"></noscript>
+    <link rel="preload" href="css/main.css?v=modular-4.3" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="css/main.css?v=modular-4.3"></noscript>
     
     <!-- Preload critical JavaScript -->
     <link rel="preload" href="js/main.js" as="script" crossorigin="anonymous">
@@ -377,7 +377,7 @@
                         </div>
                     </div>
                 </div>
-                <button id="start-hosting-header-small" class="btn primary small start-game-header" style="display: none;" data-translate-title="start_quiz_tooltip">🚀 <span data-translate="start_game">Start Game</span></button>
+                <button id="start-hosting-header-small" class="btn primary small start-game-header" style="display: none;" data-translate-title="start_quiz_tooltip"><span data-translate="create_lobby">Create Lobby</span></button>
                 
                 <!-- Horizontal Toolbar (shown only in host editing mode) -->
                 <div class="horizontal-toolbar" id="horizontal-toolbar" style="display: none;">
@@ -630,7 +630,7 @@
                         </div>
                         <span id="preview-question-counter-split">Q1/1</span>
                         <div class="preview-nav-section">
-                            <button id="scroll-to-question" class="nav-btn edit-btn" onclick="scrollToCurrentQuestion()">✏️ <span data-translate="edit_question">Edit Question</span></button>
+                            <button id="scroll-to-question" class="nav-btn edit-btn" onclick="scrollToCurrentQuestion()"><span data-translate="edit_question">Edit Question</span></button>
                         </div>
                     </div>
                     
@@ -717,7 +717,7 @@
                         <button id="preview-next" class="nav-btn"><span data-translate="next">Next</span> ▶</button>
                     </div>
                     <span id="preview-question-counter"><span data-translate="question">Question</span> 1 <span data-translate="of">of</span> 1</span>
-                    <button id="edit-current-question" class="nav-btn edit-btn">✏️ <span data-translate="edit_question">Edit Question</span></button>
+                    <button id="edit-current-question" class="nav-btn edit-btn"><span data-translate="edit_question">Edit Question</span></button>
                 </div>
                 
                 <div id="preview-viewport" class="preview-viewport desktop-viewport">
@@ -782,25 +782,68 @@
 
         <div id="game-lobby" class="screen">
             <div class="lobby-container">
-                <h2 data-translate="game_pin">Game PIN</h2>
-                <div id="game-pin" class="pin-display">------</div>
-                
-                <div class="lobby-actions">
-                    <button id="start-game" class="btn primary large-start-btn">🚀 <span data-translate="start_game">Start Game</span></button>
-                </div>
-                
-                <div class="qr-section">
-                    <h3 data-translate="share_game">Share Game</h3>
-                    <div id="qr-code-container" class="qr-container">
-                        <div class="qr-loading" data-translate="generating_qr">Generating QR Code...</div>
-                        <img id="qr-code-image" style="display: none;" alt="QR Code to join game">
+                <!-- Modern 2x2 Card Grid Layout -->
+                <div class="lobby-header">
+                    <!-- Card 1: Player List -->
+                    <div class="lobby-card players-list-card" role="region" aria-label="Connected Players">
+                        <div class="card-header">
+                            <h3 class="card-title" data-translate="players_joined">Players Joined</h3>
+                        </div>
+                        <div class="card-content">
+                            <div id="players-list" class="players-grid"></div>
+                        </div>
                     </div>
-                    <p id="game-url" class="game-url"></p>
+                    
+                    <!-- Card 2: QR Code -->
+                    <div class="lobby-card qr-card" role="region" aria-label="QR Code">
+                        <div class="card-header">
+                            <h3 class="card-title" data-translate="share_game">Share Game</h3>
+                        </div>
+                        <div class="card-content">
+                            <div id="qr-code-container" class="qr-container">
+                                <div class="qr-loading" data-translate="generating_qr">Generating QR Code...</div>
+                                <img id="qr-code-image" style="display: none;" alt="QR Code to join game">
+                            </div>
+                            <p id="game-url" class="game-url"></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 3: PIN + Player Count -->
+                    <div class="lobby-card info-card" role="region" aria-label="Game Info">
+                        <div class="card-header">
+                            <h3 class="card-title" data-translate="game_info">Game Info</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="game-info-row">
+                                <div class="pin-section">
+                                    <div id="game-pin" class="pin-display" role="button" tabindex="0" aria-label="Click to copy PIN">
+                                        <div class="pin-text" data-translate="game_pin">Game PIN</div>
+                                        <div class="pin-digits">------</div>
+                                    </div>
+                                </div>
+                                <div class="count-section">
+                                    <div class="player-count-display">
+                                        <span class="player-icon">👥</span>
+                                        <span id="lobby-player-count" class="player-count-number">0</span>
+                                    </div>
+                                    <div class="info-label" data-translate="players">players</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 4: Start Game Action -->
+                    <div class="lobby-card action-card" role="region" aria-label="Game Actions">
+                        <div class="card-header">
+                            <h3 class="card-title" data-translate="ready_to_start">Ready to Start?</h3>
+                        </div>
+                        <div class="card-content">
+                            <button id="start-game" class="btn primary large-start-btn" aria-label="Start the quiz game">
+                                <span data-translate="start_game">Start Game</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                
-                
-                <h3 data-translate="players_joined">Players Joined</h3>
-                <div id="players-list" class="players-grid"></div>
             </div>
         </div>
 

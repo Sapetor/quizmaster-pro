@@ -123,7 +123,13 @@ export class UIManager {
     updateGamePin(gamePin) {
         const pinElement = document.getElementById('game-pin');
         if (pinElement && gamePin) {
-            pinElement.textContent = gamePin;
+            const pinDigitsElement = pinElement.querySelector('.pin-digits');
+            if (pinDigitsElement) {
+                pinDigitsElement.textContent = gamePin;
+            } else {
+                // Fallback for old structure
+                pinElement.textContent = gamePin;
+            }
         }
     }
 

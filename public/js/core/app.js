@@ -288,6 +288,11 @@ export class QuizGame {
             if (e.target.closest('#player-game-screen')) {
                 this.handlePlayerGameClick(e);
             }
+            
+            // Handle PIN copy to clipboard
+            if (e.target.closest('#game-pin')) {
+                this.copyPinToClipboard(e.target.closest('#game-pin'));
+            }
         });
 
         // Numeric answer input
@@ -366,6 +371,53 @@ export class QuizGame {
                 this.gameManager.selectAnswer(selectedOptions);
             }
             return;
+        }
+    }
+
+    /**
+     * Copy game PIN to clipboard
+     */
+    async copyPinToClipboard(pinElement) {
+        try {
+            const pinDigitsElement = pinElement.querySelector('.pin-digits');
+            const pin = pinDigitsElement ? pinDigitsElement.textContent.trim() : pinElement.textContent.trim();
+            
+            if (pin && pin !== '------') {
+                await navigator.clipboard.writeText(pin);
+                
+                // Show visual feedback on the digits element
+                const targetElement = pinDigitsElement || pinElement;
+                const originalText = targetElement.textContent;
+                const originalBg = pinElement.style.backgroundColor;
+                
+                pinElement.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
+                targetElement.textContent = 'Copied!';
+                
+                // Show toast notification
+                if (typeof translationManager !== 'undefined' && translationManager.showAlert) {
+                    translationManager.showAlert('success', 'PIN copied to clipboard!');
+                } else {
+                    // Fallback notification
+                    console.log('PIN copied to clipboard:', pin);
+                }
+                
+                // Reset appearance after animation
+                setTimeout(() => {
+                    targetElement.textContent = originalText;
+                    pinElement.style.backgroundColor = originalBg;
+                }, 1500);
+            }
+        } catch (error) {
+            logger.error('Failed to copy PIN to clipboard:', error);
+            // Fallback: select text for manual copy
+            if (window.getSelection) {
+                const selection = window.getSelection();
+                const range = document.createRange();
+                const pinDigitsElement = pinElement.querySelector('.pin-digits');
+                range.selectNodeContents(pinDigitsElement || pinElement);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
         }
     }
 
