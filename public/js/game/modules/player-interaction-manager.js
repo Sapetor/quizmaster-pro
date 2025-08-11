@@ -77,9 +77,33 @@ export class PlayerInteractionManager {
      * Submit multiple correct answer
      */
     submitMultipleCorrectAnswer() {
+        return this.submitAnswerByType('multiple-correct');
+    }
+
+    /**
+     * Submit answer by type - consolidated method
+     * @param {string} type - Answer type: 'multiple-correct', 'numeric', or 'direct'
+     * @param {*} directAnswer - Direct answer value for 'direct' type
+     */
+    submitAnswerByType(type, directAnswer = null) {
+        switch (type) {
+            case 'multiple-correct':
+                return this.submitMultipleCorrectAnswerInternal();
+            case 'numeric':
+                return this.submitNumericAnswerInternal();
+            case 'direct':
+                return this.submitAnswer(directAnswer);
+            default:
+                logger.error('Unknown answer submission type:', type);
+        }
+    }
+
+    /**
+     * Submit multiple correct answers - internal implementation
+     */
+    submitMultipleCorrectAnswerInternal() {
         const selectedCheckboxes = document.querySelectorAll('.option-checkbox:checked');
         const selectedAnswers = Array.from(selectedCheckboxes).map(cb => {
-            // Get the data-option from the parent .checkbox-option element
             const parentLabel = cb.closest('.checkbox-option');
             return parseInt(parentLabel.getAttribute('data-option'));
         });
@@ -97,6 +121,13 @@ export class PlayerInteractionManager {
      * Submit numeric answer
      */
     submitNumericAnswer() {
+        return this.submitAnswerByType('numeric');
+    }
+
+    /**
+     * Submit numeric answer - internal implementation
+     */
+    submitNumericAnswerInternal() {
         const numericInput = document.getElementById('numeric-answer-input');
         if (!numericInput) {
             logger.error('Numeric input not found');
@@ -278,56 +309,22 @@ export class PlayerInteractionManager {
      * Reset player interaction state
      */
     reset() {
-        // Clear selections and all styling - comprehensive approach
-        document.querySelectorAll('.player-option, .tf-option, .checkbox-option input, .checkbox-option, .player-checkbox-option').forEach(element => {
-            // Remove all possible state classes
-            element.classList.remove('selected', 'correct', 'incorrect', 'true-btn', 'false-btn');
-            
-            if (element.type === 'checkbox') {
-                element.checked = false;
-            }
-            
-            // Clear all possible inline style attributes that might cause highlighting/transforms
-            element.style.cssText = ''; // Nuclear option - clears ALL inline styles
-            
-            // Force remove any lingering transform/animation effects by setting them explicitly to defaults
-            element.style.transform = 'none';
-            element.style.animation = 'none';
-            element.style.filter = 'none';
-            element.style.transition = 'none';
-        });
+        // Use centralized client selection clearing from GameDisplayManager
+        this.gameDisplayManager.clearClientSelections();
         
-        // Also clear any data-answer elements that might have styling
-        document.querySelectorAll('[data-answer]').forEach(element => {
+        // Additional cleanup for elements that might have styling (keeping some host-side cleanup)
+        document.querySelectorAll('[data-answer], .option-display').forEach(element => {
             element.classList.remove('selected', 'correct', 'incorrect');
-            element.style.cssText = ''; // Nuclear option - clears ALL inline styles
-            element.style.transform = 'none';
-            element.style.animation = 'none';
-            element.style.filter = 'none';
-            element.style.transition = 'none';
-        });
-        
-        // Clear any elements with option-display class (host side)
-        document.querySelectorAll('.option-display').forEach(element => {
-            element.classList.remove('selected', 'correct', 'incorrect');
-            element.style.cssText = '';
             element.style.transform = 'none';
             element.style.animation = 'none';
             element.style.filter = 'none';
         });
-        
-        // Clear numeric input
-        const numericInput = document.getElementById('numeric-answer-input');
-        if (numericInput) {
-            numericInput.value = '';
-        }
         
         // Force a repaint to ensure styles are cleared
         if (typeof window !== 'undefined') {
-            // Trigger reflow to ensure all styling changes take effect
             document.body.offsetHeight;
         }
         
-        logger.debug('Player interaction state reset - all highlighting, transforms, and animations cleared');
+        logger.debug('Player interaction state reset via centralized method');
     }
 }

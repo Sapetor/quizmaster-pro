@@ -23,7 +23,7 @@ export class QuestionRenderer {
         logger.debug('Host mode - updating display');
         
         // Clear previous question content to prevent flash during transition
-        this.clearPreviousQuestionContent();
+        this.displayManager.clearHostQuestionContent(false); // false = no loading message during update
         
         // Switch to host game screen when new question starts
         this.uiManager.showScreen('host-game-screen');
@@ -182,42 +182,6 @@ export class QuestionRenderer {
         });
     }
 
-    /**
-     * Clear previous question content to prevent flash during transition
-     */
-    clearPreviousQuestionContent() {
-        // Clear host question text
-        const hostQuestionElement = document.getElementById('current-question');
-        if (hostQuestionElement) {
-            hostQuestionElement.innerHTML = '';
-        }
-
-        // Clear existing answer displays
-        const existingAnswer = document.querySelector('.correct-answer-display');
-        if (existingAnswer) {
-            existingAnswer.remove();
-        }
-
-        // Hide question image
-        const questionImageDisplay = document.getElementById('question-image-display');
-        if (questionImageDisplay) {
-            questionImageDisplay.style.display = 'none';
-        }
-
-        // Clear host options container
-        const hostOptionsContainer = document.getElementById('answer-options');
-        if (hostOptionsContainer) {
-            hostOptionsContainer.innerHTML = '';
-        }
-
-        // Clear host multiple choice container content but preserve structure
-        const hostMultipleChoice = document.getElementById('host-multiple-choice');
-        if (hostMultipleChoice) {
-            // Don't clear innerHTML as it contains the answer-options element
-            hostMultipleChoice.style.display = 'block';
-            hostMultipleChoice.classList.remove('numeric-question-type');
-        }
-    }
 
     /**
      * Hide answer statistics during question display
@@ -238,21 +202,13 @@ export class QuestionRenderer {
         // Switch to player game screen when new question starts
         this.uiManager.showScreen('player-game-screen');
         
-        // Update counters using display manager
-        this.displayManager.updatePlayerQuestionCounter(data.questionNumber, data.totalQuestions);
-        
-        // Reset selected answer for new question (handled by stateManager.initializeQuestionState)
-        
-        // Add delay to ensure screen transition completes before MathJax rendering
+        // Add delay to ensure screen transition completes before content update
         setTimeout(() => {
-            // Update question content
-            this.updatePlayerQuestionContent(data, elements.questionElement);
+            // Use centralized client question display update
+            this.displayManager.updateClientQuestionDisplay(data);
             
-            // Update answer options
+            // Update answer options (still specific to question renderer)
             this.updatePlayerOptions(data, optionsContainer);
-            
-            // Update question image
-            this.displayManager.updateQuestionImage(data, 'player-question-image');
         }, TIMING.RENDER_DELAY);
     }
 

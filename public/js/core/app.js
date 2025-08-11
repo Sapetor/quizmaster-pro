@@ -331,47 +331,9 @@ export class QuizGame {
      * Handle player game screen clicks
      */
     handlePlayerGameClick(e) {
-        // Handle numeric answer submission
-        if (e.target.id === 'submit-numeric') {
-            this.gameManager.submitNumericAnswer();
-            return;
-        }
-
-        // Handle multiple choice options
-        if (e.target.classList.contains('player-option') && !e.target.classList.contains('disabled')) {
-            const option = e.target.getAttribute('data-answer');
-            if (option && !isNaN(option) && !this.gameManager.isHost) {
-                this.gameManager.selectAnswer(parseInt(option));
-            }
-            return;
-        }
-
-        // Handle true/false buttons
-        if (e.target.classList.contains('true-btn')) {
-            const answer = e.target.getAttribute('data-answer');
-            if (answer && !this.gameManager.isHost) {
-                this.gameManager.selectAnswer(parseInt(answer));
-            }
-            return;
-        }
-
-        if (e.target.classList.contains('false-btn')) {
-            const answer = e.target.getAttribute('data-answer');
-            if (answer && !this.gameManager.isHost) {
-                this.gameManager.selectAnswer(parseInt(answer));
-            }
-            return;
-        }
-
-        // Handle multiple correct checkboxes
-        if (e.target.type === 'checkbox' && e.target.classList.contains('multiple-correct-option')) {
-            if (!this.gameManager.isHost) {
-                const selectedOptions = Array.from(document.querySelectorAll('.multiple-correct-option:checked'))
-                    .map(cb => parseInt(cb.value));
-                this.gameManager.selectAnswer(selectedOptions);
-            }
-            return;
-        }
+        // Client interactions are now handled by PlayerInteractionManager
+        // This method kept for future non-client click handling if needed
+        logger.debug('Player game click delegated to PlayerInteractionManager');
     }
 
     /**
@@ -493,14 +455,6 @@ export class QuizGame {
             return;
         }
 
-        // Skip validation temporarily to get game working
-        logger.warn('Skipping question validation to allow game start');
-        // const validationErrors = this.quizManager.validateQuestions(questions);
-        // logger.debug('Validation errors:', validationErrors);
-        // if (validationErrors.length > 0) {
-        //     translationManager.showAlert('error', validationErrors.join('\n'));
-        //     return;
-        // }
 
         // Get quiz settings
         const randomizeQuestions = document.getElementById('randomize-questions')?.checked;

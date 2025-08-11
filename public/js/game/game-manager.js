@@ -44,34 +44,10 @@ export class GameManager {
         this.currentQuizTitle = null;
         this.gameStartTime = null;
         
-        // Performance: Cache frequently accessed DOM elements
-        this.domCache = {
-            playerOptions: null,
-            tfOptions: null,
-            checkboxes: null,
-            numericInput: null,
-            submitButton: null,
-            multipleSubmitButton: null,
-            hostQuestionElement: null,
-            questionImageDisplay: null,
-            hostOptionsContainer: null,
-            hostMultipleChoice: null,
-            statisticsContainer: null,
-            responsesCount: null,
-            totalPlayers: null,
-            statsContent: null,
-            leaderboardList: null,
-            finalPosition: null,
-            finalScore: null,
-            leaderboardContainer: null,
-            playersListElement: null,
-            playerCountElement: null
-        };
         
         // Memory management tracking
         this.eventListeners = new Map(); // Track all event listeners for cleanup
         this.timers = new Set(); // Track all timers for cleanup
-        this.domReferences = new Set(); // Track DOM element references
         this.playerAnswers = new Map(); // Track player answers for cleanup
         
         // Bind cleanup methods
@@ -98,34 +74,6 @@ export class GameManager {
         }
     }
 
-    /**
-     * Get cached DOM element or query and cache it
-     */
-    getCachedElement(key, selector) {
-        if (!this.domCache[key]) {
-            this.domCache[key] = document.getElementById(selector) || document.querySelector(selector);
-        }
-        return this.domCache[key];
-    }
-
-    /**
-     * Get cached DOM elements collection or query and cache them
-     */
-    getCachedElements(key, selector) {
-        if (!this.domCache[key]) {
-            this.domCache[key] = document.querySelectorAll(selector);
-        }
-        return this.domCache[key];
-    }
-
-    /**
-     * Clear DOM cache (call when DOM structure changes)
-     */
-    clearDOMCache() {
-        Object.keys(this.domCache).forEach(key => {
-            this.domCache[key] = null;
-        });
-    }
 
     /**
      * Display a question to the player or host
@@ -180,8 +128,6 @@ export class GameManager {
         // FIXED: Re-enable conservative element cleaning to prevent MathJax interference
         this.cleanGameElementsForFreshRendering();
         
-        // Clear DOM cache since question structure may change
-        this.clearDOMCache();
         
         // Initialize question state using state manager
         this.stateManager.initializeQuestionState(data);
@@ -192,11 +138,6 @@ export class GameManager {
         // Reset player interaction state (clear highlighting, etc.)
         this.interactionManager.reset();
         
-        // EMERGENCY FIX: Force isHost to false for all non-host users
-        if (gameState.playerName && gameState.playerName !== 'Host' && gameState.isHost !== false) {
-            logger.warn('EMERGENCY: Forcing isHost to false for player:', gameState.playerName);
-            this.stateManager.setHostMode(false);
-        }
     }
 
     /**
@@ -338,7 +279,7 @@ export class GameManager {
         logger.debug('Highlighting selected answer:', answer);
         
         // Handle multiple choice options
-        const options = this.getCachedElements('playerOptions', '.player-option');
+        const options = document.querySelectorAll('.player-option');
         options.forEach(option => {
             option.disabled = true;
             option.classList.remove('selected');
@@ -351,7 +292,7 @@ export class GameManager {
         }
         
         // Handle true/false options
-        const tfOptions = this.getCachedElements('tfOptions', '.true-btn, .false-btn');
+        const tfOptions = document.querySelectorAll('.true-btn, .false-btn');
         tfOptions.forEach(option => {
             option.disabled = true;
             option.classList.remove('selected');
@@ -375,7 +316,7 @@ export class GameManager {
         }
         
         // Handle multiple correct checkboxes
-        const checkboxes = this.getCachedElements('checkboxes', '.multiple-correct-option');
+        const checkboxes = document.querySelectorAll('.multiple-correct-option');
         checkboxes.forEach(checkbox => {
             checkbox.disabled = true;
         });
@@ -502,7 +443,7 @@ export class GameManager {
         logger.debug('Showing correct answer on client:', correctAnswer);
         
         // Handle multiple choice options
-        const options = this.getCachedElements('playerOptions', '.player-option');
+        const options = document.querySelectorAll('.player-option');
         if (typeof correctAnswer === 'number' && options[correctAnswer]) {
             options[correctAnswer].classList.add('correct-answer');
             options[correctAnswer].style.border = '3px solid #2ecc71';
@@ -541,51 +482,10 @@ export class GameManager {
         // Reset selected answer
         this.selectedAnswer = null;
         
-        // Reset multiple choice options
-        const options = dom.queryAll('.player-option');
-        options.forEach(option => {
-            option.disabled = false;
-            option.classList.remove('selected', 'disabled', 'correct-answer');
-            option.style.border = '';
-            option.style.backgroundColor = '';
-        });
+        // Use centralized client selection clearing
+        this.displayManager.clearClientSelections();
         
-        // Reset true/false options
-        const tfOptions = dom.queryAll('.true-btn, .false-btn');
-        tfOptions.forEach(option => {
-            option.disabled = false;
-            option.classList.remove('selected', 'correct-answer');
-            option.style.border = '';
-            option.style.backgroundColor = '';
-        });
-        
-        // Reset multiple correct checkboxes
-        const checkboxes = dom.queryAll('.multiple-correct-option');
-        checkboxes.forEach(checkbox => {
-            checkbox.disabled = false;
-            checkbox.checked = false;
-        });
-        
-        // Reset numeric input
-        const numericInput = this.getCachedElement('numericInput', 'numeric-answer-input');
-        if (numericInput) {
-            numericInput.disabled = false;
-            numericInput.value = '';
-        }
-        
-        const submitButton = this.getCachedElement('submitButton', 'submit-numeric');
-        if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.textContent = getTranslation('submit_answer');
-        }
-        
-        // Reset multiple correct submit button
-        const multipleSubmitButton = this.getCachedElement('multipleSubmitButton', 'submit-multiple');
-        if (multipleSubmitButton) {
-            multipleSubmitButton.disabled = false;
-        }
-        
-        logger.debug('Button states reset completed');
+        logger.debug('Button states reset completed via centralized method');
     }
 
     /**
@@ -595,33 +495,8 @@ export class GameManager {
         const gameState = this.stateManager.getGameState();
         if (!gameState.isHost) return;
         
-        // Clear host question display
-        const hostQuestionElement = this.getCachedElement('hostQuestionElement', 'current-question');
-        if (hostQuestionElement) {
-            hostQuestionElement.innerHTML = `<div class="loading-question">${getTranslation('loading_next_question')}</div>`;
-        }
-        
-        // Clear any numeric correct answer display
-        const existingAnswer = document.querySelector('.numeric-correct-answer-display');
-        if (existingAnswer) {
-            existingAnswer.remove();
-        }
-        
-        // Clear image display
-        const questionImageDisplay = dom.get('question-image-display');
-        if (questionImageDisplay) {
-            questionImageDisplay.style.display = 'none';
-        }
-        
-        // Clear host options container
-        dom.clearContent('answer-options');
-        dom.setVisibility('answer-options', false);
-        
-        // Remove numeric question type class for fresh start
-        const hostMultipleChoice = dom.get('host-multiple-choice');
-        if (hostMultipleChoice) {
-            hostMultipleChoice.classList.remove('numeric-question-type');
-        }
+        // Use centralized host content clearing from DisplayManager
+        this.displayManager.clearHostQuestionContent(true); // true = show loading message
     }
 
     /**
@@ -801,7 +676,7 @@ export class GameManager {
         });
         
         // Get existing statistics container
-        let statisticsContainer = this.getCachedElement('statisticsContainer', 'answer-statistics');
+        let statisticsContainer = document.getElementById('answer-statistics');
         if (!statisticsContainer) {
             logger.warn('Answer statistics container not found in HTML');
             return;
@@ -844,96 +719,21 @@ export class GameManager {
      * Show statistics for multiple choice questions
      */
     showMultipleChoiceStatistics(optionCount) {
-        const statsContent = document.getElementById('stats-grid');
-        if (!statsContent) return;
-        
-        // Remove numeric statistics display if it exists
-        this.clearNumericStatisticsDisplay();
-        
-        // Update existing stat item labels for multiple choice
-        for (let i = 0; i < 4; i++) {
-            const statItem = document.getElementById(`stat-item-${i}`);
-            const optionLabel = statItem?.querySelector('.option-label');
-            
-            if (statItem && optionLabel) {
-                if (i < optionCount) {
-                    statItem.style.display = 'flex';
-                    optionLabel.textContent = translationManager.getOptionLetter(i);
-                    // Reset values
-                    const statCount = statItem.querySelector('.stat-count');
-                    const statFill = statItem.querySelector('.stat-fill');
-                    if (statCount) statCount.textContent = '0';
-                    if (statFill) statFill.style.width = '0%';
-                } else {
-                    statItem.style.display = 'none';
-                }
-            }
-        }
+        this.showHostStatistics('multiple-choice', { optionCount });
     }
 
     /**
      * Show statistics for true/false questions
      */
     showTrueFalseStatistics() {
-        const statsContent = document.getElementById('stats-grid');
-        if (!statsContent) return;
-        
-        // Remove numeric statistics display if it exists
-        this.clearNumericStatisticsDisplay();
-        
-        // Update existing stat items for true/false - show only first 2
-        for (let i = 0; i < 4; i++) {
-            const statItem = document.getElementById(`stat-item-${i}`);
-            const optionLabel = statItem?.querySelector('.option-label');
-            
-            if (statItem && optionLabel) {
-                if (i === 0) {
-                    // True option
-                    statItem.style.display = 'flex';
-                    optionLabel.textContent = getTrueFalseText().true;
-                    // Reset values
-                    const statCount = statItem.querySelector('.stat-count');
-                    const statFill = statItem.querySelector('.stat-fill');
-                    if (statCount) statCount.textContent = '0';
-                    if (statFill) statFill.style.width = '0%';
-                } else if (i === 1) {
-                    // False option
-                    statItem.style.display = 'flex';
-                    optionLabel.textContent = getTrueFalseText().false;
-                    // Reset values
-                    const statCount = statItem.querySelector('.stat-count');
-                    const statFill = statItem.querySelector('.stat-fill');
-                    if (statCount) statCount.textContent = '0';
-                    if (statFill) statFill.style.width = '0%';
-                } else {
-                    // Hide unused options
-                    statItem.style.display = 'none';
-                }
-            }
-        }
+        this.showHostStatistics('true-false');
     }
 
     /**
      * Show statistics for numeric questions
      */
     showNumericStatistics(answerCounts) {
-        const statsContent = document.getElementById('stats-grid');
-        if (!statsContent) return;
-
-        // Convert answer counts to array format for display
-        const answers = Object.keys(answerCounts || {});
-        const sortedAnswers = answers.sort((a, b) => parseFloat(a) - parseFloat(b)); // Sort numerically
-
-        // Hide all stat items first
-        for (let i = 0; i < 4; i++) {
-            const statItem = document.getElementById(`stat-item-${i}`);
-            if (statItem) {
-                statItem.style.display = 'none';
-            }
-        }
-
-        // Show a custom numeric statistics display
-        this.createNumericStatisticsDisplay(answerCounts, sortedAnswers);
+        this.showHostStatistics('numeric', { answerCounts });
     }
 
     /**
@@ -1007,6 +807,108 @@ export class GameManager {
         if (numericStatsDiv) {
             numericStatsDiv.remove();
         }
+    }
+
+    /**
+     * Show statistics for host display - consolidated method
+     * @param {string} type - Question type: 'multiple-choice', 'true-false', or 'numeric'
+     * @param {Object} options - Configuration object
+     * @param {number} [options.optionCount] - Number of options for multiple choice
+     * @param {Object} [options.answerCounts] - Answer counts for numeric questions
+     */
+    showHostStatistics(type, options = {}) {
+        const statsContent = document.getElementById('stats-grid');
+        if (!statsContent) return;
+
+        // Always clear numeric display first
+        this.clearNumericStatisticsDisplay();
+
+        switch (type) {
+            case 'multiple-choice':
+                this.setupMultipleChoiceStats(options.optionCount);
+                break;
+            case 'true-false':
+                this.setupTrueFalseStats();
+                break;
+            case 'numeric':
+                this.setupNumericStats(options.answerCounts);
+                break;
+            default:
+                logger.warn('Unknown statistics type:', type);
+        }
+    }
+
+    /**
+     * Setup multiple choice statistics display
+     */
+    setupMultipleChoiceStats(optionCount) {
+        for (let i = 0; i < 4; i++) {
+            const statItem = document.getElementById(`stat-item-${i}`);
+            const optionLabel = statItem?.querySelector('.option-label');
+            
+            if (statItem && optionLabel) {
+                if (i < optionCount) {
+                    statItem.style.display = 'flex';
+                    optionLabel.textContent = translationManager.getOptionLetter(i);
+                    this.resetStatItemValues(statItem);
+                } else {
+                    statItem.style.display = 'none';
+                }
+            }
+        }
+    }
+
+    /**
+     * Setup true/false statistics display
+     */
+    setupTrueFalseStats() {
+        const tfTexts = getTrueFalseText();
+        for (let i = 0; i < 4; i++) {
+            const statItem = document.getElementById(`stat-item-${i}`);
+            const optionLabel = statItem?.querySelector('.option-label');
+            
+            if (statItem && optionLabel) {
+                if (i === 0) {
+                    statItem.style.display = 'flex';
+                    optionLabel.textContent = tfTexts.true;
+                    this.resetStatItemValues(statItem);
+                } else if (i === 1) {
+                    statItem.style.display = 'flex';
+                    optionLabel.textContent = tfTexts.false;
+                    this.resetStatItemValues(statItem);
+                } else {
+                    statItem.style.display = 'none';
+                }
+            }
+        }
+    }
+
+    /**
+     * Setup numeric statistics display
+     */
+    setupNumericStats(answerCounts) {
+        // Hide all regular stat items
+        for (let i = 0; i < 4; i++) {
+            const statItem = document.getElementById(`stat-item-${i}`);
+            if (statItem) {
+                statItem.style.display = 'none';
+            }
+        }
+
+        // Create custom numeric display
+        const answers = Object.keys(answerCounts || {});
+        const sortedAnswers = answers.sort((a, b) => parseFloat(a) - parseFloat(b));
+        this.createNumericStatisticsDisplay(answerCounts, sortedAnswers);
+    }
+
+    /**
+     * Reset stat item values to defaults
+     */
+    resetStatItemValues(statItem) {
+        const statCount = statItem.querySelector('.stat-count');
+        const statFill = statItem.querySelector('.stat-fill');
+        if (statCount) statCount.textContent = '0';
+        if (statFill) statFill.style.width = '0%';
     }
 
     /**
@@ -1331,7 +1233,23 @@ export class GameManager {
             playersListElement.appendChild(playerElement);
         });
         
-        // Update player count
+        // Update player count in lobby with animation
+        const lobbyPlayerCount = document.getElementById('lobby-player-count');
+        if (lobbyPlayerCount) {
+            // Add a simple scale animation for number changes
+            const currentCount = parseInt(lobbyPlayerCount.textContent) || 0;
+            const newCount = players.length;
+            
+            if (currentCount !== newCount) {
+                lobbyPlayerCount.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    lobbyPlayerCount.textContent = newCount;
+                    lobbyPlayerCount.style.transform = 'scale(1)';
+                }, 150);
+            }
+        }
+        
+        // Update legacy player count (for compatibility)
         dom.setContent('player-count', players.length);
     }
 
@@ -1455,14 +1373,6 @@ export class GameManager {
         return timer;
     }
 
-    /**
-     * Track DOM element reference for cleanup
-     */
-    trackDOMReference(element) {
-        if (element && element.nodeType === Node.ELEMENT_NODE) {
-            this.domReferences.add(element);
-        }
-    }
 
     /**
      * Remove tracked event listener
@@ -1532,11 +1442,7 @@ export class GameManager {
             this.timers.clear();
             // logger.debug(`Cleaned up ${timerCount} timers`);
 
-            // Clear DOM references
-            this.domReferences.clear();
             
-            // Clear DOM cache to prevent stale references
-            this.clearDOMCache();
 
             // Clear game state
             this.playerAnswers.clear();
@@ -1602,7 +1508,6 @@ export class GameManager {
             this.addEventListenerTracked(element, event, handler);
         });
 
-        this.trackDOMReference(element);
         return element;
     }
 

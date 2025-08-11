@@ -27,6 +27,24 @@ export class GameDisplayManager {
     }
 
     /**
+     * Get client-specific elements - centralized access
+     */
+    getClientElements() {
+        return {
+            questionText: document.getElementById('player-question-text'),
+            questionImage: document.getElementById('player-question-image'),
+            questionCounter: document.getElementById('player-question-counter'),
+            optionsContainer: document.querySelector('.player-options'),
+            multipleChoiceOptions: document.querySelectorAll('.player-option'),
+            trueFalseOptions: document.querySelectorAll('.tf-option'),
+            checkboxOptions: document.querySelectorAll('.checkbox-option'),
+            numericInput: document.getElementById('numeric-answer-input'),
+            submitButton: document.getElementById('submit-numeric'),
+            multipleSubmitButton: document.getElementById('submit-multiple')
+        };
+    }
+
+    /**
      * Update question counter display
      */
     updateQuestionCounter(current, total) {
@@ -180,6 +198,50 @@ export class GameDisplayManager {
     }
 
     /**
+     * Clear host-specific question content with loading state
+     * Consolidated method replacing multiple clearing methods
+     */
+    clearHostQuestionContent(showLoading = false) {
+        const elements = this.getQuestionElements();
+        
+        // Clear or show loading message in host question element
+        if (elements.hostQuestionElement) {
+            if (showLoading) {
+                elements.hostQuestionElement.innerHTML = `<div class="loading-question">${getTranslation('loading_next_question')}</div>`;
+            } else {
+                elements.hostQuestionElement.innerHTML = '';
+            }
+        }
+
+        // Clear existing answer displays
+        const existingAnswer = document.querySelector('.correct-answer-display, .numeric-correct-answer-display');
+        if (existingAnswer) {
+            existingAnswer.remove();
+        }
+
+        // Clear and hide question image
+        const questionImageDisplay = document.getElementById('question-image-display');
+        if (questionImageDisplay) {
+            questionImageDisplay.style.display = 'none';
+        }
+
+        // Clear host options container
+        if (elements.hostOptionsContainer) {
+            elements.hostOptionsContainer.innerHTML = '';
+            elements.hostOptionsContainer.style.display = 'none';
+        }
+
+        // Reset host multiple choice container
+        const hostMultipleChoice = document.getElementById('host-multiple-choice');
+        if (hostMultipleChoice) {
+            hostMultipleChoice.style.display = 'block';
+            hostMultipleChoice.classList.remove('numeric-question-type');
+        }
+        
+        logger.debug('Host question content cleared', { showLoading });
+    }
+
+    /**
      * Show loading state
      */
     showLoadingState(message = 'Loading...') {
@@ -217,5 +279,85 @@ export class GameDisplayManager {
         if (loadingElement) {
             loadingElement.remove();
         }
+    }
+
+    /**
+     * Clear client selections and reset to initial state
+     * Consolidated method replacing multiple selection clearing methods
+     */
+    clearClientSelections() {
+        const elements = this.getClientElements();
+        
+        // Clear multiple choice selections
+        elements.multipleChoiceOptions.forEach(option => {
+            option.classList.remove('selected', 'correct', 'incorrect', 'disabled');
+            option.disabled = false;
+            option.style.border = '';
+            option.style.backgroundColor = '';
+            option.style.transform = '';
+        });
+
+        // Clear true/false selections
+        elements.trueFalseOptions.forEach(option => {
+            option.classList.remove('selected', 'correct', 'incorrect', 'disabled');
+            option.disabled = false;
+            option.style.border = '';
+            option.style.backgroundColor = '';
+        });
+
+        // Clear checkbox selections  
+        elements.checkboxOptions.forEach(option => {
+            const checkbox = option.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.checked = false;
+                checkbox.disabled = false;
+            }
+            option.classList.remove('selected', 'disabled');
+        });
+
+        // Reset numeric input
+        if (elements.numericInput) {
+            elements.numericInput.value = '';
+            elements.numericInput.disabled = false;
+        }
+
+        // Reset submit buttons
+        if (elements.submitButton) {
+            elements.submitButton.disabled = false;
+            elements.submitButton.textContent = getTranslation('submit_answer');
+        }
+        
+        if (elements.multipleSubmitButton) {
+            elements.multipleSubmitButton.disabled = false;
+        }
+        
+        logger.debug('Client selections cleared');
+    }
+
+    /**
+     * Update client question display
+     * @param {Object} data - Question data
+     */
+    updateClientQuestionDisplay(data) {
+        const elements = this.getClientElements();
+        
+        // Update question text
+        if (elements.questionText) {
+            this.displayQuestionText(elements.questionText, data.question);
+            elements.questionText.className = `question-display player-question ${data.type}-question`;
+            elements.questionText.setAttribute('data-question-type', data.type);
+        }
+
+        // Update question image
+        if (data.image && elements.questionImage) {
+            this.updateQuestionImage(data, 'player-question-image');
+        }
+
+        // Update question counter
+        if (data.questionNumber && data.totalQuestions) {
+            this.updatePlayerQuestionCounter(data.questionNumber, data.totalQuestions);
+        }
+
+        logger.debug('Client question display updated');
     }
 }
