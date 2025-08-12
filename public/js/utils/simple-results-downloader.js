@@ -194,17 +194,37 @@ export class SimpleResultsDownloader {
         try {
             if (downloadButton) {
                 downloadButton.disabled = true;
-                downloadButton.textContent = translationManager.getTranslationSync('loading') || 'Loading...';
+                downloadButton.textContent = 'Loading...';
             }
             
             logger.debug(`📊 Downloading result: ${filename}`);
             
-            // Use the service instead of direct API call
-            await resultsManagerService.downloadResult(filename, this.currentExportFormat, 'csv');
-            return; // Exit early as service handles everything
-            } catch (error) {
-            logger.error('❌ Error downloading result:', error);
-            showErrorAlert('failed_export_result');
+            // Simple direct API call - no over-engineered service layer
+            const response = await fetch(`/api/results/${filename}/export/csv`);
+            
+            if (!response.ok) {
+                throw new Error(`Download failed: ${response.status}`);
+            }
+            
+            // Create download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const gamePin = filename.match(/results_(\d+)_/)?.[1] || 'unknown';
+            const downloadFilename = `quiz_results_${gamePin}.csv`;
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = downloadFilename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            logger.debug(`📊 Download completed: ${downloadFilename}`);
+            
+        } catch (error) {
+            logger.error('❌ Download failed:', error);
+            showErrorAlert('Download failed. Please try again.');
         } finally {
             if (downloadButton) {
                 downloadButton.disabled = false;

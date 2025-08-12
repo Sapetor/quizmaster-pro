@@ -9,7 +9,7 @@ import { TIMING, logger, UI, ANIMATION } from '../core/config.js';
 import { dom } from '../utils/dom.js';
 import { errorBoundary } from '../utils/error-boundary.js';
 import { modalFeedback } from '../utils/modal-feedback.js';
-import { gameStateManager } from '../utils/game-state-manager.js';
+import { uiStateManager } from '../utils/ui-state-manager.js';
 import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
 import { GameDisplayManager } from './modules/game-display-manager.js';
 import { GameStateManager as ModularGameStateManager } from './modules/game-state-manager.js';
@@ -534,7 +534,39 @@ export class GameManager {
             }
         });
         
+        // Clear any lingering question images from previous questions
+        this.clearAllQuestionImages();
+        
         logger.debug('🧹 Cleaned game elements for fresh rendering');
+    }
+
+    /**
+     * Clear all question images from both host and player displays
+     */
+    clearAllQuestionImages() {
+        // Clear host question image
+        const hostImageContainer = document.getElementById('question-image-display');
+        if (hostImageContainer) {
+            hostImageContainer.style.display = 'none';
+            const hostImg = hostImageContainer.querySelector('img');
+            if (hostImg) {
+                hostImg.src = '';
+                hostImg.removeAttribute('src');
+            }
+        }
+        
+        // Clear player question image
+        const playerImageContainer = document.getElementById('player-question-image');
+        if (playerImageContainer) {
+            playerImageContainer.style.display = 'none';
+            const playerImg = playerImageContainer.querySelector('img');
+            if (playerImg) {
+                playerImg.src = '';
+                playerImg.removeAttribute('src');
+            }
+        }
+        
+        logger.debug('🖼️ Cleared all question images');
     }
 
     /**
@@ -1249,8 +1281,11 @@ export class GameManager {
             }
         }
         
-        // Update legacy player count (for compatibility)
-        dom.setContent('player-count', players.length);
+        // Update legacy player count (for compatibility) - but check if element exists
+        const legacyPlayerCount = document.getElementById('player-count');
+        if (legacyPlayerCount) {
+            dom.setContent('player-count', players.length);
+        }
     }
 
     /**
@@ -1294,8 +1329,34 @@ export class GameManager {
         this.resultShown = false;
         this.stopTimer();
         
+        // CRITICAL FIX: Reset the modular state manager too!
+        // This was causing the new game restart bug where stale state from
+        // previous games would interfere with new games
+        this.stateManager.reset();
+        
+        // Reset all game modules to ensure clean state for new games
+        if (this.interactionManager) {
+            this.interactionManager.reset();
+        }
+        // Timer is already reset by this.stopTimer() call above
+        
+        // Reset fanfare played flag for new games
+        this.fanfarePlayed = false;
+        
+        // Hide the CSV download tool from previous game
+        simpleResultsDownloader.hideDownloadTool();
+        
+        // Hide final results overlay from previous game
+        const finalResults = document.getElementById('final-results');
+        if (finalResults) {
+            finalResults.classList.add('hidden');
+            finalResults.classList.remove('game-complete-animation');
+        }
+        
         // Clean up event listeners and timers when resetting game
         this.cleanup();
+        
+        logger.debug('🔄 Complete game state reset - both main and modular state managers');
     }
 
     /**

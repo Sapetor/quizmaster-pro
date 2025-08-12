@@ -70,65 +70,64 @@ export class GameDisplayManager {
      * Update question image display for host or player
      */
     updateQuestionImage(data, containerId) {
-        logger.debug(`updateQuestionImage called with containerId: ${containerId}, image: ${data.image}`);
         const imageContainer = document.getElementById(containerId);
         if (!imageContainer) {
-            logger.debug(`Image container ${containerId} not found`);
-            logger.debug(`Image container ${containerId} not found`);
             return;
         }
         
-        if (data.image && data.image.trim()) {
-            logger.debug(`Displaying image for question: ${data.image}`);
-            logger.debug(`Displaying image for question: ${data.image}`);
-            
-            // Create or update image element
-            let img = imageContainer.querySelector('img');
-            if (!img) {
-                img = document.createElement('img');
-                img.className = 'question-image';
-                img.style.maxWidth = '100%';
-                img.style.maxHeight = '300px';
-                img.style.height = 'auto';
-                img.style.borderRadius = '8px';
-                img.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-                img.style.margin = '15px 0';
-                imageContainer.appendChild(img);
-            }
-            
-            // Set image source and alt text
-            // Set image source with proper path handling
-            if (data.image.startsWith('data:')) {
-                img.src = data.image; // Data URI
-            } else if (data.image.startsWith('http')) {
-                img.src = data.image; // Full URL
-            } else {
-                // Construct proper URL from relative path
-                const baseUrl = window.location.origin; // http://localhost:3000
-                const imagePath = data.image.startsWith('/') ? data.image : `/${data.image}`;
-                img.src = `${baseUrl}${imagePath}`;
-            }
-            img.alt = 'Question Image';
-            
-            // Add error handling for debugging
-            img.onerror = () => {
-                logger.warn('⚠️ Game question image failed to load:', data.image);
-                logger.warn('⚠️ Attempted src:', img.src);
-            };
-            
-            img.onload = () => {
-                logger.debug('✅ Game question image loaded successfully:', data.image);
-            };
-            
-            // Show the container
-            imageContainer.style.display = 'block';
-            logger.debug(`Image container ${containerId} shown with image: ${img.src}`);
-        } else {
-            // Hide the container if no image
-            logger.debug(`No image for question, hiding container ${containerId}`);
+        // Validate image data first
+        if (!data.image || !data.image.trim() || data.image === 'undefined' || data.image === 'null') {
+            // Hide the container if no valid image
             imageContainer.style.display = 'none';
-            logger.debug(`No image for question, hiding container ${containerId}`);
+            return;
         }
+        
+        // Additional validation for invalid paths
+        if (data.image.includes('nonexistent') || data.image === window.location.origin + '/') {
+            imageContainer.style.display = 'none';
+            return;
+        }
+        
+        // Create or update image element
+        let img = imageContainer.querySelector('img');
+        if (!img) {
+            img = document.createElement('img');
+            img.className = 'question-image';
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '300px';
+            img.style.height = 'auto';
+            img.style.borderRadius = '8px';
+            img.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+            img.style.margin = '15px 0';
+            imageContainer.appendChild(img);
+        }
+        
+        // Set image source with proper path handling
+        let imageSrc;
+        if (data.image.startsWith('data:')) {
+            imageSrc = data.image; // Data URI
+        } else if (data.image.startsWith('http')) {
+            imageSrc = data.image; // Full URL
+        } else {
+            // Construct proper URL from relative path
+            const baseUrl = window.location.origin;
+            const imagePath = data.image.startsWith('/') ? data.image : `/${data.image}`;
+            imageSrc = `${baseUrl}${imagePath}`;
+        }
+        
+        img.alt = 'Question Image';
+        
+        // Silent error handling - hide container on load failure
+        img.onerror = () => {
+            imageContainer.style.display = 'none';
+        };
+        
+        img.onload = () => {
+            imageContainer.style.display = 'block';
+        };
+        
+        // Set src last to trigger load/error events
+        img.src = imageSrc;
     }
 
     /**
