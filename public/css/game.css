@@ -639,7 +639,6 @@
     text-align: left;
     position: relative;
     overflow: hidden;
-    font-family: Inter, sans-serif;
     border: none;
     outline: none;
     width: 100%;
@@ -1024,7 +1023,6 @@
     color: white;
     position: relative;
     overflow: hidden;
-    font-family: Inter, sans-serif;
 }
 
 #player-true-false .tf-option[data-answer="0"] {
@@ -1096,7 +1094,6 @@
     border: 2px solid var(--glass-border);
     border-radius: var(--border-radius);
     color: var(--text-primary);
-    font-family: Inter, sans-serif;
     font-weight: 500;
     transition: all 0.3s ease;
     box-shadow: var(--shadow-sm);
@@ -1201,7 +1198,6 @@
     text-align: left;
     position: relative;
     overflow: hidden;
-    font-family: Inter, sans-serif;
     width: 100%;
     max-width: 550px;
     gap: 12px;
@@ -2047,7 +2043,6 @@
     font-weight: 700;
     margin-bottom: 16px;
     line-height: 1.2;
-    font-family: Inter, sans-serif;
 }
 
 .result-text.correct {

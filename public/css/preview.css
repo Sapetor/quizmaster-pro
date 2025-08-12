@@ -41,16 +41,7 @@
     animation: modalSlideIn 0.3s ease-out;
 }
 
-@keyframes modalSlideIn {
-    from {
-        opacity: 0;
-        transform: scale(0.9) translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
+/* Animation defined in animations.css */
 
 /* Preview Modal Header */
 .preview-modal-header {
@@ -668,7 +659,6 @@ pre code {
     font-size: 1.2rem;
     color: var(--text-primary);
     font-weight: 600;
-    font-family: 'Inter', sans-serif;
     text-shadow: 0 1px 2px var(--shadow-light);
     display: flex;
     align-items: center;
@@ -744,16 +734,7 @@ pre code {
     color: white;
 }
 
-@keyframes slideInLeft {
-    from {
-        opacity: 0;
-        transform: translateY(-50%) translateX(-100%);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(-50%) translateX(0);
-    }
-}
+/* Animation defined in animations.css */
 
 .preview-header-controls {
     display: flex;
@@ -761,16 +742,7 @@ pre code {
     align-items: center;
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+/* Animation defined in animations.css */
 
 .settings-row {
     display: flex;
@@ -834,16 +806,7 @@ pre code {
     animation: fadeInUp 0.3s ease;
 }
 
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+/* Animation defined in animations.css */
 
 .device-btn {
     padding: 3px 6px;
@@ -948,7 +911,6 @@ pre code {
     align-items: center;
     justify-content: flex-start;
     text-align: left;
-    font-family: Inter, sans-serif;
     line-height: 1.4;
     position: relative;
     overflow: hidden;
@@ -1180,7 +1142,6 @@ pre code {
     align-items: center;
     justify-content: center;
     text-align: center;
-    font-family: Inter, sans-serif;
     line-height: 1.4;
     box-shadow: 0 5px 15px rgba(0,0,0,0.15);
     color: white;
@@ -1288,7 +1249,6 @@ pre code {
     line-height: 1.5;
     color: white;
     text-shadow: 0 2px 6px rgba(0,0,0,0.4);
-    font-family: Inter, sans-serif;
     padding: 20px;
     background: rgba(0,0,0,0.15);
     border-radius: var(--border-radius-small);
@@ -1319,7 +1279,6 @@ pre code {
     text-align: center;
     box-shadow: 0 6px 18px rgba(0,0,0,0.15);
     font-weight: 600;
-    font-family: Inter, sans-serif;
     transition: all 0.3s ease;
 }
 
@@ -1411,7 +1370,6 @@ pre code {
     color: white;
     text-shadow: 0 2px 8px rgba(0,0,0,0.3);
     margin: 0;
-    font-family: Inter, sans-serif;
     letter-spacing: -0.02em;
 }
 
@@ -1459,7 +1417,9 @@ pre code {
     }
     
     .nav-btn.edit-btn {
-        max-width: 80px;
+        max-width: none;
+        min-width: 80px;
+        flex-shrink: 0;
     }
     
     #preview-question-counter-split {
@@ -1483,7 +1443,9 @@ pre code {
 }
 
 .preview-navigation-bar.compact .nav-btn.edit-btn {
-    max-width: 60px;
+    max-width: none;
+    min-width: 60px;
+    flex-shrink: 0;
 }
 
 .preview-navigation-bar.compact #preview-question-counter-split {
@@ -1529,7 +1491,6 @@ pre code {
     font-size: 0.75rem; /* Smaller font to fit more content */
     font-weight: 600;
     transition: all 0.3s ease;
-    font-family: Inter, sans-serif;
     display: flex;
     align-items: center;
     gap: 2px; /* Minimal gap for compact layout */

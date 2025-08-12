@@ -101,6 +101,7 @@
 /* CSS Custom Properties */
     /* Background Variables */
     --bg-primary: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+    /* Default theme values - overridden by theme-specific sections below */
     --bg-secondary: rgba(255,255,255,0.18);
     --bg-glass: rgba(255,255,255,0.12);
     
@@ -137,8 +138,7 @@
     /* Glass Effect Variants */
     --bg-glass-light: rgba(255,255,255,0.1);
     
-    /* Accent Colors */
-    --accent-primary: #2563eb;
+    /* Accent Gradient */
     --accent-secondary-gradient: #1d4ed8;
     
     /* === CONTENT-DENSITY AWARE SPACING SYSTEM === */
@@ -307,9 +307,7 @@
 }
 
 /* Typography Base */
-body {
-    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+/* Font family inherited from base.css */
 
 /* ===== FONT SCALING UTILITY SYSTEM ===== */
 /* Optimized utility classes to replace repetitive calc() declarations */

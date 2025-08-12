@@ -99,7 +99,6 @@
     position: relative;
     overflow: hidden;
     min-height: 44px;
-    font-family: Inter, sans-serif;
     letter-spacing: -0.01em;
     
     /* Default Glass Style */
@@ -309,7 +308,6 @@ input, select, textarea {
     border-radius: var(--border-radius-small);
     color: var(--text-primary);
     font-size: var(--text-base);
-    font-family: Inter, sans-serif;
     transition: all 0.2s ease;
     outline: none;
     box-shadow: var(--shadow-sm);
@@ -491,7 +489,6 @@ select option {
     margin: 8px 0;
     color: var(--text-primary);
     font-size: 1.1rem;
-    font-family: Inter, sans-serif;
     line-height: 1.4;
     cursor: pointer;
     border: 1px solid rgba(255,255,255,0.2);
@@ -2079,7 +2076,6 @@ select option {
     transition: all 0.3s ease;
     min-width: 70px;
     gap: 4px;
-    font-family: Inter, sans-serif;
 }
 
 .font-size-btn:hover {
