@@ -4,7 +4,7 @@
  */
 
 import { translationManager, showErrorAlert, showSuccessAlert } from './translation-manager.js';
-import { errorHandler } from './error-handler.js';
+import { unifiedErrorHandler as errorHandler } from './unified-error-handler.js';
 import { logger } from '../core/config.js';
 import { resultsManagerService } from '../services/results-manager-service.js';
 

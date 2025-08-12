@@ -6,8 +6,8 @@
 import { translationManager, showErrorAlert, showSuccessAlert } from '../utils/translation-manager.js';
 import { createQuestionElement } from '../utils/question-utils.js';
 import { MathRenderer } from '../utils/math-renderer.js';
-import { errorHandler } from '../utils/error-handler.js';
-import { errorBoundary } from '../utils/error-boundary.js';
+import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
+import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
 import { logger } from '../core/config.js';
 
 export class QuizManager {

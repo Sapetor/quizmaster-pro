@@ -13,7 +13,7 @@
 import { logger, AI, TIMING } from '../core/config.js';
 import { translationManager, showAlert } from '../utils/translation-manager.js';
 import { secureStorage } from '../services/secure-storage-service.js';
-import { errorHandler, ErrorHandlingService } from '../services/error-handling-service.js';
+import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 
 export class AIQuestionGenerator {
     constructor() {
@@ -65,8 +65,7 @@ export class AIQuestionGenerator {
             await secureStorage.migrateApiKeys();
             logger.debug('Secure storage initialized and API keys migrated');
         }, {
-            errorType: ErrorHandlingService.ErrorTypes.SYSTEM,
-            severity: ErrorHandlingService.Severity.LOW,
+            errorType: errorHandler.errorTypes.SYSTEM,
             context: 'secure-storage-initialization',
             userMessage: null, // Silent failure for initialization
             retryable: false,
@@ -382,8 +381,7 @@ export class AIQuestionGenerator {
                 this.isGenerating = false;
             }
         }, {
-            errorType: ErrorHandlingService.ErrorTypes.SYSTEM,
-            severity: ErrorHandlingService.Severity.MEDIUM,
+            errorType: errorHandler.errorTypes.SYSTEM,
             context: 'question-generation',
             userMessage: 'Failed to generate questions. Please check your settings and try again.',
             retryable: false,
@@ -799,8 +797,7 @@ Please respond with only valid JSON. Do not include explanations or additional t
                 this.isChangingProvider = false;
             }
         }, {
-            errorType: ErrorHandlingService.ErrorTypes.SYSTEM,
-            severity: ErrorHandlingService.Severity.LOW,
+            errorType: errorHandler.errorTypes.SYSTEM,
             context: 'provider-change',
             userMessage: null, // Silent failure for UI operations
             retryable: false,
@@ -900,8 +897,7 @@ Please respond with only valid JSON. Do not include explanations or additional t
                 });
             }
         }, {
-            errorType: ErrorHandlingService.ErrorTypes.NETWORK,
-            severity: ErrorHandlingService.Severity.LOW,
+            errorType: errorHandler.errorTypes.NETWORK,
             context: 'ollama-model-loading',
             userMessage: null, // Don't show alert for model loading failures
             retryable: false,

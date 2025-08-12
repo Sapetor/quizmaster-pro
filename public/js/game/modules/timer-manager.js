@@ -5,7 +5,7 @@
  */
 
 import { logger } from '../../core/config.js';
-import { errorBoundary } from '../../utils/error-boundary.js';
+import { unifiedErrorHandler as errorBoundary } from '../../utils/unified-error-handler.js';
 
 export class TimerManager {
     constructor() {

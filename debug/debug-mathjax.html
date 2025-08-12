@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MathJax Timing Coordination Test</title>
+    <!-- Same MathJax setup as main app -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                ready: () => {
+                    console.log('MathJax ready!', new Date().toISOString());
+                    MathJax.startup.defaultReady();
+                    console.log('MathJax typesetPromise available:', typeof MathJax.typesetPromise);
+                    
+                    // Mark as ready
+                    window.mathJaxReady = true;
+                    document.dispatchEvent(new CustomEvent('mathjax-ready'));
+                }
+            }
+        };
+    </script>
+</head>
+<body>
+    <h1>MathJax Timing Coordination Test</h1>
+    
+    <!-- Load CSS and JS -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    
+    <style>
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+        .test-controls {
+            margin: 10px 0;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+    </style>
+    
+    <div class="test-section">
+        <h2>FOUC Prevention Test</h2>
+        <div class="status" id="fouc-status">Status: Ready</div>
+        <div class="test-controls">
+            <button onclick="testFOUC()">Test FOUC Prevention</button>
+            <button onclick="clearFOUC()">Clear</button>
+        </div>
+        <div id="fouc-test-area" class="tex2jax_process">Raw LaTeX will be hidden initially: $x^2 + y^2 = r^2$</div>
+    </div>
+    
+    <div class="test-section host-game-screen">
+        <h2>Host View Test (Subtle Dimming)</h2>
+        <div class="status" id="host-status">Status: Ready</div>
+        <div class="test-controls">
+            <button onclick="testHostView()">Test Host Rendering</button>
+        </div>
+        <div id="host-test-area">Host LaTeX: $$\\int_0^1 x^2 dx = \\frac{1}{3}$$</div>
+    </div>
+    
+    <div class="test-section player-game-screen">
+        <h2>Client View Test (Always Visible)</h2>
+        <div class="status" id="client-status">Status: Ready</div>
+        <div class="test-controls">
+            <button onclick="testClientView()">Test Client Rendering</button>
+        </div>
+        <div id="client-test-area" class="player-option">Client LaTeX: $\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}$</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Fallback Timeout Test</h2>
+        <div class="status" id="fallback-status">Status: Ready</div>
+        <div class="test-controls">
+            <button onclick="testFallback()">Test Fallback (Simulate MathJax Failure)</button>
+        </div>
+        <div id="fallback-test-area">Fallback test: $e^{i\\pi} + 1 = 0$</div>
+    </div>
+    
+    <script type="module">
+        // Import the SimpleMathJaxService
+        import { SimpleMathJaxService } from './js/utils/simple-mathjax-service.js';
+        import { logger } from './js/core/config.js';
+        
+        // Initialize service
+        window.simpleMathJaxService = new SimpleMathJaxService();
+        
+        // Test functions
+        window.testFOUC = async function() {
+            const area = document.getElementById('fouc-test-area');
+            const status = document.getElementById('fouc-status');
+            
+            status.textContent = 'Status: Testing FOUC prevention...';
+            
+            // Reset content
+            area.innerHTML = 'Raw LaTeX should be hidden initially: $x^2 + y^2 = r^2$';
+            area.className = 'tex2jax_process';
+            
+            // Apply timing coordination
+            simpleMathJaxService.applyTimingCoordination([area]);
+            
+            // Render with coordination
+            await simpleMathJaxService.renderWithCoordination([area]);
+            
+            status.textContent = 'Status: FOUC test completed - check if LaTeX was hidden then revealed smoothly';
+        };
+        
+        window.clearFOUC = function() {
+            const area = document.getElementById('fouc-test-area');
+            const status = document.getElementById('fouc-status');
+            
+            area.innerHTML = 'Cleared';
+            area.className = '';
+            status.textContent = 'Status: Cleared';
+        };
+        
+        window.testHostView = async function() {
+            const area = document.getElementById('host-test-area');
+            const status = document.getElementById('host-status');
+            
+            status.textContent = 'Status: Testing host view (should dim slightly during processing)...';
+            
+            // Add game active class
+            area.closest('.test-section').classList.add('game-active');
+            
+            // Reset content  
+            area.innerHTML = 'Host LaTeX: $$\\\\int_0^1 x^2 dx = \\\\frac{1}{3}$$';
+            area.className = 'tex2jax_process';
+            
+            // Render with coordination
+            await simpleMathJaxService.renderWithCoordination([area]);
+            
+            status.textContent = 'Status: Host test completed - should have shown subtle dimming';
+        };
+        
+        window.testClientView = async function() {
+            const area = document.getElementById('client-test-area');
+            const status = document.getElementById('client-status');
+            
+            status.textContent = 'Status: Testing client view (should stay visible during processing)...';
+            
+            // Reset content
+            area.innerHTML = 'Client LaTeX: $\\\\sum_{n=1}^{\\\\infty} \\\\frac{1}{n^2} = \\\\frac{\\\\pi^2}{6}$';
+            area.className = 'tex2jax_process';
+            
+            // Render with coordination
+            await simpleMathJaxService.renderWithCoordination([area]);
+            
+            status.textContent = 'Status: Client test completed - should have stayed visible throughout';
+        };
+        
+        window.testFallback = async function() {
+            const area = document.getElementById('fallback-test-area');
+            const status = document.getElementById('fallback-status');
+            
+            status.textContent = 'Status: Testing fallback mechanism...';
+            
+            // Reset content
+            area.innerHTML = 'Fallback test: $e^{i\\\\pi} + 1 = 0$';
+            area.className = 'tex2jax_process';
+            
+            // Simulate MathJax being unavailable temporarily
+            const originalMathJax = window.MathJax;
+            window.MathJax = null;
+            
+            // Apply timing coordination
+            simpleMathJaxService.applyTimingCoordination([area]);
+            
+            // Try to render (should trigger fallback)
+            await simpleMathJaxService.renderWithCoordination([area], { fallbackTimeout: 1000 });
+            
+            // Restore MathJax
+            window.MathJax = originalMathJax;
+            
+            status.textContent = 'Status: Fallback test completed - content should be visible with fallback styling';
+        };
+        
+        // Initialize page
+        window.addEventListener('load', () => {
+            console.log('Timing coordination debug page loaded');
+            console.log('SimpleMathJaxService status:', simpleMathJaxService.getStatus());
+        });
+    </script>
+</body>
+</html>

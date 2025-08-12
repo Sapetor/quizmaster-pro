@@ -5,7 +5,7 @@
  */
 
 import { logger } from '../core/config.js';
-import { errorHandler } from '../utils/error-handler.js';
+import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 
 export class ResultsManagerService {
     constructor() {

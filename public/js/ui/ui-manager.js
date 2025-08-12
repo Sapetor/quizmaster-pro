@@ -5,8 +5,8 @@
 
 import { translationManager } from '../utils/translation-manager.js';
 import { TIMING, logger } from '../core/config.js';
-import { errorHandler } from '../utils/error-handler.js';
-import { gameStateManager } from '../utils/game-state-manager.js';
+import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
+import { uiStateManager } from '../utils/ui-state-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
 
 export class UIManager {
@@ -42,7 +42,7 @@ export class UIManager {
                 if (horizontalToolbar) horizontalToolbar.style.display = 'flex';
                 
                 // Set editing state for quiz creation
-                gameStateManager.setState('editing');
+                uiStateManager.setState('editing');
                 
                 // Initialize first question if questions container is empty
                 this.initializeQuizEditor();
@@ -55,7 +55,7 @@ export class UIManager {
             // Set appropriate game state based on screen
             switch (screenId) {
                 case 'main-menu':
-                    gameStateManager.setState('lobby');
+                    uiStateManager.setState('lobby');
                     // Force retranslation of main menu to ensure Quick Start Guide is translated
                     setTimeout(() => {
                         const mainMenuScreen = document.getElementById('main-menu');
@@ -67,7 +67,7 @@ export class UIManager {
                     break;
                 case 'host-lobby':
                 case 'player-lobby':
-                    gameStateManager.setState('lobby');
+                    uiStateManager.setState('lobby');
                     break;
                 case 'host-game-screen':
                 case 'player-game-screen':
@@ -76,12 +76,12 @@ export class UIManager {
                     break;
                 case 'game-browser':
                 case 'join-screen':
-                    gameStateManager.setState('lobby');
+                    uiStateManager.setState('lobby');
                     break;
                 default:
                     // Default to lobby state for other screens
                     if (screenId !== 'host-screen') {
-                        gameStateManager.setState('lobby');
+                        uiStateManager.setState('lobby');
                     }
                     break;
             }

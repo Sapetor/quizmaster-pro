@@ -5,7 +5,7 @@
 
 import { QuizGame } from './core/app.js';
 import { translationManager } from './utils/translation-manager.js';
-import { errorBoundary } from './utils/error-boundary.js';
+import { unifiedErrorHandler as errorBoundary } from './utils/unified-error-handler.js';
 import { TIMING, logger } from './core/config.js';
 import './utils/globals.js'; // Import globals to make them available
 // Removed testing infrastructure and performance monitoring - keeping app lightweight

@@ -4,9 +4,9 @@
  */
 
 import { translationManager } from '../utils/translation-manager.js';
-import { errorBoundary } from '../utils/error-boundary.js';
+import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
 import { logger } from '../core/config.js';
-import { gameStateManager } from '../utils/game-state-manager.js';
+import { uiStateManager } from '../utils/ui-state-manager.js';
 
 export class SocketManager {
     constructor(socket, gameManager, uiManager, soundManager) {
@@ -85,8 +85,8 @@ export class SocketManager {
             logger.debug('Full question data received:', JSON.stringify(data, null, 2));
             
             // Switch to playing state for immersive gameplay
-            if (gameStateManager && typeof gameStateManager.setState === 'function') {
-                gameStateManager.setState('playing');
+            if (uiStateManager && typeof uiStateManager.setState === 'function') {
+                uiStateManager.setState('playing');
             }
             
             this.gameManager.displayQuestion(data);
@@ -203,8 +203,8 @@ export class SocketManager {
             logger.debug('🎉 Game ended - triggering final results:', data);
             
             // Switch to results state for leaderboard and celebration
-            if (window.gameStateManager && typeof window.gameStateManager.setState === 'function') {
-                window.gameStateManager.setState('results');
+            if (window.uiStateManager && typeof window.uiStateManager.setState === 'function') {
+                window.uiStateManager.setState('results');
                 logger.debug('CLIENT: Set game state to results');
             }
             
