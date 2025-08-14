@@ -1,0 +1,41 @@
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.DS_Store
+*.log
+.claude/
+
+# Upload folders - keep structure but ignore content
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Quiz files - keep only production examples
+quizzes/*
+!quizzes/advanced_quiz_with_latex_images.json
+!quizzes/python_programming_fundamentals.json
+
+# Results folder
+results/*
+!results/.gitkeep
+
+# Development artifacts (prevent re-accumulation)
+debug/
+docs/
+.serena/
+*.cache
+example_*.csv
+
+# Test files patterns
+*test*.json
+*debug*.json
+*Test*.json
+*DEBUG*.json
+
+# Development images
+*test-image*
+*debug*.*
+*.bmp
+visible-test-*
+large-test-*

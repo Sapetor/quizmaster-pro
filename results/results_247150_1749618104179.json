@@ -1,0 +1,20 @@
+{
+  "quizTitle": "Test",
+  "gamePin": "247150",
+  "results": [
+    {
+      "name": "dddd",
+      "score": 200,
+      "answers": [
+        {
+          "answer": 2,
+          "isCorrect": true,
+          "points": 200,
+          "timeMs": 3381
+        }
+      ]
+    }
+  ],
+  "startTime": "2025-06-11T05:01:15.139Z",
+  "endTime": "2025-06-11T05:01:44.179Z"
+}

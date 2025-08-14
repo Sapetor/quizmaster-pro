@@ -1,0 +1,158 @@
+/**
+ * Unified Code Block Component
+ * Single source of truth for all code styling across QuizMaster Pro
+ * Eliminates 48+ duplicate rules previously scattered across 4 files
+ */
+
+/* === BASE CODE STYLING === */
+/* Universal code block styling - applies to all contexts */
+pre, code {
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace !important;
+    font-weight: 400 !important; /* Normal weight for consistent rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* Code block containers */
+pre {
+    background: rgba(0, 0, 0, 0.9) !important;
+    color: #f8f8f2 !important;
+    padding: 15px !important;
+    margin: 15px auto !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    line-height: 1.4 !important;
+    font-size: 0.8em !important;
+    text-align: left !important; /* Override any parent text-align */
+    white-space: pre !important;
+    overflow-x: auto !important;
+    max-width: 100% !important;
+    display: block !important;
+    tab-size: 4;
+    -moz-tab-size: 4;
+}
+
+/* Inline code elements */
+code {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #87CEEB !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    font-size: 0.9em !important;
+}
+
+/* Code within pre blocks should not have background/padding */
+pre code {
+    background: none !important;
+    color: inherit !important;
+    padding: 0 !important;
+    border: none !important;
+    font-size: inherit !important;
+    display: inline !important;
+}
+
+/* === THEME OVERRIDES === */
+/* Light theme adjustments */
+[data-theme="light"] pre {
+    background: rgba(30, 41, 59, 0.95) !important;
+    color: #f1f5f9 !important;
+    border: 1px solid rgba(30, 41, 59, 0.3) !important;
+}
+
+[data-theme="light"] code {
+    background: rgba(15, 23, 42, 0.95) !important;
+    color: #e2e8f0 !important;
+    border: 1px solid rgba(15, 23, 42, 0.2) !important;
+}
+
+/* Dark theme (explicit for clarity) */
+[data-theme="dark"] pre,
+:not([data-theme="light"]) pre {
+    background: rgba(0, 0, 0, 0.9) !important;
+    color: #f8f8f2 !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="dark"] code,
+:not([data-theme="light"]) code {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #87CEEB !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* === RESPONSIVE ADJUSTMENTS === */
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    pre {
+        font-size: 0.7em !important;
+        padding: 12px !important;
+        margin: 10px 0 !important;
+        max-width: calc(95vw - 20px) !important;
+    }
+}
+
+/* Ultra-mobile adjustments */
+@media (max-width: 480px) {
+    pre {
+        font-size: 0.65rem !important;
+        padding: 10px !important;
+        margin: 8px 0 !important;
+        max-width: calc(100vw - 60px) !important;
+    }
+}
+
+/* === LAYOUT ADJUSTMENTS === */
+/* Enhanced spacing for code-heavy questions */
+.question-display:has(pre),
+.question-display.has-code {
+    padding: 48px 40px;
+}
+
+.options-grid:has(pre),
+.options-grid.has-code {
+    max-width: 800px;
+    gap: 20px;
+}
+
+/* Player options with code */
+.player-option:has(pre) {
+    padding: 15px 20px;
+    text-align: left;
+    min-height: auto;
+}
+
+/* === PERFORMANCE OPTIMIZATIONS === */
+/* Reduce repaints for syntax highlighting */
+pre[class*="language-"] {
+    will-change: auto;
+}
+
+/* Optimize scrolling for long code blocks */
+pre {
+    scroll-behavior: smooth;
+}
+
+/* === ACCESSIBILITY === */
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    pre {
+        background: #000000 !important;
+        color: #ffffff !important;
+        border: 2px solid #ffffff !important;
+    }
+    
+    code {
+        background: #000000 !important;
+        color: #ffff00 !important;
+        border: 1px solid #ffffff !important;
+    }
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    pre {
+        scroll-behavior: auto;
+    }
+}

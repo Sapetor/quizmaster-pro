@@ -1,0 +1,59 @@
+{
+  "quizTitle": "Advanced Quiz - LaTeX & Images Demo",
+  "gamePin": "341604",
+  "results": [
+    {
+      "name": "Sap",
+      "score": 4799,
+      "answers": [
+        {
+          "answer": 2,
+          "isCorrect": true,
+          "points": 963,
+          "timeMs": 6183
+        },
+        {
+          "answer": [
+            0,
+            2
+          ],
+          "isCorrect": true,
+          "points": 200,
+          "timeMs": 10510
+        },
+        {
+          "answer": 2.71,
+          "isCorrect": false,
+          "points": 0,
+          "timeMs": 8712
+        },
+        {
+          "answer": 0,
+          "isCorrect": true,
+          "points": 1289,
+          "timeMs": 4554
+        },
+        {
+          "answer": 3,
+          "isCorrect": true,
+          "points": 264,
+          "timeMs": 9676
+        },
+        {
+          "answer": 2,
+          "isCorrect": true,
+          "points": 562,
+          "timeMs": 8189
+        },
+        {
+          "answer": "true",
+          "isCorrect": true,
+          "points": 1521,
+          "timeMs": 3391
+        }
+      ]
+    }
+  ],
+  "startTime": "2025-06-22T01:42:08.576Z",
+  "endTime": "2025-06-22T01:43:51.816Z"
+}

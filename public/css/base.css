@@ -1,0 +1,325 @@
+/**
+ * CSS Reset and Base Typography
+ * Safe extraction - global base styles that don't affect layout
+ */
+
+/* CSS Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Base Body Styles */
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-primary);
+    background-attachment: fixed;
+    min-height: 100dvh;
+    color: var(--text-primary);
+    transition: var(--transition-smooth);
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+    overflow-x: hidden;
+}
+
+/* FOUC Prevention - Enhanced smooth loading */
+body {
+    /* Opacity handled by inline styles for immediate application */
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+/* Remove any jarring transitions during theme switching on load */
+body:not(.loaded) * {
+    transition: none !important;
+}
+
+/* Font loading optimization - prevent layout shift */
+@font-face {
+    font-family: 'Inter';
+    font-display: swap; /* Use fallback immediately, swap when Inter loads */
+}
+
+/* LaTeX rendering - Simple approach to prevent flashing */
+/* Hide LaTeX content until MathJax processes it */
+.tex2jax_process:not(.MathJax_Processed) {
+    visibility: hidden;
+}
+
+/* Show LaTeX content after 1 second even if MathJax fails (F5 recovery) */
+.mathjax-ready .tex2jax_process:not(.MathJax_Processed) {
+    visibility: visible;
+    animation: latexFallbackShow 0.3s ease-in 1s forwards;
+}
+
+@keyframes latexFallbackShow {
+    from { visibility: hidden; }
+    to { visibility: visible; }
+}
+
+/* Simple fade-in for processed MathJax */
+.MathJax_Processed {
+    animation: mathFadeIn 0.2s ease-in;
+}
+
+@keyframes mathFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Background Gradient Effects - Theme Aware */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Removed problematic pink gradients that caused red flash during loading */
+    background: transparent;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* === MODERN TYPOGRAPHY SYSTEM === */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: var(--leading-tight);
+    margin-bottom: 0.5em;
+    font-family: Inter, sans-serif;
+}
+
+h1 {
+    font-size: var(--text-4xl);
+    font-weight: 800;
+    line-height: var(--leading-tight);
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--color-primary-500) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Override for header title - no font scaling for consistent toolbar */
+header h1 {
+    font-size: 2.25rem !important; /* Fixed size equivalent to --text-4xl base */
+}
+
+h2 {
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+h3 {
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+h4 {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+h5 {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+h6 {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* === MODERN ANIMATIONS === */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Animation Classes */
+.animate-slide-in {
+    animation: slideInUp 0.4s ease-out;
+}
+
+.animate-fade-in {
+    animation: fadeInScale 0.3s ease-out;
+}
+
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Interactive Elements */
+.interactive {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.interactive:hover {
+    transform: translateY(-2px);
+}
+
+/* Focus Indicators */
+.focus-ring:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Paragraph and Text Elements */
+p {
+    margin-bottom: 1em;
+    line-height: 1.6;
+}
+
+/* List Styles */
+ul, ol {
+    margin-bottom: 1em;
+    padding-left: 1.5em;
+}
+
+li {
+    margin-bottom: 0.25em;
+}
+
+/* Link Styles */
+a {
+    color: var(--accent-primary);
+    text-decoration: none;
+    transition: var(--transition-smooth);
+}
+
+a:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+
+/* Text Selection */
+::selection {
+    background: var(--accent-primary);
+    color: white;
+}
+
+::-moz-selection {
+    background: var(--accent-primary);
+    color: white;
+}
+
+/* Focus Outline */
+:focus {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* Strong and Emphasis */
+strong {
+    font-weight: 600;
+}
+
+em {
+    font-style: italic;
+}
+
+/* Code Typography (monospace) */
+code, pre, .code {
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+}
+
+code {
+    background: rgba(0, 0, 0, 0.3);
+    color: #FFD700;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+pre {
+    background: rgba(0, 0, 0, 0.4);
+    color: #f8f8f2;
+    padding: 15px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 10px 0;
+    font-size: 0.8em;
+    line-height: 1.5;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    white-space: pre;
+    text-align: left;
+    tab-size: 4;
+    -moz-tab-size: 4;
+}
+
+pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+    border: none;
+}
+
+/* Small Text */
+small {
+    font-size: 0.875em;
+    opacity: 0.8;
+}
+
+/* Blockquote */
+blockquote {
+    border-left: 4px solid var(--accent-primary);
+    padding-left: 1em;
+    margin: 1em 0;
+    font-style: italic;
+    opacity: 0.9;
+}
+
+
+/* Ensure MathJax elements don't break layout */
+.mjx-container {
+    display: inline-block;
+    vertical-align: middle;
+    max-width: 100%;
+    overflow-x: auto;
+}
+

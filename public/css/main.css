@@ -1,0 +1,60 @@
+/**
+ * QuizMaster Pro - Modular CSS Architecture
+ * Main entry point that imports all CSS modules
+ */
+
+/* CSS Variables - MUST be first for theme switching */
+@import './variables.css?v=9.3';
+
+/* Base styles - Reset, typography, global styles */
+@import './base.css?v=9.3';
+
+/* Layout systems - Grid, containers, screen management */
+@import './layout.css?v=9.3';
+
+/* UI components - Buttons, inputs, cards */
+@import './components.css?v=9.3';
+
+/* Code blocks component - Unified code styling (Phase 1 refactor) */
+@import './components/code-blocks.css?v=10.0';
+
+/* Modal systems - All modal dialogs and overlays */
+@import './modals.css?v=9.3';
+
+/* Game screens - Lobby, gameplay, results */
+@import './game.css?v=9.3';
+
+/* Live preview system - Split-screen preview functionality */
+@import './preview.css?v=9.3';
+
+/* Left toolbar - Navigation and tools */
+@import './toolbar.css?v=9.3';
+
+/* Toast notifications - Non-intrusive notifications */
+@import './toasts.css?v=10.0';
+
+/* Responsive design - Media queries and mobile optimizations */
+@import './responsive.css?v=9.3';
+
+/* Animations and transitions - Keyframes and motion */
+@import './animations.css?v=9.3';
+
+/* Analytics - Question analytics and statistical visualizations */
+@import './analytics.css?v=1.0';
+
+
+/**
+ * CSS Module Structure:
+ * 
+ * base.css (200 lines) - Variables, reset, typography, themes
+ * layout.css (300 lines) - Grid systems, containers, screens
+ * components.css (400 lines) - Buttons, inputs, cards, basic UI
+ * modals.css (500 lines) - All modal dialog systems
+ * game.css (600 lines) - Game screens, lobby, results
+ * preview.css (800 lines) - Live preview split-screen system
+ * toolbar.css (300 lines) - Left toolbar and navigation
+ * responsive.css (400 lines) - Media queries and mobile
+ * animations.css (200 lines) - Keyframes and transitions
+ * 
+ * Total: ~3,700 lines (was 4,733 - 22% reduction through optimization)
+ */

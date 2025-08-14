@@ -1,0 +1,1582 @@
+/**
+ * Live Preview System - Split-screen preview functionality
+ */
+
+/* LaTeX FOUC Prevention */
+.preview-question-text,
+#preview-question-text-split,
+.player-option,
+.checkbox-option {
+    transition: opacity 0.2s ease-in-out;
+}
+
+.tex2jax_process {
+    transition: opacity 0.2s ease-in-out;
+}
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+}
+
+.preview-modal {
+    background: var(--modal-bg);
+    border-radius: 20px;
+    width: 95%;
+    max-width: 1200px;
+    height: 90%;
+    max-height: 800px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+/* Animation defined in animations.css */
+
+/* Preview Modal Header */
+.preview-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    border-bottom: 2px solid var(--border-color);
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary-gradient) 100%);
+    color: white;
+}
+
+.preview-title-section {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.preview-title-section h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.preview-device-toggle {
+    display: flex;
+    gap: 10px;
+}
+
+.device-btn {
+    background: var(--border-color);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.device-btn:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+}
+
+.device-btn.active {
+    background: rgba(255,255,255,0.9);
+    color: var(--accent-primary);
+    border-color: rgba(255,255,255,0.9);
+    font-weight: bold;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    background: var(--border-color);
+    transform: scale(1.1);
+}
+
+/* Preview Navigation Bar */
+.preview-navigation-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    padding: 15px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.nav-btn {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary-gradient));
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+/* Question counter in navigation bar - Compact design */
+#preview-question-counter-split {
+    /* font-size handled by variables.css utility class for global scaling */
+    font-weight: 700;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px; /* Reduced border radius for compact design */
+    padding: 4px 12px; /* Reduced padding for better space efficiency */
+    backdrop-filter: blur(8px);
+    font-size: 0.75rem; /* Smaller font size to save space */
+    white-space: nowrap; /* Prevent text wrapping */
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    max-width: 220px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.3s ease;
+}
+
+#preview-question-counter-split:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+#preview-question-counter {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    padding: 10px 20px;
+    background: var(--bg-glass-light);
+    border-radius: var(--border-radius-medium);
+    border: 1px solid var(--border-color);
+}
+
+/* Preview Viewport */
+.preview-viewport {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #f5f5f5;
+    position: relative;
+}
+
+.desktop-viewport {
+    padding: 40px;
+}
+
+.mobile-viewport {
+    padding: 20px;
+}
+
+/* Preview Content */
+.preview-content {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary-gradient) 100%);
+    border-radius: var(--border-radius-medium);
+    padding: 40px;
+    color: white;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.mobile-viewport .preview-content {
+    max-width: 375px;
+    border-radius: 25px;
+    border: 3px solid #333;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    margin: 0 auto;
+}
+
+.preview-content .player-question-area,
+.preview-content-split .player-question-area {
+    background: var(--bg-glass-light);
+    border-radius: var(--preview-border-radius);
+    padding: var(--preview-question-padding);
+    margin-bottom: var(--preview-section-gap);
+    line-height: var(--preview-line-height);
+    border: 1px solid var(--border-color);
+}
+
+#preview-question-counter-display,
+#preview-question-counter-display-split {
+    text-align: center;
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+    color: white;
+    font-weight: 600;
+}
+
+#preview-question-text,
+#preview-question-text-split {
+    font-size: 1.5rem;
+    line-height: 1.5;
+    margin: 20px 0;
+    text-align: center;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#preview-question-image,
+#preview-question-image-split {
+    text-align: center;
+    margin: 25px 0;
+}
+
+#preview-question-img,
+#preview-question-img-split {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: var(--border-radius-medium);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+
+/* Preview Answer Types */
+.preview-answer-type {
+    margin-top: 30px;
+}
+
+.preview-option, .preview-tf {
+    pointer-events: none;
+    opacity: 0.95;
+    margin: 8px 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+/* Preview-specific overrides for checkbox options */
+.preview-checkbox {
+    pointer-events: none;
+    opacity: 0.95;
+    backdrop-filter: blur(10px);
+    /* Base styling comes from .checkbox-option in components.css */
+}
+
+/* Preview option styling for correct answers */
+.preview-option.correct-preview,
+.preview-checkbox.correct-preview,
+.preview-tf.correct-preview {
+    background: rgba(46, 213, 115, 0.8) !important;
+    border: 2px solid #2ed573 !important;
+    color: #fff !important;
+    font-weight: 600;
+}
+
+/* Override colorful checkbox styling for correct answers with maximum specificity */
+.checkbox-option.preview-checkbox.correct-preview[data-option="0"],
+.checkbox-option.preview-checkbox.correct-preview[data-option="1"],
+.checkbox-option.preview-checkbox.correct-preview[data-option="2"],
+.checkbox-option.preview-checkbox.correct-preview[data-option="3"],
+.checkbox-option.preview-checkbox.correct-preview[data-option="4"],
+.checkbox-option.preview-checkbox.correct-preview[data-option="5"] {
+    background: rgba(46, 213, 115, 0.8) !important;
+    border: 2px solid #2ed573 !important;
+    color: #fff !important;
+    box-shadow: 0 4px 20px rgba(46, 213, 115, 0.3) !important;
+}
+
+.preview-content .player-options,
+.preview-content-split .player-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--preview-spacing);
+    margin: 0;
+}
+
+.mobile-viewport .preview-content .player-options,
+.mobile-viewport .preview-content-split .player-options {
+    max-width: 300px;
+    gap: 12px;
+}
+
+/* Completely hide True/False options in preview when parent is hidden */
+#preview-true-false-split[style*="display: none"] .true-false-options,
+#preview-true-false-split[style*="display: none"] .tf-option {
+    display: none !important;
+}
+
+/* Only show True/False options when parent container is explicitly visible */
+#preview-true-false-split:not([style*="display: none"]) .true-false-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--preview-spacing);
+    margin: 0;
+}
+
+.mobile-viewport #preview-true-false-split:not([style*="display: none"]) .true-false-options {
+    grid-template-columns: 1fr;
+    max-width: 300px;
+    gap: 15px;
+}
+
+.preview-content .numeric-input-container,
+.preview-content-split .numeric-input-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--preview-spacing);
+    margin: 0;
+}
+
+.preview-content #preview-numeric-input,
+.preview-content-split #preview-numeric-input-split {
+    width: 100%;
+    padding: 18px;
+    font-size: 1.3rem;
+    border: none;
+    border-radius: var(--border-radius-medium);
+    background: rgba(255,255,255,0.9);
+    color: #333;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.preview-content .player-checkbox-options,
+.preview-content-split .player-checkbox-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 95%; /* Use maximum available width for optimal space usage */
+    margin: 0;
+    align-items: flex-start; /* Left-align the checkboxes */
+    text-align: left;
+}
+
+/* Checkbox options inherit base styling from .checkbox-option in components.css */
+/* Only preview-specific adjustments needed here */
+.preview-content .player-checkbox-options,
+.preview-content-split .player-checkbox-options {
+    max-width: 700px; /* Updated to match above */
+}
+
+/* LaTeX Processing States */
+.processing-math {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.math-ready {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+/* Ensure MathJax elements don't break layout */
+.mjx-container {
+    display: inline-block !important;
+    vertical-align: middle !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+}
+
+/* Code Formatting */
+code {
+    background: rgba(0, 0, 0, 0.3);
+    color: #FFD700;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+    font-size: 0.85em;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+pre {
+    background: rgba(0, 0, 0, 0.4);
+    color: #f8f8f2;
+    padding: 15px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 10px 0;
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+    font-size: 0.8em;
+    line-height: 1.5;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    white-space: pre;
+    text-align: left;
+    tab-size: 4;
+    -moz-tab-size: 4;
+    /* Enhanced width handling for code blocks */
+    max-width: 100%;
+    word-wrap: normal;
+    word-break: normal;
+}
+
+pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+}
+
+/* Python syntax highlighting */
+.python-keyword {
+    color: #66d9ef;
+    font-weight: bold;
+}
+
+.python-string {
+    color: #e6db74;
+}
+
+.python-comment {
+    color: #75715e;
+    font-style: italic;
+}
+
+.python-number {
+    color: #ae81ff;
+}
+
+.python-function {
+    color: #a6e22e;
+}
+
+/* Code blocks in questions and options */
+.question-text pre,
+.option pre,
+.player-option pre {
+    background: rgba(0, 0, 0, 0.9);
+    color: #f8f8f2;
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace; /* CRITICAL FIX: Ensure consistent monospace font with host-side */
+}
+
+.question-text code,
+.option code,
+.player-option code {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Dynamic width for containers with code content */
+.question-item:has(pre),
+.player-option:has(pre),
+.preview-question:has(pre) {
+    min-width: 0; /* Allow flex shrinking */
+    overflow: visible;
+}
+
+/* Responsive code width in narrow containers */
+.question-text pre,
+.option pre,
+.player-option pre,
+.preview-content pre,
+.preview-content-split pre {
+    font-size: 0.75em; /* Slightly smaller in constrained spaces */
+    padding: 12px;
+    max-width: calc(100vw - 40px); /* Ensure it doesn't exceed viewport */
+}
+
+/* For split screen mode, allow more horizontal space for code */
+.host-container.split-screen .question-item:has(pre) {
+    flex-basis: auto;
+    min-width: 400px;
+}
+
+.host-container.split-screen .quiz-editor-section:has(.question-item pre) {
+    flex: 1.2; /* Give more space to editor when code is present */
+}
+
+/* Removed overly wide container rules for code questions
+   Code questions should use same width as LaTeX questions */
+
+/* .player-game-container:has(pre),
+.player-question-area:has(pre) {
+    max-width: 90vw;
+    margin: 0 auto;
+} */
+
+.player-question-area:has(pre) {
+    padding: 15px 20px;
+    background: rgba(255,255,255,0.05);
+}
+
+/* Player code blocks get more space */
+#player-question-text pre,
+.player-option pre {
+    font-size: 0.8em; /* Slightly larger than other constrained spaces */
+    padding: 15px;
+    max-width: 100%; /* Use container width instead of viewport width */
+    margin: 15px auto;
+    border-radius: 8px;
+}
+
+/* Player options with code get enhanced layout */
+.player-options:has(pre) {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 600px; /* Use same width as normal player options */
+    margin: 0 auto;
+}
+
+.player-option:has(pre) {
+    min-height: auto;
+    padding: 15px 20px;
+    text-align: left;
+    line-height: 1.4;
+}
+
+/* Responsive adjustments for mobile players with code */
+@media (max-width: 768px) {
+    /* Removed overly wide mobile container rules for code questions
+       Code questions should use same width as LaTeX questions */
+    
+    /* .player-game-container:has(pre) {
+        max-width: 95vw;
+        padding: 10px 5px;
+    }
+    
+    .player-question-area:has(pre) {
+        padding: 10px 15px;
+        margin: 10px 5px;
+    } */
+    
+    #player-question-text pre,
+    .player-option pre {
+        font-size: 0.7em;
+        padding: 12px;
+        max-width: calc(95vw - 20px);
+        overflow-x: auto;
+    }
+    
+    .player-option:has(pre) {
+        padding: 12px 15px;
+        font-size: 0.95rem;
+    }
+}
+
+/* True/False and Numeric input areas with code */
+.tf-options:has(pre),
+.numeric-input-container:has(pre) {
+    max-width: 600px; /* Use same width as normal options */
+    margin: 0 auto;
+}
+
+.tf-option:has(pre) {
+    padding: 15px 20px;
+    text-align: left;
+    min-height: auto;
+}
+
+/* Checkbox options with code */
+.checkbox-option:has(pre) {
+    padding: 12px 15px;
+    text-align: left;
+    align-items: flex-start;
+}
+
+.checkbox-option:has(pre) input[type="checkbox"] {
+    margin-top: 5px; /* Align with first line of code */
+    flex-shrink: 0;
+}
+
+/* Preview containers should also expand for code */
+.preview-content:has(pre),
+.preview-content-split:has(pre) {
+    max-width: 90%;
+    margin: 0 auto;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] code {
+    background: rgba(255, 255, 255, 0.1);
+    color: #87CEEB;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] pre {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e8e8e8;
+}
+
+/* Compact Preview Styles */
+/* Duplicate removed - see main definition above */
+
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.preview-header h4 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-shadow: 0 1px 2px var(--shadow-light);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-btn {
+    padding: 8px 12px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+}
+
+.settings-btn:hover {
+    background: var(--color-primary);
+    color: white;
+}
+
+/* Preview Settings Popup */
+.preview-settings-popup {
+    position: fixed;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 300px;
+    background: var(--bg-glass);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    animation: slideInLeft 0.3s ease;
+}
+
+.settings-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-popup-header h4 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+.settings-popup-content {
+    padding: 20px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background: var(--color-danger);
+    color: white;
+}
+
+/* Animation defined in animations.css */
+
+.preview-header-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Animation defined in animations.css */
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.settings-row:last-child {
+    margin-bottom: 0;
+}
+
+.settings-row label {
+    min-width: 80px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.settings-row input[type="range"] {
+    flex: 1;
+    margin: 0 10px;
+}
+
+.settings-row span {
+    min-width: 50px;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    text-align: right;
+}
+
+/* Floating Back to Top Button */
+.back-to-top-float {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.back-to-top-float:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    background: var(--color-primary-dark, #5a67d8);
+}
+
+.back-to-top-float.show {
+    display: flex !important;
+    animation: fadeInUp 0.3s ease;
+}
+
+/* Animation defined in animations.css */
+
+.device-btn {
+    padding: 3px 6px;
+    background: var(--bg-glass-light);
+    border: none;
+    border-radius: var(--border-radius-small);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.1s ease;
+    font-size: 0.7rem;
+    margin: 0 2px;
+}
+
+.device-btn.active {
+    background: rgba(255, 215, 0, 0.3);
+    color: #FFD700;
+}
+
+.nav-btn {
+    padding: 4px 8px;
+    background: var(--bg-glass-light);
+    border: none;
+    border-radius: 5px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.1s ease;
+    font-size: 0.7rem;
+    margin: 0 2px;
+}
+
+.nav-btn.edit-btn {
+    background: rgba(255, 215, 0, 0.2);
+    color: #FFD700;
+    font-weight: 600;
+}
+
+.nav-btn.edit-btn:hover {
+    background: rgba(255, 215, 0, 0.3);
+    transform: translateY(-1px);
+}
+
+.preview-navigation-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--preview-nav-padding);
+    background: var(--shadow-light);
+    border-radius: 3px;
+    margin-bottom: 2px;
+    font-size: 0.7rem;
+}
+
+/* ===== UI IMPROVEMENTS FOR BETTER PREVIEW AND DARK MODE ===== */
+
+/* Enhanced Preview Content Background - Maximized space for content */
+.preview-content,
+.preview-content-split {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary-gradient) 100%);
+    border-radius: var(--border-radius-medium);
+    padding: 12px; /* Further reduced for maximum content space utilization */
+    color: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    width: 100%; /* Ensure full width usage */
+    margin: 0; /* Remove any default margins */
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+[data-theme="dark"] .preview-content,
+[data-theme="dark"] .preview-content-split {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    border: 2px solid rgba(96, 165, 250, 0.2);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+/* Enhanced Preview Player Options - Increased width for better layout */
+.preview-content .player-options,
+.preview-content-split .player-options {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 95%; /* Use maximum available width for better space utilization */
+    margin: 0 auto;
+    width: 100%;
+}
+
+.preview-content .player-option,
+.preview-content-split .player-option {
+    padding: 15px 20px;
+    color: white;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: var(--border-radius-small);
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    margin: 8px 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-height: 55px;
+    width: 100%;
+    max-width: 95%; /* Use maximum available width for optimal space usage */
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+    line-height: 1.4;
+    position: relative;
+    overflow: hidden;
+}
+
+/* === COLORFUL PREVIEW OPTIONS === */
+.preview-content .player-option:nth-child(1),
+.preview-content-split .player-option:nth-child(1) {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); /* Blue */
+}
+
+.preview-content .player-option:nth-child(2),
+.preview-content-split .player-option:nth-child(2) {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%); /* Green */
+}
+
+.preview-content .player-option:nth-child(3),
+.preview-content-split .player-option:nth-child(3) {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); /* Orange */
+}
+
+.preview-content .player-option:nth-child(4),
+.preview-content-split .player-option:nth-child(4) {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); /* Red */
+}
+
+.preview-content .player-option:nth-child(5),
+.preview-content-split .player-option:nth-child(5) {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); /* Purple */
+}
+
+.preview-content .player-option:nth-child(6),
+.preview-content-split .player-option:nth-child(6) {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); /* Cyan */
+}
+
+/* Dark theme multicolored options - same colors as light theme */
+[data-theme="dark"] .preview-content .player-option:nth-child(1),
+[data-theme="dark"] .preview-content-split .player-option:nth-child(1) {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); /* Blue */
+    border: 2px solid rgba(59, 130, 246, 0.4);
+    color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+[data-theme="dark"] .preview-content .player-option:nth-child(2),
+[data-theme="dark"] .preview-content-split .player-option:nth-child(2) {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%); /* Green */
+    border: 2px solid rgba(16, 185, 129, 0.4);
+    color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="dark"] .preview-content .player-option:nth-child(3),
+[data-theme="dark"] .preview-content-split .player-option:nth-child(3) {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); /* Orange */
+    border: 2px solid rgba(245, 158, 11, 0.4);
+    color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="dark"] .preview-content .player-option:nth-child(4),
+[data-theme="dark"] .preview-content-split .player-option:nth-child(4) {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); /* Red */
+    border: 2px solid rgba(239, 68, 68, 0.4);
+    color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="dark"] .preview-content .player-option:nth-child(5),
+[data-theme="dark"] .preview-content-split .player-option:nth-child(5) {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); /* Purple */
+    border: 2px solid rgba(139, 92, 246, 0.4);
+    color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+[data-theme="dark"] .preview-content .player-option:nth-child(6),
+[data-theme="dark"] .preview-content-split .player-option:nth-child(6) {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); /* Cyan */
+    border: 2px solid rgba(6, 182, 212, 0.4);
+    color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+}
+
+/* Fallback for additional options beyond 6 */
+[data-theme="dark"] .preview-content .player-option:nth-child(n+7),
+[data-theme="dark"] .preview-content-split .player-option:nth-child(n+7) {
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    border: 2px solid rgba(96, 165, 250, 0.4);
+    color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+}
+
+.preview-content .player-option:hover,
+.preview-content-split .player-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    border-color: rgba(255,255,255,0.5);
+}
+
+/* Light theme multicolored checkbox options - match multiple choice colors */
+.preview-content .player-checkbox-options .checkbox-option:nth-child(1),
+.preview-content-split .player-checkbox-options .checkbox-option:nth-child(1),
+.preview-content .checkbox-option.preview-checkbox:nth-child(1),
+.preview-content-split .checkbox-option.preview-checkbox:nth-child(1) {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important; /* Blue */
+    border: 2px solid rgba(255,255,255,0.3) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Colorful checkbox options - clean cascade without !important */
+/* Preview checkbox option colors now consolidated in variables.css */
+
+/* Keep nth-child selectors for fallback compatibility */
+.checkbox-option.preview-checkbox:nth-child(1) {
+    background: linear-gradient(135deg, var(--option-0-start), var(--option-0-end));
+    color: white;
+    box-shadow: 0 4px 20px var(--option-0-shadow);
+}
+
+.checkbox-option.preview-checkbox:nth-child(2) {
+    background: linear-gradient(135deg, var(--option-1-start), var(--option-1-end));
+    color: white;
+    box-shadow: 0 4px 20px var(--option-1-shadow);
+}
+
+.checkbox-option.preview-checkbox:nth-child(3) {
+    background: linear-gradient(135deg, var(--option-2-start), var(--option-2-end));
+    color: white;
+    box-shadow: 0 4px 20px var(--option-2-shadow);
+}
+
+.checkbox-option.preview-checkbox:nth-child(4) {
+    background: linear-gradient(135deg, var(--option-3-start), var(--option-3-end));
+    color: white;
+    box-shadow: 0 4px 20px var(--option-3-shadow);
+}
+
+.checkbox-option.preview-checkbox:nth-child(5) {
+    background: linear-gradient(135deg, var(--option-4-start), var(--option-4-end));
+    color: white;
+    box-shadow: 0 4px 20px var(--option-4-shadow);
+}
+
+.checkbox-option.preview-checkbox:nth-child(6) {
+    background: linear-gradient(135deg, var(--option-5-start), var(--option-5-end));
+    color: white;
+    box-shadow: 0 4px 20px var(--option-5-shadow);
+}
+
+/* Dark theme multicolored checkbox options */
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(1),
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(1) {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); /* Blue */
+    border: 2px solid rgba(59, 130, 246, 0.4);
+    color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(2),
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(2) {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%); /* Green */
+    border: 2px solid rgba(16, 185, 129, 0.4);
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(3),
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(3) {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); /* Orange */
+    border: 2px solid rgba(245, 158, 11, 0.4);
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(4),
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(4) {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); /* Red */
+    border: 2px solid rgba(239, 68, 68, 0.4);
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(5),
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(5) {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); /* Purple */
+    border: 2px solid rgba(139, 92, 246, 0.4);
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .preview-content .player-checkbox-options .checkbox-option:nth-child(6),
+[data-theme="dark"] .preview-content-split .player-checkbox-options .checkbox-option:nth-child(6) {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); /* Cyan */
+    border: 2px solid rgba(6, 182, 212, 0.4);
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .preview-content .player-option:hover,
+[data-theme="dark"] .preview-content-split .player-option:hover {
+    box-shadow: 0 6px 16px rgba(30, 64, 175, 0.4);
+    border-color: rgba(96, 165, 250, 0.6);
+}
+
+/* Enhanced Preview True/False Options - Increased width for better layout */
+.preview-content .true-false-options,
+.preview-content-split .true-false-options {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    max-width: 95%; /* Use maximum available width for consistent layout */
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Enhanced True/False buttons with default colors */
+.preview-content .tf-option,
+.preview-content-split .tf-option {
+    padding: 18px 25px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border: 3px solid rgba(255,255,255,0.4);
+    border-radius: var(--border-radius-medium);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 10px 0;
+    min-height: 60px;
+    flex: 1;
+    max-width: 350px; /* Increased from 250px for better proportion */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.4;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    color: white;
+    letter-spacing: 0.5px;
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); /* Default gray */
+}
+
+[data-theme="dark"] .preview-content .tf-option,
+[data-theme="dark"] .preview-content-split .tf-option {
+    border: 3px solid rgba(96, 165, 250, 0.5);
+    box-shadow: 0 5px 15px rgba(30, 64, 175, 0.3);
+    color: #f8fafc;
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%); /* Default dark gray */
+}
+
+.preview-content .tf-option:hover,
+.preview-content-split .tf-option:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    border-color: rgba(255,255,255,0.6);
+}
+
+[data-theme="dark"] .preview-content .tf-option:hover,
+[data-theme="dark"] .preview-content-split .tf-option:hover {
+    box-shadow: 0 8px 20px rgba(30, 64, 175, 0.4);
+    border-color: rgba(96, 165, 250, 0.7);
+}
+
+/* True button - vibrant green (using data attributes) */
+.preview-content .tf-option[data-option="true"],
+.preview-content-split .tf-option[data-option="true"],
+.tf-option[data-option="true"] {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important; /* Bright green */
+    border: 3px solid rgba(16, 185, 129, 0.6) !important;
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3) !important;
+}
+
+[data-theme="dark"] .preview-content .tf-option[data-option="true"],
+[data-theme="dark"] .preview-content-split .tf-option[data-option="true"],
+[data-theme="dark"] .tf-option[data-option="true"] {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important; /* Slightly brighter for dark */
+    border: 3px solid rgba(34, 197, 94, 0.6) !important;
+    box-shadow: 0 5px 15px rgba(34, 197, 94, 0.3) !important;
+}
+
+/* False button - vibrant red (using data attributes) */
+.preview-content .tf-option[data-option="false"],
+.preview-content-split .tf-option[data-option="false"],
+.tf-option[data-option="false"] {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important; /* Bright red */
+    border: 3px solid rgba(239, 68, 68, 0.6) !important;
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3) !important;
+}
+
+[data-theme="dark"] .preview-content .tf-option[data-option="false"],
+[data-theme="dark"] .preview-content-split .tf-option[data-option="false"],
+[data-theme="dark"] .tf-option[data-option="false"] {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%) !important; /* Slightly brighter for dark */
+    border: 3px solid rgba(248, 113, 113, 0.6) !important;
+    box-shadow: 0 5px 15px rgba(248, 113, 113, 0.3) !important;
+}
+
+/* Enhanced hover effects for True/False */
+.preview-content .tf-option[data-option="true"]:hover,
+.preview-content-split .tf-option[data-option="true"]:hover,
+.tf-option[data-option="true"]:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4) !important;
+    transform: translateY(-3px);
+}
+
+.preview-content .tf-option[data-option="false"]:hover,
+.preview-content-split .tf-option[data-option="false"]:hover,
+.tf-option[data-option="false"]:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4) !important;
+    transform: translateY(-3px);
+}
+
+[data-theme="dark"] .preview-content .tf-option[data-option="true"]:hover,
+[data-theme="dark"] .preview-content-split .tf-option[data-option="true"]:hover,
+[data-theme="dark"] .tf-option[data-option="true"]:hover {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4) !important;
+}
+
+[data-theme="dark"] .preview-content .tf-option[data-option="false"]:hover,
+[data-theme="dark"] .preview-content-split .tf-option[data-option="false"]:hover,
+[data-theme="dark"] .tf-option[data-option="false"]:hover {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    box-shadow: 0 8px 20px rgba(248, 113, 113, 0.4) !important;
+}
+
+/* Removed - checkbox styling now comes from components.css */
+
+/* Enhanced Preview Question Text */
+.preview-content .question-text,
+.preview-content-split .question-text,
+#preview-question-text,
+#preview-question-text-split {
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 600;
+    line-height: 1.5;
+    color: white;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    padding: 20px;
+    background: rgba(0,0,0,0.15);
+    border-radius: var(--border-radius-small);
+    border: 2px solid var(--border-color);
+    backdrop-filter: blur(10px);
+}
+
+[data-theme="dark"] .preview-content .question-text,
+[data-theme="dark"] .preview-content-split .question-text,
+[data-theme="dark"] #preview-question-text,
+[data-theme="dark"] #preview-question-text-split {
+    background: rgba(15, 23, 42, 0.8);
+    border: 2px solid rgba(96, 165, 250, 0.3);
+    color: #f8fafc;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+}
+
+/* Enhanced Preview Numeric Input */
+.preview-content #preview-numeric-input,
+.preview-content-split #preview-numeric-input-split {
+    width: 100%;
+    padding: 20px;
+    font-size: 1.4rem;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-radius: var(--border-radius-medium);
+    background: rgba(255,255,255,0.95);
+    color: #1e293b;
+    text-align: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .preview-content #preview-numeric-input,
+[data-theme="dark"] .preview-content-split #preview-numeric-input-split {
+    background: rgba(15, 23, 42, 0.95);
+    color: #f8fafc;
+    border: 3px solid rgba(96, 165, 250, 0.4);
+    box-shadow: 0 6px 18px rgba(30, 64, 175, 0.3);
+}
+
+.preview-content #preview-numeric-input:focus,
+.preview-content-split #preview-numeric-input-split:focus {
+    outline: none;
+    border-color: rgba(37, 99, 235, 0.6);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.25);
+    transform: translateY(-2px);
+}
+
+/* Enhanced Preview Viewport */
+.preview-viewport {
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+[data-theme="dark"] .preview-viewport {
+    background: #0f172a;
+}
+
+/* Mobile Responsiveness for Toolbar Space */
+@media (max-width: 1024px) {
+    .host-container, 
+    #host-screen .host-container {
+        margin-left: 0 !important;
+    }
+}
+
+/* Improved Light Mode Contrast */
+[data-theme="light"] .modal-content,
+[data-theme="light"] .card {
+    background: var(--bg-contrast);
+    color: var(--text-contrast);
+    border: 2px solid rgba(37, 99, 235, 0.2);
+}
+
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+    background: rgba(255,255,255,0.95);
+    color: var(--text-contrast);
+    border: 2px solid rgba(37, 99, 235, 0.3);
+}
+
+[data-theme="light"] .btn.primary {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+    border: 2px solid rgba(37, 99, 235, 0.5);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+[data-theme="light"] .btn.secondary {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    color: var(--text-contrast);
+    border: 2px solid rgba(37, 99, 235, 0.3);
+}
+
+/* ===== ENHANCED LIVE PREVIEW TITLE BAR & NAVIGATION ===== */
+
+/* Preview Modal Header - Modern Glass Morphism */
+.preview-modal-header {
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 30px;
+    box-shadow: 0 8px 32px var(--shadow-light);
+}
+
+[data-theme="dark"] .preview-modal-header {
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.2) 0%, rgba(15, 23, 42, 0.8) 100%);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+}
+
+/* Preview Title Section */
+.preview-title-section h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+[data-theme="dark"] .preview-title-section h2 {
+    color: #f8fafc;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+/* Enhanced Preview Navigation Bar - Fixed layout and spacing */
+/* Enhanced Preview Navigation Bar - Fixed layout and clipping prevention */
+.preview-navigation-bar {
+    background: rgba(0,0,0,0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--bg-glass-light);
+    border-radius: var(--border-radius-small);
+    padding: 6px 8px; /* Further reduced padding to prevent overflow */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px; /* Minimal gap to maximize space usage */
+    margin: 0 5px; /* Minimal margins for maximum content width */
+    margin-bottom: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    min-height: 40px; /* Reduced minimum height for better space efficiency */
+    flex-wrap: nowrap; /* Prevent wrapping to maintain layout */
+    overflow: hidden; /* Prevent content from overflowing container */
+    width: calc(100% - 10px); /* Ensure full width utilization minus margins */
+    box-sizing: border-box; /* Include padding and border in width calculation */
+}
+
+/* Responsive navigation for smaller preview areas */
+@media (max-width: 600px) {
+    .preview-navigation-bar {
+        padding: 4px 6px;
+        gap: 4px;
+        margin: 0 2px;
+        font-size: 0.7rem;
+    }
+    
+    .nav-btn {
+        padding: 3px 6px;
+        font-size: 0.7rem;
+        border-radius: 3px;
+    }
+    
+    .nav-btn.edit-btn {
+        max-width: none;
+        min-width: 80px;
+        flex-shrink: 0;
+    }
+    
+    #preview-question-counter-split {
+        padding: 3px 8px;
+        font-size: 0.7rem;
+        border-radius: 8px;
+    }
+}
+
+/* Ultra compact mode for very narrow spaces */
+.preview-navigation-bar.compact {
+    padding: 2px 4px;
+    gap: 2px;
+    margin: 0;
+    min-height: 32px;
+}
+
+.preview-navigation-bar.compact .nav-btn {
+    padding: 2px 4px;
+    font-size: 0.65rem;
+}
+
+.preview-navigation-bar.compact .nav-btn.edit-btn {
+    max-width: none;
+    min-width: 60px;
+    flex-shrink: 0;
+}
+
+.preview-navigation-bar.compact #preview-question-counter-split {
+    padding: 2px 6px;
+    font-size: 0.65rem;
+    border-radius: 6px;
+}
+
+/* Navigation Buttons Section - Improved space management */
+.preview-nav-section {
+    display: flex;
+    align-items: center;
+    gap: 4px; /* Reduced gap for better space utilization */
+    min-width: 0; /* Allow flex shrinking */
+    flex: 1; /* Allow sections to grow and use available space */
+    justify-content: flex-start; /* Left navigation section */
+}
+
+.preview-nav-section:last-child {
+    justify-content: flex-end; /* Right navigation section */
+}
+
+.preview-nav-section.center {
+    justify-content: center; /* Center section for question counter */
+    flex: 2; /* Give more space to center section */
+}
+
+[data-theme="dark"] .preview-navigation-bar {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+/* Enhanced Navigation Buttons - Ultra compact to prevent overflow */
+.nav-btn {
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 4px 8px; /* Ultra compact padding to prevent overflow */
+    border-radius: 4px; /* Smaller radius for compact design */
+    cursor: pointer;
+    font-size: 0.75rem; /* Smaller font to fit more content */
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 2px; /* Minimal gap for compact layout */
+    white-space: nowrap; /* Prevent text wrapping */
+    overflow: hidden; /* Prevent content overflow */
+    text-overflow: ellipsis; /* Add ellipsis if text is too long */
+    min-width: 0; /* Allow flex shrinking */
+    flex-shrink: 1; /* Allow buttons to shrink if needed */
+    box-shadow: 0 2px 8px var(--shadow-light);
+    white-space: nowrap; /* Prevent text wrapping */
+}
+
+[data-theme="dark"] .nav-btn {
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.3) 0%, rgba(15, 23, 42, 0.8) 100%);
+    border: 1px solid rgba(96, 165, 250, 0.4);
+    color: #f8fafc;
+}
+
+.nav-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border-color: rgba(255,255,255,0.5);
+}
+
+[data-theme="dark"] .nav-btn:hover {
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.4);
+    border-color: rgba(96, 165, 250, 0.6);
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Enhanced Edit Question Button - Overflow protection */
+.nav-btn.edit-btn {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 152, 0, 0.15) 100%);
+    border: 1px solid rgba(255, 193, 7, 0.4);
+    color: #ffd700;
+    font-weight: 700;
+    max-width: 120px; /* Prevent excessive width */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+[data-theme="dark"] .nav-btn.edit-btn {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.15) 100%);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    color: #22c55e;
+}
+
+.nav-btn.edit-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.3) 0%, rgba(255, 152, 0, 0.2) 100%);
+    border-color: rgba(255, 193, 7, 0.6);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+[data-theme="dark"] .nav-btn.edit-btn:hover {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(22, 163, 74, 0.2) 100%);
+    border-color: rgba(34, 197, 94, 0.6);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+/* Disable FOUC prevention that was causing invisible content */
+
+.preview-content .MathJax_Processed,
+.preview-content-split .MathJax_Processed,
+#preview-content-split .MathJax_Processed,
+#preview-question-text-split.MathJax_Processed {
+    visibility: visible !important;
+    animation: previewMathFadeIn 0.2s ease-in;
+}
+
+/* Smooth LaTeX reveal animation for preview */
+@keyframes previewMathFadeIn {
+    from { 
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to { 
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Removed opacity fade that was causing transparency issues */
+

@@ -1,0 +1,169 @@
+/**
+ * Modern Horizontal Toolbar - Clean and Professional Design
+ * Replaces the old problematic vertical sidebar with a horizontal toolbar
+ */
+
+/* Horizontal Toolbar - Integrated into Header Controls */
+.horizontal-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    margin: 0;
+    position: relative;
+    z-index: 100;
+}
+
+/* Toolbar Groups - Subtle grouping that matches header controls */
+.toolbar-group {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 0 8px;
+    border-radius: var(--border-radius-small);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-right: 8px;
+}
+
+/* Toolbar Buttons - Match theme toggle button styling */
+.horizontal-toolbar .toolbar-btn {
+    background: var(--glass-medium);
+    backdrop-filter: var(--blur-medium);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--text-primary);
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.horizontal-toolbar .toolbar-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-primary);
+}
+
+.horizontal-toolbar .toolbar-btn:active {
+    transform: translateY(0);
+    background: var(--accent-primary);
+    color: white;
+}
+
+.horizontal-toolbar .toolbar-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    opacity: 1;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Toolbar Icons - Proportional scaling */
+.horizontal-toolbar .toolbar-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+    display: block;
+}
+
+/* Hide on mobile (same as old toolbar) */
+@media (max-width: 1024px) {
+    .horizontal-toolbar {
+        display: none !important;
+    }
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 1200px) {
+    .horizontal-toolbar {
+        gap: 16px;
+        padding: 10px 16px;
+    }
+    
+    .toolbar-group {
+        gap: 6px;
+        padding: 0 8px;
+    }
+    
+    .horizontal-toolbar .toolbar-btn {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .horizontal-toolbar .toolbar-icon {
+        font-size: 1.1rem;
+    }
+}
+
+/* Legacy support - Hide old vertical toolbar completely */
+.left-toolbar {
+    display: none !important;
+}
+
+/* Tooltip styling for better UX */
+.horizontal-toolbar .toolbar-btn[title] {
+    position: relative;
+}
+
+.horizontal-toolbar .toolbar-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 6px 8px;
+    border-radius: var(--border-radius-small);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 200;
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+}
+
+/* Header integration - show toolbar only in host editing mode */
+header .horizontal-toolbar {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Theme-specific adjustments */
+[data-theme="dark"] .horizontal-toolbar {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .toolbar-group {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] .horizontal-toolbar {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .toolbar-group {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.05);
+}

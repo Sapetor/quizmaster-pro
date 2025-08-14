@@ -1,0 +1,32 @@
+{
+  "quizTitle": "Sample Quiz - Basic Knowledge",
+  "gamePin": "334650",
+  "results": [
+    {
+      "name": "das",
+      "score": 600,
+      "answers": [
+        {
+          "answer": 3,
+          "isCorrect": true,
+          "points": 200,
+          "timeMs": 2571
+        },
+        {
+          "answer": 2,
+          "isCorrect": true,
+          "points": 200,
+          "timeMs": 7817
+        },
+        {
+          "answer": "true",
+          "isCorrect": true,
+          "points": 200,
+          "timeMs": 4480
+        }
+      ]
+    }
+  ],
+  "startTime": "2025-06-11T05:29:35.033Z",
+  "endTime": "2025-06-11T05:30:39.989Z"
+}
