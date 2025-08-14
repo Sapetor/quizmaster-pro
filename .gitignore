@@ -6,6 +6,8 @@ yarn-error.log*
 .DS_Store
 *.log
 .claude/
+CLAUDE.md
+.claude.backup*
 
 # Upload folders - keep structure but ignore content
 public/uploads/*
