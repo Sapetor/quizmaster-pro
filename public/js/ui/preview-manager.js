@@ -418,11 +418,20 @@ export class PreviewManager {
      */
     updateSplitPreviewNavigation(totalQuestions) {
         const counterSplit = document.getElementById('preview-question-counter-split');
+        const counterDisplay = document.getElementById('preview-question-counter-display-split');
         const prevBtn = document.getElementById('preview-prev-split');
         const nextBtn = document.getElementById('preview-next-split');
         
+        const questionNumber = this.currentPreviewQuestion + 1;
+        const counterText = `${translationManager.getTranslationSync('question')} ${questionNumber} ${translationManager.getTranslationSync('of')} ${totalQuestions}`;
+        
         if (counterSplit) {
-            counterSplit.textContent = `${translationManager.getTranslationSync('question')} ${this.currentPreviewQuestion + 1} ${translationManager.getTranslationSync('of')} ${totalQuestions}`;
+            counterSplit.textContent = counterText;
+        }
+        if (counterDisplay) {
+            counterDisplay.innerHTML = `<span data-translate="question">Question</span> ${questionNumber} <span data-translate="of">of</span> ${totalQuestions}`;
+            // Update translations for the newly inserted content
+            translationManager.updateGameTranslations();
         }
         
         if (prevBtn) {
@@ -445,7 +454,9 @@ export class PreviewManager {
             previewText.textContent = translationManager.getTranslationSync('no_questions_to_preview') || 'No questions to preview';
         }
         if (counterDisplay) {
-            counterDisplay.textContent = `${translationManager.getTranslationSync('question')} 0 ${translationManager.getTranslationSync('of')} 0`;
+            counterDisplay.innerHTML = `<span data-translate="question">Question</span> 0 <span data-translate="of">of</span> 0`;
+            // Update translations for the newly inserted content
+            translationManager.updateGameTranslations();
         }
         if (counterSplit) {
             counterSplit.textContent = `${translationManager.getTranslationSync('question')} 0 ${translationManager.getTranslationSync('of')} 0`;

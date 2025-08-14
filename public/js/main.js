@@ -63,7 +63,7 @@ function updateLanguageDropdownDisplay(languageCode) {
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     const timestamp = new Date().toISOString();
-    console.log(`🟠 [${timestamp}] main.js DOMContentLoaded event fired`);
+    logger.debug(`🟠 [${timestamp}] main.js DOMContentLoaded event fired`);
     logger.debug('QuizMaster Pro - Initializing modular application...');
     
     // FOUC Prevention: Apply saved font size immediately (should already be done in HTML head)
@@ -106,10 +106,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Initialize the main application
         const appInitTimestamp = new Date().toISOString();
-        console.log(`🟠 [${appInitTimestamp}] Creating QuizGame instance`);
+        logger.debug(`🟠 [${appInitTimestamp}] Creating QuizGame instance`);
         window.game = new QuizGame();
         const appCreatedTimestamp = new Date().toISOString();
-        console.log(`🟠 [${appCreatedTimestamp}] QuizGame instance created successfully`);
+        logger.debug(`🟠 [${appCreatedTimestamp}] QuizGame instance created successfully`);
         logger.debug('QuizGame instance created successfully');
         
         // Check for QR code URL parameters and auto-fill PIN

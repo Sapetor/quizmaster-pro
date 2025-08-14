@@ -3,6 +3,7 @@ export default {
         host_game: "主持游戏",
         join_game: "加入游戏",
         start_game: "开始游戏",
+        create_lobby: "创建大厅",
         quiz_title: "问答标题",
         add_question: "添加问题",
         save_quiz: "保存问答",

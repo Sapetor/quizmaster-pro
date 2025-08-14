@@ -24,7 +24,7 @@ import { resultsViewer } from '../utils/results-viewer.js';
 export class QuizGame {
     constructor() {
         const timestamp = new Date().toISOString();
-        console.log(`🟣 [${timestamp}] QuizGame constructor called`);
+        logger.debug(`🟣 [${timestamp}] QuizGame constructor called`);
         logger.info('Initializing QuizGame...');
         
         // Initialize socket connection
@@ -53,10 +53,10 @@ export class QuizGame {
         this.uiManager = new UIManager();
         
         const mathRendererTimestamp = new Date().toISOString();
-        console.log(`🟣 [${mathRendererTimestamp}] Creating MathRenderer (which creates SimpleMathJaxService)`);
+        logger.debug(`🟣 [${mathRendererTimestamp}] Creating MathRenderer (which creates SimpleMathJaxService)`);
         this.mathRenderer = new MathRenderer();
         const mathRendererCreatedTimestamp = new Date().toISOString();
-        console.log(`🟣 [${mathRendererCreatedTimestamp}] MathRenderer created`);
+        logger.debug(`🟣 [${mathRendererCreatedTimestamp}] MathRenderer created`);
         
         this.previewManager = new PreviewManager(this.mathRenderer);
         this.gameManager = new GameManager(this.socket, this.uiManager, this.soundManager);
@@ -360,7 +360,7 @@ export class QuizGame {
                     translationManager.showAlert('success', 'PIN copied to clipboard!');
                 } else {
                     // Fallback notification
-                    console.log('PIN copied to clipboard:', pin);
+                    logger.info('PIN copied to clipboard:', pin);
                 }
                 
                 // Reset appearance after animation

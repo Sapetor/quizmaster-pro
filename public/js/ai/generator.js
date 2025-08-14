@@ -132,8 +132,7 @@ export class AIQuestionGenerator {
                     }
                 }
             }, {
-                errorType: ErrorHandlingService.ErrorTypes.SYSTEM,
-                severity: ErrorHandlingService.Severity.LOW,
+                errorType: errorHandler.errorTypes.SYSTEM,
                 context: 'api-key-storage',
                 userMessage: 'Failed to save API key securely. Please try again.',
                 retryable: false
@@ -265,15 +264,17 @@ export class AIQuestionGenerator {
             
             this.isGenerating = true;
             
-            // Validation wrapper for input validation
-            const validationResult = errorHandler.wrapValidation(() => {
-                const provider = document.getElementById('ai-provider')?.value;
-                const content = document.getElementById('source-content')?.value?.trim();
-                const questionCount = parseInt(document.getElementById('question-count')?.value) || 1;
-                const difficulty = document.getElementById('difficulty-level')?.value || 'medium';
+            // Direct validation - show errors to user instead of silent failure
+            let provider, content, questionCount, difficulty, selectedTypes;
+            
+            try {
+                provider = document.getElementById('ai-provider')?.value;
+                content = document.getElementById('source-content')?.value?.trim();
+                questionCount = parseInt(document.getElementById('question-count')?.value) || 1;
+                difficulty = document.getElementById('difficulty-level')?.value || 'medium';
                 
                 // Get selected question types
-                const selectedTypes = [];
+                selectedTypes = [];
                 if (document.getElementById('type-multiple-choice')?.checked) {
                     selectedTypes.push('multiple-choice');
                 }
@@ -290,22 +291,29 @@ export class AIQuestionGenerator {
                 logger.debug('Selected question types:', selectedTypes);
                 
                 // Validate required fields
-                errorHandler.validateRequired(provider, 'AI Provider');
-                errorHandler.validateRequired(content, 'Source content');
-                
-                if (selectedTypes.length === 0) {
-                    throw new Error('Please select at least one question type');
+                if (!provider) {
+                    showAlert('Please select an AI provider');
+                    this.isGenerating = false;
+                    return;
+                }
+                if (!content) {
+                    showAlert('Please enter source content for question generation');
+                    this.isGenerating = false;
+                    return;
                 }
                 
-                return { provider, content, questionCount, difficulty, selectedTypes };
-            }, { context: 'input-validation' });
-            
-            if (!validationResult) {
+                if (selectedTypes.length === 0) {
+                    showAlert('Please select at least one question type');
+                    this.isGenerating = false;
+                    return;
+                }
+                
+            } catch (error) {
+                logger.error('Validation error:', error);
+                showAlert('Validation failed: ' + error.message);
                 this.isGenerating = false;
                 return;
             }
-            
-            const { provider, content, questionCount, difficulty, selectedTypes } = validationResult;
             
             // Store the requested count for use throughout the process
             this.requestedQuestionCount = questionCount;
@@ -390,6 +398,11 @@ export class AIQuestionGenerator {
     }
 
     buildPrompt(content, questionCount, difficulty, selectedTypes) {
+        // Safety check for parameters
+        if (!selectedTypes || !Array.isArray(selectedTypes)) {
+            logger.warn('buildPrompt called with invalid selectedTypes:', selectedTypes);
+            selectedTypes = ['multiple-choice']; // Default fallback
+        }
         const contentType = this.detectContentType(content);
         // Use translation manager to get current app language (more reliable than localStorage)
         const language = translationManager.getCurrentLanguage() || 'en';
@@ -456,7 +469,7 @@ CRITICAL REQUIREMENTS:
 
 
     async generateWithOllama(prompt) {
-        return await errorHandler.wrapNetworkRequest(async () => {
+        return await errorHandler.safeNetworkOperation(async () => {
             const model = localStorage.getItem('ollama_selected_model') || AI.OLLAMA_DEFAULT_MODEL;
             const timestamp = Date.now();
             const randomSeed = Math.floor(Math.random() * 10000);
@@ -508,7 +521,7 @@ Please respond with only valid JSON. Do not include explanations or additional t
     }
 
     async generateWithOpenAI(prompt) {
-        return await errorHandler.wrapNetworkRequest(async () => {
+        return await errorHandler.safeNetworkOperation(async () => {
             const apiKey = await secureStorage.getSecureItem('api_key_openai');
             
             const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -552,7 +565,7 @@ Please respond with only valid JSON. Do not include explanations or additional t
     }
 
     async generateWithClaude(prompt) {
-        return await errorHandler.wrapNetworkRequest(async () => {
+        return await errorHandler.safeNetworkOperation(async () => {
             const apiKey = await secureStorage.getSecureItem('api_key_claude');
             
             const response = await fetch('/api/claude/generate', {
@@ -1202,14 +1215,3 @@ Please respond with only valid JSON. Do not include explanations or additional t
     }
 }
 
-// Global function for opening the AI generator modal (called from HTML)
-export function openAIGeneratorModal() {
-    if (window.aiGenerator) {
-        window.aiGenerator.openModal();
-    } else {
-        const modal = document.getElementById('ai-generator-modal');
-        if (modal) {
-            modal.style.display = 'flex';
-        }
-    }
-}

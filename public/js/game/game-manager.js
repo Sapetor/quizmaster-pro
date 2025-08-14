@@ -7,7 +7,7 @@ import { translationManager, getTranslation, createQuestionCounter, getTrueFalse
 import { TIMING, logger, UI, ANIMATION } from '../core/config.js';
 // MathRenderer and mathJaxService now handled by GameDisplayManager
 import { dom } from '../utils/dom.js';
-import { errorBoundary } from '../utils/error-boundary.js';
+import { unifiedErrorHandler as errorBoundary } from '../utils/unified-error-handler.js';
 import { modalFeedback } from '../utils/modal-feedback.js';
 import { uiStateManager } from '../utils/ui-state-manager.js';
 import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
@@ -1322,6 +1322,13 @@ export class GameManager {
      * Reset game state
      */
     resetGameState() {
+        // IMPORTANT: Preserve this.currentQuiz for analytics - DON'T reset it here!
+        // The currentQuiz data contains question metadata needed for detailed analytics
+        logger.debug('🔄 Resetting game state. Preserving currentQuiz for analytics:', {
+            hasCurrentQuiz: !!this.currentQuiz,
+            questionsCount: this.currentQuiz?.questions?.length
+        });
+        
         this.currentQuestion = null;
         this.selectedAnswer = null;
         this.playerAnswers.clear();
@@ -1387,9 +1394,20 @@ export class GameManager {
      * Set quiz data for results export
      */
     setQuizData(quiz) {
-        logger.debug('setQuizData called - questions:', quiz?.questions?.length);
+        logger.debug('📊 setQuizData called:', {
+            hasQuiz: !!quiz,
+            questionsCount: quiz?.questions?.length,
+            quizTitle: quiz?.title,
+            quizId: quiz?.id
+        });
         this.currentQuiz = quiz;
-        logger.debug('currentQuiz set successfully');
+        
+        // Store quiz title separately as backup for results
+        if (quiz?.title) {
+            this.currentQuizTitle = quiz.title;
+        }
+        
+        logger.debug('📊 currentQuiz set successfully - analytics data preserved');
     }
 
     /**

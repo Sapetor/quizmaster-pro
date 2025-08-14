@@ -3,6 +3,7 @@ export default {
         host_game: "ゲームをホストする",
         join_game: "ゲームに参加",
         start_game: "ゲーム開始",
+        create_lobby: "ロビー作成",
         quiz_title: "クイズタイトル",
         add_question: "質問を追加",
         save_quiz: "クイズを保存",

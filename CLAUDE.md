@@ -159,12 +159,13 @@ When removing code during cleanup:
 - `public/js/utils/simple-mathjax-service.js` - Simplified LaTeX/mathematical equation rendering
 - `public/js/utils/simple-results-downloader.js` - Results management and CSV export
 
-### Service Layer (Phase 3)
-- `public/js/services/navigation-service.js` - **[NEW]** Centralized UI navigation and routing
-- `public/js/services/dom-service.js` - **[NEW]** DOM manipulation with element caching
-- `public/js/services/secure-storage-service.js` - **[NEW]** AES-GCM encrypted localStorage
-- `public/js/services/error-handling-service.js` - **[NEW]** Standardized error patterns with retry logic
-- `services/cors-validation-service.js` - **[NEW]** Server-side CORS validation with IP range support
+### Service Layer
+- `public/js/services/navigation-service.js` - Centralized UI navigation and routing
+- `public/js/services/secure-storage-service.js` - AES-GCM encrypted localStorage
+- `public/js/services/results-manager-service.js` - Results management and processing
+- `public/js/utils/dom.js` - DOM manipulation with element caching (DOMManager class)
+- `public/js/utils/unified-error-handler.js` - Unified error handling system (consolidated from 3 separate files)
+- `services/cors-validation-service.js` - Server-side CORS validation with IP range support
 
 ### Recent Modularization (Phase 2)
 - **GameManager Modules**:
@@ -191,8 +192,8 @@ When removing code during cleanup:
 
 **All critical performance and stability issues have been resolved. These are optional improvements for further optimization:**
 
-### Phase 7 - Advanced Bundle Optimization (Optional)
-**Priority: Low - For advanced performance optimization**
+### Future Optimizations (Optional)
+**Note: These numbered phases are from the Future Development document (docs/FUTURE.md) and represent potential mobile deployment optimizations**
 
 **JavaScript Code Splitting & Lazy Loading:**
 - Lazy load AI generator module only when needed (~1,176 lines)
@@ -206,7 +207,7 @@ When removing code during cleanup:
 - Module bundling optimization
 - **Expected Result**: 20-30% additional bundle size reduction
 
-### Phase 8 - Module Refinement (Optional)
+### Module Refinement (Optional)
 **Priority: Very Low - Only if needed for maintainability**
 
 **QuizManager Modularization:**
@@ -240,7 +241,7 @@ When removing code during cleanup:
 - **Keep modules under 500 lines** when possible (refactor larger files)
 
 ### Error Prevention & Handling
-- **Use ErrorHandlingService** for all async operations and error management
+- **Use unified-error-handler.js** for all async operations and error management
 - **Test imports** after refactoring utility files
 - **Verify server startup** after major changes
 - **Check browser console** for JavaScript errors
@@ -290,3 +291,4 @@ Before deploying to production environments, ensure these settings are configure
 ---
 
 *Last updated: August 2025 - Phase 7 game restart stability and error handling consolidation completed*
+- I am running a server in a windows terminal of the same folder, so there is no need to start it

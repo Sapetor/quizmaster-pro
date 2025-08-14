@@ -39,6 +39,9 @@
 /* Animations and transitions - Keyframes and motion */
 @import './animations.css?v=9.3';
 
+/* Analytics - Question analytics and statistical visualizations */
+@import './analytics.css?v=1.0';
+
 
 /**
  * CSS Module Structure:

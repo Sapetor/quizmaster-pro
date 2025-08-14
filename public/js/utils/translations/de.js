@@ -3,6 +3,7 @@ export default {
         host_game: "Spiel hosten",
         join_game: "Spiel beitreten",
         start_game: "Spiel starten",
+        create_lobby: "Lobby erstellen",
         quiz_title: "Quiz-Titel",
         add_question: "Frage hinzufügen",
         save_quiz: "Quiz speichern",

@@ -262,15 +262,25 @@ export function togglePreviewMode() {
 
 export function openAIGeneratorModal() {
     logger.debug('AI Generator modal function called');
+    logger.debug('Debug state:', {
+        hasWindow: !!window,
+        hasGame: !!window.game,
+        hasAiGenerator: !!(window.game && window.game.aiGenerator),
+        hasOpenModal: !!(window.game && window.game.aiGenerator && window.game.aiGenerator.openModal)
+    });
+    
     if (window.game && window.game.aiGenerator && window.game.aiGenerator.openModal) {
+        logger.debug('Calling aiGenerator.openModal()');
         window.game.aiGenerator.openModal();
     } else {
+        logger.warn('AI Generator not properly initialized, using fallback');
         // Fallback: try to open modal directly
         const modal = document.getElementById('ai-generator-modal');
         if (modal) {
+            logger.debug('Opening modal directly as fallback');
             modal.style.display = 'flex';
         } else {
-            logger.debug('AI Generator modal not found');
+            logger.error('AI Generator modal DOM element not found');
         }
     }
 }
