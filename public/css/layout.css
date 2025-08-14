@@ -395,7 +395,7 @@ header {
     max-height: 120px;
     overflow-y: auto;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 6px;
     padding: 2px;
 }
@@ -544,7 +544,7 @@ header {
 /* General Players Grid Styling (now used in card) */
 .players-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 6px;
     padding: 2px;
 }
@@ -575,7 +575,7 @@ header {
 
 .player-name {
     font-weight: 500;
-    font-size: 0.85rem; /* Smaller font size */
+    font-size: 0.55rem; /* Much smaller to show more of the name */
     color: var(--text-primary);
     flex: 1;
     text-align: left;
