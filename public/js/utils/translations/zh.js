@@ -29,6 +29,7 @@ export default {
         players_joined: "已加入玩家",
         waiting_for_game: "等待游戏开始...",
         you_are_in: "你已加入！",
+        you_are_in_name: "你已加入，{name}！",
         enter_game_pin: "输入游戏PIN码",
         your_name: "您的姓名",
         or: "或者",

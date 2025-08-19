@@ -2819,9 +2819,55 @@
     }
 }
 
+/* Game State: Host transition (before playing state) - Identical to playing state */
+.game-state-transition-host {
+    /* Remove header from document flow entirely during transition */
+    header {
+        display: none !important; /* Completely remove header like in playing state */
+    }
+    
+    /* Hide horizontal toolbar during transition */
+    .horizontal-toolbar {
+        display: none !important;
+    }
+    
+    /* Reclaim header space by adjusting main container */
+    .container {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+        min-height: 100dvh !important;
+    }
+    
+    /* Make host game container edge-to-edge like playing state */
+    .host-game-container {
+        min-height: 100dvh !important;
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        width: 100% !important;
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+    }
+    
+    /* Fix question counter positioning to match in-game layout */
+    .question-header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        text-align: left !important;  /* Override any center alignment */
+    }
+    
+    #question-counter {
+        text-align: left !important;  /* Ensure counter stays top-left */
+    }
+}
+
+
 /* Game State: Waiting for players (lobby) - Show all UI */
 .game-state-lobby {
-    /* SOLUTION: Restore normal header positioning during lobby */
+    /* Restore normal header positioning during lobby */
     header {
         position: sticky !important;
         top: 0 !important;
@@ -3176,11 +3222,3 @@
     }
 }
 
-/* Auto-hide animation timing for different contexts */
-.game-ui-auto-hide {
-    transition: all 0.5s ease-in-out 3s; /* Hide after 3 seconds */
-}
-
-.game-ui-keep-visible {
-    transition: all 0.3s ease-in-out; /* Immediate visibility changes */
-}

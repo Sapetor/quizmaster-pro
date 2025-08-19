@@ -29,6 +29,7 @@ export default {
         players_joined: "Spieler beigetreten",
         waiting_for_game: "Warten auf Spielbeginn...",
         you_are_in: "Sie sind drin!",
+        you_are_in_name: "Sie sind drin, {name}!",
         enter_game_pin: "Spiel-PIN eingeben",
         your_name: "Ihr Name",
         or: "ODER",

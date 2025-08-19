@@ -1360,6 +1360,23 @@ export class GameManager {
             finalResults.classList.remove('game-complete-animation');
         }
         
+        // 🔧 FIX: Clear player list UI to prevent phantom players from previous game
+        const playersListElement = document.getElementById('players-list');
+        if (playersListElement) {
+            playersListElement.innerHTML = '';
+            logger.debug('🧹 Cleared player list UI during game reset');
+        }
+        
+        // Reset player count displays
+        const lobbyPlayerCount = document.getElementById('lobby-player-count');
+        if (lobbyPlayerCount) {
+            lobbyPlayerCount.textContent = '0';
+        }
+        const legacyPlayerCount = document.getElementById('player-count');
+        if (legacyPlayerCount) {
+            legacyPlayerCount.textContent = '0';
+        }
+        
         // Clean up event listeners and timers when resetting game
         this.cleanup();
         
@@ -1373,6 +1390,13 @@ export class GameManager {
         this.stateManager.setPlayerName(name);
         this.stateManager.setHostMode(isHost);
         logger.debug('PlayerInfo', { name, isHost });
+    }
+
+    /**
+     * Get player name from state manager
+     */
+    get playerName() {
+        return this.stateManager.playerName;
     }
 
     /**

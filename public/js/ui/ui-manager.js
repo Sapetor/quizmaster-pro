@@ -8,6 +8,7 @@ import { TIMING, logger } from '../core/config.js';
 import { unifiedErrorHandler as errorHandler } from '../utils/unified-error-handler.js';
 import { uiStateManager } from '../utils/ui-state-manager.js';
 import { APIHelper } from '../utils/api-helper.js';
+import { initializeAutoHideToolbar, disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/globals.js';
 
 export class UIManager {
     constructor() {
@@ -35,21 +36,52 @@ export class UIManager {
             // Show/hide header elements based on screen
             const headerStartBtn = document.getElementById('start-hosting-header-small');
             const horizontalToolbar = document.getElementById('horizontal-toolbar');
+            const header = document.querySelector('header');
             
             if (screenId === 'host-screen') {
                 // Show toolbar and start button for host screen
                 if (headerStartBtn) headerStartBtn.style.display = 'block';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'flex';
                 
+                // Remove any transition classes when returning to host screen
+                const container = document.querySelector('.container');
+                if (container) {
+                    container.classList.remove('game-state-transition-host');
+                }
+                
                 // Set editing state for quiz creation
                 uiStateManager.setState('editing');
                 
                 // Initialize first question if questions container is empty
                 this.initializeQuizEditor();
+            } else if (screenId === 'game-lobby') {
+                // Hide editing toolbar on lobby screen, but enable header auto-hide
+                if (headerStartBtn) headerStartBtn.style.display = 'none';
+                if (horizontalToolbar) horizontalToolbar.style.display = 'none';
+                
+                // Initialize auto-hide functionality for HEADER on lobby screen
+                setTimeout(() => {
+                    if (!isAutoHideToolbarActive()) {
+                        initializeAutoHideToolbar();
+                    }
+                }, 100); // Small delay to ensure DOM is ready
             } else {
                 // Hide toolbar and start button for other screens
                 if (headerStartBtn) headerStartBtn.style.display = 'none';
                 if (horizontalToolbar) horizontalToolbar.style.display = 'none';
+                
+                // Disable auto-hide when leaving lobby/host screens
+                if (isAutoHideToolbarActive()) {
+                    disableAutoHideToolbar();
+                } else {
+                    // Remove transition classes for non-game screens
+                    if (!['host-game-screen', 'player-game-screen'].includes(screenId)) {
+                        const container = document.querySelector('.container');
+                        if (container) {
+                            container.classList.remove('game-state-transition-host');
+                        }
+                    }
+                }
             }
             
             // Set appropriate game state based on screen
@@ -70,9 +102,29 @@ export class UIManager {
                     uiStateManager.setState('lobby');
                     break;
                 case 'host-game-screen':
+                    // Apply game-transition class to mimic game-state-playing appearance
+                    // without conflicts with actual playing state
+                    const container = document.querySelector('.container');
+                    if (container) {
+                        container.classList.add('game-state-transition-host');
+                    }
+                    break;
                 case 'player-game-screen':
-                    // Note: playing state will be set by question-start event
-                    // This ensures UI is ready for gameplay transition
+                    // Player game screen gets standard treatment
+                    if (header) {
+                        header.style.transform = 'translateY(-100%)';
+                        header.style.opacity = '0';
+                        header.style.pointerEvents = 'none';
+                        header.style.transition = 'all 0.3s ease-in-out';
+                    }
+                    
+                    setTimeout(() => {
+                        if (header && this.currentScreen === 'player-game-screen') {
+                            header.style.position = 'absolute';
+                            header.style.top = '-100px';
+                            header.style.zIndex = '-1';
+                        }
+                    }, 300);
                     break;
                 case 'game-browser':
                 case 'join-screen':
@@ -130,6 +182,21 @@ export class UIManager {
                 // Fallback for old structure
                 pinElement.textContent = gamePin;
             }
+        }
+    }
+
+    updateQuizTitle(title) {
+        const titleElement = document.getElementById('lobby-quiz-title');
+        logger.debug('updateQuizTitle called with:', title);
+        logger.debug('Title element found:', !!titleElement);
+        if (titleElement && title) {
+            // Remove translation attribute to prevent override
+            titleElement.removeAttribute('data-translate');
+            titleElement.textContent = title;
+            logger.debug('Updated quiz title in lobby:', title);
+            logger.debug('Title element text after update:', titleElement.textContent);
+        } else {
+            logger.warn('Failed to update quiz title - element or title missing');
         }
     }
 

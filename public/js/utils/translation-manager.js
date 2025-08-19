@@ -333,6 +333,12 @@ class TranslationManager {
             if (window.connectionStatus) {
                 window.connectionStatus.refreshTranslations();
             }
+            
+            // Dispatch language change event for custom components
+            const event = new CustomEvent('languageChanged', { 
+                detail: { language: languageCode } 
+            });
+            document.dispatchEvent(event);
         }
         return success;
     }

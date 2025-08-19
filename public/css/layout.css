@@ -302,44 +302,61 @@ header {
     text-align: center;
     max-width: 1000px; /* Increased for side-by-side layout */
     margin: 0 auto;
-    padding: 10px 20px 20px;
+    padding: 20px 20px 20px; /* Reduced top padding since we're now managing space via negative margins */
     margin-top: 0;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 15px; /* Gap between main content and quiz name */
+    height: 100%; /* Take up full available height */
 }
 
-/* Modern 2x2 Card Grid Layout */
-.lobby-header {
+/* New 2-Column Layout */
+.lobby-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
-    gap: 20px;
+    gap: 15px; /* Reduced gap */
     padding: 0;
     background: transparent;
     border: none;
     box-shadow: none;
+    flex: 1; /* Take up all available height */
+    min-height: 0; /* Allow flex shrinking */
 }
 
-/* Individual Lobby Cards */
+.lobby-column {
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Allow flex shrinking */
+}
+
+/* Both columns should match in height and fill available space */
+.left-column,
+.right-column {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Individual Lobby Cards - Increased sizes for better space utilization */
 .lobby-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 20px;
+    padding: 24px; /* Increased padding */
     box-shadow: var(--shadow-sm);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-    min-height: 120px;
+    min-height: 160px; /* Increased from 120px */
 }
 
-/* Reduce height of specific bottom cards: Game Info and Ready to Start */
+/* Bottom cards with increased heights for better space usage */
 .info-card,
 .action-card {
-    min-height: 60px;
-    padding: 12px;
+    min-height: 100px; /* Increased from 60px */
+    padding: 20px; /* Increased from 12px */
 }
+
 
 .lobby-card:hover {
     transform: translateY(-2px);
@@ -384,49 +401,122 @@ header {
     justify-content: center;
 }
 
-/* Card 1: Players List Card Styling */
+/* Card 1: Players List Card Styling - Fill full height */
 .players-list-card {
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.1));
     border-color: rgba(245, 158, 11, 0.2);
+    flex: 1; /* Take up all available height in left column */
+    display: flex;
+    flex-direction: column;
 }
 
 .players-list-card .players-grid {
-    min-height: 80px;
-    max-height: 120px;
+    min-height: 100px;
     overflow-y: auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 6px;
-    padding: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px;
+    flex: 1; /* Take up all available space */
 }
 
 .players-list-card .card-content {
     align-items: stretch;
     justify-content: stretch;
+    flex: 1; /* Take up available space in the card */
+    display: flex;
+    flex-direction: column;
 }
 
-/* Card 2: QR Code Card Styling */
-.qr-card {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.1));
-    border-color: rgba(16, 185, 129, 0.2);
+/* Combined info card should match left column height */
+.combined-info-card {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1));
+    border-color: rgba(59, 130, 246, 0.2);
+    flex: 1; /* Take up all available height to match left column */
+    display: flex;
+    flex-direction: column;
+}
+
+.combined-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Reduced gap to save space */
+    flex: 1; /* Take up all available space */
+}
+
+/* QR Code and PIN combined section */
+.qr-pin-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .qr-container {
-    margin: 0;
+    flex-shrink: 0;
+}
+
+.pin-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Action section with player count - horizontal layout */
+.action-section {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    flex-shrink: 0;
+}
+
+.action-section .player-count-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.action-section .large-start-btn {
+    flex-shrink: 0;
 }
 
 #qr-code-image {
-    max-width: 120px;
+    max-width: 100px; /* Smaller since it's now inline with PIN */
     height: auto;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
+
 
 .game-url {
     font-size: 0.8rem;
     margin-top: 8px;
     color: var(--text-secondary);
     word-break: break-all;
+    text-align: center;
+}
+
+/* Quiz Name Section at Bottom */
+.quiz-name-section {
+    margin-top: auto; /* Push to bottom */
+    padding: 8px 0; /* Reduced from 15px to make it smaller */
+    border-top: 1px solid var(--border-color);
+    background: rgba(var(--accent-primary-rgb), 0.03);
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.quiz-title-display {
+    margin: 0;
+    font-size: 1rem; /* Reduced from 1.2rem */
+    font-weight: 500; /* Reduced from 600 for less visual weight */
+    color: var(--text-primary);
     text-align: center;
 }
 
@@ -593,10 +683,13 @@ header {
         gap: 15px;
     }
     
-    .lobby-header {
+    .lobby-layout {
         grid-template-columns: 1fr;
-        grid-template-rows: repeat(4, auto);
         gap: 15px;
+    }
+    
+    .lobby-column {
+        gap: 10px;
     }
     
     .lobby-card {
@@ -637,7 +730,7 @@ header {
 
 /* Tablet adjustments */
 @media (max-width: 1024px) and (min-width: 769px) {
-    .lobby-header {
+    .lobby-layout {
         gap: 15px;
     }
     
@@ -656,7 +749,7 @@ header {
         max-width: 1200px;
     }
     
-    .lobby-header {
+    .lobby-layout {
         gap: 25px;
     }
     

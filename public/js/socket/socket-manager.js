@@ -14,8 +14,10 @@ export class SocketManager {
         this.gameManager = gameManager;
         this.uiManager = uiManager;
         this.soundManager = soundManager;
+        this.currentPlayerName = null; // Store current player name for language updates
         
         this.initializeSocketListeners();
+        this.initializeLanguageListener();
     }
 
     /**
@@ -34,10 +36,24 @@ export class SocketManager {
         // Game creation and joining
         this.socket.on('game-created', (data) => {
             logger.debug('Game created:', data);
+            logger.debug('Quiz title from server:', data.title);
             this.gameManager.setGamePin(data.pin);
             this.gameManager.setPlayerInfo('Host', true);
             this.uiManager.updateGamePin(data.pin);
             this.uiManager.loadQRCode(data.pin);
+            
+            // Update quiz title in lobby
+            if (data.title) {
+                logger.debug('Calling updateQuizTitle with:', data.title);
+                this.uiManager.updateQuizTitle(data.title);
+            } else {
+                logger.warn('No quiz title received from server');
+            }
+            
+            // 🔧 FIX: Initialize empty player list for new lobby to prevent phantom players
+            this.gameManager.updatePlayersList([]);
+            logger.debug('🧹 Initialized empty player list for new lobby');
+            
             this.uiManager.showScreen('game-lobby');
         });
         
@@ -61,6 +77,9 @@ export class SocketManager {
                 
                 // Update lobby display with game information
                 this.updatePlayerLobbyDisplay(data.gamePin, data.players);
+                
+                // Update "You're in!" message with player name
+                this.updatePlayerWelcomeMessage(data.playerName);
             } else {
                 logger.warn('PlayerJoin failed', { playerName: data.playerName, gamePin: data.gamePin });
             }
@@ -71,7 +90,9 @@ export class SocketManager {
         // Game flow events
         this.socket.on('game-started', (data) => {
             logger.debug('Game started:', data);
-            if (this.gameManager.isHost) {
+            const isHost = this.gameManager.stateManager ? this.gameManager.stateManager.getGameState().isHost : false;
+            
+            if (isHost) {
                 this.uiManager.showScreen('host-game-screen');
             } else {
                 this.uiManager.showScreen('player-game-screen');
@@ -83,6 +104,7 @@ export class SocketManager {
             logger.debug('Question timeLimit value:', data.timeLimit, 'Type:', typeof data.timeLimit);
             logger.debug('Question image data:', JSON.stringify(data.image), 'Has image:', !!data.image);
             logger.debug('Full question data received:', JSON.stringify(data, null, 2));
+            
             
             // Switch to playing state for immersive gameplay
             if (uiStateManager && typeof uiStateManager.setState === 'function') {
@@ -122,7 +144,8 @@ export class SocketManager {
             }
             
             // Show correct answer on host side
-            if (this.gameManager.isHost) {
+            const isHost = this.gameManager.stateManager ? this.gameManager.stateManager.getGameState().isHost : false;
+            if (isHost) {
                 this.gameManager.showCorrectAnswer(data);
             }
         });
@@ -468,6 +491,48 @@ export class SocketManager {
     }
 
     /**
+     * Update the "You're in!" message with the player name
+     * @param {string} playerName - The name of the player who joined
+     */
+    updatePlayerWelcomeMessage(playerName) {
+        const playerInfo = document.getElementById('player-info');
+        if (playerInfo && playerName && playerName !== 'Host') {
+            // Store the player name for language updates
+            this.currentPlayerName = playerName;
+            
+            // Remove the data-translate attribute to prevent automatic translation override
+            playerInfo.removeAttribute('data-translate');
+            
+            // Use the already imported translation manager from the top of the file
+            const translatedMessage = translationManager.getTranslationSync('you_are_in_name');
+            if (translatedMessage && translatedMessage !== 'you_are_in_name') {
+                // Replace {name} placeholder with actual player name
+                playerInfo.textContent = translatedMessage.replace('{name}', playerName);
+                logger.debug('Updated player welcome message:', { playerName, message: playerInfo.textContent });
+            } else {
+                // Fallback to basic message with name
+                playerInfo.textContent = `You're in, ${playerName}!`;
+                logger.debug('Used fallback player welcome message:', playerName);
+            }
+        }
+    }
+
+    /**
+     * Initialize language change listener for updating personalized messages
+     */
+    initializeLanguageListener() {
+        // Listen for language change events to update personalized messages
+        document.addEventListener('languageChanged', (event) => {
+            logger.debug('Language changed, updating personalized messages');
+            
+            // Update the player welcome message if we have a current player name
+            if (this.currentPlayerName) {
+                this.updatePlayerWelcomeMessage(this.currentPlayerName);
+            }
+        });
+    }
+
+    /**
      * Create game
      */
     createGame(quizData) {
@@ -485,10 +550,13 @@ export class SocketManager {
         }
         
         try {
+            console.log('DEBUG CLIENT: About to emit host-join with data:', JSON.stringify(quizData, null, 2));
             this.socket.emit('host-join', quizData);
             logger.debug('Emitted host-join event successfully');
+            console.log('DEBUG CLIENT: host-join event emitted successfully');
         } catch (error) {
             logger.error('Error emitting host-join:', error);
+            console.log('DEBUG CLIENT: Error emitting host-join:', error);
         }
     }
 
@@ -504,7 +572,6 @@ export class SocketManager {
             this.gameManager.markGameStartTime();
         }
         
-        
         try {
             this.socket.emit('start-game');
             logger.debug('Emitted start-game event successfully');
@@ -512,6 +579,7 @@ export class SocketManager {
             logger.error('Error starting game:', error);
         }
     }
+
 
     /**
      * Submit player answer

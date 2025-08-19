@@ -12,14 +12,15 @@ import { SocketManager } from '../socket/socket-manager.js';
 import { SettingsManager } from '../settings/settings-manager.js';
 import { SoundManager } from '../audio/sound-manager.js';
 import { MathRenderer } from '../utils/math-renderer.js';
-import { AIQuestionGenerator } from '../ai/generator.js';
+// AI Generator will be lazy loaded when needed
 import { addQuestion, createQuestionElement, randomizeAnswers, shuffleArray } from '../utils/question-utils.js';
 import { translationManager, showErrorAlert, createQuestionCounter } from '../utils/translation-manager.js';
 import { toastNotifications } from '../utils/toast-notifications.js';
 import { connectionStatus } from '../utils/connection-status.js';
 import { keyboardShortcuts } from '../utils/keyboard-shortcuts.js';
 import { simpleResultsDownloader } from '../utils/simple-results-downloader.js';
-import { resultsViewer } from '../utils/results-viewer.js';
+import { disableAutoHideToolbar, isAutoHideToolbarActive } from '../utils/globals.js';
+// Results viewer will be lazy loaded when needed
 
 export class QuizGame {
     constructor() {
@@ -68,7 +69,7 @@ export class QuizGame {
         
         // Initialize connection status monitoring
         connectionStatus.setSocket(this.socket);
-        this.aiGenerator = new AIQuestionGenerator();
+        this.aiGenerator = null; // Will be lazy loaded when needed
         
         // Initialize core functionality
         this.initializeEventListeners();
@@ -77,11 +78,6 @@ export class QuizGame {
         
         // Make preview manager globally accessible for onclick handlers
         window.game = this;
-        
-        // Initialize AI generator
-        if (this.aiGenerator && this.aiGenerator.initializeEventListeners) {
-            this.aiGenerator.initializeEventListeners();
-        }
         
         // Setup auto-save and load any existing data (temporarily disabled for debugging)
         this.quizManager.setupAutoSave();
@@ -442,7 +438,8 @@ export class QuizGame {
         
         logger.info('startHosting called');
         const title = document.getElementById('quiz-title')?.value?.trim();
-        logger.debug('Quiz title:', title);
+        logger.debug('Quiz title from input field:', title);
+        console.log('DEBUG CLIENT: Quiz title from input field:', title);
         if (!title) {
             showErrorAlert('please_enter_quiz_title');
             return;
@@ -495,6 +492,7 @@ export class QuizGame {
 
         // Create game through socket
         logger.debug('About to call createGame with data:', quizData);
+        console.log('DEBUG CLIENT: About to send quiz data:', JSON.stringify(quizData, null, 2));
         try {
             this.socketManager.createGame(quizData);
             logger.debug('createGame call completed successfully');
@@ -723,7 +721,7 @@ export class QuizGame {
             { id: 'toolbar-ai-gen', handler: () => this.openAIGeneratorModal() },
             { id: 'toolbar-import', handler: () => this.quizManager.importQuiz() },
             { id: 'toolbar-export', handler: () => this.quizManager.exportQuiz() },
-            { id: 'toolbar-results', handler: () => resultsViewer.showModal() },
+            { id: 'toolbar-results', handler: () => this.openResultsViewer() },
             { id: 'toolbar-top', handler: () => this.scrollToTop() },
             { id: 'toolbar-bottom', handler: () => this.scrollToBottom() },
         ];
@@ -915,8 +913,31 @@ export class QuizGame {
     /**
      * Open AI Generator Modal
      */
-    openAIGeneratorModal() {
+    async openAIGeneratorModal() {
         logger.info('Opening AI Generator Modal');
+        
+        // Lazy load AI generator if not already loaded
+        if (!this.aiGenerator) {
+            try {
+                logger.debug('Lazy loading AI Generator...');
+                const { AIQuestionGenerator } = await import('../ai/generator.js');
+                this.aiGenerator = new AIQuestionGenerator();
+                
+                // Initialize event listeners after creation
+                if (this.aiGenerator.initializeEventListeners) {
+                    this.aiGenerator.initializeEventListeners();
+                    logger.debug('AI Generator lazy loaded and initialized');
+                }
+            } catch (error) {
+                logger.error('Failed to lazy load AI Generator:', error);
+                // Show fallback modal if available
+                const modal = document.getElementById('ai-generator-modal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                }
+                return;
+            }
+        }
         
         // Use the AI generator's openModal method if available
         if (this.aiGenerator && this.aiGenerator.openModal) {
@@ -929,15 +950,35 @@ export class QuizGame {
             if (modal) {
                 modal.style.display = 'flex';
                 logger.debug('AI Generator modal opened via fallback');
-                
-                // Initialize AI generator if not already done
-                if (this.aiGenerator && this.aiGenerator.initializeEventListeners) {
-                    this.aiGenerator.initializeEventListeners();
-                    logger.debug('AI Generator event listeners initialized');
-                }
             } else {
                 logger.error('AI Generator modal not found in DOM');
             }
+        }
+    }
+
+    /**
+     * Open Results Viewer with lazy loading
+     */
+    async openResultsViewer() {
+        logger.info('Opening Results Viewer');
+        
+        try {
+            // Lazy load results viewer if not already loaded
+            if (!window.resultsViewer) {
+                logger.debug('Lazy loading Results Viewer...');
+                const { resultsViewer } = await import('../utils/results-viewer.js');
+                window.resultsViewer = resultsViewer;
+                logger.debug('Results Viewer lazy loaded and available globally');
+            }
+            
+            // Open the results viewer modal
+            window.resultsViewer.showModal();
+            logger.debug('Results Viewer modal opened');
+            
+        } catch (error) {
+            logger.error('Failed to lazy load Results Viewer:', error);
+            // Show fallback error message
+            alert('Failed to load results viewer. Please try again.');
         }
     }
 
@@ -1116,5 +1157,26 @@ export class QuizGame {
             const defaultName = `Player${playerNumber}`;
             playerNameInput.value = defaultName;
         }
+    }
+
+    /**
+     * Cleanup method for proper resource management
+     */
+    cleanup() {
+        logger.debug('QuizGame cleanup started');
+        
+        // Disable auto-hide toolbar if active
+        if (isAutoHideToolbarActive()) {
+            disableAutoHideToolbar();
+            logger.debug('Auto-hide toolbar disabled during cleanup');
+        }
+        
+        // Clear any timers or intervals if needed
+        if (this.gameManager && this.gameManager.timer) {
+            clearInterval(this.gameManager.timer);
+            this.gameManager.timer = null;
+        }
+        
+        logger.debug('QuizGame cleanup completed');
     }
 }

@@ -305,6 +305,12 @@ app.get('/api/quizzes', async (req, res) => {
 app.get('/api/quiz/:filename', (req, res) => {
   try {
     const { filename } = req.params;
+    
+    // Security: Validate filename to prevent path traversal
+    if (!validateFilename(filename)) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    
     if (!filename.endsWith('.json')) {
       return res.status(400).json({ error: 'Invalid filename' });
     }
@@ -1067,6 +1073,30 @@ function generateGamePin() {
   return pin;
 }
 
+// Security: Validate filenames to prevent path traversal attacks
+function validateFilename(filename) {
+  if (!filename || typeof filename !== 'string') {
+    return false;
+  }
+  
+  // Check for path traversal attempts
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return false;
+  }
+  
+  // Check for absolute paths
+  if (path.isAbsolute(filename)) {
+    return false;
+  }
+  
+  // Allow only alphanumeric characters, dots, hyphens, and underscores
+  if (!/^[a-zA-Z0-9._-]+$/.test(filename)) {
+    return false;
+  }
+  
+  return true;
+}
+
 class Game {
   constructor(hostId, quiz) {
     this.id = uuidv4();
@@ -1290,6 +1320,46 @@ class Game {
 
     return stats;
   }
+
+  /**
+   * Clean up game resources and remove stale player references
+   * Called when a game is being deleted to prevent memory leaks
+   */
+  cleanup() {
+    logger.debug(`🧹 Cleaning up game ${this.pin} with ${this.players.size} players`);
+    
+    // Clear all timers to prevent memory leaks
+    if (this.questionTimer) {
+      clearTimeout(this.questionTimer);
+      this.questionTimer = null;
+    }
+    if (this.advanceTimer) {
+      clearTimeout(this.advanceTimer);
+      this.advanceTimer = null;
+    }
+    
+    // Remove all player references from global players map
+    // This fixes the "play again" bug where stale players appear in new lobbies
+    const playersToRemove = [];
+    this.players.forEach((player, playerId) => {
+      playersToRemove.push(playerId);
+    });
+    
+    // Remove from global players map
+    playersToRemove.forEach(playerId => {
+      players.delete(playerId);
+      logger.debug(`🧹 Removed stale player ${playerId} from global players map`);
+    });
+    
+    // Clear internal player references
+    this.players.clear();
+    
+    // Clear other game state
+    this.leaderboard = [];
+    this.gameState = 'ended';
+    
+    logger.debug(`🧹 Game ${this.pin} cleanup completed - removed ${playersToRemove.length} player references`);
+  }
 }
 
 function advanceToNextQuestion(game, io) {
@@ -1488,12 +1558,17 @@ io.on('connection', (socket) => {
   socket.on('host-join', (data) => {
     const clientIP = socket.handshake.address;
     
+    console.log('🔧 [SERVER] DEBUG: host-join event received!');
+    console.log('🔧 [SERVER] DEBUG: host-join received data:', JSON.stringify(data, null, 2));
+    console.log('🔧 [SERVER] DEBUG: quiz title from data:', data?.quiz?.title);
+    
     if (!data || !data.quiz || !Array.isArray(data.quiz.questions)) {
       socket.emit('error', { message: 'Invalid quiz data' });
       return;
     }
     
     const { quiz } = data;
+    console.log('🔧 [SERVER] DEBUG: extracted quiz title:', quiz.title);
     
     if (quiz.questions.length === 0) {
       socket.emit('error', { message: 'Quiz must have at least one question' });
@@ -1504,6 +1579,10 @@ io.on('connection', (socket) => {
     if (existingGame) {
       existingGame.endQuestion();
       io.to(`game-${existingGame.pin}`).emit('game-ended', { reason: 'Host started new game' });
+      
+      // 🔧 FIX: Use proper cleanup to remove stale player references
+      // This prevents the "play again" bug where players from previous game appear in new lobby
+      existingGame.cleanup();
       games.delete(existingGame.pin);
     }
     
@@ -1511,9 +1590,11 @@ io.on('connection', (socket) => {
     games.set(game.pin, game);
     
     socket.join(`game-${game.pin}`);
+    console.log('🔧 [SERVER] DEBUG: Sending game-created with title:', quiz.title);
     socket.emit('game-created', {
       pin: game.pin,
-      gameId: game.id
+      gameId: game.id,
+      title: quiz.title
     });
     
     socket.broadcast.emit('game-available', {
@@ -1767,6 +1848,9 @@ io.on('connection', (socket) => {
         hostedGame.saveResults();
       }
       io.to(`game-${hostedGame.pin}`).emit('game-ended', { reason: 'Host disconnected' });
+      
+      // Use proper cleanup to remove stale player references  
+      hostedGame.cleanup();
       games.delete(hostedGame.pin);
     }
     
@@ -1774,6 +1858,8 @@ io.on('connection', (socket) => {
       if (game.players.size === 0 && game.gameState === 'lobby') {
         const hostSocket = io.sockets.sockets.get(game.hostId);
         if (!hostSocket) {
+          // Use proper cleanup for orphaned games
+          game.cleanup();
           games.delete(pin);
         }
       }

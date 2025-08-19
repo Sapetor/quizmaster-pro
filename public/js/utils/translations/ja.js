@@ -29,6 +29,7 @@ export default {
         players_joined: "参加プレイヤー",
         waiting_for_game: "ゲーム開始を待機中...",
         you_are_in: "参加しました！",
+        you_are_in_name: "{name}さん、参加しました！",
         enter_game_pin: "ゲームPINを入力",
         your_name: "あなたの名前",
         or: "または",

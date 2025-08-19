@@ -784,67 +784,61 @@
 
         <div id="game-lobby" class="screen">
             <div class="lobby-container">
-                <!-- Modern 2x2 Card Grid Layout -->
-                <div class="lobby-header">
-                    <!-- Card 1: Player List -->
-                    <div class="lobby-card players-list-card" role="region" aria-label="Connected Players">
-                        <div class="card-header">
-                            <h3 class="card-title" data-translate="players_joined">Players Joined</h3>
-                        </div>
-                        <div class="card-content">
-                            <div id="players-list" class="players-grid"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Card 2: QR Code -->
-                    <div class="lobby-card qr-card" role="region" aria-label="QR Code">
-                        <div class="card-header">
-                            <h3 class="card-title" data-translate="share_game">Share Game</h3>
-                        </div>
-                        <div class="card-content">
-                            <div id="qr-code-container" class="qr-container">
-                                <div class="qr-loading" data-translate="generating_qr">Generating QR Code...</div>
-                                <img id="qr-code-image" style="display: none;" alt="QR Code to join game">
+                <!-- New 2-Column Layout -->
+                <div class="lobby-layout">
+                    <!-- Left Column: Players List -->
+                    <div class="lobby-column left-column">
+                        <div class="lobby-card players-list-card" role="region" aria-label="Connected Players">
+                            <div class="card-header">
+                                <h3 class="card-title" data-translate="players_joined">Players Joined</h3>
                             </div>
-                            <p id="game-url" class="game-url"></p>
+                            <div class="card-content">
+                                <div id="players-list" class="players-grid"></div>
+                            </div>
                         </div>
                     </div>
                     
-                    <!-- Card 3: PIN + Player Count -->
-                    <div class="lobby-card info-card" role="region" aria-label="Game Info">
-                        <div class="card-header">
-                            <h3 class="card-title" data-translate="game_info">Game Info</h3>
-                        </div>
-                        <div class="card-content">
-                            <div class="game-info-row">
-                                <div class="pin-section">
-                                    <div id="game-pin" class="pin-display" role="button" tabindex="0" aria-label="Click to copy PIN">
-                                        <div class="pin-text" data-translate="game_pin">Game PIN</div>
-                                        <div class="pin-digits">------</div>
+                    <!-- Right Column: Combined Game Info with QR, PIN, Player Count, and Start Button -->
+                    <div class="lobby-column right-column">
+                        <div class="lobby-card combined-info-card" role="region" aria-label="Game Information and Controls">
+                            <div class="card-header">
+                                <h3 class="card-title" data-translate="game_info">Game Info</h3>
+                            </div>
+                            <div class="card-content combined-content">
+                                <!-- QR Code and PIN Section -->
+                                <div class="qr-pin-section">
+                                    <div id="qr-code-container" class="qr-container">
+                                        <div class="qr-loading" data-translate="generating_qr">Generating QR Code...</div>
+                                        <img id="qr-code-image" style="display: none;" alt="QR Code to join game">
+                                    </div>
+                                    <div class="pin-section">
+                                        <div id="game-pin" class="pin-display" role="button" tabindex="0" aria-label="Click to copy PIN">
+                                            <div class="pin-text" data-translate="game_pin">Game PIN</div>
+                                            <div class="pin-digits">------</div>
+                                        </div>
+                                        <p id="game-url" class="game-url"></p>
                                     </div>
                                 </div>
-                                <div class="count-section">
+                                
+                                <!-- Start Game Section with Player Count -->
+                                <div class="action-section">
                                     <div class="player-count-display">
                                         <span class="player-icon">👥</span>
                                         <span id="lobby-player-count" class="player-count-number">0</span>
+                                        <span class="info-label" data-translate="players">players</span>
                                     </div>
-                                    <div class="info-label" data-translate="players">players</div>
+                                    <button id="start-game" class="btn primary large-start-btn" aria-label="Start the quiz game">
+                                        <span data-translate="start_game">Start Game</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Card 4: Start Game Action -->
-                    <div class="lobby-card action-card" role="region" aria-label="Game Actions">
-                        <div class="card-header">
-                            <h3 class="card-title" data-translate="ready_to_start">Ready to Start?</h3>
-                        </div>
-                        <div class="card-content">
-                            <button id="start-game" class="btn primary large-start-btn" aria-label="Start the quiz game">
-                                <span data-translate="start_game">Start Game</span>
-                            </button>
-                        </div>
-                    </div>
+                </div>
+                
+                <!-- Quiz Name at Bottom -->
+                <div class="quiz-name-section">
+                    <h2 id="lobby-quiz-title" class="quiz-title-display">Quiz Title</h2>
                 </div>
             </div>
         </div>

@@ -2,10 +2,15 @@
  * Global Functions Module
  * Provides global functions that are called from HTML onclick handlers
  * 
- * EXTRACTION NOTES:
- * - Functions needed by HTML onclick/onchange handlers
- * - Made globally accessible via window object
- * - Dependencies: Imports from other modules as needed
+ * IMPORTANT: This file serves as the critical bridge between HTML and modular JS
+ * Most functions MUST remain globally accessible due to direct HTML usage:
+ * - HTML onclick/onchange handlers require direct window.functionName access
+ * - Cross-module communication needs consistent global access points
+ * 
+ * USAGE PATTERNS:
+ * - QM() registry: Centralized function access with error handling
+ * - Direct window assignments: Required for HTML onclick handlers
+ * - Mixed approach maintains backward compatibility and functionality
  */
 
 import { translationManager } from './translation-manager.js';
@@ -260,20 +265,24 @@ export function togglePreviewMode() {
     }
 }
 
-export function openAIGeneratorModal() {
+export async function openAIGeneratorModal() {
     logger.debug('AI Generator modal function called');
-    logger.debug('Debug state:', {
-        hasWindow: !!window,
-        hasGame: !!window.game,
-        hasAiGenerator: !!(window.game && window.game.aiGenerator),
-        hasOpenModal: !!(window.game && window.game.aiGenerator && window.game.aiGenerator.openModal)
-    });
     
-    if (window.game && window.game.aiGenerator && window.game.aiGenerator.openModal) {
-        logger.debug('Calling aiGenerator.openModal()');
-        window.game.aiGenerator.openModal();
+    if (window.game && window.game.openAIGeneratorModal) {
+        logger.debug('Calling game.openAIGeneratorModal() with lazy loading');
+        try {
+            await window.game.openAIGeneratorModal();
+        } catch (error) {
+            logger.error('Failed to open AI Generator modal:', error);
+            // Fallback: try to open modal directly
+            const modal = document.getElementById('ai-generator-modal');
+            if (modal) {
+                logger.debug('Opening modal directly as fallback');
+                modal.style.display = 'flex';
+            }
+        }
     } else {
-        logger.warn('AI Generator not properly initialized, using fallback');
+        logger.warn('Game not properly initialized, using fallback');
         // Fallback: try to open modal directly
         const modal = document.getElementById('ai-generator-modal');
         if (modal) {
@@ -400,6 +409,7 @@ export function scrollToCurrentQuestion() {
     }
 }
 
+
 export function scrollToTop() {
     logger.debug('⬆️ Scroll to top function called');
     
@@ -508,6 +518,236 @@ export function toggleTheme() {
         localStorage.setItem('theme', newTheme);
         logger.debug('Theme switched to:', newTheme);
     }
+}
+
+// Auto-hide header functionality
+let autoHideTimeout = null;
+let isAutoHideEnabled = false;
+let headerElement = null;
+let hintElement = null;
+
+export function initializeAutoHideToolbar() {
+    console.log('🔴 AUTO-HIDE: Starting initialization');
+    logger.debug('Initializing auto-hide header functionality');
+    
+    headerElement = document.querySelector('header');
+    if (!headerElement) {
+        logger.warn('Header element not found for auto-hide initialization');
+        return;
+    }
+    
+    // Add auto-hide CSS classes - only to header and lobby screen
+    headerElement.classList.add('auto-hide-enabled');
+    document.body.classList.add('header-auto-hide-mode');
+    const lobbyScreen = document.getElementById('game-lobby');
+    if (lobbyScreen) {
+        lobbyScreen.classList.add('header-auto-hide-active');
+        logger.debug('Added header-auto-hide-active class to lobby screen');
+    } else {
+        logger.warn('Could not find #game-lobby element to add header-auto-hide-active class');
+    }
+    
+    isAutoHideEnabled = true;
+    
+    // Create and initialize hint element
+    createHintElement();
+    
+    // Initially hide the header and show hint
+    hideToolbar();
+    
+    // Mouse move event listener for showing header
+    document.addEventListener('mousemove', handleMouseMove);
+    
+    // Keyboard escape to show header
+    document.addEventListener('keydown', handleKeyDown);
+    
+    // Prevent header from hiding when hovering over it
+    headerElement.addEventListener('mouseenter', () => {
+        if (autoHideTimeout) {
+            clearTimeout(autoHideTimeout);
+            autoHideTimeout = null;
+        }
+    });
+    
+    headerElement.addEventListener('mouseleave', (e) => {
+        // Check if mouse is still within the safe zone before starting hide timer
+        const safeZone = 120;
+        
+        // Only start hide timer if mouse moves significantly away from header
+        if (e.clientY > safeZone) {
+            startHideTimer();
+        }
+        // If mouse is still near the header area, don't hide yet
+    });
+    
+    logger.debug('Auto-hide header initialized successfully');
+}
+
+function createHintElement() {
+    // Remove existing hint if any
+    const existingHint = document.querySelector('.header-hint');
+    if (existingHint) {
+        existingHint.remove();
+    }
+    
+    // Create hint element
+    hintElement = document.createElement('div');
+    hintElement.className = 'header-hint';
+    hintElement.innerHTML = '<span class="header-hint-icon">▼</span>Menu';
+    
+    // Add hint to document body
+    document.body.appendChild(hintElement);
+    
+    // Add hover listeners to hint
+    hintElement.addEventListener('mouseenter', () => {
+        showToolbar();
+        if (autoHideTimeout) {
+            clearTimeout(autoHideTimeout);
+            autoHideTimeout = null;
+        }
+    });
+    
+    hintElement.addEventListener('mouseleave', (e) => {
+        // Use longer timeout for hint element to be more forgiving
+        const safeZone = 120;
+        if (e.clientY > safeZone) {
+            startHideTimer();
+        }
+    });
+    
+    logger.debug('Header hint element created');
+}
+
+function handleMouseMove(e) {
+    if (!isAutoHideEnabled || !headerElement) return;
+    
+    // Check if language dropdown is open - don't hide toolbar during dropdown interaction
+    const languageDropdown = document.getElementById('language-selector');
+    const isDropdownOpen = languageDropdown && languageDropdown.classList.contains('open');
+    
+    // Expanded trigger zone from 30px to 80px for easier access
+    const showTriggerZone = 80;
+    // Larger safe zone where toolbar won't hide (120px)
+    const safeZone = 120;
+    
+    if (e.clientY <= showTriggerZone) {
+        // Show toolbar when mouse enters trigger zone
+        if (autoHideTimeout) {
+            clearTimeout(autoHideTimeout);
+            autoHideTimeout = null;
+        }
+        
+        // Show immediately if not already visible
+        if (!headerElement.classList.contains('visible')) {
+            showToolbar();
+        }
+    } else if (e.clientY > safeZone) {
+        // Only start hide timer if mouse moves outside the safe zone
+        // AND dropdown is not open
+        if (headerElement.classList.contains('visible') && !isDropdownOpen) {
+            startHideTimer();
+        }
+    }
+    // If mouse is between showTriggerZone and safeZone, do nothing (keep current state)
+}
+
+function handleKeyDown(e) {
+    if (!isAutoHideEnabled || !headerElement) return;
+    
+    // Show header on Escape key
+    if (e.key === 'Escape') {
+        showToolbar();
+        // Keep it visible for a longer time when summoned by keyboard
+        if (autoHideTimeout) {
+            clearTimeout(autoHideTimeout);
+        }
+        autoHideTimeout = setTimeout(hideToolbar, 5000); // 5 seconds
+    }
+}
+
+function showToolbar() {
+    if (!headerElement) return;
+    
+    headerElement.classList.add('visible');
+    
+    // Hide hint when header is visible
+    if (hintElement) {
+        hintElement.classList.remove('visible');
+    }
+    
+    logger.debug('Header shown via auto-hide');
+}
+
+function hideToolbar() {
+    if (!headerElement) return;
+    
+    headerElement.classList.remove('visible');
+    
+    // Show hint when header is hidden
+    if (hintElement) {
+        hintElement.classList.add('visible');
+    }
+    
+    logger.debug('Header hidden via auto-hide');
+    
+    if (autoHideTimeout) {
+        clearTimeout(autoHideTimeout);
+        autoHideTimeout = null;
+    }
+}
+
+function startHideTimer() {
+    if (autoHideTimeout) {
+        clearTimeout(autoHideTimeout);
+    }
+    
+    // Check if language dropdown is open - don't hide toolbar during dropdown interaction
+    const languageDropdown = document.getElementById('language-selector');
+    const isDropdownOpen = languageDropdown && languageDropdown.classList.contains('open');
+    
+    // Only start hide timer if dropdown is not open
+    if (!isDropdownOpen) {
+        // Hide after 2 seconds for more comfortable interaction
+        autoHideTimeout = setTimeout(hideToolbar, 2000);
+    }
+}
+
+export function disableAutoHideToolbar() {
+    if (!isAutoHideEnabled || !headerElement) return;
+    
+    logger.debug('Disabling auto-hide header');
+    
+    // Remove event listeners
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('keydown', handleKeyDown);
+    
+    // Clear timeout
+    if (autoHideTimeout) {
+        clearTimeout(autoHideTimeout);
+        autoHideTimeout = null;
+    }
+    
+    // Remove CSS classes - header visibility will be managed by screen-specific logic
+    headerElement.classList.remove('auto-hide-enabled', 'visible');
+    document.body.classList.remove('header-auto-hide-mode');
+    const lobbyScreen = document.getElementById('game-lobby');
+    if (lobbyScreen) {
+        lobbyScreen.classList.remove('header-auto-hide-active');
+    }
+    
+    // Remove hint element
+    if (hintElement) {
+        hintElement.remove();
+        hintElement = null;
+    }
+    
+    isAutoHideEnabled = false;
+    
+    logger.debug('Auto-hide header disabled and hidden');
+}
+
+export function isAutoHideToolbarActive() {
+    return isAutoHideEnabled;
 }
 
 // Initialize floating back-to-top button behavior
@@ -625,6 +865,7 @@ const globalFunctions = {
     scrollToCurrentQuestion,
     scrollToTop,
     
+    
     // Modal functions
     openAIGeneratorModal,
     
@@ -644,19 +885,28 @@ window.QM = function(functionName, ...args) {
 // Expose the function registry for debugging
 window.QM.functions = globalFunctions;
 
-// BACKWARD COMPATIBILITY: Keep essential functions as direct assignments
-// These are critical functions used frequently and need immediate access
-window.toggleLanguageDropdown = toggleLanguageDropdown;
-window.selectLanguage = selectLanguage;
-window.togglePreviewMode = togglePreviewMode;
-window.openAIGeneratorModal = openAIGeneratorModal;
-window.removeImage = removeImage;
-window.scrollToTop = scrollToTop;
-window.toggleGlobalFontSize = toggleGlobalFontSize;
-window.setGlobalFontSize = setGlobalFontSize;
-window.toggleTheme = toggleTheme;
-window.scrollToCurrentQuestion = scrollToCurrentQuestion;
-window.updateQuestionType = updateQuestionType;
-window.updateTimeLimit = updateTimeLimit;
-window.uploadImage = uploadImage;
-window.removeQuestion = removeQuestion;
+// REQUIRED GLOBAL ASSIGNMENTS: Essential functions with specific usage patterns
+// These assignments are required and SHOULD NOT be removed without careful analysis
+
+// === HTML onclick/onchange handlers (CRITICAL) ===
+// These functions are called directly from HTML elements and MUST remain global
+window.toggleGlobalFontSize = toggleGlobalFontSize;       // HTML onclick
+window.toggleTheme = toggleTheme;                         // HTML onclick  
+window.scrollToTop = scrollToTop;                         // HTML onclick
+window.removeImage = removeImage;                         // HTML onclick
+window.togglePreviewMode = togglePreviewMode;             // HTML onclick
+window.scrollToCurrentQuestion = scrollToCurrentQuestion; // HTML onclick
+window.selectLanguage = selectLanguage;                   // HTML onclick
+window.updateQuestionType = updateQuestionType;           // HTML onchange
+window.updateTimeLimit = updateTimeLimit;                 // HTML onchange
+
+// === Cross-module communication (REQUIRED) ===
+// These functions are accessed by other JS modules and need global availability
+window.setGlobalFontSize = setGlobalFontSize;            // Used by main.js, split-layout-manager.js
+
+// === Legacy/Internal functions (MAINTAIN FOR COMPATIBILITY) ===
+// These may have internal usage patterns or provide fallback functionality
+window.toggleLanguageDropdown = toggleLanguageDropdown;   // Internal/fallback usage
+window.openAIGeneratorModal = openAIGeneratorModal;       // Lazy-loaded AI functionality
+window.uploadImage = uploadImage;                         // Internal usage
+window.removeQuestion = removeQuestion;                   // Internal usage

@@ -298,22 +298,26 @@ export class SimpleResultsDownloader {
     }
 
     /**
-     * Open the full results viewer
+     * Open the full results viewer with lazy loading
      */
-    openFullResultsViewer() {
+    async openFullResultsViewer() {
         logger.debug('📊 Opening full results viewer from simple downloader');
         
-        // Import and use the results viewer
-        if (window.resultsViewer) {
+        try {
+            // Lazy load results viewer if not already loaded
+            if (!window.resultsViewer) {
+                logger.debug('Lazy loading Results Viewer from simple downloader...');
+                const { resultsViewer } = await import('./results-viewer.js');
+                window.resultsViewer = resultsViewer;
+                logger.debug('Results Viewer lazy loaded from simple downloader');
+            }
+            
+            // Open the results viewer modal
             window.resultsViewer.showModal();
-        } else {
-            // Fallback - try to import dynamically
-            import('./results-viewer.js').then(({ resultsViewer }) => {
-                resultsViewer.showModal();
-            }).catch(error => {
-                logger.error('Failed to load results viewer:', error);
-                showErrorAlert('Could not open detailed results viewer');
-            });
+            
+        } catch (error) {
+            logger.error('Failed to load results viewer:', error);
+            showErrorAlert('Could not open detailed results viewer');
         }
     }
 
