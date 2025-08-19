@@ -313,4 +313,32 @@ export default {
         // Additional tooltips
         adjust_font_size_tooltip: "Ajuster la taille de police",
         manual_advancement_tooltip: "L'avancement manuel est maintenant par défaut. Décochez pour un avancement automatique basé sur un minuteur",
+        
+        // Connection quality keys
+        connection_excellent: "Excellent",
+        connection_good: "Bon", 
+        connection_fair: "Correct",
+        connection_poor: "Faible",
+        connection: "Connexion",
+
+        // Image upload error messages
+        please_select_image: "Veuillez sélectionner un fichier image",
+        image_too_large: "Le fichier image est trop volumineux. Veuillez sélectionner un fichier de moins de 5MB.",
+        image_upload_failed: "Échec du téléchargement de l'image. Veuillez réessayer.",
+        results_viewer_failed: "Échec du chargement du visualiseur de résultats. Veuillez réessayer.",
+
+        // Confirmation dialogs
+        confirm_delete_result: "Êtes-vous sûr de vouloir supprimer ce résultat de quiz ? Cette action ne peut pas être annulée.",
+        analytics_export_coming_soon: "L'exportation du rapport d'analyse arrive bientôt !",
+        
+        // Missing critical keys
+        Features: "Fonctionnalités",
+        Quiz: "Quiz",
+        avg_score: "Score moyen",
+        checking_connection: "Vérification de la connexion...",
+        click_to_copy: "Cliquer pour copier",
+        date_completed: "Date d'achèvement",
+        delete_result: "Supprimer le résultat",
+        download_csv: "Télécharger CSV",
+        close: "Fermer"
 };

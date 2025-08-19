@@ -222,7 +222,9 @@ export class ConnectionStatus {
 
         // Update details
         if (statusValue) {
-            statusValue.textContent = this.isOnline ? 'Online' : 'Offline';
+            statusValue.textContent = this.isOnline ? 
+                translationManager.getTranslationSync('connected') : 
+                translationManager.getTranslationSync('offline');
         }
         
         if (pingValue) {
@@ -236,12 +238,14 @@ export class ConnectionStatus {
         // Update tooltip
         const indicator = statusElement.querySelector('.connection-indicator');
         if (indicator) {
-            const qualityText = this.connectionQuality === 'excellent' ? 'Excellent' :
-                              this.connectionQuality === 'good' ? 'Good' :
-                              this.connectionQuality === 'fair' ? 'Fair' :
-                              this.connectionQuality === 'poor' ? 'Poor' : 'Offline';
+            const qualityText = this.connectionQuality === 'excellent' ? translationManager.getTranslationSync('connection_excellent') :
+                              this.connectionQuality === 'good' ? translationManager.getTranslationSync('connection_good') :
+                              this.connectionQuality === 'fair' ? translationManager.getTranslationSync('connection_fair') :
+                              this.connectionQuality === 'poor' ? translationManager.getTranslationSync('connection_poor') : 
+                              translationManager.getTranslationSync('offline');
             
-            indicator.title = `Connection: ${qualityText}${this.lastPingTime ? ` (${this.lastPingTime}ms)` : ''}`;
+            const connectionLabel = translationManager.getTranslationSync('connection');
+            indicator.title = `${connectionLabel}: ${qualityText}${this.lastPingTime ? ` (${this.lastPingTime}ms)` : ''}`;
         }
     }
 

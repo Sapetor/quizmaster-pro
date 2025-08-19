@@ -283,5 +283,30 @@ export default {
         // Simple download tool keys
         download_results: "結果をダウンロード",
         select_results: "ダウンロードする結果を選択...",
-        finish_quiz: "クイズを終了"
+        finish_quiz: "クイズを終了",
+        
+        // Connection quality keys
+        connection_excellent: "優秀",
+        connection_good: "良好", 
+        connection_fair: "普通",
+        connection_poor: "悪い",
+        connection: "接続",
+
+        // Image upload error messages
+        please_select_image: "画像ファイルを選択してください",
+        image_too_large: "画像ファイルが大きすぎます。5MB未満のファイルを選択してください。",
+        image_upload_failed: "画像のアップロードに失敗しました。再試行してください。",
+        results_viewer_failed: "結果ビューアの読み込みに失敗しました。再試行してください。",
+
+        // Confirmation dialogs
+        confirm_delete_result: "このクイズ結果を削除してもよろしいですか？この操作は取り消すことができません。",
+        analytics_export_coming_soon: "アナリティクスレポートのエクスポートは近日公開予定です！",
+        
+        // Missing critical keys
+        manual_advancement_tooltip: "手動進行がデフォルトになりました。タイマー基準の自動進行にするにはチェックを外してください",
+        avg_score: "平均スコア",
+        date_completed: "完了日",
+        delete_result: "結果を削除",
+        download_csv: "CSV をダウンロード",
+        close: "閉じる"
 };

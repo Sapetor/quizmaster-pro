@@ -283,5 +283,30 @@ export default {
         // Simple download tool keys
         download_results: "Baixar Resultados",
         select_results: "Selecionar resultados para baixar...",
-        finish_quiz: "Finalizar Quiz"
+        finish_quiz: "Finalizar Quiz",
+        
+        // Connection quality keys
+        connection_excellent: "Excelente",
+        connection_good: "Bom", 
+        connection_fair: "Regular",
+        connection_poor: "Ruim",
+        connection: "Conexão",
+
+        // Image upload error messages
+        please_select_image: "Por favor selecione um arquivo de imagem",
+        image_too_large: "Arquivo de imagem muito grande. Selecione um arquivo menor que 5MB.",
+        image_upload_failed: "Falha ao carregar imagem. Tente novamente.",
+        results_viewer_failed: "Falha ao carregar visualizador de resultados. Tente novamente.",
+
+        // Confirmation dialogs
+        confirm_delete_result: "Tem certeza de que deseja excluir este resultado do quiz? Esta ação não pode ser desfeita.",
+        analytics_export_coming_soon: "Exportação de relatório de análises em breve!",
+        
+        // Missing critical keys
+        manual_advancement_tooltip: "Avanço manual agora é padrão. Desmarque para avanço automático baseado em temporizador",
+        avg_score: "Pontuação média",
+        date_completed: "Data de conclusão",
+        delete_result: "Excluir resultado",
+        download_csv: "Baixar CSV",
+        close: "Fechar"
 };

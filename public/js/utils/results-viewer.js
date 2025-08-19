@@ -724,7 +724,7 @@ export class ResultsViewer {
      * Quick delete functionality
      */
     async quickDelete(filename) {
-        if (!confirm('Are you sure you want to delete this quiz result? This action cannot be undone.')) {
+        if (!translationManager.showConfirm('confirm_delete_result')) {
             return;
         }
 
@@ -1224,7 +1224,7 @@ export class ResultsViewer {
     exportAnalyticsReport(filename) {
         logger.info('Analytics export requested for:', filename);
         // Future: Generate and download comprehensive analytics report
-        alert('Analytics report export coming soon!');
+        translationManager.showAlert('analytics_export_coming_soon');
     }
 
     /**

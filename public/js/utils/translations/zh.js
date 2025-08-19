@@ -283,5 +283,34 @@ export default {
         // Simple download tool keys
         download_results: "下载结果",
         select_results: "选择要下载的结果...",
-        finish_quiz: "结束测验"
+        finish_quiz: "结束测验",
+        
+        // Connection quality keys
+        connection_excellent: "优秀",
+        connection_good: "良好", 
+        connection_fair: "一般",
+        connection_poor: "差",
+        connection: "连接",
+
+        // Image upload error messages
+        please_select_image: "请选择图像文件",
+        image_too_large: "图像文件太大。请选择小于5MB的文件。",
+        image_upload_failed: "图像上传失败。请重试。",
+        results_viewer_failed: "结果查看器加载失败。请重试。",
+
+        // Confirmation dialogs
+        confirm_delete_result: "您确定要删除此测验结果吗？此操作无法撤销。",
+        analytics_export_coming_soon: "分析报告导出功能即将推出！",
+        
+        // Missing critical keys
+        Features: "功能",
+        Quiz: "测验",
+        manual_advancement_tooltip: "手动推进现在是默认设置。取消选中以进行基于计时器的自动推进",
+        avg_score: "平均分数",
+        checking_connection: "检查连接中...",
+        click_to_copy: "点击复制",
+        date_completed: "完成日期",
+        delete_result: "删除结果",
+        download_csv: "下载CSV",
+        close: "关闭"
 };

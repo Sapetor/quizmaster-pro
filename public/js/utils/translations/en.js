@@ -335,4 +335,21 @@ export default {
         question_will_appear_here: "Question will appear here",
         question_alternatives: "Question Alternatives",
         players_have_answered: "players have answered",
+        
+        // Connection quality keys
+        connection_excellent: "Excellent",
+        connection_good: "Good", 
+        connection_fair: "Fair",
+        connection_poor: "Poor",
+        connection: "Connection",
+
+        // Image upload error messages
+        please_select_image: "Please select an image file",
+        image_too_large: "Image file is too large. Please select a file smaller than 5MB.",
+        image_upload_failed: "Failed to upload image. Please try again.",
+        results_viewer_failed: "Failed to load results viewer. Please try again.",
+
+        // Confirmation dialogs
+        confirm_delete_result: "Are you sure you want to delete this quiz result? This action cannot be undone.",
+        analytics_export_coming_soon: "Analytics report export coming soon!"
 };

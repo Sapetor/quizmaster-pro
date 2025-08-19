@@ -109,14 +109,14 @@ export class QuizGame {
 
             // Validate file type
             if (!file.type.startsWith('image/')) {
-                alert('Please select an image file');
+                translationManager.showAlert('please_select_image');
                 return;
             }
 
             // Validate file size (5MB limit)
             const maxSize = 5 * 1024 * 1024; // 5MB
             if (file.size > maxSize) {
-                alert('Image file is too large. Please select a file smaller than 5MB.');
+                translationManager.showAlert('image_too_large');
                 return;
             }
 
@@ -149,7 +149,7 @@ export class QuizGame {
 
         } catch (error) {
             logger.error('Image upload failed:', error);
-            alert('Failed to upload image. Please try again.');
+            translationManager.showAlert('image_upload_failed');
             
             // Reset the file input
             inputElement.value = '';
@@ -978,7 +978,7 @@ export class QuizGame {
         } catch (error) {
             logger.error('Failed to lazy load Results Viewer:', error);
             // Show fallback error message
-            alert('Failed to load results viewer. Please try again.');
+            translationManager.showAlert('results_viewer_failed');
         }
     }
 

@@ -294,4 +294,32 @@ export default {
         // Additional tooltips
         adjust_font_size_tooltip: "Schriftgröße anpassen",
         manual_advancement_tooltip: "Manueller Fortschritt ist jetzt Standard. Deaktivieren Sie für automatischen zeitbasierten Fortschritt",
+        
+        // Connection quality keys
+        connection_excellent: "Ausgezeichnet",
+        connection_good: "Gut", 
+        connection_fair: "Angemessen",
+        connection_poor: "Schlecht",
+        connection: "Verbindung",
+
+        // Image upload error messages
+        please_select_image: "Bitte wählen Sie eine Bilddatei aus",
+        image_too_large: "Die Bilddatei ist zu groß. Bitte wählen Sie eine Datei kleiner als 5MB aus.",
+        image_upload_failed: "Bild-Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        results_viewer_failed: "Laden des Ergebnis-Viewers fehlgeschlagen. Bitte versuchen Sie es erneut.",
+
+        // Confirmation dialogs
+        confirm_delete_result: "Sind Sie sicher, dass Sie dieses Quiz-Ergebnis löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+        analytics_export_coming_soon: "Analyse-Bericht-Export kommt bald!",
+        
+        // Missing critical keys
+        Features: "Funktionen",
+        Quiz: "Quiz",
+        avg_score: "Durchschnittspunktzahl",
+        checking_connection: "Verbindung wird überprüft...",
+        click_to_copy: "Zum Kopieren klicken",
+        date_completed: "Abschlussdatum",
+        delete_result: "Ergebnis löschen",
+        download_csv: "CSV herunterladen",
+        close: "Schließen"
 };
