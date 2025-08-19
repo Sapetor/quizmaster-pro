@@ -181,6 +181,50 @@ export class MathRenderer {
     }
 
     /**
+     * Apply syntax highlighting to code blocks within an element
+     * @param {HTMLElement} element - Element containing code blocks
+     */
+    applySyntaxHighlighting(element) {
+        if (!element || typeof window.hljs === 'undefined') {
+            return; // Highlight.js not available
+        }
+
+        try {
+            // Find all code blocks with language classes
+            const codeBlocks = element.querySelectorAll('pre code[class*="language-"]');
+            
+            codeBlocks.forEach(codeBlock => {
+                // Apply syntax highlighting
+                window.hljs.highlightElement(codeBlock);
+                
+                // Add class to parent pre element for CSS targeting
+                const preElement = codeBlock.closest('pre');
+                if (preElement) {
+                    preElement.classList.add('has-syntax-highlighting');
+                }
+            });
+            
+            // Also highlight any code blocks without specific language classes
+            const genericCodeBlocks = element.querySelectorAll('pre code:not([class*="language-"])');
+            genericCodeBlocks.forEach(codeBlock => {
+                // Add a generic class and highlight
+                codeBlock.className = 'language-text';
+                window.hljs.highlightElement(codeBlock);
+                
+                // Add class to parent pre element for CSS targeting
+                const preElement = codeBlock.closest('pre');
+                if (preElement) {
+                    preElement.classList.add('has-syntax-highlighting');
+                }
+            });
+            
+        } catch (error) {
+            // Silently handle syntax highlighting errors
+            console.warn('Syntax highlighting failed:', error);
+        }
+    }
+
+    /**
      * Process both code formatting and MathJax rendering for an element
      * @param {HTMLElement} element - Element to process
      */
@@ -190,7 +234,10 @@ export class MathRenderer {
         // First, format code blocks
         element.innerHTML = this.formatCodeBlocks(element.innerHTML);
         
-        // Then render MathJax
+        // Then apply syntax highlighting to code blocks
+        this.applySyntaxHighlighting(element);
+        
+        // Finally, render MathJax
         this.renderMathJax(element);
     }
 

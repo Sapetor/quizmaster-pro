@@ -18,6 +18,9 @@
 /* Code blocks component - Unified code styling (Phase 1 refactor) */
 @import './components/code-blocks.css?v=10.0';
 
+/* Syntax highlighting - One Dark Pro theme integration */
+@import './components/syntax-highlighting.css?v=1.0';
+
 /* Modal systems - All modal dialogs and overlays */
 @import './modals.css?v=9.3';
 

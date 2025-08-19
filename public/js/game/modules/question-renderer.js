@@ -157,6 +157,9 @@ export class QuestionRenderer {
                     } else {
                         options[index].removeAttribute('data-multiple');
                     }
+                    
+                    // Apply syntax highlighting to code blocks in this option
+                    this.displayManager.mathRenderer.applySyntaxHighlighting(options[index]);
                 }
             });
             // Hide unused options
@@ -297,6 +300,9 @@ export class QuestionRenderer {
                 button.classList.add('tex2jax_process'); // Add MathJax processing class
                 button.style.display = 'block';
                 
+                // Apply syntax highlighting to code blocks in this option
+                this.displayManager.mathRenderer.applySyntaxHighlighting(button);
+                
                 // Use tracked event listeners from GameManager
                 this.gameManager.addEventListenerTracked(button, 'click', () => {
                     logger.debug('Button clicked:', index);
@@ -323,6 +329,9 @@ export class QuestionRenderer {
                 const formattedOption = this.displayManager.mathRenderer.formatCodeBlocks(data.options[index]);
                 label.innerHTML = `<input type="checkbox" class="option-checkbox"> ${translationManager.getOptionLetter(index)}: ${formattedOption}`;
                 label.setAttribute('data-option', index);
+                
+                // Apply syntax highlighting to code blocks in this option
+                this.displayManager.mathRenderer.applySyntaxHighlighting(label);
             } else {
                 label.style.display = 'none';
             }

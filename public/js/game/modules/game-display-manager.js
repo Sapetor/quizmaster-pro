@@ -164,6 +164,9 @@ export class GameDisplayManager {
         element.innerHTML = this.mathRenderer.formatCodeBlocks(questionText);
         logger.debug('Question text displayed');
         
+        // Apply syntax highlighting to code blocks
+        this.mathRenderer.applySyntaxHighlighting(element);
+        
         // Render MathJax immediately after content update
         this.renderQuestionMath(element);
     }

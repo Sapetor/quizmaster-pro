@@ -453,28 +453,7 @@ pre code {
     font-size: inherit;
 }
 
-/* Python syntax highlighting */
-.python-keyword {
-    color: #66d9ef;
-    font-weight: bold;
-}
-
-.python-string {
-    color: #e6db74;
-}
-
-.python-comment {
-    color: #75715e;
-    font-style: italic;
-}
-
-.python-number {
-    color: #ae81ff;
-}
-
-.python-function {
-    color: #a6e22e;
-}
+/* Python syntax highlighting removed - now handled by syntax-highlighting.css component */
 
 /* Code blocks in questions and options */
 .question-text pre,

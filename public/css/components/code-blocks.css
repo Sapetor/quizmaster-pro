@@ -2,6 +2,9 @@
  * Unified Code Block Component
  * Single source of truth for all code styling across QuizMaster Pro
  * Eliminates 48+ duplicate rules previously scattered across 4 files
+ * 
+ * Note: This component provides base styling for code blocks.
+ * Syntax highlighting colors are handled by syntax-highlighting.css component.
  */
 
 /* === BASE CODE STYLING === */
@@ -17,7 +20,6 @@ pre, code {
 /* Code block containers */
 pre {
     background: rgba(0, 0, 0, 0.9) !important;
-    color: #f8f8f2 !important;
     padding: 15px !important;
     margin: 15px auto !important;
     border-radius: 8px !important;
@@ -33,6 +35,11 @@ pre {
     -moz-tab-size: 4;
 }
 
+/* Default color for plain code blocks without syntax highlighting */
+pre:not(.has-syntax-highlighting) {
+    color: #f8f8f2 !important;
+}
+
 /* Inline code elements */
 code {
     background: rgba(255, 255, 255, 0.1) !important;
@@ -46,19 +53,27 @@ code {
 /* Code within pre blocks should not have background/padding */
 pre code {
     background: none !important;
-    color: inherit !important;
     padding: 0 !important;
     border: none !important;
     font-size: inherit !important;
     display: inline !important;
 }
 
+/* Only inherit color for non-highlighted code blocks */
+pre:not(.has-syntax-highlighting) code {
+    color: inherit !important;
+}
+
 /* === THEME OVERRIDES === */
 /* Light theme adjustments */
 [data-theme="light"] pre {
     background: rgba(30, 41, 59, 0.95) !important;
-    color: #f1f5f9 !important;
     border: 1px solid rgba(30, 41, 59, 0.3) !important;
+}
+
+/* Light theme color only for non-highlighted code blocks */
+[data-theme="light"] pre:not(.has-syntax-highlighting) {
+    color: #f1f5f9 !important;
 }
 
 [data-theme="light"] code {
@@ -71,8 +86,13 @@ pre code {
 [data-theme="dark"] pre,
 :not([data-theme="light"]) pre {
     background: rgba(0, 0, 0, 0.9) !important;
-    color: #f8f8f2 !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Dark theme color only for non-highlighted code blocks */
+[data-theme="dark"] pre:not(.has-syntax-highlighting),
+:not([data-theme="light"]) pre:not(.has-syntax-highlighting) {
+    color: #f8f8f2 !important;
 }
 
 [data-theme="dark"] code,
@@ -124,8 +144,9 @@ pre code {
 }
 
 /* === PERFORMANCE OPTIMIZATIONS === */
-/* Reduce repaints for syntax highlighting */
-pre[class*="language-"] {
+/* Reduce repaints for syntax highlighting - integrates with syntax-highlighting.css */
+pre[class*="language-"],
+pre .hljs {
     will-change: auto;
 }
 
