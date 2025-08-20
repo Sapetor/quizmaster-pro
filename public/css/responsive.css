@@ -470,3 +470,58 @@
         }
     }
 }
+
+
+/* === MOBILE TOUCH ENHANCEMENTS === */
+/* Simple, clean mobile touch feedback */
+
+/* Touch feedback for mobile devices */
+@media (max-width: 768px) {
+    .player-option:active,
+    .checkbox-option:active, 
+    .tf-option:active {
+        transform: scale(0.98) translateY(1px);
+        transition: transform 0.1s ease-out;
+    }
+    
+    .btn:active {
+        transform: scale(0.96);
+        transition: transform 0.1s ease-out;
+    }
+}
+
+/* Smooth transitions for better UX */
+.player-option,
+.checkbox-option,
+.tf-option,
+.btn {
+    transition: transform 0.2s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Enhanced focus for accessibility */
+.player-option:focus,
+.checkbox-option:focus,
+.tf-option:focus,
+.btn:focus {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .player-option,
+    .checkbox-option,
+    .tf-option,
+    .btn {
+        transition: none;
+    }
+    
+    .player-option:active,
+    .checkbox-option:active,
+    .tf-option:active,
+    .btn:active {
+        transform: none;
+    }
+}

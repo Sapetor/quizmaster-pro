@@ -75,7 +75,7 @@ export class SoundManager {
         }
     }
 
-    async playAudioFile(soundKey, volume = 0.5) {
+    async playAudioFile(soundKey, volume = 0.1) {
         if (!this.soundsEnabled) return;
         
         const soundUrl = this.soundFiles[soundKey];
@@ -171,7 +171,7 @@ export class SoundManager {
             oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
             oscillator.type = type;
             
-            gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime); // Original volume
+            gainNode.gain.setValueAtTime(0.05, this.audioContext.currentTime); // Reduced volume
             gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
             
             oscillator.start(this.audioContext.currentTime);
@@ -181,7 +181,7 @@ export class SoundManager {
         }
     }
 
-    playEnhancedSound(frequency, duration, type = 'sine', volume = 0.1) {
+    playEnhancedSound(frequency, duration, type = 'sine', volume = 0.05) {
         if (!this.soundsEnabled) return;
         
         // Create AudioContext on first use (after user interaction)
@@ -224,10 +224,10 @@ export class SoundManager {
             
             // Quick fade in
             gainNode.gain.setValueAtTime(0, startTime);
-            gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.01);
+            gainNode.gain.linearRampToValueAtTime(volume * 0.5, startTime + 0.01);
             
             // Sustain
-            gainNode.gain.setValueAtTime(volume, endTime - 0.1);
+            gainNode.gain.setValueAtTime(volume * 0.5, endTime - 0.1);
             
             // Smooth fade out
             gainNode.gain.exponentialRampToValueAtTime(0.001, endTime);
