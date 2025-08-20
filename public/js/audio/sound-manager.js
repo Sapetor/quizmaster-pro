@@ -16,6 +16,7 @@ export class SoundManager {
     constructor() {
         this.audioContext = null;
         this.soundsEnabled = true;
+        this.audioCache = new Map();
         this.initializeSounds();
     }
 
@@ -24,6 +25,15 @@ export class SoundManager {
         this.audioContext = null;
         this.soundsEnabled = true;
         this.audioContextClass = null;
+        
+        // Define sound file paths
+        this.soundFiles = {
+            correctAnswer: '/sounds/correct-answer.mp3',
+            wrongAnswer: '/sounds/wrong-answer.mp3',
+            questionStart: '/sounds/question-start.mp3',
+            gameComplete: '/sounds/game-complete.mp3',
+            bellNotification: '/sounds/bell-notification.mp3'
+        };
         
         try {
             // Check if Web Audio API is supported without creating context
@@ -39,6 +49,88 @@ export class SoundManager {
         } catch (e) {
             logger.debug('Web Audio API not supported');
             this.soundsEnabled = false;
+        }
+    }
+
+    async loadAudioFile(url) {
+        if (this.audioCache.has(url)) {
+            return this.audioCache.get(url);
+        }
+
+        try {
+            const audio = new Audio(url);
+            audio.preload = 'auto';
+            
+            // Return promise that resolves when audio can play
+            return new Promise((resolve, reject) => {
+                audio.addEventListener('canplaythrough', () => {
+                    this.audioCache.set(url, audio);
+                    resolve(audio);
+                });
+                audio.addEventListener('error', reject);
+            });
+        } catch (e) {
+            logger.debug('Failed to load audio file:', url, e);
+            return null;
+        }
+    }
+
+    async playAudioFile(soundKey, volume = 0.5) {
+        if (!this.soundsEnabled) return;
+        
+        const soundUrl = this.soundFiles[soundKey];
+        if (!soundUrl) {
+            logger.debug('Unknown sound key:', soundKey);
+            return;
+        }
+
+        try {
+            let audio = this.audioCache.get(soundUrl);
+            
+            if (!audio) {
+                audio = await this.loadAudioFile(soundUrl);
+            }
+            
+            if (audio) {
+                // Clone the audio for concurrent playback
+                const audioClone = audio.cloneNode();
+                audioClone.volume = volume;
+                audioClone.currentTime = 0;
+                
+                const playPromise = audioClone.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => {
+                        logger.debug('Audio playback failed:', e);
+                    });
+                }
+            }
+        } catch (e) {
+            logger.debug('Failed to play audio file:', soundKey, e);
+            // Fallback to synthetic sound
+            this.playFallbackSound(soundKey);
+        }
+    }
+
+    playFallbackSound(soundKey) {
+        // Fallback to original synthetic sounds if audio files fail
+        switch (soundKey) {
+            case 'correctAnswer':
+                this.playCorrectAnswerSynthetic();
+                break;
+            case 'wrongAnswer':
+                this.playIncorrectAnswerSynthetic();
+                break;
+            case 'questionStart':
+                this.playQuestionStartSynthetic();
+                break;
+            case 'gameComplete':
+                this.playGameEndingFanfareSynthetic();
+                break;
+            case 'bellNotification':
+                this.playAnswerSubmissionSynthetic();
+                break;
+            default:
+                this.playEnhancedSound(800, 0.2, 'triangle', 0.1);
         }
     }
 
@@ -175,7 +267,84 @@ export class SoundManager {
         }
     }
 
+
+    // Main sound effect methods - use audio files with fallback to synthetic
+    playQuestionStartSound() {
+        logger.debug('🔊 Playing question start sound');
+        this.playAudioFile('questionStart', 0.6);
+    }
+
+    playAnswerSubmissionSound() {
+        logger.debug('🔊 Playing answer submission sound');
+        this.playAudioFile('bellNotification', 0.4);
+    }
+
+    playCorrectAnswerSound() {
+        logger.debug('🔊 Playing correct answer sound');
+        this.playAudioFile('correctAnswer', 0.7);
+    }
+
+    playIncorrectAnswerSound() {
+        logger.debug('🔊 Playing incorrect answer sound');
+        this.playAudioFile('wrongAnswer', 0.6);
+    }
+
     playGameEndingFanfare() {
+        logger.debug('🔊 Playing game ending fanfare');
+        this.playAudioFile('gameComplete', 0.8);
+    }
+
+    // Synthetic fallback methods
+    playQuestionStartSynthetic() {
+        // Attention-getting but pleasant question start sound
+        this.playEnhancedSound(800, 0.25, 'triangle', 0.1); // Warmer triangle wave
+    }
+
+    playAnswerSubmissionSynthetic() {
+        // Pleasant confirmation sound for answer submission
+        this.playEnhancedSound(600, 0.15, 'sine', 0.12); // Softer, shorter confirmation
+    }
+
+    playCorrectAnswerSynthetic() {
+        logger.debug('🔊 Playing correct answer sound (pleasant ascending melody)');
+        // Beautiful correct answer melody - uplifting and rewarding
+        // Play a pleasant ascending melody with harmonics
+        const correctMelody = [
+            { freq: 523, time: 0, duration: 0.25, type: 'sine' },      // C4
+            { freq: 659, time: 0.1, duration: 0.25, type: 'sine' },    // E4
+            { freq: 784, time: 0.2, duration: 0.4, type: 'sine' },     // G4
+            { freq: 1047, time: 0.35, duration: 0.5, type: 'triangle' } // C5 (octave higher)
+        ];
+        
+        correctMelody.forEach(note => {
+            setTimeout(() => {
+                this.playEnhancedSound(note.freq, note.duration, note.type, 0.15);
+            }, note.time * 1000);
+        });
+        
+        // Add a subtle harmonic accompaniment
+        setTimeout(() => {
+            this.playEnhancedSound(523, 0.6, 'triangle', 0.08); // Bass C
+        }, 100);
+    }
+
+    playIncorrectAnswerSynthetic() {
+        logger.debug('🔊 Playing incorrect answer sound (gentle disappointed tone)');
+        // Gentle incorrect answer sound - not harsh, just mildly disappointed
+        // Two-tone descending pattern that's informative but not punishing
+        const incorrectTones = [
+            { freq: 400, time: 0, duration: 0.3, type: 'sine' },       // F4 (softer than original)
+            { freq: 350, time: 0.2, duration: 0.4, type: 'triangle' }  // F3 (gentler descent)
+        ];
+        
+        incorrectTones.forEach(note => {
+            setTimeout(() => {
+                this.playEnhancedSound(note.freq, note.duration, note.type, 0.12);
+            }, note.time * 1000);
+        });
+    }
+
+    playGameEndingFanfareSynthetic() {
         if (!this.soundsEnabled) return;
         
         // Ensure AudioContext exists before playing
@@ -215,63 +384,13 @@ export class SoundManager {
             // Add some harmonic accompaniment
             setTimeout(() => {
                 this.playSound(523, 1.5, 'sawtooth'); // Bass C
-                setTimeout(() => this.playSound(AUDIO.SUCCESS_FREQUENCIES[1], 1.0, 'sawtooth'), 500);
-                setTimeout(() => this.playSound(AUDIO.SUCCESS_FREQUENCIES[2], 1.2, 'sawtooth'), 1000);
+                setTimeout(() => this.playSound(659, 1.0, 'sawtooth'), 500);
+                setTimeout(() => this.playSound(784, 1.2, 'sawtooth'), 1000);
             }, 1500);
             
         } catch (e) {
             logger.debug('Game ending fanfare playback failed:', e);
         }
-    }
-
-    // Convenience methods for common sound effects
-    playQuestionStartSound() {
-        // Attention-getting but pleasant question start sound
-        this.playEnhancedSound(800, 0.25, 'triangle', 0.1); // Warmer triangle wave
-    }
-
-    playAnswerSubmissionSound() {
-        // Pleasant confirmation sound for answer submission
-        this.playEnhancedSound(600, 0.15, 'sine', 0.12); // Softer, shorter confirmation
-    }
-
-    playCorrectAnswerSound() {
-        logger.debug('🔊 Playing correct answer sound (pleasant ascending melody)');
-        // Beautiful correct answer melody - uplifting and rewarding
-        // Play a pleasant ascending melody with harmonics
-        const correctMelody = [
-            { freq: 523, time: 0, duration: 0.25, type: 'sine' },      // C4
-            { freq: 659, time: 0.1, duration: 0.25, type: 'sine' },    // E4
-            { freq: 784, time: 0.2, duration: 0.4, type: 'sine' },     // G4
-            { freq: 1047, time: 0.35, duration: 0.5, type: 'triangle' } // C5 (octave higher)
-        ];
-        
-        correctMelody.forEach(note => {
-            setTimeout(() => {
-                this.playEnhancedSound(note.freq, note.duration, note.type, 0.15);
-            }, note.time * 1000);
-        });
-        
-        // Add a subtle harmonic accompaniment
-        setTimeout(() => {
-            this.playEnhancedSound(523, 0.6, 'triangle', 0.08); // Bass C
-        }, 100);
-    }
-
-    playIncorrectAnswerSound() {
-        logger.debug('🔊 Playing incorrect answer sound (gentle disappointed tone)');
-        // Gentle incorrect answer sound - not harsh, just mildly disappointed
-        // Two-tone descending pattern that's informative but not punishing
-        const incorrectTones = [
-            { freq: 400, time: 0, duration: 0.3, type: 'sine' },       // F4 (softer than original)
-            { freq: 350, time: 0.2, duration: 0.4, type: 'triangle' }  // F3 (gentler descent)
-        ];
-        
-        incorrectTones.forEach(note => {
-            setTimeout(() => {
-                this.playEnhancedSound(note.freq, note.duration, note.type, 0.12);
-            }, note.time * 1000);
-        });
     }
 
     // Utility methods
