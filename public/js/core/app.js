@@ -439,7 +439,6 @@ export class QuizGame {
         logger.info('startHosting called');
         const title = document.getElementById('quiz-title')?.value?.trim();
         logger.debug('Quiz title from input field:', title);
-        console.log('DEBUG CLIENT: Quiz title from input field:', title);
         if (!title) {
             showErrorAlert('please_enter_quiz_title');
             return;
@@ -492,7 +491,6 @@ export class QuizGame {
 
         // Create game through socket
         logger.debug('About to call createGame with data:', quizData);
-        console.log('DEBUG CLIENT: About to send quiz data:', JSON.stringify(quizData, null, 2));
         try {
             this.socketManager.createGame(quizData);
             logger.debug('createGame call completed successfully');

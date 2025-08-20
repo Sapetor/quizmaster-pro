@@ -550,13 +550,11 @@ export class SocketManager {
         }
         
         try {
-            console.log('DEBUG CLIENT: About to emit host-join with data:', JSON.stringify(quizData, null, 2));
+            logger.debug('About to emit host-join with data:', JSON.stringify(quizData, null, 2));
             this.socket.emit('host-join', quizData);
             logger.debug('Emitted host-join event successfully');
-            console.log('DEBUG CLIENT: host-join event emitted successfully');
         } catch (error) {
             logger.error('Error emitting host-join:', error);
-            console.log('DEBUG CLIENT: Error emitting host-join:', error);
         }
     }
 

@@ -527,7 +527,6 @@ let headerElement = null;
 let hintElement = null;
 
 export function initializeAutoHideToolbar() {
-    console.log('🔴 AUTO-HIDE: Starting initialization');
     logger.debug('Initializing auto-hide header functionality');
     
     headerElement = document.querySelector('header');

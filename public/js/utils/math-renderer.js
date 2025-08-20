@@ -220,7 +220,7 @@ export class MathRenderer {
             
         } catch (error) {
             // Silently handle syntax highlighting errors
-            console.warn('Syntax highlighting failed:', error);
+            logger.warn('Syntax highlighting failed:', error);
         }
     }
 
