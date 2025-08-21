@@ -12,6 +12,7 @@ import './utils/globals.js'; // Import globals to make them available
 import { browserOptimizer } from './utils/browser-optimizer.js'; // Browser-specific optimizations
 import { contentDensityManager } from './utils/content-density-manager.js'; // Smart content spacing and sizing
 import { mobileLayoutManager } from './utils/mobile-layout-manager.js'; // Smart mobile layout for different content types
+import './utils/mobile-enhancements.js'; // Mobile UX enhancements and touch interactions
 
 /**
  * Update language dropdown display to show the currently selected language
@@ -141,6 +142,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         mobileLayoutManager.setEnabled(window.innerWidth <= 768);
         logger.debug('Mobile layout manager initialized');
+        
+        // Initialize mobile enhancements for touch interactions and UX improvements
+        if (window.mobileEnhancements) {
+            logger.debug('Mobile enhancements initialized successfully');
+        } else {
+            logger.warn('Mobile enhancements not available');
+        }
         
         // Enhanced mobile initialization for better Android/iOS compatibility
         if (isMobile) {

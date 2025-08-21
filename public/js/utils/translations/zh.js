@@ -1,6 +1,6 @@
 export default {
         app_title: "QuizMaster Pro",
-        host_game: "主持游戏",
+        host_game: "创建游戏",
         join_game: "加入游戏",
         start_game: "开始游戏",
         create_lobby: "创建大厅",
@@ -228,6 +228,7 @@ export default {
         ollama_free_local: "Ollama（免费，本地）",
         openai_paid: "OpenAI（付费）",
         claude_paid: "Claude（付费）",
+        gemini_paid: "Gemini (Paid)",
         huggingface_free: "HuggingFace（免费）",
         choose_model: "选择模型",
         select_ollama_model: "选择Ollama模型",

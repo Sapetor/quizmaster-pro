@@ -1,6 +1,6 @@
 export default {
         app_title: "QuizMaster Pro",
-        host_game: "Ospita Gioco",
+        host_game: "Crea Gioco",
         join_game: "Unisciti al Gioco",
         start_game: "Inizia Gioco",
         create_lobby: "Crea Lobby",
@@ -228,6 +228,7 @@ export default {
         ollama_free_local: "Ollama (Gratuito, Locale)",
         openai_paid: "OpenAI (A pagamento)",
         claude_paid: "Claude (A pagamento)",
+        gemini_paid: "Gemini (Paid)",
         huggingface_free: "HuggingFace (Gratuito)",
         choose_model: "Scegli Modello",
         select_ollama_model: "Seleziona Modello Ollama",

@@ -41,6 +41,12 @@ export class AIQuestionGenerator {
                 apiKey: true,
                 endpoint: "https://api.anthropic.com/v1/messages",
                 models: ["claude-3-haiku", "claude-3-sonnet"]
+            },
+            gemini: {
+                name: "Google Gemini",
+                apiKey: true,
+                endpoint: "https://generativelanguage.googleapis.com/v1beta/models",
+                models: [AI.GEMINI_MODEL, "gemini-2.0-flash", "gemini-1.5-pro"]
             }
         };
         
@@ -361,6 +367,9 @@ export class AIQuestionGenerator {
                     case 'claude':
                         questions = await this.generateWithClaude(prompt);
                         break;
+                    case 'gemini':
+                        questions = await this.generateWithGemini(prompt);
+                        break;
                 }
 
                 if (questions && questions.length > 0) {
@@ -606,6 +615,54 @@ Please respond with only valid JSON. Do not include explanations or additional t
         }, {
             context: 'claude-generation',
             userMessage: 'Failed to generate questions with Claude. Please check your API key and try again.',
+            retryable: true
+        });
+    }
+
+    async generateWithGemini(prompt) {
+        return await errorHandler.safeNetworkOperation(async () => {
+            const apiKey = await secureStorage.getSecureItem('api_key_gemini');
+            
+            // Import the Google Gen AI library dynamically
+            const { GoogleGenAI } = await import('https://esm.sh/@google/genai@0.21.0');
+            
+            const ai = new GoogleGenAI({ apiKey: apiKey });
+            
+            try {
+                const response = await ai.models.generateContent({
+                    model: AI.GEMINI_MODEL,
+                    contents: prompt,
+                    config: {
+                        temperature: AI.DEFAULT_TEMPERATURE,
+                        maxOutputTokens: AI.GEMINI_MAX_TOKENS,
+                        candidateCount: 1,
+                        responseMimeType: 'text/plain'
+                    }
+                });
+
+                if (!response || !response.text) {
+                    throw new Error('Invalid Gemini API response structure');
+                }
+
+                const content = response.text();
+                logger.debug('Gemini API response:', content);
+                
+                return this.parseAIResponse(content);
+                
+            } catch (error) {
+                if (error.message.includes('API key')) {
+                    throw new Error('Invalid Gemini API key. Please check your credentials.');
+                } else if (error.message.includes('quota') || error.message.includes('429')) {
+                    throw new Error('Gemini rate limit exceeded. Please try again later.');
+                } else if (error.message.includes('safety') || error.message.includes('blocked')) {
+                    throw new Error('Content blocked by Gemini safety filters. Try rephrasing your prompt.');
+                } else {
+                    throw new Error(`Gemini API error: ${error.message}`);
+                }
+            }
+        }, {
+            context: 'gemini-generation',
+            userMessage: 'Failed to generate questions with Gemini. Please check your API key and try again.',
             retryable: true
         });
     }

@@ -260,6 +260,7 @@ export default {
         ollama_free_local: "Ollama (Free, Local)",
         openai_paid: "OpenAI (Paid)",
         claude_paid: "Claude (Paid)",
+        gemini_paid: "Gemini (Paid)",
         huggingface_free: "HuggingFace (Free)",
         choose_model: "Choose Model",
         select_ollama_model: "Select Ollama Model",

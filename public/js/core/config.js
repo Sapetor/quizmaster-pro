@@ -121,6 +121,8 @@ export const AI = {
     OLLAMA_TAGS_ENDPOINT: 'http://localhost:11434/api/tags',
     OLLAMA_DEFAULT_MODEL: 'llama3.2:latest',
     OPENAI_MODEL: 'gpt-3.5-turbo',
+    GEMINI_MODEL: 'gemini-2.0-flash-001',
+    GEMINI_MAX_TOKENS: 2048,
     
     // Content detection patterns
     MATH_INDICATORS: /\$.*\$|\\\\w+{.*}|\\begin{|\\end{|\\frac|\\sqrt|\\sum|\\int|equation|formula|algebra|calculus|geometry/i,
