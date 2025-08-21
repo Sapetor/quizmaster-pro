@@ -1249,16 +1249,7 @@
 
 /* Mobile Results Screens - Hide header ghost space for in-game consistency */
 @media (max-width: 768px) {
-    /* Quiz Results (Leaderboard) - Hide header like during gameplay */
-    #leaderboard-screen header,
-    #player-final-screen header {
-        display: none !important;
-    }
-    
-    #leaderboard-screen .horizontal-toolbar,
-    #player-final-screen .horizontal-toolbar {
-        display: none !important;
-    }
+    /* REMOVED: Duplicate header/toolbar rules - now handled by consolidated game state rules below */
     
     /* Quiz Results (Leaderboard) - Mobile fullscreen layout */
     #leaderboard-screen .container {
@@ -2982,16 +2973,21 @@
 
 /* Game State: Results/Leaderboard - Minimal UI with room for celebration */
 .game-state-results {
-    /* SOLUTION: Restore normal header positioning during results */
-    header {
-        position: sticky !important;
-        top: 0 !important;
-        z-index: 100 !important;
-        transform: translateY(0);
-        opacity: 0.7;
-        pointer-events: all;
-        transition: all 0.3s ease-in-out;
+    /* SOLUTION: Keep header hidden on mobile for consistency with gameplay */
+    @media (min-width: 769px) {
+        /* Only restore header on desktop devices */
+        header {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 100 !important;
+            transform: translateY(0);
+            opacity: 0.7;
+            pointer-events: all;
+            transition: all 0.3s ease-in-out;
+        }
     }
+    
+    /* REMOVED: Duplicate mobile header rule - now handled by consolidated rules below */
     
     .horizontal-toolbar {
         transform: translateY(-100%);
@@ -3153,7 +3149,10 @@
         .game-state-playing #feedback-modal-overlay,
         .game-state-playing header,
         .game-state-playing .horizontal-toolbar,
-        .game-state-playing .left-toolbar {
+        .game-state-playing .left-toolbar,
+        .game-state-results header,
+        .game-state-results .horizontal-toolbar,
+        .game-state-results .left-toolbar {
             display: none !important;
         }
         
@@ -3254,17 +3253,7 @@
             min-height: 0 !important;
         }
         
-        /* CRITICAL FIX: Completely remove header from layout on mobile during gameplay */
-        .game-state-playing header,
-        .game-state-lobby header {
-            display: none !important; /* Remove from layout flow entirely */
-        }
-        
-        /* Also remove horizontal toolbar completely */
-        .game-state-playing .horizontal-toolbar,
-        .game-state-lobby .horizontal-toolbar {
-            display: none !important;
-        }
+        /* REMOVED: Duplicate rules - consolidated above with other mobile UI hiding rules */
     }
     
     /* Floating controls are more important on mobile */

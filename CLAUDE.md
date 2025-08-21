@@ -288,7 +288,122 @@ Before deploying to production environments, ensure these settings are configure
 - `POST /api/save-results` - Save new game results
 - `GET /api/results/{filename}/export/csv` - Export specific results as CSV
 
+## Debug Tools
+
+**Phase 8 Development Tools (2025-08):**
+Professional UI debugging and testing tools integrated with the game state management system.
+
+### Available Debug Tools
+
+**Primary Debug Tool (Recommended):**
+```
+http://localhost:3000/debug/ui-debug-showcase.html
+```
+
+**Advanced Debug Tool (Extended Features):**
+```
+http://localhost:3000/debug/advanced-ui-debugger.html
+```
+
+### Debug Tool Features
+
+**✅ Core Functionality:**
+- **Real Game State Simulation**: Properly integrates with `UIStateManager.setState()` 
+- **Mobile Viewport Testing**: Accurate mobile device simulation with touch controls
+- **Header Visibility Verification**: Shows actual header behavior during different game states
+- **Theme Switching**: Light/dark theme testing with live CSS updates
+- **Screen Navigation**: Direct navigation to any app screen with proper state transitions
+
+**✅ Game State Integration:**
+- **Playing State**: Headers hidden (simulates actual gameplay experience)
+- **Results State**: Headers hidden on mobile, visible on desktop (consistent with actual app)
+- **Lobby/Editing States**: Headers visible (normal menu experience)
+- **Host vs Client Views**: Proper simulation of different user types
+
+**✅ Advanced Features (Advanced Debugger Only):**
+- **Manual State Override**: Dropdown to manually set any UI state for testing
+- **UI Class Inspector**: Real-time inspection of container classes and styles
+- **Element Resizing**: Live element width/height adjustment
+- **CSS Injection**: Live CSS modification for rapid prototyping
+- **Console Logging**: Detailed state change tracking for debugging
+
+### Usage Guidelines
+
+**For CSS/UI Development:**
+1. Use debug tools to rapidly test layout changes across all screens
+2. Verify mobile responsiveness without running complete games
+3. Test theme compatibility and header visibility behavior
+4. Validate game state transitions and CSS class applications
+
+**For Mobile Testing:**
+1. Switch to mobile viewport (375x667 or custom dimensions)
+2. Navigate to `player-game-screen` or `leaderboard-screen`
+3. Verify header is properly hidden (no ghost space)
+4. Test touch interactions and responsive layouts
+
+**For Game State Debugging:**
+1. Monitor real-time UI state indicators (color-coded)
+2. Use manual state override to test edge cases
+3. Inspect container classes to verify CSS rule application
+4. Check console logs for UIStateManager integration
+
+### Technical Implementation
+
+**Integration with UIStateManager:**
+Debug tools now properly call `window.uiStateManager.setState()` when changing screens, ensuring:
+- Correct CSS classes (`game-state-playing`, `game-state-results`, etc.) are applied
+- Header visibility matches actual app behavior
+- Mobile responsive rules are properly triggered
+- Host/client view differences are accurately simulated
+
+**Screen-to-State Mapping:**
+- `player-game-screen`, `host-game-screen` → `playing` state (headers hidden)
+- `leaderboard-screen`, `player-final-screen` → `results` state (headers hidden on mobile)
+- `main-menu`, `host-screen`, `game-lobby` → `lobby` state (headers visible)
+- `quiz-editor` → `editing` state (headers visible)
+
+### Troubleshooting
+
+**If debug tools don't reflect actual app behavior:**
+1. Clear browser cache (Ctrl+F5) to ensure latest CSS version is loaded
+2. Check browser console for UIStateManager availability warnings
+3. Verify iframe integration is working (look for green "UI State" indicators)
+4. Confirm server is serving debug files from `/debug` route
+
+**Common Issues:**
+- **Headers still visible during gameplay**: UIStateManager not integrated properly
+- **Mobile viewport not accurate**: Use device simulation in browser dev tools
+- **State changes not working**: Check iframe cross-origin restrictions
+
+### Server Configuration
+
+Debug tools are served via dedicated route in `server.js`:
+```javascript
+// Serve debug tools from debug directory
+app.use('/debug', express.static('debug', {
+  maxAge: 0, // No caching for debug files
+  etag: false,
+  cacheControl: false
+}));
+```
+
+**No server restart required** - debug route is active immediately.
+
+### Development Workflow Integration
+
+**Recommended workflow for UI changes:**
+1. Make CSS/HTML modifications
+2. Test in debug tools with appropriate viewport/state
+3. Verify behavior matches expectations
+4. Test in actual app gameplay for final validation
+
+**Mobile header consistency workflow:**
+1. Open debug tool in mobile viewport
+2. Navigate to `player-game-screen` (should hide header)
+3. Navigate to `leaderboard-screen` (should hide header on mobile)
+4. Compare with actual gameplay experience
+
 ---
 
-*Last updated: August 2025 - Phase 7 game restart stability and error handling consolidation completed*
+*Last updated: August 2025 - Phase 8 debug tools and mobile header consistency completed*
 - I am running a server in a windows terminal of the same folder, so there is no need to start it

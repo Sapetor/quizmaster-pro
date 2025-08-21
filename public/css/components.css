@@ -2675,8 +2675,6 @@ select option {
         rgba(255, 255, 255, 0.1) 0%,
         rgba(255, 255, 255, 0.05) 50%,
         rgba(255, 255, 255, 0.1) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 24px;
     box-shadow: 
@@ -2765,8 +2763,6 @@ select option {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
 }
 
 .manual-section::before {
@@ -2857,7 +2853,7 @@ select option {
 .manual-steps li::before {
     content: counter(step-counter);
     position: absolute;
-    left: 0;
+    left: 2px;
     top: 10px;
     width: 28px;
     height: 28px;
@@ -2887,10 +2883,10 @@ select option {
     background: linear-gradient(135deg, 
         var(--color-primary-400) 0%,
         var(--color-primary-500) 100%);
-    transform: scale(1.15) rotate(5deg);
+    transform: scale(1.05) rotate(2deg);
     box-shadow: 
-        0 8px 20px rgba(59, 130, 246, 0.4),
-        0 0 0 3px rgba(255, 255, 255, 0.15);
+        0 6px 16px rgba(59, 130, 246, 0.4),
+        0 0 0 2px rgba(255, 255, 255, 0.15);
 }
 
 .manual-section.features {

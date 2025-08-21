@@ -1,0 +1,59 @@
+# QuizMaster Pro Docker Compose Configuration
+# For deployment ON the GitLab server machine
+
+version: '3.8'
+
+services:
+  quizmaster-pro:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: quizmaster-pro:latest
+    container_name: quizmaster-pro-app
+    restart: unless-stopped
+    
+    # Environment configuration for server deployment
+    environment:
+      - NODE_ENV=production
+      - DEBUG_ENABLED=false
+      - DEBUG_CURRENT_LEVEL=1
+      # GitLab connectivity (localhost since on same machine)
+      - GITLAB_URL=https://localhost:8080
+      - GITLAB_TOKEN=${GITLAB_TOKEN:-}
+    
+    # Port mapping for network access
+    ports:
+      - "3000:3000"
+    
+    # Volume mounts for persistent data
+    volumes:
+      - ./results:/app/results
+      - ./uploads:/app/uploads
+      - quiz_data:/app/public/uploads
+    
+    # Use host network for GitLab access
+    network_mode: "bridge"
+    
+    # Health check configuration
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/ping', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+# Named volumes for data persistence
+volumes:
+  quiz_data:
+    driver: local

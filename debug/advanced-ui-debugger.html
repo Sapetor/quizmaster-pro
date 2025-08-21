@@ -414,6 +414,30 @@
             </div>
             
             <div class="control-section">
+                <h3>🎮 Game State Debug</h3>
+                
+                <div class="control-group">
+                    <label>Current UI State</label>
+                    <div id="current-state-display" style="padding: 8px 12px; background: var(--debug-primary); color: white; border-radius: 6px; font-weight: 600; text-align: center;">lobby</div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Manual State Override</label>
+                    <select id="manual-state-select" onchange="setManualState(this.value)">
+                        <option value="auto">Auto (follows screen)</option>
+                        <option value="lobby">Lobby State</option>
+                        <option value="editing">Editing State</option>
+                        <option value="playing">Playing State</option>
+                        <option value="results">Results State</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <button class="btn" onclick="inspectUIClasses()">🔍 Inspect UI Classes</button>
+                </div>
+            </div>
+            
+            <div class="control-section">
                 <h3>📱 App Screens</h3>
                 <div class="screen-list">
                     <div class="screen-item active" onclick="showScreen('main-menu')" data-screen="main-menu">
@@ -478,6 +502,14 @@
                 • Inject CSS for rapid prototyping<br>
                 • Screenshots: Right-click viewport → Save image
             </div>
+            
+            <div class="info-panel" style="background: rgba(234, 67, 53, 0.1); border-color: #ea4335;">
+                <strong>🎮 Header Visibility Test:</strong><br>
+                <strong>HIDDEN:</strong> player-game-screen, host-game-screen (playing state)<br>
+                <strong>MOBILE HIDDEN:</strong> leaderboard-screen, player-final-screen (results state)<br>
+                <strong>VISIBLE:</strong> All other screens (lobby/editing states)<br>
+                Watch the UI State indicator above to verify proper state changes.
+            </div>
         </aside>
         
         <main class="debug-main">
@@ -497,7 +529,7 @@
                     <div class="debug-overlay" id="debug-overlay">
                         Screen: main-menu | Theme: light
                     </div>
-                    <iframe id="app-iframe" class="screen-iframe" src="../public/index.html"></iframe>
+                    <iframe id="app-iframe" class="screen-iframe" src="../index.html"></iframe>
                     <div class="loading-overlay" id="loading-overlay">
                         🔄 Loading QuizMaster Pro...
                     </div>
@@ -520,6 +552,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             state.iframe = document.getElementById('app-iframe');
             
+            // Add cache busting timestamp to iframe src for latest version
+            const timestamp = new Date().getTime();
+            state.iframe.src = `../index.html?t=${timestamp}`;
+            
             // Set initial theme
             document.documentElement.setAttribute('data-theme', state.currentTheme);
             
@@ -529,6 +565,9 @@
                     hideLoading();
                     showScreen('main-menu');
                     injectDebugStyles();
+                    
+                    // Start periodic state display updates
+                    setInterval(updateCurrentStateDisplay, 1000);
                 }, 1500);
             });
             
@@ -633,11 +672,36 @@
                 }
             });
             
-            // Navigate iframe to screen
+            // Navigate iframe to screen and set proper UI state
             try {
                 if (state.iframe.contentWindow) {
-                    // Try to call the app's navigation function
+                    // Map screen to UIStateManager state
+                    const getStateForScreen = (screen) => {
+                        switch (screen) {
+                            case 'host-screen':
+                                return 'editing';
+                            case 'host-game-screen':
+                            case 'player-game-screen':
+                                return 'playing';
+                            case 'leaderboard-screen':
+                            case 'player-final-screen':
+                                return 'results';
+                            case 'main-menu':
+                            case 'host-lobby':
+                            case 'player-lobby':
+                            case 'game-browser':
+                            case 'join-screen':
+                            case 'game-lobby':
+                            default:
+                                return 'lobby';
+                        }
+                    };
+                    
+                    const gameState = getStateForScreen(screenId);
+                    
+                    // Enhanced navigation script with UIStateManager integration
                     const navigateScript = `
+                        // First, navigate to the screen
                         if (window.uiManager && typeof window.uiManager.showScreen === 'function') {
                             window.uiManager.showScreen('${screenId}');
                         } else if (window.showScreen) {
@@ -647,6 +711,14 @@
                             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                             const target = document.getElementById('${screenId}');
                             if (target) target.classList.add('active');
+                        }
+                        
+                        // Then set the proper UI state for CSS classes
+                        if (window.uiStateManager && typeof window.uiStateManager.setState === 'function') {
+                            window.uiStateManager.setState('${gameState}');
+                            console.log('🎮 Debug: Set UI state to "${gameState}" for screen "${screenId}"');
+                        } else {
+                            console.warn('🎮 Debug: UIStateManager not available, screen will not show proper state CSS');
                         }
                     `;
                     
@@ -661,12 +733,106 @@
         
         function refreshViewport() {
             showLoading();
-            state.iframe.src = state.iframe.src;
+            // Add cache busting timestamp to ensure latest version
+            const timestamp = new Date().getTime();
+            const baseUrl = '../index.html';
+            state.iframe.src = `${baseUrl}?t=${timestamp}`;
         }
         
         function updateDebugOverlay() {
             const overlay = document.getElementById('debug-overlay');
             overlay.textContent = `Screen: ${state.currentScreen} | Theme: ${state.currentTheme} | Viewport: ${state.currentViewport}`;
+            
+            // Update current state display
+            updateCurrentStateDisplay();
+        }
+        
+        function updateCurrentStateDisplay() {
+            try {
+                if (state.iframe.contentWindow && state.iframe.contentWindow.uiStateManager) {
+                    const currentState = state.iframe.contentWindow.uiStateManager.getCurrentState();
+                    const stateDisplay = document.getElementById('current-state-display');
+                    if (stateDisplay) {
+                        stateDisplay.textContent = currentState;
+                        // Color code the state
+                        stateDisplay.style.background = getStateColor(currentState);
+                    }
+                }
+            } catch (e) {
+                // Silently fail if iframe is not accessible
+            }
+        }
+        
+        function getStateColor(state) {
+            switch (state) {
+                case 'lobby': return '#4285f4';
+                case 'editing': return '#34a853';
+                case 'playing': return '#ea4335';
+                case 'results': return '#fbbc04';
+                default: return '#9aa0a6';
+            }
+        }
+        
+        function setManualState(state) {
+            if (state === 'auto') {
+                // Re-trigger the screen's natural state
+                showScreen(state.currentScreen);
+                return;
+            }
+            
+            try {
+                if (state.iframe.contentWindow && state.iframe.contentWindow.uiStateManager) {
+                    state.iframe.contentWindow.uiStateManager.setState(state);
+                    updateCurrentStateDisplay();
+                    console.log(`🎮 Debug: Manually set UI state to "${state}"`);
+                }
+            } catch (e) {
+                console.log('Cannot set manual state:', e.message);
+            }
+        }
+        
+        function inspectUIClasses() {
+            try {
+                if (state.iframe.contentWindow) {
+                    const inspectionScript = `
+                        const container = document.querySelector('.container');
+                        const header = document.querySelector('header');
+                        const toolbar = document.querySelector('.horizontal-toolbar');
+                        
+                        const info = {
+                            containerClasses: container ? Array.from(container.classList) : [],
+                            headerClasses: header ? Array.from(header.classList) : [],
+                            headerStyle: header ? {
+                                display: header.style.display,
+                                transform: header.style.transform,
+                                opacity: header.style.opacity,
+                                position: header.style.position
+                            } : {},
+                            toolbarClasses: toolbar ? Array.from(toolbar.classList) : [],
+                            toolbarStyle: toolbar ? {
+                                display: toolbar.style.display
+                            } : {},
+                            currentState: window.uiStateManager ? window.uiStateManager.getCurrentState() : 'unknown'
+                        };
+                        
+                        console.group('🔍 UI State Inspection');
+                        console.log('Container classes:', info.containerClasses);
+                        console.log('Header classes:', info.headerClasses);
+                        console.log('Header styles:', info.headerStyle);
+                        console.log('Toolbar classes:', info.toolbarClasses);
+                        console.log('Toolbar styles:', info.toolbarStyle);
+                        console.log('UIStateManager state:', info.currentState);
+                        console.groupEnd();
+                        
+                        return info;
+                    `;
+                    
+                    const result = state.iframe.contentWindow.eval(inspectionScript);
+                    console.log('🔍 UI inspection complete - check console for details');
+                }
+            } catch (e) {
+                console.log('Cannot inspect UI classes:', e.message);
+            }
         }
         
         function injectCSS() {

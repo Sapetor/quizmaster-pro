@@ -194,6 +194,13 @@ app.use(express.static('public', {
   }
 }));
 
+// Serve debug tools from debug directory
+app.use('/debug', express.static('debug', {
+  maxAge: 0, // No caching for debug files
+  etag: false,
+  cacheControl: false
+}));
+
 // Ensure directories exist
 if (!fs.existsSync('quizzes')) {
   fs.mkdirSync('quizzes');
@@ -1552,12 +1559,19 @@ function startQuestion(game, io) {
         break;
     }
     
-    io.to(`game-${game.pin}`).emit('question-timeout', {
+    const timeoutData = {
       correctAnswer: correctAnswer,
       correctOption: correctOption,
       questionType: question.type || 'multiple-choice',
       tolerance: question.tolerance || null
-    });
+    };
+    
+    // For multiple-correct questions, also send the correctAnswers array
+    if (question.type === 'multiple-correct') {
+      timeoutData.correctAnswers = question.correctAnswers || [];
+    }
+    
+    io.to(`game-${game.pin}`).emit('question-timeout', timeoutData);
 
     const answerStats = game.getAnswerStatistics();
     io.to(game.hostId).emit('answer-statistics', answerStats);
@@ -1770,13 +1784,20 @@ io.on('connection', (socket) => {
               break;
           }
           
-          io.to(`game-${game.pin}`).emit('question-timeout', {
+          const timeoutData = {
             correctAnswer: correctAnswer,
             correctOption: correctOption,
             questionType: question.type || 'multiple-choice',
             tolerance: question.tolerance || null,
             earlyEnd: true
-          });
+          };
+          
+          // For multiple-correct questions, also send the correctAnswers array
+          if (question.type === 'multiple-correct') {
+            timeoutData.correctAnswers = question.correctAnswers || [];
+          }
+          
+          io.to(`game-${game.pin}`).emit('question-timeout', timeoutData);
 
           const answerStats = game.getAnswerStatistics();
           io.to(game.hostId).emit('answer-statistics', answerStats);
