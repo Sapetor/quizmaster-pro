@@ -12,6 +12,7 @@
     "build:prod": "npm run build:css && echo 'CSS bundled for production'"
   },
   "dependencies": {
+    "@playwright/test": "^1.55.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "express": "^4.18.2",
@@ -22,13 +23,13 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "autoprefixer": "^10.4.17",
+    "cssnano": "^6.0.3",
     "eslint": "^9.28.0",
     "nodemon": "^3.0.1",
     "postcss": "^8.4.35",
     "postcss-cli": "^11.0.0",
-    "postcss-import": "^16.1.0",
-    "autoprefixer": "^10.4.17",
-    "cssnano": "^6.0.3"
+    "postcss-import": "^16.1.0"
   },
   "keywords": [
     "quiz",

@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizMaster Pro - Advanced UI Debugger</title>
+    
+    <!-- Import main app CSS -->
+    <link rel="stylesheet" href="../public/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --debug-primary: #4285f4;
+            --debug-secondary: #34a853;
+            --debug-warning: #fbbc04;
+            --debug-danger: #ea4335;
+            --debug-bg: #f8f9fa;
+            --debug-surface: #ffffff;
+            --debug-border: #e8eaed;
+            --debug-text: #202124;
+            --debug-text-secondary: #5f6368;
+        }
+        
+        [data-theme="dark"] {
+            --debug-bg: #121212;
+            --debug-surface: #1e1e1e;
+            --debug-border: #333333;
+            --debug-text: #e8eaed;
+            --debug-text-secondary: #9aa0a6;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--debug-bg);
+            color: var(--debug-text);
+            overflow-x: auto;
+        }
+        
+        .debugger-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: 60px 1fr;
+            grid-template-areas: 
+                "header header"
+                "sidebar main";
+            height: 100vh;
+        }
+        
+        .debug-header {
+            grid-area: header;
+            background: var(--debug-surface);
+            border-bottom: 1px solid var(--debug-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .debug-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--debug-text);
+            margin: 0;
+        }
+        
+        .debug-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .debug-sidebar {
+            grid-area: sidebar;
+            background: var(--debug-surface);
+            border-right: 1px solid var(--debug-border);
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .debug-main {
+            grid-area: main;
+            background: var(--debug-bg);
+            position: relative;
+            overflow: auto;
+        }
+        
+        .control-section {
+            margin-bottom: 25px;
+        }
+        
+        .control-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--debug-text);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--debug-text-secondary);
+            margin-bottom: 5px;
+        }
+        
+        .control-group select,
+        .control-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--debug-border);
+            border-radius: 6px;
+            background: var(--debug-surface);
+            color: var(--debug-text);
+            font-size: 14px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid var(--debug-border);
+            border-radius: 6px;
+            background: var(--debug-surface);
+            color: var(--debug-text);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn:hover {
+            background: var(--debug-primary);
+            color: white;
+            border-color: var(--debug-primary);
+        }
+        
+        .btn.active {
+            background: var(--debug-primary);
+            color: white;
+            border-color: var(--debug-primary);
+        }
+        
+        .btn.danger {
+            background: var(--debug-danger);
+            color: white;
+            border-color: var(--debug-danger);
+        }
+        
+        .btn.success {
+            background: var(--debug-secondary);
+            color: white;
+            border-color: var(--debug-secondary);
+        }
+        
+        .screen-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .screen-item {
+            padding: 12px;
+            border: 1px solid var(--debug-border);
+            border-radius: 6px;
+            background: var(--debug-surface);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 13px;
+        }
+        
+        .screen-item:hover {
+            border-color: var(--debug-primary);
+            background: rgba(66, 133, 244, 0.05);
+        }
+        
+        .screen-item.active {
+            background: var(--debug-primary);
+            color: white;
+            border-color: var(--debug-primary);
+        }
+        
+        .screen-item .screen-name {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        
+        .screen-item .screen-id {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+        
+        .viewport-container {
+            background: var(--debug-surface);
+            margin: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .viewport-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--debug-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--debug-surface);
+        }
+        
+        .viewport-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .viewport-title {
+            font-weight: 600;
+            color: var(--debug-text);
+        }
+        
+        .viewport-size {
+            font-size: 12px;
+            color: var(--debug-text-secondary);
+        }
+        
+        .viewport-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .screen-viewport {
+            background: #ffffff;
+            border: 2px solid var(--debug-border);
+            margin: 20px auto;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .screen-viewport.mobile {
+            width: 375px;
+            height: 667px;
+        }
+        
+        .screen-viewport.tablet {
+            width: 768px;
+            height: 1024px;
+        }
+        
+        .screen-viewport.desktop {
+            width: calc(100% - 40px);
+            height: 900px;
+        }
+        
+        .screen-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+        
+        .debug-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--debug-text-secondary);
+        }
+        
+        .loading-overlay.hidden {
+            display: none;
+        }
+        
+        .css-inspector {
+            background: var(--debug-surface);
+            border: 1px solid var(--debug-border);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .css-inspector h4 {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--debug-text);
+        }
+        
+        .css-input {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid var(--debug-border);
+            border-radius: 4px;
+            background: var(--debug-surface);
+            color: var(--debug-text);
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+        
+        .info-panel {
+            background: rgba(66, 133, 244, 0.1);
+            border: 1px solid var(--debug-primary);
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .responsive-controls {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .responsive-controls .btn {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .debugger-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: 60px auto 1fr;
+                grid-template-areas: 
+                    "header"
+                    "sidebar"
+                    "main";
+            }
+            
+            .debug-sidebar {
+                max-height: 300px;
+                overflow-y: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="debugger-layout">
+        <header class="debug-header">
+            <h1 class="debug-title">🎮 QuizMaster Pro - Advanced UI Debugger</h1>
+            <div class="debug-actions">
+                <a href="../public/index.html" target="_blank" class="btn success">🚀 Open Full App</a>
+                <button class="btn" onclick="refreshViewport()">🔄 Refresh</button>
+                <button class="btn" onclick="toggleTheme()">🌓 Toggle Theme</button>
+            </div>
+        </header>
+        
+        <aside class="debug-sidebar">
+            <div class="control-section">
+                <h3>🎨 Theme & Viewport</h3>
+                
+                <div class="control-group">
+                    <label>Theme</label>
+                    <div class="responsive-controls">
+                        <button class="btn active" onclick="setTheme('light')" data-theme="light">☀️ Light</button>
+                        <button class="btn" onclick="setTheme('dark')" data-theme="dark">🌙 Dark</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Viewport Size</label>
+                    <select id="viewport-select" onchange="setViewport(this.value)">
+                        <option value="desktop">🖥️ Desktop (Responsive)</option>
+                        <option value="tablet">📱 Tablet (768×1024)</option>
+                        <option value="mobile">📱 Mobile (375×667)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>Custom Viewport</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="number" id="custom-width" placeholder="Width" style="flex: 1;">
+                        <input type="number" id="custom-height" placeholder="Height" style="flex: 1;">
+                        <button class="btn" onclick="setCustomViewport()">✓</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h3>📱 App Screens</h3>
+                <div class="screen-list">
+                    <div class="screen-item active" onclick="showScreen('main-menu')" data-screen="main-menu">
+                        <div class="screen-name">🏠 Main Menu</div>
+                        <div class="screen-id">main-menu</div>
+                    </div>
+                    <div class="screen-item" onclick="showScreen('host-screen')" data-screen="host-screen">
+                        <div class="screen-name">✏️ Quiz Creation</div>
+                        <div class="screen-id">host-screen</div>
+                    </div>
+                    <div class="screen-item" onclick="showScreen('game-lobby')" data-screen="game-lobby">
+                        <div class="screen-name">⏳ Host Lobby</div>
+                        <div class="screen-id">game-lobby</div>
+                    </div>
+                    <div class="screen-item" onclick="showScreen('host-game-screen')" data-screen="host-game-screen">
+                        <div class="screen-name">🎮 Host Game Control</div>
+                        <div class="screen-id">host-game-screen</div>
+                    </div>
+                    <div class="screen-item" onclick="showScreen('join-screen')" data-screen="join-screen">
+                        <div class="screen-name">🚪 Player Entry</div>
+                        <div class="screen-id">join-screen</div>
+                    </div>
+                    <div class="screen-item" onclick="showScreen('game-browser')" data-screen="game-browser">
+                        <div class="screen-name">📚 Game Browser</div>
+                        <div class="screen-id">game-browser</div>
+                    </div>
+                    <div class="screen-item" onclick="showScreen('player-lobby')" data-screen="player-lobby">
+                        <div class="screen-name">👥 Player Lobby</div>
+                        <div class="screen-id">player-lobby</div>
+                    </div>
+                    <div class="screen-item" onclick="showScreen('player-game-screen')" data-screen="player-game-screen">
+                        <div class="screen-name">🎯 Player Game</div>
+                        <div class="screen-id">player-game-screen</div>
+                    </div>
+                    <div class="screen-item" onclick="showScreen('leaderboard-screen')" data-screen="leaderboard-screen">
+                        <div class="screen-name">🏆 Leaderboard</div>
+                        <div class="screen-id">leaderboard-screen</div>
+                    </div>
+                    <div class="screen-item" onclick="showScreen('player-final-screen')" data-screen="player-final-screen">
+                        <div class="screen-name">📊 Final Results</div>
+                        <div class="screen-id">player-final-screen</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h3>🔧 Live CSS Editor</h3>
+                <div class="css-inspector">
+                    <h4>Inject Custom CSS</h4>
+                    <textarea id="css-input" class="css-input" placeholder="/* Add custom CSS here */&#10;.debug-test {&#10;    border: 2px solid red !important;&#10;}"></textarea>
+                    <div style="margin-top: 10px; display: flex; gap: 8px;">
+                        <button class="btn" onclick="injectCSS()">Apply CSS</button>
+                        <button class="btn" onclick="clearCSS()">Clear</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <strong>💡 Usage Tips:</strong><br>
+                • Use browser dev tools (F12) for detailed inspection<br>
+                • Test responsive breakpoints with custom viewport<br>
+                • Inject CSS for rapid prototyping<br>
+                • Screenshots: Right-click viewport → Save image
+            </div>
+        </aside>
+        
+        <main class="debug-main">
+            <div class="viewport-container">
+                <div class="viewport-header">
+                    <div class="viewport-info">
+                        <div class="viewport-title" id="viewport-title">Desktop Viewport</div>
+                        <div class="viewport-size" id="viewport-size">Responsive</div>
+                    </div>
+                    <div class="viewport-actions">
+                        <button class="btn" onclick="takeScreenshot()">📸 Screenshot</button>
+                        <button class="btn" onclick="toggleDevMode()">🔍 Dev Mode</button>
+                    </div>
+                </div>
+                
+                <div class="screen-viewport desktop" id="screen-viewport">
+                    <div class="debug-overlay" id="debug-overlay">
+                        Screen: main-menu | Theme: light
+                    </div>
+                    <iframe id="app-iframe" class="screen-iframe" src="../public/index.html"></iframe>
+                    <div class="loading-overlay" id="loading-overlay">
+                        🔄 Loading QuizMaster Pro...
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // State management
+        const state = {
+            currentViewport: 'desktop',
+            currentTheme: 'light',
+            currentScreen: 'main-menu',
+            devMode: false,
+            iframe: null
+        };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            state.iframe = document.getElementById('app-iframe');
+            
+            // Set initial theme
+            document.documentElement.setAttribute('data-theme', state.currentTheme);
+            
+            // Wait for iframe to load
+            state.iframe.addEventListener('load', function() {
+                setTimeout(() => {
+                    hideLoading();
+                    showScreen('main-menu');
+                    injectDebugStyles();
+                }, 1500);
+            });
+            
+            updateDebugOverlay();
+        });
+        
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+        
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+        
+        function setTheme(theme) {
+            state.currentTheme = theme;
+            document.documentElement.setAttribute('data-theme', theme);
+            
+            // Update theme buttons
+            document.querySelectorAll('[data-theme]').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.theme === theme) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Apply theme to iframe
+            try {
+                if (state.iframe.contentDocument) {
+                    state.iframe.contentDocument.documentElement.setAttribute('data-theme', theme);
+                }
+            } catch (e) {
+                console.log('Cannot access iframe content directly');
+            }
+            
+            updateDebugOverlay();
+        }
+        
+        function toggleTheme() {
+            const newTheme = state.currentTheme === 'light' ? 'dark' : 'light';
+            setTheme(newTheme);
+        }
+        
+        function setViewport(viewport) {
+            state.currentViewport = viewport;
+            const container = document.getElementById('screen-viewport');
+            const title = document.getElementById('viewport-title');
+            const size = document.getElementById('viewport-size');
+            
+            // Remove all viewport classes
+            container.className = 'screen-viewport';
+            
+            // Add new viewport class and update labels
+            switch (viewport) {
+                case 'mobile':
+                    container.classList.add('mobile');
+                    title.textContent = 'Mobile Viewport';
+                    size.textContent = '375×667px';
+                    break;
+                case 'tablet':
+                    container.classList.add('tablet');
+                    title.textContent = 'Tablet Viewport';
+                    size.textContent = '768×1024px';
+                    break;
+                case 'desktop':
+                default:
+                    container.classList.add('desktop');
+                    title.textContent = 'Desktop Viewport';
+                    size.textContent = 'Responsive';
+                    break;
+            }
+            
+            updateDebugOverlay();
+        }
+        
+        function setCustomViewport() {
+            const width = document.getElementById('custom-width').value;
+            const height = document.getElementById('custom-height').value;
+            
+            if (width && height) {
+                const container = document.getElementById('screen-viewport');
+                container.className = 'screen-viewport';
+                container.style.width = width + 'px';
+                container.style.height = height + 'px';
+                
+                document.getElementById('viewport-title').textContent = 'Custom Viewport';
+                document.getElementById('viewport-size').textContent = `${width}×${height}px`;
+                
+                state.currentViewport = 'custom';
+                updateDebugOverlay();
+            }
+        }
+        
+        function showScreen(screenId) {
+            state.currentScreen = screenId;
+            
+            // Update active screen button
+            document.querySelectorAll('.screen-item').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.screen === screenId) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Navigate iframe to screen
+            try {
+                if (state.iframe.contentWindow) {
+                    // Try to call the app's navigation function
+                    const navigateScript = `
+                        if (window.uiManager && typeof window.uiManager.showScreen === 'function') {
+                            window.uiManager.showScreen('${screenId}');
+                        } else if (window.showScreen) {
+                            window.showScreen('${screenId}');
+                        } else {
+                            // Fallback DOM manipulation
+                            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                            const target = document.getElementById('${screenId}');
+                            if (target) target.classList.add('active');
+                        }
+                    `;
+                    
+                    state.iframe.contentWindow.eval(navigateScript);
+                }
+            } catch (e) {
+                console.log('Cannot control iframe navigation:', e.message);
+            }
+            
+            updateDebugOverlay();
+        }
+        
+        function refreshViewport() {
+            showLoading();
+            state.iframe.src = state.iframe.src;
+        }
+        
+        function updateDebugOverlay() {
+            const overlay = document.getElementById('debug-overlay');
+            overlay.textContent = `Screen: ${state.currentScreen} | Theme: ${state.currentTheme} | Viewport: ${state.currentViewport}`;
+        }
+        
+        function injectCSS() {
+            const css = document.getElementById('css-input').value;
+            try {
+                if (state.iframe.contentDocument) {
+                    let styleEl = state.iframe.contentDocument.getElementById('debug-injected-css');
+                    if (!styleEl) {
+                        styleEl = state.iframe.contentDocument.createElement('style');
+                        styleEl.id = 'debug-injected-css';
+                        state.iframe.contentDocument.head.appendChild(styleEl);
+                    }
+                    styleEl.textContent = css;
+                }
+            } catch (e) {
+                alert('Cannot inject CSS: ' + e.message);
+            }
+        }
+        
+        function clearCSS() {
+            document.getElementById('css-input').value = '';
+            try {
+                if (state.iframe.contentDocument) {
+                    const styleEl = state.iframe.contentDocument.getElementById('debug-injected-css');
+                    if (styleEl) {
+                        styleEl.remove();
+                    }
+                }
+            } catch (e) {
+                console.log('Cannot clear CSS:', e.message);
+            }
+        }
+        
+        function injectDebugStyles() {
+            try {
+                if (state.iframe.contentDocument) {
+                    const debugCSS = `
+                        /* Debug mode styles */
+                        .debug-mode * {
+                            outline: 1px dashed rgba(255, 0, 0, 0.3) !important;
+                        }
+                        .debug-mode .screen:not(.active) {
+                            display: block !important;
+                            opacity: 0.3 !important;
+                            pointer-events: none !important;
+                        }
+                    `;
+                    
+                    const styleEl = state.iframe.contentDocument.createElement('style');
+                    styleEl.id = 'debug-framework-css';
+                    styleEl.textContent = debugCSS;
+                    state.iframe.contentDocument.head.appendChild(styleEl);
+                }
+            } catch (e) {
+                console.log('Cannot inject debug styles:', e.message);
+            }
+        }
+        
+        function toggleDevMode() {
+            state.devMode = !state.devMode;
+            try {
+                if (state.iframe.contentDocument) {
+                    if (state.devMode) {
+                        state.iframe.contentDocument.body.classList.add('debug-mode');
+                    } else {
+                        state.iframe.contentDocument.body.classList.remove('debug-mode');
+                    }
+                }
+            } catch (e) {
+                console.log('Cannot toggle dev mode:', e.message);
+            }
+        }
+        
+        function takeScreenshot() {
+            alert('To take a screenshot:\\n1. Right-click on the viewport\\n2. Select "Save image as..."\\n\\nAlternatively, use browser dev tools to capture specific elements.');
+        }
+        
+        // Handle iframe communication
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'screenChanged') {
+                console.log('Screen changed to:', event.data.screenId);
+                // Sync UI state
+                state.currentScreen = event.data.screenId;
+                updateDebugOverlay();
+            }
+        });
+    </script>
+</body>
+</html>

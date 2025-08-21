@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizMaster Pro - UI Debug Showcase</title>
+    
+    <!-- Import main app CSS -->
+    <link rel="stylesheet" href="../public/css/main.css">
+    
+    <!-- Optimized font loading -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Debug showcase specific styles -->
+    <style>
+        /* Override app container to show multiple screens */
+        .debug-container {
+            max-width: none !important;
+            width: 100% !important;
+            padding: 20px;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        
+        .debug-header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .debug-controls {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .control-group label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .control-group select, .control-group button {
+            padding: 8px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            background: white;
+            color: #333;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .control-group select:hover, .control-group button:hover {
+            border-color: #4285f4;
+        }
+        
+        .control-group button.active {
+            background: #4285f4;
+            color: white;
+            border-color: #4285f4;
+        }
+        
+        .viewport-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        
+        .viewport-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .viewport-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .viewport-size {
+            color: #666;
+            font-size: 14px;
+            background: #f8f9fa;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+        
+        .screen-viewport {
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        .screen-viewport.mobile {
+            width: 375px;
+            height: 667px;
+        }
+        
+        .screen-viewport.tablet {
+            width: 768px;
+            height: 1024px;
+        }
+        
+        .screen-viewport.desktop {
+            width: 100%;
+            height: 900px;
+        }
+        
+        .screen-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+        
+        .screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #666;
+            backdrop-filter: blur(2px);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Theme specific styles */
+        [data-theme="dark"] .debug-container {
+            background: #1a1a1a;
+        }
+        
+        [data-theme="dark"] .debug-header,
+        [data-theme="dark"] .debug-controls,
+        [data-theme="dark"] .viewport-container {
+            background: #2d2d2d;
+            color: #ffffff;
+        }
+        
+        [data-theme="dark"] .control-group select,
+        [data-theme="dark"] .control-group button {
+            background: #3d3d3d;
+            color: #ffffff;
+            border-color: #555;
+        }
+        
+        [data-theme="dark"] .viewport-header {
+            border-bottom-color: #555;
+        }
+        
+        [data-theme="dark"] .screen-viewport {
+            border-color: #555;
+        }
+        
+        /* Screen selection grid */
+        .screen-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .screen-button {
+            padding: 15px;
+            background: white;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .screen-button:hover {
+            border-color: #4285f4;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.15);
+        }
+        
+        .screen-button.active {
+            background: #4285f4;
+            color: white;
+            border-color: #4285f4;
+        }
+        
+        [data-theme="dark"] .screen-button {
+            background: #3d3d3d;
+            color: #ffffff;
+            border-color: #555;
+        }
+        
+        [data-theme="dark"] .screen-button.active {
+            background: #4285f4;
+            border-color: #4285f4;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <div class="debug-header">
+            <h1>🎮 QuizMaster Pro - UI Debug Showcase</h1>
+            <p>Visual debugging interface for all app screens and components</p>
+            <p><strong>Live Preview:</strong> Navigate between screens and test different viewports and themes</p>
+        </div>
+        
+        <div class="debug-controls">
+            <div class="control-group">
+                <label>Theme:</label>
+                <button type="button" onclick="setTheme('light')" class="theme-btn active" data-theme="light">☀️ Light</button>
+                <button type="button" onclick="setTheme('dark')" class="theme-btn" data-theme="dark">🌙 Dark</button>
+            </div>
+            
+            <div class="control-group">
+                <label>Viewport:</label>
+                <select id="viewport-select" onchange="setViewport(this.value)">
+                    <option value="desktop">🖥️ Desktop (Responsive)</option>
+                    <option value="tablet">📱 Tablet (768×1024)</option>
+                    <option value="mobile">📱 Mobile (375×667)</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <button type="button" onclick="openMainApp()" style="background: #28a745; color: white; border-color: #28a745;">
+                    🚀 Open Main App
+                </button>
+            </div>
+        </div>
+        
+        <div class="screen-grid">
+            <div class="screen-button active" onclick="showScreen('main-menu')" data-screen="main-menu">
+                🏠 Main Menu
+            </div>
+            <div class="screen-button" onclick="showScreen('host-screen')" data-screen="host-screen">
+                ✏️ Quiz Creation
+            </div>
+            <div class="screen-button" onclick="showScreen('game-lobby')" data-screen="game-lobby">
+                ⏳ Host Lobby
+            </div>
+            <div class="screen-button" onclick="showScreen('host-game-screen')" data-screen="host-game-screen">
+                🎮 Host Game Control
+            </div>
+            <div class="screen-button" onclick="showScreen('join-screen')" data-screen="join-screen">
+                🚪 Player Entry
+            </div>
+            <div class="screen-button" onclick="showScreen('game-browser')" data-screen="game-browser">
+                📚 Game Browser
+            </div>
+            <div class="screen-button" onclick="showScreen('player-lobby')" data-screen="player-lobby">
+                👥 Player Lobby
+            </div>
+            <div class="screen-button" onclick="showScreen('player-game-screen')" data-screen="player-game-screen">
+                🎯 Player Game
+            </div>
+            <div class="screen-button" onclick="showScreen('leaderboard-screen')" data-screen="leaderboard-screen">
+                🏆 Leaderboard
+            </div>
+            <div class="screen-button" onclick="showScreen('player-final-screen')" data-screen="player-final-screen">
+                📊 Final Results
+            </div>
+        </div>
+        
+        <div class="viewport-container">
+            <div class="viewport-header">
+                <div class="viewport-title" id="viewport-title">Desktop Viewport</div>
+                <div class="viewport-size" id="viewport-size">Responsive</div>
+            </div>
+            
+            <div class="screen-viewport desktop" id="screen-viewport">
+                <iframe id="app-iframe" class="screen-iframe" src="../public/index.html"></iframe>
+                <div class="screen-overlay hidden" id="screen-overlay">
+                    Loading QuizMaster Pro...
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; margin-top: 30px;">
+            <h3>📋 Usage Instructions</h3>
+            <div style="text-align: left; max-width: 800px; margin: 0 auto;">
+                <p><strong>🎯 Purpose:</strong> This interface allows you to visually debug all QuizMaster Pro screens without running complete games.</p>
+                <p><strong>🔧 Controls:</strong></p>
+                <ul>
+                    <li><strong>Theme Toggle:</strong> Switch between light and dark themes instantly</li>
+                    <li><strong>Viewport Selector:</strong> Test responsive design at different screen sizes</li>
+                    <li><strong>Screen Buttons:</strong> Navigate directly to any app screen</li>
+                    <li><strong>Open Main App:</strong> Launch the full application in a new tab</li>
+                </ul>
+                <p><strong>💡 Tips:</strong></p>
+                <ul>
+                    <li>Use browser dev tools (F12) for CSS inspection and live editing</li>
+                    <li>Test mobile responsiveness using the mobile/tablet viewports</li>
+                    <li>Check theme consistency across all screens</li>
+                    <li>Verify component layouts and spacing</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentViewport = 'desktop';
+        let currentTheme = 'light';
+        let currentScreen = 'main-menu';
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial theme
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            
+            // Wait for iframe to load then navigate to first screen
+            const iframe = document.getElementById('app-iframe');
+            iframe.addEventListener('load', function() {
+                setTimeout(() => {
+                    showScreen('main-menu');
+                }, 1000);
+            });
+        });
+        
+        function setTheme(theme) {
+            currentTheme = theme;
+            document.documentElement.setAttribute('data-theme', theme);
+            
+            // Update theme buttons
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.theme === theme) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Apply theme to iframe content
+            try {
+                const iframe = document.getElementById('app-iframe');
+                if (iframe.contentDocument) {
+                    iframe.contentDocument.documentElement.setAttribute('data-theme', theme);
+                }
+            } catch (e) {
+                console.log('Cannot access iframe content - this is normal for cross-origin content');
+            }
+        }
+        
+        function setViewport(viewport) {
+            currentViewport = viewport;
+            const container = document.getElementById('screen-viewport');
+            const title = document.getElementById('viewport-title');
+            const size = document.getElementById('viewport-size');
+            
+            // Remove all viewport classes
+            container.className = 'screen-viewport';
+            
+            // Add new viewport class and update labels
+            switch (viewport) {
+                case 'mobile':
+                    container.classList.add('mobile');
+                    title.textContent = 'Mobile Viewport';
+                    size.textContent = '375×667px';
+                    break;
+                case 'tablet':
+                    container.classList.add('tablet');
+                    title.textContent = 'Tablet Viewport';
+                    size.textContent = '768×1024px';
+                    break;
+                case 'desktop':
+                default:
+                    container.classList.add('desktop');
+                    title.textContent = 'Desktop Viewport';
+                    size.textContent = 'Responsive';
+                    break;
+            }
+        }
+        
+        function showScreen(screenId) {
+            currentScreen = screenId;
+            
+            // Update active screen button
+            document.querySelectorAll('.screen-button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.screen === screenId) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Navigate iframe to screen
+            try {
+                const iframe = document.getElementById('app-iframe');
+                if (iframe.contentWindow && iframe.contentWindow.uiManager) {
+                    iframe.contentWindow.uiManager.showScreen(screenId);
+                } else {
+                    // Fallback: try to manipulate DOM directly
+                    console.log('Attempting to navigate to screen:', screenId);
+                    // The iframe will need to be loaded with the main app for this to work
+                }
+            } catch (e) {
+                console.log('Cannot control iframe navigation - iframe may still be loading');
+            }
+        }
+        
+        function openMainApp() {
+            window.open('../public/index.html', '_blank');
+        }
+        
+        // Handle iframe communication
+        window.addEventListener('message', function(event) {
+            // Handle messages from iframe if needed
+            if (event.data && event.data.type === 'screenChanged') {
+                // Update UI to reflect screen change
+                console.log('Screen changed to:', event.data.screenId);
+            }
+        });
+    </script>
+</body>
+</html>

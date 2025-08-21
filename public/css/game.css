@@ -1247,6 +1247,72 @@
     overflow: hidden;
 }
 
+/* Mobile Results Screens - Hide header ghost space for in-game consistency */
+@media (max-width: 768px) {
+    /* Quiz Results (Leaderboard) - Hide header like during gameplay */
+    #leaderboard-screen header,
+    #player-final-screen header {
+        display: none !important;
+    }
+    
+    #leaderboard-screen .horizontal-toolbar,
+    #player-final-screen .horizontal-toolbar {
+        display: none !important;
+    }
+    
+    /* Quiz Results (Leaderboard) - Mobile fullscreen layout */
+    #leaderboard-screen .container {
+        padding: 0 !important;
+        margin: 0 !important;
+        min-height: 100vh !important;
+        height: auto !important;
+        width: 100vw !important;
+        max-width: none !important;
+    }
+    
+    #leaderboard-screen .leaderboard-container {
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        border-radius: 0;
+        box-shadow: none;
+        background: linear-gradient(135deg, 
+            rgba(59, 130, 246, 0.15) 0%, 
+            rgba(147, 51, 234, 0.15) 100%);
+    }
+    
+    /* Final Results (Player) - Mobile fullscreen layout */
+    #player-final-screen .container {
+        padding: 0 !important;
+        margin: 0 !important;
+        min-height: 100vh !important;
+        height: auto !important;
+        width: 100vw !important;
+        max-width: none !important;
+    }
+    
+    #player-final-screen .player-final-container {
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+    
+    /* Ensure content is still scrollable if too tall */
+    #leaderboard-screen .leaderboard-container,
+    #player-final-screen .player-final-container {
+        overflow-y: auto;
+        max-height: 100vh;
+    }
+}
+
 .leaderboard-container::before {
     content: '';
     position: absolute;
