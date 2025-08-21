@@ -130,7 +130,9 @@ app.use(compression({
   memLevel: 8
 }));
 
-app.use(express.json());
+// Body parsing middleware - configure properly for file uploads
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Disable caching for development
 app.use((req, res, next) => {
@@ -215,11 +217,16 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: CONFIG.LIMITS.MAX_FILE_SIZE },
+  limits: { 
+    fileSize: CONFIG.LIMITS.MAX_FILE_SIZE,
+    files: 1 // Only allow 1 file at a time
+  },
   fileFilter: (req, file, cb) => {
+    logger.debug(`Upload filter check: ${file.originalname}, ${file.mimetype}, ${file.size || 'unknown size'}`);
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
+      logger.warn(`Rejected file: ${file.originalname} - invalid type: ${file.mimetype}`);
       cb(new Error('Only image files are allowed!'), false);
     }
   }
@@ -232,7 +239,35 @@ app.post('/upload', upload.single('image'), (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
     
-    logger.info(`File uploaded successfully: ${req.file.filename} (${req.file.mimetype}, ${req.file.size} bytes)`);
+    // Enhanced debugging for Ubuntu binary file issues
+    logger.info(`File uploaded successfully: ${req.file.filename}`);
+    logger.debug(`Upload details:`, {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      destination: req.file.destination,
+      filename: req.file.filename,
+      path: req.file.path
+    });
+    
+    // Verify the file was actually written correctly
+    if (fs.existsSync(req.file.path)) {
+      const stats = fs.statSync(req.file.path);
+      logger.debug(`File verification: ${stats.size} bytes on disk`);
+      
+      if (stats.size === 0) {
+        logger.error('WARNING: Uploaded file is empty (0 bytes)!');
+        return res.status(500).json({ error: 'File upload failed - empty file' });
+      }
+      
+      if (stats.size !== req.file.size) {
+        logger.warn(`File size mismatch: expected ${req.file.size}, got ${stats.size}`);
+      }
+    } else {
+      logger.error(`File not found after upload: ${req.file.path}`);
+      return res.status(500).json({ error: 'File upload failed - file not saved' });
+    }
+    
     res.json({ filename: req.file.filename, url: `/uploads/${req.file.filename}` });
   } catch (error) {
     logger.error('Upload error:', error);
