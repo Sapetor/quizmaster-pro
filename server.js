@@ -155,7 +155,10 @@ app.use(express.static('public', {
     
     // Longer caching for JS/CSS files, especially on mobile
     if (path.endsWith('.js') || path.endsWith('.css')) {
-      const maxAge = isMobile ? 172800 : 86400; // 48 hours mobile, 24 hours desktop
+      // Reduced cache time for development to see changes quickly
+      const maxAge = process.env.NODE_ENV === 'production' 
+        ? (isMobile ? 172800 : 86400) // Production: 48 hours mobile, 24 hours desktop
+        : (isMobile ? 300 : 300);     // Development: 5 minutes for quick updates
       res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
       res.setHeader('Vary', 'Accept-Encoding, User-Agent');
     }
