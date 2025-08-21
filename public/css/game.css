@@ -2709,6 +2709,11 @@
         gap: 20px;
     }
     
+    /* Fix gap at top of player final screen on mobile */
+    .player-final-container {
+        padding-top: 8px; /* Reduced from 16px to eliminate excessive gap */
+    }
+    
     .leaderboard,
     .final-leaderboard {
         padding: 24px 16px;
