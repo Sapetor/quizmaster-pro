@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     await errorBoundary.safeNetworkOperation(async () => {
         // Initialize translation manager first
-        const savedLanguage = localStorage.getItem('language') || 'en';
+        const savedLanguage = localStorage.getItem('language') || 'es';
         logger.debug('Initializing translation manager with language:', savedLanguage);
         
         const success = await translationManager.initialize(savedLanguage);

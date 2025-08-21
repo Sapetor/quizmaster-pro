@@ -9,13 +9,13 @@ import { toastNotifications } from './toast-notifications.js';
 
 class TranslationManager {
     constructor() {
-        this.currentLanguage = 'en';
+        this.currentLanguage = 'es';
         this.loadedTranslations = new Map();
-        this.defaultLanguage = 'en';
+        this.defaultLanguage = 'es';
         this.loadingPromises = new Map();
         
         // Supported languages
-        this.supportedLanguages = ['en', 'es', 'pl', 'fr', 'de', 'it', 'pt', 'ja', 'zh'];
+        this.supportedLanguages = ['es', 'en', 'pl', 'fr', 'de', 'it', 'pt', 'ja', 'zh'];
         
         logger.debug('Translation manager initialized');
     }
