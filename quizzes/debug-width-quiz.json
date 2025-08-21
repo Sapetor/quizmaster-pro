@@ -7,8 +7,7 @@
       "type": "multiple-choice",
       "options": ["15", "17", "13", "20"],
       "correctAnswer": 1,
-      "points": 10,
-      "image": "uploads/1751365738196-114392663.jpeg"
+      "points": 10
     },
     {
       "question": "Solve this mathematical equation: $$\\int_{0}^{1} x^2 dx = ?$$",
@@ -29,8 +28,7 @@
       "type": "multiple-choice",
       "options": ["$$0$$", "$$1$$", "$$\\infty$$", "undefined"],
       "correctAnswer": 1,
-      "points": 10,
-      "image": "uploads/1751365738196-114392663.jpeg"
+      "points": 10
     }
   ]
 }

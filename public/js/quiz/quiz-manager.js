@@ -1067,16 +1067,14 @@ export class QuizManager {
      * Set up image error and load handlers
      */
     setupImageHandlers(imageElement, imagePreview, imageData) {
-        // Add error handling for missing images
-        imageElement.onerror = () => {
-            this.handleImageLoadError(imageElement, imagePreview, imageData);
-        };
-        
-        // Add load success handler
+        // Add load success handler first
         imageElement.onload = () => {
             logger.debug('✅ Quiz builder image loaded successfully:', imageData);
             imagePreview.style.display = 'block';
         };
+        
+        // Set up retry logic similar to preview renderer
+        this.loadImageWithRetry(imageElement, imageElement.src, 3, 1, imagePreview, imageData);
     }
 
     /**
@@ -1097,6 +1095,40 @@ export class QuizManager {
         // Keep preview visible with error message
         imagePreview.style.display = 'block';
         logger.debug('Shown image error message in quiz builder');
+    }
+
+    /**
+     * Load image with retry logic for WSL environments (similar to preview renderer)
+     * @param {HTMLImageElement} img - Image element
+     * @param {string} src - Image source URL
+     * @param {number} maxRetries - Maximum retry attempts
+     * @param {number} attempt - Current attempt number
+     * @param {HTMLElement} imagePreview - Image preview container for error handling
+     * @param {string} imageData - Original image data for error display
+     */
+    loadImageWithRetry(img, src, maxRetries = 3, attempt = 1, imagePreview = null, imageData = '') {
+        img.onerror = () => {
+            if (attempt < maxRetries) {
+                logger.warn(`Quiz builder image load failed, retrying (${attempt}/${maxRetries}): ${src}`);
+                // Progressive delay: 100ms, 200ms, 300ms for WSL file system delays
+                setTimeout(() => {
+                    this.loadImageWithRetry(img, src, maxRetries, attempt + 1, imagePreview, imageData);
+                }, 100 * attempt);
+            } else {
+                logger.error(`Quiz builder image failed to load after ${maxRetries} attempts: ${src}`);
+                this.handleImageLoadError(img, imagePreview, imageData || src);
+            }
+        };
+        
+        // Set the source to trigger load/error event
+        if (attempt === 1) {
+            // Only set src on first attempt, subsequent attempts reuse existing src
+            img.src = src;
+        } else {
+            // Force reload by appending cache buster
+            const separator = src.includes('?') ? '&' : '?';
+            img.src = src + separator + '_retry=' + attempt + '&_t=' + Date.now();
+        }
     }
 
     /**
