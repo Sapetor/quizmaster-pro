@@ -126,6 +126,19 @@ export class UIManager {
                         }
                     }, 300);
                     break;
+                case 'player-final-screen':
+                case 'leaderboard-screen':
+                    // Restore header for final results screens to prevent blank gap
+                    if (header) {
+                        header.style.transform = '';
+                        header.style.opacity = '';
+                        header.style.pointerEvents = '';
+                        header.style.position = '';
+                        header.style.top = '';
+                        header.style.zIndex = '';
+                        header.style.transition = 'all 0.3s ease-in-out';
+                    }
+                    break;
                 case 'game-browser':
                 case 'join-screen':
                     uiStateManager.setState('lobby');
