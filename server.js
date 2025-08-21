@@ -199,6 +199,10 @@ if (!fs.existsSync('quizzes')) {
 if (!fs.existsSync('results')) {
   fs.mkdirSync('results');
 }
+if (!fs.existsSync('public/uploads')) {
+  fs.mkdirSync('public/uploads', { recursive: true });
+  logger.info('Created uploads directory: public/uploads');
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -224,8 +228,11 @@ const upload = multer({
 app.post('/upload', upload.single('image'), (req, res) => {
   try {
     if (!req.file) {
+      logger.warn('Upload attempt with no file');
       return res.status(400).json({ error: 'No file uploaded' });
     }
+    
+    logger.info(`File uploaded successfully: ${req.file.filename} (${req.file.mimetype}, ${req.file.size} bytes)`);
     res.json({ filename: req.file.filename, url: `/uploads/${req.file.filename}` });
   } catch (error) {
     logger.error('Upload error:', error);
