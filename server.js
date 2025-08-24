@@ -142,7 +142,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// Static file serving with mobile-optimized caching headers
+// Static file serving with mobile-optimized caching headers and proper MIME types
 app.use(express.static('public', {
   // Balanced caching for mobile and WSL performance
   maxAge: process.env.NODE_ENV === 'production' ? '1y' : '4h', // Increased dev cache for mobile
@@ -150,19 +150,40 @@ app.use(express.static('public', {
   lastModified: true,   // Include Last-Modified headers
   cacheControl: true,   // Enable Cache-Control headers
   
-  // Mobile-optimized headers
+  // Mobile-optimized headers with proper MIME types for ES6 modules
   setHeaders: (res, path, stat) => {
     const userAgent = res.req.headers['user-agent'] || '';
     const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
     
-    // Longer caching for JS/CSS files, especially on mobile
-    if (path.endsWith('.js') || path.endsWith('.css')) {
+    // Critical fix: Proper MIME types for JavaScript modules
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
       // Reduced cache time for development to see changes quickly
       const maxAge = process.env.NODE_ENV === 'production' 
         ? (isMobile ? 172800 : 86400) // Production: 48 hours mobile, 24 hours desktop
         : (isMobile ? 300 : 300);     // Development: 5 minutes for quick updates
       res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
       res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+    }
+    
+    // CSS files
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      const maxAge = process.env.NODE_ENV === 'production' 
+        ? (isMobile ? 172800 : 86400)
+        : (isMobile ? 300 : 300);
+      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
+      res.setHeader('Vary', 'Accept-Encoding, User-Agent');
+    }
+    
+    // HTML files
+    if (path.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    }
+    
+    // JSON files
+    if (path.endsWith('.json')) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
     }
     
     // Optimize image caching for mobile bandwidth
