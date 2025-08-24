@@ -11,11 +11,14 @@ const os = require('os');
 const compression = require('compression');
 const { CORSValidationService } = require('./services/cors-validation-service');
 
+// Detect production environment (Railway sets NODE_ENV automatically)
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
+
 // Server-side logging utility
 const DEBUG = {
-    ENABLED: true, // Set to false for production
+    ENABLED: !isProduction, // Disable for production
     LEVELS: { ERROR: 1, WARN: 2, INFO: 3, DEBUG: 4 },
-    CURRENT_LEVEL: 4 // Show all logs (1=errors only, 2=+warnings, 3=+info, 4=+debug)
+    CURRENT_LEVEL: isProduction ? 1 : 4 // Only errors in production, all logs in development
 };
 
 const logger = {
@@ -134,18 +137,21 @@ app.use(compression({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Disable caching for development
+// Conditional caching based on environment
 app.use((req, res, next) => {
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.set('Expires', '-1');
-    res.set('Pragma', 'no-cache');
+    // Only disable caching for development, not production
+    if (!isProduction) {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.set('Expires', '-1');
+        res.set('Pragma', 'no-cache');
+    }
     next();
 });
 
 // Static file serving with mobile-optimized caching headers and proper MIME types
 app.use(express.static('public', {
   // Balanced caching for mobile and WSL performance
-  maxAge: process.env.NODE_ENV === 'production' ? '1y' : '4h', // Increased dev cache for mobile
+  maxAge: isProduction ? '1y' : '4h', // Increased dev cache for mobile
   etag: true,           // Enable ETags for efficient cache validation
   lastModified: true,   // Include Last-Modified headers
   cacheControl: true,   // Enable Cache-Control headers
@@ -159,7 +165,7 @@ app.use(express.static('public', {
     if (path.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
       // Reduced cache time for development to see changes quickly
-      const maxAge = process.env.NODE_ENV === 'production' 
+      const maxAge = isProduction 
         ? (isMobile ? 172800 : 86400) // Production: 48 hours mobile, 24 hours desktop
         : (isMobile ? 300 : 300);     // Development: 5 minutes for quick updates
       res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
@@ -169,7 +175,7 @@ app.use(express.static('public', {
     // CSS files
     if (path.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css; charset=utf-8');
-      const maxAge = process.env.NODE_ENV === 'production' 
+      const maxAge = isProduction 
         ? (isMobile ? 172800 : 86400)
         : (isMobile ? 300 : 300);
       res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
@@ -214,6 +220,34 @@ app.use(express.static('public', {
     }
   }
 }));
+
+// Error handling middleware for static files
+app.use((err, req, res, next) => {
+  if (err) {
+    logger.error('Static file serving error:', err);
+    logger.error('Request path:', req.path);
+    logger.error('Request method:', req.method);
+  }
+  next(err);
+});
+
+// Special handling for JavaScript files to prevent 500 errors
+app.get('/js/*', (req, res, next) => {
+  const filePath = path.join(__dirname, 'public', req.path);
+  
+  // Check if file exists before attempting to serve
+  if (!fs.existsSync(filePath)) {
+    logger.warn(`JavaScript file not found: ${req.path}`);
+    return res.status(404).send('File not found');
+  }
+  
+  // Set proper headers for JavaScript files
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  
+  // Use express.static for the actual file serving
+  express.static('public')(req, res, next);
+});
 
 // Serve debug tools from debug directory
 app.use('/debug', express.static('debug', {
