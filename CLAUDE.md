@@ -50,6 +50,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 **Results**: Clean game state transitions, working CSV downloads, unified error handling, reduced console noise
 
+**Phase 8 - Railway Cloud Deployment Completed (2025-08):**
+- ✅ **Cloud Deployment Setup**: Successfully deployed to Railway.app with auto-deployment
+- ✅ **CORS Configuration**: Fixed cloud platform domain validation for production access
+- ✅ **Environment Detection**: Smart local vs cloud environment handling
+- ✅ **QR Code Generation**: Environment-aware URLs for mobile internet access
+- ✅ **Docker Optimization**: Fixed build issues and optimized for Railway containers
+- ✅ **Static File Serving**: Proper MIME types and error handling for ES6 modules
+
+**Results**: Fully functional cloud deployment accessible worldwide with mobile-optimized QR codes
+
 **Current Architecture:**
 - **Modular ES6 structure** with proper imports/exports and focused responsibilities
 - **Service-oriented architecture** with dedicated services for common operations
@@ -405,5 +415,87 @@ app.use('/debug', express.static('debug', {
 
 ---
 
-*Last updated: August 2025 - Phase 8 debug tools and mobile header consistency completed*
+## Railway Cloud Deployment
+
+### 🚀 **Auto-Deployment Setup (Active)**
+
+The repository is **connected to Railway.app** with automatic deployment:
+
+**Auto-Deploy Trigger:**
+- **Any push to `modular-architecture` branch** triggers immediate Railway redeploy
+- **Deployment time**: ~2-3 minutes
+- **Zero downtime**: Railway handles container switching
+
+**Branch Configuration:**
+- **Source Branch**: `modular-architecture` (not `main`)
+- **Deploy URL**: `https://quizmaster-pro-production.up.railway.app`
+- **Environment**: Production (`RAILWAY_ENVIRONMENT=production`)
+
+### 🔄 **Deployment Workflow:**
+
+```
+Local Changes → Git Push → Railway Detects → Auto Build → Auto Deploy → Live Update
+```
+
+**Steps that happen automatically:**
+1. **Code Push**: `git push origin modular-architecture`
+2. **Railway Detection**: Webhook triggers within seconds
+3. **Docker Build**: Uses `Dockerfile` to build container
+4. **Dependency Install**: `npm ci --only=production`
+5. **CSS Build**: `npm run build:prod`
+6. **Container Deploy**: New version goes live
+7. **Health Check**: Railway verifies app is running
+
+### ⚠️ **Important Notes:**
+
+**Always Active:**
+- This auto-deployment **works regardless of Claude context**
+- **Even after clearing conversations**, pushes still trigger deploys
+- **No manual Railway dashboard interaction needed**
+
+**Storage Behavior:**
+- **Ephemeral Storage**: Uploaded images deleted on each deploy
+- **Persistent Data**: Quiz files in `quizzes/` survive if using volumes
+- **Environment Variables**: Railway preserves API keys and settings
+
+**Branch Safety:**
+- **Only `modular-architecture` branch** triggers deployment
+- **`main` branch pushes**: Do not affect Railway deployment
+- **Other branches**: No auto-deployment configured
+
+### 🛠️ **Managing Deployment:**
+
+**To Deploy Changes:**
+```bash
+git add .
+git commit -m "Your changes"
+git push origin modular-architecture  # This triggers Railway deploy
+```
+
+**To Prevent Accidental Deploys:**
+```bash
+git push origin feature-branch  # Safe - won't deploy
+git push origin main           # Safe - won't deploy  
+```
+
+**To Check Deployment Status:**
+- Visit Railway dashboard: railway.app
+- Check build logs in Railway console
+- Monitor live URL: `https://quizmaster-pro-production.up.railway.app`
+
+### 📊 **Resource Usage (Railway):**
+
+**Current Tier**: Basic (512MB RAM / 2 vCPU)
+**Storage**: 10GB ephemeral (free)
+**Monthly Cost**: ~$1.50-4.50/month depending on usage
+**Concurrent Users**: 50-200 players comfortably
+
+### 🔧 **Environment Detection:**
+
+The app automatically detects deployment environment:
+- **Local**: Uses local IP for QR codes, development CORS
+- **Railway**: Uses public domain for QR codes, production CORS
+- **Other Clouds**: Supports Vercel, Heroku, etc.
+
+*Last updated: August 2025 - Phase 8 cloud deployment and Railway integration completed*
 - I am running a server in a windows terminal of the same folder, so there is no need to start it
