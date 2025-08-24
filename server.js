@@ -14,11 +14,11 @@ const { CORSValidationService } = require('./services/cors-validation-service');
 // Detect production environment (Railway sets NODE_ENV automatically)
 const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
 
-// Server-side logging utility
+// Server-side logging utility - temporarily verbose for debugging
 const DEBUG = {
-    ENABLED: !isProduction, // Disable for production
+    ENABLED: true, // Always enabled for debugging
     LEVELS: { ERROR: 1, WARN: 2, INFO: 3, DEBUG: 4 },
-    CURRENT_LEVEL: isProduction ? 1 : 4 // Only errors in production, all logs in development
+    CURRENT_LEVEL: 4 // Show all logs for debugging Railway issues
 };
 
 const logger = {
@@ -233,20 +233,43 @@ app.use((err, req, res, next) => {
 
 // Special handling for JavaScript files to prevent 500 errors
 app.get('/js/*', (req, res, next) => {
-  const filePath = path.join(__dirname, 'public', req.path);
-  
-  // Check if file exists before attempting to serve
-  if (!fs.existsSync(filePath)) {
-    logger.warn(`JavaScript file not found: ${req.path}`);
-    return res.status(404).send('File not found');
+  try {
+    const filePath = path.join(__dirname, 'public', req.path);
+    logger.info(`JS request: ${req.path} -> ${filePath}`);
+    
+    // Check if file exists before attempting to serve
+    if (!fs.existsSync(filePath)) {
+      logger.error(`JavaScript file not found: ${req.path} (${filePath})`);
+      return res.status(404).json({ 
+        error: 'File not found', 
+        path: req.path,
+        fullPath: filePath,
+        exists: false 
+      });
+    }
+    
+    // Log file info
+    const stats = fs.statSync(filePath);
+    logger.info(`JS file found: ${req.path}, size: ${stats.size} bytes`);
+    
+    // Set proper headers for JavaScript files
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+    res.setHeader('Cache-Control', isProduction ? 'public, max-age=86400' : 'no-cache');
+    
+    // Read and send file directly to avoid express.static issues
+    fs.readFile(filePath, 'utf8', (err, data) => {
+      if (err) {
+        logger.error(`Error reading JS file ${req.path}:`, err);
+        return res.status(500).json({ error: 'Failed to read file', details: err.message });
+      }
+      res.send(data);
+    });
+    
+  } catch (error) {
+    logger.error(`JS file handler error for ${req.path}:`, error);
+    res.status(500).json({ error: 'Server error', details: error.message });
   }
-  
-  // Set proper headers for JavaScript files
-  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-  
-  // Use express.static for the actual file serving
-  express.static('public')(req, res, next);
 });
 
 // Serve debug tools from debug directory
@@ -1125,6 +1148,75 @@ app.post('/api/claude/generate', async (req, res) => {
   }
 });
 
+
+// Debug endpoint to check file existence
+app.get('/api/debug/files', (req, res) => {
+  const checkFiles = [
+    'js/main.js',
+    'js/core/app.js', 
+    'js/utils/translation-manager.js',
+    'css/main.css',
+    'index.html'
+  ];
+  
+  const fileStatus = {};
+  checkFiles.forEach(file => {
+    const fullPath = path.join(__dirname, 'public', file);
+    fileStatus[file] = {
+      exists: fs.existsSync(fullPath),
+      path: fullPath,
+      stats: fs.existsSync(fullPath) ? fs.statSync(fullPath) : null
+    };
+  });
+  
+  res.json({
+    environment: process.env.NODE_ENV,
+    railway_env: process.env.RAILWAY_ENVIRONMENT,
+    isProduction: isProduction,
+    cwd: process.cwd(),
+    __dirname: __dirname,
+    publicPath: path.join(__dirname, 'public'),
+    files: fileStatus
+  });
+});
+
+// Debug endpoint to list public directory contents
+app.get('/api/debug/directory', (req, res) => {
+  const listDirectory = (dir, maxDepth = 2, currentDepth = 0) => {
+    if (currentDepth > maxDepth) return {};
+    
+    try {
+      const items = fs.readdirSync(dir);
+      const result = {};
+      
+      items.forEach(item => {
+        const itemPath = path.join(dir, item);
+        const stat = fs.statSync(itemPath);
+        
+        if (stat.isDirectory() && currentDepth < maxDepth) {
+          result[item] = listDirectory(itemPath, maxDepth, currentDepth + 1);
+        } else {
+          result[item] = {
+            type: stat.isDirectory() ? 'directory' : 'file',
+            size: stat.size,
+            modified: stat.mtime
+          };
+        }
+      });
+      
+      return result;
+    } catch (error) {
+      return { error: error.message };
+    }
+  };
+  
+  const publicDir = path.join(__dirname, 'public');
+  res.json({
+    publicDirectory: publicDir,
+    exists: fs.existsSync(publicDir),
+    contents: fs.existsSync(publicDir) ? listDirectory(publicDir) : null
+  });
+});
 
 // Simple ping endpoint for connection status monitoring with performance info
 app.get('/api/ping', (req, res) => {
