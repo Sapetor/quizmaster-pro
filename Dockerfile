@@ -12,8 +12,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install ALL dependencies (including devDependencies for build process)
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -37,8 +36,7 @@ RUN addgroup -g 1001 -S quizmaster && \
 COPY package*.json ./
 
 # Install only production dependencies
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --only=production && \
+RUN npm ci --only=production && \
     npm cache clean --force
 
 # Copy built application from builder stage
