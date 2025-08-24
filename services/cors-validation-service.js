@@ -33,7 +33,31 @@ class CORSValidationService {
             /^https:\/\/172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}(:\d+)?$/
         ];
 
+        // Cloud platform patterns for production deployment
+        this.cloudPlatformPatterns = [
+            // Railway
+            /^https:\/\/[a-zA-Z0-9-]+-production\.up\.railway\.app$/,
+            /^https:\/\/[a-zA-Z0-9-]+\.railway\.app$/,
+            // Heroku
+            /^https:\/\/[a-zA-Z0-9-]+\.herokuapp\.com$/,
+            // Vercel
+            /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/,
+            // Netlify
+            /^https:\/\/[a-zA-Z0-9-]+\.netlify\.app$/,
+            // DigitalOcean App Platform
+            /^https:\/\/[a-zA-Z0-9-]+\.ondigitalocean\.app$/,
+            // AWS CloudFront/S3
+            /^https:\/\/[a-zA-Z0-9-]+\.cloudfront\.net$/,
+            // Azure Static Web Apps
+            /^https:\/\/[a-zA-Z0-9-]+\.azurestaticapps\.net$/,
+            // Google Cloud Run
+            /^https:\/\/[a-zA-Z0-9-]+-[a-zA-Z0-9-]+\.a\.run\.app$/,
+            // Custom domains (be careful with this pattern)
+            /^https:\/\/[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/
+        ];
+
         this.isDevelopment = process.env.NODE_ENV !== 'production';
+        this.isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
         this.allowedPorts = new Set(['3000', '3001', '8080', '8000']);
     }
 
@@ -53,12 +77,17 @@ class CORSValidationService {
             return true;
         }
 
-        // In development, be more permissive
+        // In development, be more permissive with local networks
         if (this.isDevelopment) {
             return this.isLocalNetworkOrigin(origin);
         }
 
-        // In production, only allow local network origins
+        // In production, allow both local networks AND cloud platforms
+        if (this.isProduction) {
+            return this.isLocalNetworkOrigin(origin) || this.isCloudPlatformOrigin(origin);
+        }
+
+        // Default: only local networks
         return this.isLocalNetworkOrigin(origin);
     }
 
@@ -91,6 +120,35 @@ class CORSValidationService {
             return false;
         } catch (error) {
             logger.error('CORS: Invalid origin URL:', origin, error.message);
+            return false;
+        }
+    }
+
+    /**
+     * Check if origin is from a trusted cloud platform
+     * @param {string} origin - The origin to check
+     * @returns {boolean} - Whether origin is from a trusted cloud platform
+     */
+    isCloudPlatformOrigin(origin) {
+        try {
+            const url = new URL(origin);
+            
+            // Must be HTTPS for cloud platforms (security requirement)
+            if (url.protocol !== 'https:') {
+                return false;
+            }
+
+            // Check against cloud platform patterns
+            for (const pattern of this.cloudPlatformPatterns) {
+                if (pattern.test(origin)) {
+                    logger.info(`CORS: Allowed cloud platform origin: ${origin}`);
+                    return true;
+                }
+            }
+
+            return false;
+        } catch (error) {
+            logger.error('CORS: Invalid cloud platform origin URL:', origin, error.message);
             return false;
         }
     }
@@ -201,9 +259,12 @@ class CORSValidationService {
     logConfiguration() {
         logger.info('CORS Configuration:', {
             environment: this.isDevelopment ? 'development' : 'production',
+            isProduction: this.isProduction,
             allowedOrigins: Array.from(this.allowedOrigins),
             allowedPorts: Array.from(this.allowedPorts),
-            localNetworkPatterns: this.localNetworkPatterns.length
+            localNetworkPatterns: this.localNetworkPatterns.length,
+            cloudPlatformPatterns: this.cloudPlatformPatterns.length,
+            supportsCloudPlatforms: this.isProduction
         });
     }
 }
