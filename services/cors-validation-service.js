@@ -58,8 +58,9 @@ class CORSValidationService {
             /^https:\/\/[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/
         ];
 
-        this.isDevelopment = process.env.NODE_ENV !== 'production';
+        // Fix environment detection - prioritize production detection
         this.isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
+        this.isDevelopment = !this.isProduction; // Development is simply NOT production
         this.allowedPorts = new Set(['3000', '3001', '8080', '8000']);
     }
 
@@ -84,14 +85,7 @@ class CORSValidationService {
             return true;
         }
 
-        // In development, be more permissive with local networks
-        if (this.isDevelopment) {
-            const result = this.isLocalNetworkOrigin(origin);
-            logger.info(`CORS DEBUG: Development mode - local network check: ${result}`);
-            return result;
-        }
-
-        // In production, allow both local networks AND cloud platforms
+        // Production mode: allow both local networks AND cloud platforms
         if (this.isProduction) {
             const localCheck = this.isLocalNetworkOrigin(origin);
             const cloudCheck = this.isCloudPlatformOrigin(origin);
@@ -100,7 +94,14 @@ class CORSValidationService {
             return result;
         }
 
-        // Default: only local networks
+        // Development mode: be more permissive with local networks only
+        if (this.isDevelopment) {
+            const result = this.isLocalNetworkOrigin(origin);
+            logger.info(`CORS DEBUG: Development mode - local network check: ${result}`);
+            return result;
+        }
+
+        // Default fallback: only local networks
         const result = this.isLocalNetworkOrigin(origin);
         logger.info(`CORS DEBUG: Default mode - local network check: ${result}`);
         return result;
